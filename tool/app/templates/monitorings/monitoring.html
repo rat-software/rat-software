@@ -1,0 +1,72 @@
+{% extends "master.html" %}
+
+{% block title %}Study{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col">
+    <h3>{{ m.name }}</h3>
+    <p class="small">Description: {{ m.description }}</p>
+    {% if m.created_at %}
+      <p class="small">Created at: {{ m.created_at.strftime('%d.%m.%Y') }}</p>
+    {% endif %}
+
+    <p class="lead mt-3">Search Engines</p>
+    {% for c in m.countries %}
+      <span class="badge bg-secondary m-1">{{ c.searchengine.name }} {{ c.code}}</span>
+    {% endfor %}
+
+    <p class="lead mt-3">Queries</p>
+    {% for q in m.queries %}
+      <span class="badge bg-secondary m-1">{{ q.query }}</span>
+    {% endfor %}
+
+    <p class="lead mt-3">Scheduled</p>
+    {{ interval_frequency }} per {{ interval_mode }}
+
+    <p>Next collection dates:</p>
+    {% for n in next %}
+        {{ n.strftime('%d.%m.%Y %H:%M:%S') }}<br/>
+    {% endfor %}
+
+    <p class="lead mt-3">Results</p>
+    {{ m.results | count }}
+
+    <table class="table table-hover">
+      <thead>
+        <th>Position</th>
+        <th>Title</th>
+        <th>Description</th>
+        <th>Query</th>
+        <th>Date</th>
+        <th>Serp</th>
+      </thead>
+      <tbody>
+        {% for r in m.results %}
+        <tr>
+          <td>{{ r.position }}</td>
+          <td><a href="{{r.url}}">{{ r.title }}</a></td>
+          <td>{{ r.description | truncate(40) }}</td>
+          <td>{{ r.query.query }}</td>
+          <td>{{ r.created_at.strftime('%d.%m.%Y') }}</td>
+          <td>{{ r.serp.id }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="lead mt-3">
+      {% for s in serp%}
+        <embed width="45%" src="data:image/png;base64,{{ s.img.decode('ascii') }}" />
+      {% endfor %}
+    </div>
+
+    <p class="lead mt-3">
+      <a href="{{ url_for('delete_monitoring', id=m.id) }}" class="btn btn-danger">Delete Monitoring</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

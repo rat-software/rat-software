@@ -1,0 +1,33 @@
+{% extends "master.html" %}
+
+{% block title %}Export{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-md-6 offset-md-3">
+    <div class="pb-4">
+      <a class="text-dark" href="{{ url_for('study', id=id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Study</a>
+    </div>
+
+    <div class="card">
+      <h2 class="card-header crd-header">Export Results</h2>
+      <div class="card-body">
+
+
+    <form method="POST">
+      <div class="mb-3">
+        {{ form.tables.label(class_="form-label") }}
+        {{ form.tables() }}
+      </div>
+      <div class="mb-3">
+        {{ form.submit(class_="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+  </div>
+</div>
+{% endblock %}

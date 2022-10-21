@@ -1,0 +1,68 @@
+{% extends "master.html" %}
+
+{% block title %}Study{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-12">
+    <div class="row justify-content-center">
+      <div class="col-xl-8">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="border-bottom text-center pb-3 mb-3">Please confirm your details</h5>
+
+            <h4 class="mb-0">{{ form.name[0] }}</h4>
+            <p class="text-muted mb-4">{{ form.id }} {{ form.description[0] }}</p>
+
+            <div class="col mb-4">
+              <div class="row">
+                <div class="col-4 pl-0">
+                  <div class="summary-desc">Study Type</div>
+                  {{ type_.name }}
+
+                </div>
+                <div class="col-4 border-start">
+                  <div class="summary-desc">Result Type</div>
+                  {{ result_type_.name }}
+
+                </div>
+                <div class="col-4 border-start">
+                  <div class="summary-desc">Result Count</div>
+                  {{ form.result_count[0] }}
+                </div>
+              </div>
+            </div>
+
+            <div class="col mb-3 border-bottom pb-3">
+              <div class="row">
+                <div class="col-12 pl-0 mb-4">
+                  <div class="summary-desc">Search Engines</div>
+                  {% for e in engines_ %}
+                    <span class="badge bg-secondary mr-2">{{ e.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="col-12 pl-0">
+                  <div class="summary-desc">Search Queries (Showing 5 out of {{ queries_ | length }})</div>
+                  <p>
+                  {% for q in queries_[:5] %}
+                    <span class="badge bg-secondary mr-2">{{ q.query }}</span>
+                  {% endfor %}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <form action="{{ url_for('create_new_study') }}" method="POST" enctype="multipart/form-data">
+              {{ confirm.data(value=form) }}
+              <a href="{{ url_for('new_study')}}" class="btn btn-outline-secondary">Cancel</a>
+              {{ confirm.submit(class_="btn btn-primary float-end") }}
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

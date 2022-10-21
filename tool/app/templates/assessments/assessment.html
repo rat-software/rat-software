@@ -1,0 +1,40 @@
+{% extends "master.html" %}
+
+{% block title %}Assessment{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+<div class="row">
+  <div class="col-3">
+    <div class="progress mb-4">
+      <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{closed}}" aria-valuemin="0" aria-valuemax="{{all}}">{{pct}}%</div>
+    </div>
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <p class="card-text">Your search query is <b>{{ answer.result.scraper.query.query }}</b>.</p>
+      </div>
+    </div>
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header"><b>{{ answer.question.title }}</b></div>
+      <form method="POST">
+        {{ question_display(answer.question, form) }}
+        <div class="card-body">
+          {{ form.submit(class_="btn btn-outline-primary btn-sm") }}
+          {{ form.skip(class_="btn btn-link btn-sm ms-2") }}
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="col-9">
+    {% if "html" in answer.result.source.content_type %}
+      <embed width="100%" src="data:image/png;base64,{{ answer.result.source.bin.decode('ascii') }}" />
+    {% elif "pdf" in answer.result.source.content_type %}
+      <embed width="100%" height="100%" src="data:application/pdf;base64,{{ answer.result.source.bin.decode('ascii') }}" />
+    {% else %}
+      <embed width="100%" src="data:image/png;base64,{{ answer.result.source.bin.decode('ascii') }}" />
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

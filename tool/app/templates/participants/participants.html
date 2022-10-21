@@ -1,0 +1,32 @@
+{% extends "master.html" %}
+
+{% block title %}Participants{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-8 offset-2">
+    <h3>Participants</h3>
+    <table class="table table-sm">
+      <thead>
+        <th>#</th>
+        <th>Name</th>
+        <th>Answers</th>
+        <th>Created at</th>
+      </thead>
+      <tbody>
+        {% for p in study.participants %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ p.name }}</td>
+          <td>{{ p.answers | length }}</td>
+          <td>{{ p.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

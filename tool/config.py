@@ -1,0 +1,39 @@
+import os
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+
+class Config(object):
+    SQLALCHEMY_DATABASE_URI = 'postgresql://USERNAME:PASSWORD.@HOST/DBNAME'
+    SQLALCHEMY_ENGINE_OPTIONS = {'pool_pre_ping': True,}
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    DEBUG = True
+
+    SECRET_KEY = 'abc-secret'
+    SECURITY_PASSWORD_SALT = os.environ.get('SECURITY_PASSWORD_SALT', 'abc-secret2')
+
+    REMEMBER_COOKIE_SAMESITE = 'strict'
+    SESSION_COOKIE_SAMESITE = 'strict'
+
+    SECURITY_REGISTERABLE = True
+    SECURITY_CONFIRMABLE = True
+    SECURITY_RECOVERABLE = True
+    SECURITY_TRACKABLE = True
+    SECURITY_CHANGEABLE = True
+    SECURITY_LOGIN_USER_TEMPLATE = '/security/login_user.html'
+
+    SECURITY_POST_LOGIN_VIEW = '/'
+    SECURITY_POST_LOGOUT_VIEW = '/home'
+
+    SECURITY_UNIFIED_SIGNIN = False
+    SECURITY_TWO_FACTOR = False
+    SECURITY_MULTI_FACTOR_RECOVERY_CODES = False
+    SECURITY_USERNAME_ENABLE = False
+    SECURITY_US_ENABLED_METHODS = []
+
+    MAIL_SERVER = ''
+    MAIL_PORT = 465
+    MAIL_USERNAME = ''
+    MAIL_PASSWORD = ''
+    MAIL_USE_TLS = False
+    MAIL_USE_SSL = True
