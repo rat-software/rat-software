@@ -1,0 +1,165 @@
+{% extends "master.html" %}
+
+{% block title %}Analysis{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+<div class="pb-4">
+  <a class="text-dark" href="{{ url_for('study', id=study.id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Study</a>
+</div>
+<div class="row">
+  <div class="col pb-4">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="hstack">
+          <div class="crd-header">Results Statistics</div>
+        </div>
+
+        <div class="py-2">
+          <table class="table table-striped table-borderless">
+            <tr>
+              <td>Queries</td>
+              <td>{{ study.queries | length }}</td>
+            </tr>
+            <tr>
+              <td>Search Engines</td>
+              <td>{{ study.searchengines | length }}</td>
+            </tr>
+            <tr>
+              <td>Results to Collect per Query</td>
+              <td>{{ study.result_count }}</td>
+            </tr>
+            <tr>
+              <td>Expected Results</td>
+              <td>{{ (study.queries | length) * (study.searchengines | length) * (study.result_count) }}</td>
+            </tr>
+            <tr>
+              <td>Collected Results</td>
+              <td>{{ study.results | length }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="hstack">
+          <div class="crd-header">Evaluation Statistics</div>
+        </div>
+        <div class="py-2">
+        <table class="table table-striped table-borderless">
+          <tr>
+            <td>Participants</td>
+            <td>{{ study.participants | length }}</td>
+          </tr>
+          <tr>
+            <td>Expected Evaluations</td>
+            <td>{{ study.answers | length }}</td>
+          </tr>
+          <tr>
+            <td>Collected Evaluations</td>
+            <td>{{ study.answers | selectattr('status', 'equalto', 1) | list | length }}</td>
+          </tr>
+          <tr>
+            <td>Average Evaluations per Participant</td>
+            <td>
+              {% if (study.participants | length) > 0 %}
+                {{ ((study.answers | selectattr('status', 'equalto', 1) | list | length) / (study.participants | length)) | round }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td>Skipped Evaluations</td>
+            <td>{{ study.answers | selectattr('status', 'equalto', 2) | list | length }}</td>
+          </tr>
+        </table>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col pb-4">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="hstack">
+          <div class="crd-header">SEO Analysis</div>
+        </div>
+
+        <div class="py-2">
+          <div class="progress" style="height: 25px;">
+            {% for id, count, pct in classes %}
+              <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="{{ id }}: {{ pct | round | int }}%" class="progress-bar bg-rat{{loop.index}}" role="progressbar" style="width: {{pct}}%" aria-valuenow="{{pct}}" aria-valuemin="0" aria-valuemax="100"></div>
+            {% endfor %}
+          </div>
+          <table class="table table-striped table-borderless mt-2">
+            <tr>
+              <th>Class</th>
+              <th>Total</th>
+              <th>Percentage</th>
+            </tr>
+            {% for id, count, pct in classes %}
+              <tr>
+                <td>{{ id }}</td>
+                <td>{{ count }}</td>
+                <td>{{ pct | round | int }}%</td>
+              </tr>
+
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="hstack">
+          <div class="crd-header">Source Overlap</div>
+        </div>
+        <div class="py-2">
+          <div class="progress" style="height: 25px;">
+              <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Google only: {{ (google_only/total_set*100) | round | int }}%" class="progress-bar bg-rat1" role="progressbar" style="width: {{(google_only/total_set*100) }}%" aria-valuenow="{{(google_only/total_set*100) }}" aria-valuemin="0" aria-valuemax="100"></div>
+              <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Overlap: {{ (overlap/total_set*100) | round | int }}%" class="progress-bar bg-rat3" role="progressbar" style="width: {{ (overlap/total_set*100) }}%" aria-valuenow="{{ (overlap/total_set*100) }}" aria-valuemin="0" aria-valuemax="100"></div>
+              <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Bing only: {{ (bing_only/total_set*100) | round | int }}%" class="progress-bar bg-rat5" role="progressbar" style="width: {{ (bing_only/total_set*100) }}%" aria-valuenow="{{ (bing_only/total_set*100) }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <table class="table table-striped table-borderless mt-2">
+            <tr>
+              <th></th>
+              <th>Google</th>
+              <th>Bing</th>
+            </tr>
+            <tr>
+              <td>Unique Sources</td>
+              <td>{{ google_org - google_dup }}</td>
+              <td>{{ bing_org - bing_dup }}</td>
+            </tr>
+            <tr>
+              <td>Exclusive Sources</td>
+              <td>{{ google_only }} ({{ (google_only/total_set*100) | round | int }}%)</td>
+              <td>{{ bing_only }} ({{ (bing_only/total_set*100) | round | int }}%)</td>
+            </tr>
+            <tr>
+              <td>Overlap</td>
+              <td colspan="2">{{ overlap }} ({{ (overlap/total_set*100) | round | int }}%)</td>
+            </tr>
+          </table>
+          <div class="text-small text-muted">
+            <i class="fa-solid fa-circle-info me-1"></i> Unique Source describes the number of sources without counting repeats. Exclusive Sources describe the number of sources that appear in one search engine but not in the other. Overlap describes sources that appear in both search engines. The relative sizes of Exclusive Sources and Overlap may not add up to 100% due to rounding errors.
+          </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

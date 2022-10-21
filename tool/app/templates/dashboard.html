@@ -1,0 +1,68 @@
+{% extends "master.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row mb-4">
+  <div class="col-8 offset-2">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">User</div>
+        </div>
+        <div class="py-2">
+          <table class="table table-sm table-borderless">
+            <tr>
+              <td class="w-25">Name:</td>
+              <td>{% if user.username %}{{ user.username }}{% else %}-{% endif %}</td>
+            </tr>
+            <tr>
+              <td>E-Mail:</td>
+              <td>{{ user.email }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 offset-2">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">Studies</div>
+        </div>
+        <div class="py-2">
+          {% for s in user.studies %}
+          {% if s.id >= 58 %}
+          <div class="row align-items-center py-2">
+            <div class="col-md-10">
+              <a class="text-dark" href="{{ url_for('study', id=s.id) }}">{{ s.name }}</a>
+            </div>
+            <div class="col-md-2">
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="View">
+                  <i class="fa-solid fa-eye"></i>
+                </a>
+                <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="Edit">
+                  <i class="fa-solid fa-pen"></i>
+                </a>
+                <a href="{{ url_for('delete_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="Delete">
+                  <i class="fa-solid fa-trash"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

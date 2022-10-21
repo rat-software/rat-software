@@ -1,0 +1,104 @@
+{% macro nav_link(endpoint, text, icon) %}
+{% if request.endpoint is not none and request.endpoint.endswith(endpoint) %}
+    <li class="nav-item ms-3">
+      <a class="nav-link active fw-semibold" href="{{ url_for(endpoint) }}">
+        <i class="{{ icon }} me-2"></i> {{ text }}
+      </a>
+    </li>
+{% else %}
+    <li class="nav-item ms-3">
+      <a class="nav-link" href="{{ url_for(endpoint) }}">
+        <i class="{{ icon }} me-2"></i> {{text}}
+      </a>
+    </li>
+{% endif %}
+{% endmacro %}
+
+{% macro nav_link_id(endpoint, id, text, icon) %}
+{% if request.endpoint is not none and request.endpoint.endswith(endpoint) %}
+      <li class="nav-item ms-3">
+        <a class="nav-link active fw-semibold" href="{{ url_for(endpoint, participant_id=id) }}">
+          <i class="{{ icon }} me-2"></i> {{ text }}
+        </a>
+      </li>
+{% else %}
+      <li class="nav-item ms-3">
+        <a class="nav-link" href="{{ url_for(endpoint, participant_id=id) }}">
+          <i class="{{ icon }} me-2"></i> {{text}}
+        </a>
+      </li>
+{% endif %}
+{% endmacro %}
+
+{% macro nav_link_id_id(endpoint, participant, study, text, icon) %}
+{% if request.endpoint is not none and request.endpoint.endswith(endpoint) %}
+      <li class="nav-item ms-3">
+        <a class="nav-link active fw-semibold" href="{{ url_for(endpoint, participant_id=participant, study_id=study) }}">
+          <i class="{{ icon }} me-2"></i> {{ text }}
+        </a>
+      </li>
+{% else %}
+      <li class="nav-item ms-3">
+        <a class="nav-link" href="{{ url_for(endpoint, participant_id=participant, study_id=study) }}">
+          <i class="{{ icon }} me-2"></i> {{text}}
+        </a>
+      </li>
+{% endif %}
+{% endmacro %}
+
+{% macro question_(display, title) %}
+  {% if display == 'short_text' %}
+    <i class="fas fa-grip-lines"></i> {{title}}
+  {% elif display == 'long_text' %}
+    <i class="fas fa-align-justify"></i> {{title}}
+  {% elif display == 'true_false' %}
+    <i class="fas fa-toggle-on"></i> {{title}}
+  {% elif display == 'likert_scale' %}
+    <i class="fas fa-ellipsis-h"></i> {{title}}
+  {% elif display == 'multiple_choice' %}
+    <i class="fas fa-grip-horizontal"></i> {{title}}
+  {% elif display == 'scale_number' %}
+    <i class="fas fa-sliders-h"></i> {{title}}
+  {% else %}
+    {{ title }}
+  {% endif %}
+{% endmacro %}
+
+<!-- test -->
+{% macro question_display(question, form) %}
+  {% if question.questiontype.display == 'short_text' %}
+    <i class="fas fa-grip-lines"></i> {{ question.title}}
+
+  {% elif question.questiontype.display == 'long_text' %}
+    <i class="fas fa-align-justify"></i> {{ question.title}}
+
+  {% elif question.questiontype.display == 'true_false' %}
+    <!--<i class="fas fa-toggle-on"></i> {{ question.title}}-->
+    <table class="table table-borderless mb-0 ms-4">
+      {% for radio in form.true_false %}
+      <tr>
+        <td width="1%">{{ radio }}</td>
+        <td>{{ radio.label(class_="form-label d-block my-0")}}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+
+  {% elif question.questiontype.display == 'likert_scale' %}
+    <table class="table table-borderless mb-0">
+      {% for radio in form.likert_scale %}
+      <tr>
+        <td>{{ radio }}</td>
+        <td>{{ radio.label(class_="form-label d-block my-0")}}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+  {% elif question.questiontype.display == 'multiple_choice' %}
+    <i class="fas fa-grip-horizontal"></i> {{ question.title}}
+
+  {% elif question.questiontype.display == 'scale_number' %}
+    <i class="fas fa-sliders-h"></i> {{ question.title}}
+
+  {% endif %}
+{% endmacro %}

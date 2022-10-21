@@ -1,0 +1,23 @@
+{% extends "master.html" %}
+
+{% block title %}Home{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row pt-3 my-5 align-items-top justify-content-center" style="min-height: 400px">
+  <div class="col-5 pt-5 mb-5">
+    <h3 class="fw-semibold mb-4">Streamline your search engine research.</h3>
+    <p class="lead mb-4">
+      With the <em>Result Assessment Tool (RAT)</em> you can easily collect results from different search engines,
+      let participants evaluate the results and analyse your findings.
+    </p>
+    <a href="{{url_for('security.login')}}" class="btn btn-primary rounded-pill">Launch Demo</a>
+    <a href="{{url_for('about')}}" class="ms-2 btn btn-outline-secondary rounded-pill">Learn More</a>
+  </div>
+  <div class="col-4 offset-md-1 pt-2">
+    <img src="{{ url_for('static', filename='img/rat_intro.png')}}" alt="" class="w-100 pt-5">
+  </div>
+</div>
+{% endblock %}

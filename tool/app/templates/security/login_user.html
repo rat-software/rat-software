@@ -1,0 +1,33 @@
+{% extends "master.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+
+{% from "security/_macros.html" import render_field_with_errors, render_field %}
+<div class="card col-md-6 offset-md-3">
+  <div class="card-body">
+    <h4 class="crd-header">Login</h4>
+    <form action="{{ url_for_security('login') }}" method="POST" name="login_user_form">
+      {{ login_user_form.hidden_tag() }}
+      <div class="mb-3">
+        {{ render_field_with_errors(login_user_form.email) }}
+      </div>
+      <div class="mb-3">
+        {{ render_field_with_errors(login_user_form.password) }}
+      </div>
+      <div class="mb-3">
+        {{ render_field_with_errors(login_user_form.remember) }}
+      </div>
+      <div class="mb-3">
+        {{ render_field(login_user_form.next) }}
+      </div>
+      <div class="mb-3">
+        {{ login_user_form.submit(class="btn btn-primary me-2") | safe }}
+        <a href="{{url_for('security.register')}}" class="btn btn-outline-primary">Or Register</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
