@@ -151,7 +151,7 @@ def get_real_url_request(url):
             print(response.status_code, response.url)
             return response.url
         else:
-            print("Request was not redirected")
+            return False
     except:
         return False
 
@@ -399,6 +399,8 @@ def save_code(url):
                 except Exception as e:
                     try:
                         final_url = get_real_url_request(url) #backup if driver.current_url fails
+                        if not final_url:
+                            final_url = url
                     except Exception as e:
                         final_url = url
                         print(str(e))
