@@ -1,0 +1,49 @@
+evaluations_module
+check canonical
+check description
+check external links
+check h1
+check https
+check internal links
+check kw_count
+check kw_density
+check kw_in_description-og-name
+check kw_in_description-og-property
+check kw_in_href
+check kw_in_link-text
+check kw_in_meta-content
+check kw_in_meta-description
+check kw_in_meta-og
+check kw_in_meta-properties
+check kw_in_source
+check kw_in_title
+check kw_in_title-meta
+check kw_in_title-og
+check kw_in_url
+check nofollow
+check og
+check robots_txt
+check sitemap
+check title
+check title_h1_identical
+check title_h1_match
+check viewport
+check word_count
+check wordpress
+micros
+micros counter
+source ads
+source company
+source known
+source news
+source not optimized
+source search engine
+source shop
+source top
+tools ads
+tools analytics
+tools caching
+tools content
+tools null
+tools seo
+tools social
