@@ -54,7 +54,7 @@ To set up your own version of RAT, you need to clone the repository and follow t
 
 ## Set up the results scraper
 
-- Installation of Firefox/geckodriver and selenium
+- Installation of Firefox/geckodriver and [Selenium](https://www.selenium.dev/)
 ```
 pip install -U selenium==4.1.0
 wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz
