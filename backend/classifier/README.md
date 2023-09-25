@@ -3,11 +3,13 @@ The classifier can be used to configure classifiers for the sources. It is a fle
 
 ## Set up the app
 
-- Change config_db.ini to connect the app to the rat database
+- Change /backend/config/config_db.ini/config_db.ini to connect the app to the rat database
 
 ## Set up the classifier
 
 To  setup classifiers, you have to use and store information in the rat database. The classifier_db_lib provides functions to read search results and their contents for classification purposes.
+
+You can just open the file /classifiers/classifier_template/classifier_template.py as a template to add your own classifiers.
 
 Here is an overview of the tables used for classifiers:
 
@@ -18,16 +20,8 @@ Here is an overview of the tables used for classifiers:
 
 ### Manually adding a classifier:
 - Add a folder with the name of your classifier
-- Add a python fileas module for your classifier
-- Change the config_classifier.ini to add the classifier
-
-```
-{
-	"your_classifier": { //name of the classifier
-		"module": "your_classifier_module" //name of the module
-	}
-}
-```
+- Add a python file as module for your classifier
+- Open the table classifier in your PostgreSQL database and add the classifier name (internal name of the classifier) and a display name for the Flask frontend, It is important that the name of the folder, the python file and the name in the database match because of using relative paths to initialize the classifier
 
 ### Setting up the classifier module
 
