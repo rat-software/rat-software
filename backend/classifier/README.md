@@ -7,7 +7,7 @@ The classifier can be used to configure classifiers for the sources. It is a fle
 
 ## Set up the classifier
 
-To  setup classifiers, you have to use and store information in the rat database. The classifier_db_lib provides functions to read search results and their contents for classification purposes.
+To setup classifiers, you have to use and store information in the rat database. The classifier_db_lib provides functions to read search results and their contents for classification purposes.
 
 Here is an overview of the tables used for classifiers:
 
