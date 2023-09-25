@@ -15,6 +15,8 @@ The scraper application is a software to collect search results from any informa
 |--------------------|--------------------------|---------------------------------|------------------------------|
 | search engine name<br/>(e.g. Google) | python file with scraper<br/>(e. g. google.py) | foreign key to resulttype table<br/>(e. g. 1 = organic results) | foreign key to country table<br/>(e. g. 1 = Germany) |
 
+- Define a scraper by using the template **/scrapers/template_new_scraper.py**. The template explains how to add a new scraper.
+
 ## Run the app
 
 The app is built on the python background process sheduler, as scraping web pages is time and performance consuming.
