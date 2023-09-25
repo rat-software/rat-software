@@ -3,7 +3,7 @@ The classifier can be used to configure classifiers for the sources. It is a fle
 
 ## Setting up the application
 
-- Change **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
+- Modify **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
 
 ## Setting up the classifier
 
