@@ -62,8 +62,8 @@ python3 -m venv rat
 bash install-backend.sh
 ```
 - If your server runs on another OS, you have to follow these instructions to install all necessary packages and software:
+- Install the current version of Chrome on your system
 ```
-Install the current version of Chrome on your system
 source /home/rat-backend/rat/bin/activate
 pip install --upgrade pip
 pip install pip-review
@@ -85,8 +85,8 @@ pip install selenium-wire
 pip install Pillow
 ```
 - Test, if the installation was successful (automatic testing is work in progress).
+- Open folder /tests/
 ```
-Open folder /tests/
 python test_db.py
 python test_selenium.py
 ```
