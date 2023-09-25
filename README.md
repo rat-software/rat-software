@@ -84,21 +84,9 @@ pip install pytest
 pip install selenium-wire
 pip install Pillow
 ```
-
-## Set up the sources scraper
-
-- Install Python packages from the folder sources
+- Test, if the installation was successful (automatic testing is work in progress).
 ```
-(venv) > pip install -r requirements.txt
+Open folder /tests/
+python test_db.py
+python test_selenium.py
 ```
-
-- Change config_db.ini in the sources folder with the data of the common RAT database
-
-## Set up the classifier
-
-- Install Python packages from the folder classifier
-```
-(venv) > pip install -r requirements.txt
-```
-
-- Change config_db.ini in the classifier folder with the data of the common RAT database
