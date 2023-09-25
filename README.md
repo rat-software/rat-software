@@ -2,13 +2,10 @@
 
 The Result Assessment Tool (RAT) is a software toolkit that allows researchers to conduct large-scale studies based on results from (commercial) search engines and other information retrieval systems. It is developed by the research group Search Studies at the Hamburg University of Applied Sciences in Germany. The RAT project is funded by the German Research Foundation.
 
-The source code consists of four individual modules:
+The source code consists of two individual applications:
 
-1. Database (database)
+1. Server backend (backedn)
 2. Web Interface (tool)
-3. Results Scraper (results)
-4. Sources Scraper (sources)
-5. Classifier (classifier)
 
 RAT runs on Python and has a PostgreSQL database, the web interface is a Flask app.
 To set up your own version of RAT, you need to clone the repository and follow these steps:
@@ -18,8 +15,8 @@ To set up your own version of RAT, you need to clone the repository and follow t
 - Import database
 ```
 (rat-demo) > createdb -T template0 dbname
-(rat-demo) > psql dbname < database/db_create.sql
-(rat-demo) > psql dbname < database/db_insert.sql
+(rat-demo) > psql dbname < install_database/db_create.sql
+(rat-demo) > psql dbname < install_database/db_insert.sql
 ```
 
 ## Set up the web interface
@@ -52,9 +49,9 @@ To set up your own version of RAT, you need to clone the repository and follow t
 (venv) > flask run
 ```
 
-## Set up the results scraper
+## Set up the Server Backend
 
-- Installation of Firefox/geckodriver and [Selenium](https://www.selenium.dev/)
+- Copy all files from backend on Linux Server
 ```
 pip install -U selenium==4.1.0
 wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz
