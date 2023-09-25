@@ -1,4 +1,7 @@
-# Relevance Assessment Tool (RAT) development repo
+# Result Assessment Tool (RAT) backend application
+- The backend application consists of of three sub applications which could be installed separately for a better resource management. However in most cases an installation of all apps on one server should be decent.
+- The sub applications are:
+  - 
 
 #### Quick Links
 - Kanban: https://github.com/yagci/rat/projects/1
