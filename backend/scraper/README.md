@@ -1,14 +1,13 @@
-# Classifier
-The classifier can be used to configure classifiers for the sources. It is a flexible app where you can define your own classifiers using the database.
+# Scraper
+The scraper app is a software to collect search results from any information retrieval or search engine. 
 
 ## Set up the app
 
-- Change config_db.ini to connect the app to the rat database
+- Change **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
 
-## Set up the classifier
+## Set up the scraper
 
-To  setup classifiers, you have to use and store information in the rat database. The classifier_db_lib provides functions to read search results and their contents for classification purposes.
-
+To setup scrapers
 Here is an overview of the tables used for classifiers:
 
 - result: the result table stores the scrapped and imported urls. The tool reads all the information of a stored result to provide the data to the classifier.
