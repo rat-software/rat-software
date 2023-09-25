@@ -47,12 +47,12 @@ The app is built on the python background process sheduler, as scraping web page
 
 - To start the app
 ```
-(sources) > nohup python classifier_controller_start >classifier.out &
+nohup python classifier_controller_start >classifier.out &
 ```
 
 - To stop the app
 ```
-(sources) > python classifier_controller_stop.py
+python classifier_controller_stop.py
 ```
 
 - Alternatively, you can simply configure cronjobs to run classifier.py
