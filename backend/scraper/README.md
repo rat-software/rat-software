@@ -1,14 +1,15 @@
 # Scraper
-The scraper app is a software to collect search results from any information retrieval or search engine. 
+The scraper application is a software to collect search results from any information retrieval or search engine. 
 
 ## Set up the app
 
 - Change **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
 
-## Set up the scraper
+## Set up scrapers
 
-To setup scrapers
-Here is an overview of the tables used for classifiers:
+- The scraper application is a framework to scrape search results from any information retrieval system. Adding new scrapers is a complex task, so the application offers a template to add desired scrapers.
+- The following requirements must be met to add new scrapers to the software.
+
 
 - result: the result table stores the scrapped and imported urls. The tool reads all the information of a stored result to provide the data to the classifier.
 - source: the source table stores the content of the search results or imported URLs. It provides the information as html source code and also as an image.
