@@ -61,8 +61,8 @@ python3 -m venv rat
 ```
 bash install-backend.sh
 ```
-- If your server runs on another OS, you have to follow these instructions to install all necessary packages and software:
-- Install the current version of Chrome on your system
+If your server runs on another OS, you have to follow these instructions to install all necessary packages and software:
+- Install the current version of Chrome on your system (e. g. from https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb)
 ```
 source /home/rat-backend/rat/bin/activate
 pip install --upgrade pip
