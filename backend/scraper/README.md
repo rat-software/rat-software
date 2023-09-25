@@ -10,6 +10,7 @@ The scraper application is a software to collect search results from any informa
 - The scraper application is a framework to scrape search results from any information retrieval system. Adding new scrapers is a complex task, so the application offers a template to add desired scrapers.
 - The following requirements must be met to add new scrapers to the software:
 - Adding the scraper to the table **searchengine**
+  
 | name               | module                   | resulttype                      | country                      |
 |--------------------|--------------------------|---------------------------------|------------------------------|
 | search engine name | python file with scraper | foreign key to resulttype table | foreign key to country table |
