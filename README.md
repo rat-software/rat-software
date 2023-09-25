@@ -4,7 +4,7 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 
 The source code consists of two individual applications:
 
-1. Server backend (backedn)
+1. Server backend (backend)
 2. Web Interface (tool)
 
 RAT runs on Python and has a PostgreSQL database, the web interface is a Flask app.
