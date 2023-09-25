@@ -13,7 +13,7 @@ The scraper application is a software to collect search results from any informa
   
 | name               | module                   | resulttype                      | country                      |
 |--------------------|--------------------------|---------------------------------|------------------------------|
-| search engine name<br/>(e.g. Google) | python file with scraper<br/>(e. g. google.py) | foreign key to resulttype table | foreign key to country table |
+| search engine name<br/>(e.g. Google) | python file with scraper<br/>(e. g. google.py) | foreign key to resulttype table<br/>(e. g. 1 = organic results) | foreign key to country table<br/>(e. g. 1 = Germany) |
 
 ## Run the app
 
