@@ -1,22 +1,22 @@
-# Result Assessment Tool (RAT) backend application
-- The backend application consists of of three sub applications which could be installed separately for a better resource management. However in most cases an installation of all apps on one server should be decent.
+# Result Assessment Tool (RAT) Backend application.
+- The backend application consists of three sub-applications that can be installed separately for better resource management. However, in most cases, it should make sense to install all applications on one server.
 
-#### Applications in backend
-- **classifier**: toolkit to use and add classifiers based on the data RAT provides
-- **scraper**: library for scraping search engines
-- **sources**: library for scraping content of URLs
+## Applications in the backend
+- **classifier**: Toolkit for using and adding classifiers based on data provided by RAT.
+- **scraper**: Library for scraping search engines
+- **sources**: Library for scraping URL content
 
-#### Configuration of the applications
-All applications share the folder /config/ that consits of json files to change the database connection (config_db.ini), change proxy info (config_proxy.ini) and to change options for scraping of sources (config_sources.ini)
+## Configuration of applications
+All applications share the /config/ folder, which contains json files for changing the database connection (config_db.ini), changing the proxy information (config_proxy.ini), and changing the options for scraping sources (config_sources.ini)
 
-#### Run the backend application
-- The backend applications are built on Appsheduler to make them running in the background. Starting all services at one can be executed by running **source start_rat_server.sh** or by using **nohup python backend_controller_start.py**
-- Alternatively all applications offer their controllers, if it is needed to run them seperately on different machines.
+## Running the backend application
+- The backend applications are built on appsheduler to run in the background. Starting all services at once can be done by **source start_rat_server.sh** or by **nohup python backend_controller_start.py**.
+- Alternatively, all applications provide their own controllers if you want to run them separately on different machines.
 
-#### Additional folders
-- **crx**: location of the browser extension "I don't care about cookies': https://www.i-dont-care-about-cookies.eu/ This extension is needed since cookie banners can be an issue when scraping content from webpages
-- **tests**: folder with tests using pytest (work in progress)
-- **tmp**: temporary folder with screenshots from scraping processes
+## Additional directories
+- **crx**: Location of the browser extension "I don't care about cookies": https://www.i-dont-care-about-cookies.eu/ This extension is needed because cookie banners can be a problem when scraping web pages
+- **tests**: folder with tests using pytest (work in progress).
+- **tmp**: temporary folder with screenshots of scraping processes
 
-### Additional scripts
-- **update_chrome_driver.py**: script to update the current chrome driver on a Debian server (may doesn't work properly on other machines)
+## Additional scripts
+- **update_chrome_driver.py**: Script to update the current chrome driver on a Debian server (may not work properly on other machines).
