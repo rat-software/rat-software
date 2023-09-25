@@ -10,4 +10,4 @@
 All applications share the folder /config/ that consits of json files to change the database connection (config_db.ini), change proxy info (config_proxy.ini) and to change options for scraping of sources (config_sources.ini)
 
 #### Run the backend application
-The backend applications are built on Appsheduler to make them running in the background. Starting all services at one can be executed by running 'source start_rat_server.sh' or by using 'nohup python backend_controller_start.py'
+The backend applications are built on Appsheduler to make them running in the background. Starting all services at one can be executed by running **source start_rat_server.sh** or by using **nohup python backend_controller_start.py**
