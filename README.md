@@ -52,12 +52,37 @@ To set up your own version of RAT, you need to clone the repository and follow t
 ## Set up the Server Backend
 
 - Copy all files from backend on Linux Server
+- It is highly recommended to set up a backend in a virtual enviroment:
 ```
-pip install -U selenium==4.1.0
-wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz
-tar -x geckodriver -zf geckodriver-v0.30.0-linux64.tar.gz -O > /usr/local/bin/geckodriver
-chmod +x /usr/local/bin/geckodriver
-rm geckodriver-v0.30.0-linux64.tar.gz
+apt-get install python3-venv
+python3 -m venv rat
+```
+- If you work on a Debian server, you can just run the script to install all 
+```
+bash install-backend.sh
+```
+- If your server runs on another OS, you have to follow these instructions to install all necessary packages and software:
+```
+Install the current version of Chrome on your system
+source /home/rat-backend/rat/bin/activate
+pip install --upgrade pip
+pip install pip-review
+pip-review --local --auto
+pip install wheel
+pip install setuptools
+pip install psutil
+pip install apscheduler
+pip install pandas
+pip install beautifulsoup4
+pip install lxml
+pip install -U selenium
+pip install psycopg2-binary
+pip install -U pytest
+pip install pdoc
+pip install ipinfo
+pip install pytest
+pip install selenium-wire
+pip install Pillow
 ```
 
 ## Set up the sources scraper
