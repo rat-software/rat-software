@@ -1,41 +1,56 @@
 # Sources Scraper
-The sources scraper is an app that captures the contents of the URLs to be saved both as text and as a screenshot via a background task. The app is designed in such a way that it can be installed on additional servers independently of the main software. The connection to the RAT is made via the common postgresql database.
+Sources Scraper is an app that uses a background task to capture the content of URLs to be saved, both as text and as screenshots. The app is designed to be installed on additional servers independently of the main software. The connection to the RAT is established via the common postgresql database.
 
 ## Set up the app
 
-- Change config_db.ini to connect the app to the rat database
+- Modify **config_db.ini** to connect the app to the rat database.
 
-- Change config_sources.ini to your needs using the following parameters
+- Modify **config_sources.ini** according to your needs with the following parameters.
 
 ```
 {
-    "scrolling": 0, // Some web pages load more dynamic content when scrolling. The source scraper can simulate scrolling behavior, but it is more time consuming. 0 = Scrolling is off; 1 = Scrolling is on
-    "wait_time": 5, // Waiting time in seconds before the content of a page is saved. This waiting time is necessary because some web pages need more time to load.
-    "debug_screenshots": 0, // 0 = No screenshots are stored locally. 1 = Screenshots are stored locally for debug and analysis purposes.
-    "timeout": 60, // Time in seconds before the scraper stops trying to scrape a web page.
-    "headless": 1, // Debug variable. 0 = the Firefox browser opens on the local machine. 1 = the Firefox browser does not open on the local machine.
-    "job_server": "your server", // You can specify your machine / server here to monitor scraping behavior if you use more than one server for scraping sources.
-    "refresh_time": 48 // Some scraping jobs may fail due to technical problems. Change the refresh time in hours as an instruction when to reset the scraping jobs.
+    "wait_time": 5,
+    "debug_screenshots": 0,
+    "timeout": 45,
+    "headless": 1,
+    "job_server": "your_job_server",
+    "refresh_time": 0,
+    "proxy": 0,
+    "max-height": 20000,
+    "min-width": 1024,
+    "block-size": 500,
+    "scroll-time": 2
 }
 ```
+- **wait_time**: Wait time in seconds before the save operation starts.
+- **debug_screenshots**: 1 = save a screenshot in the tmp directory; 0 = do not save a screenshot
+- **timeout**: Timeout in seconds before the Selenium driver exits if a page could not be loaded.
+- **headless**: 1 = use headless mode; 0 = don't use headless mode, show the process in Chrome (best to use on local machines for debugging)
+- **job_server**: Name of the machine that will be stored in the database (change it if you use the application on different machines).
+- **refresh_time**: Time in hours to prevent the same URLs from being queried at certain times (e.g. 48 if you don't want a source to be queried twice within two days)
+- **proxy**: 1 = use a proxy (modify **config_proxy.ini** to add your proxy information); 0 = do not use a proxy.
+- **max-height**: maximum height in pixels to subtract from a web page.
+- **min-width**: minimum width in pixels
+- **block-size**: size of scrolling areas in pixels (e.g. scroll every 500 pixels)
+- **scroll-time**: Waiting time in seconds before the application continues scrolling.
 
-## Run the app
+## Running the application
 
-The app is built on the python background process sheduler, as scraping web pages is time and performance consuming.
+The application is based on the Python background process Sheduler, as scraping web pages is time and performance consuming.
 
-- To start the app
+- To start the application
 ```
 (sources) > nohup python sources_start.py >sources.out &
 ```
 
-- To stop the app
+- To stop the application
 ```
 (sources) > python sources_start.py >sources.out &
 ```
 
-- Alternatively, you can simply configure cronjobs to run sources.py
+- Alternatively, you can simply configure cronjobs to run **sources_scraper.py** and **sources_reset.py**.
 
 
 ## Debugging
 
-The app comes with a lib to log the progress in sources.log for debugging.
+The application comes with a lib that logs progress to sources.log for debugging.
