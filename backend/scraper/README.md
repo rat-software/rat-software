@@ -3,7 +3,7 @@ The scraper application is a software to collect search results from any informa
 
 ## Set up the app
 
-- Change **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
+- Modify **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
 
 ## Set up scrapers
 
