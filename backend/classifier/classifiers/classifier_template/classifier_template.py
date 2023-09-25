@@ -106,6 +106,8 @@ class Classifier:
                                 db.insert_indicator(indicator, value, classifier_id, rs)
 
                 db.update_classification_result(classifier_id, insert_classification, result_id)
+                
+                '''Define your indicators and classification rules here'''
 
             try:
 
@@ -123,9 +125,9 @@ class Classifier:
                         insert_result = 0
                         classification_result = "Short Code"
 
-                    db.insert_indicator(indicator, insert_result, classifier_id, result)
+                    db.insert_indicator(indicator, insert_result, classifier_id, result) #function to write the indicator to the db
 
-                    db.update_classification_result(classifier_id, classification_result, result)
+                    db.update_classification_result(classifier_id, classification_result, result) #function to write the classifier result to the db
             except:
                 pass
 

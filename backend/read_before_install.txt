@@ -1,18 +1,14 @@
-To use the RAT backend server, you have to set up a postgresql Database first
-Please follow the instructions at ... to set up your database server
-
-It is highly recommendes to install all python packages for the backend in a virtual enviroment:
-apt-get install python3-venv
+It is highly recommended to set up a backend in a virtual enviroment:apt-get install python3-venv
 python3 -m venv rat
 source rat/bin/activate
 
-Just call the bash script to install all packages
-bash install-backend_debian.sh
+If you work on a Debian server, you can just run the script to install all 
+bash install-backend.sh
 
 Now it is necessary to change the config files according to your database server and your server for the application:
 
 config_db.ini = Database enviroment
-config_proxy.ini = Credentials if you want to use proxies for the scraping of sources / has to be acitvated in config_sources.ini
+config_proxy.ini = Credentials if you want to use proxies for the scraping of sources / has to be acitvated in 
 config_sources.ini = Configuration for the sources scraper
 
 To confirm that the installation is a succes, please run all tests in the /tests folder
