@@ -18,5 +18,5 @@ All applications share the /config/ folder, which contains json files for changi
 - **tests**: folder with tests using pytest (work in progress).
 - **tmp**: temporary folder with screenshots of scraping processes
 
-### Additional scripts
+#### Additional scripts
 - **update_chrome_driver.py**: Script to update the current chrome driver on a Debian server (may not work properly on other machines).
