@@ -34,8 +34,8 @@ python scraper_controller_stop.py
 
 - Alternatively, you can simply configure cronjobs that run **scraper_start.py** and **scraper_reset.py**.
 
-## Test script for scrapers
-- **scraper_check.py**: run the scraper check script to test if the scrapers in your application still work
+## Test script for scraper
+- **scraper_check.py**: run the scraper check script to test if the scrapers still work in your application.
 
 - To run a regular test of scrapers
 ```
@@ -45,4 +45,3 @@ nohup python scraper_controller_start_check.py
 ```
 python scraper_controller_stop_check.py
 ```
-
