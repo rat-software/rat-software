@@ -1,5 +1,10 @@
 """
-Function to reset failured scraping jobs. The sheduler will be called once an hour to reset errors in the database.
+Reset Sources Job
+
+This script defines a job function to reset failed scraping jobs. The scheduler is set to run the job once an hour.
+
+Functions:
+    job(): Calls the `sources.sources_reset` function to reset sources.
 """
 
 #import required libs

@@ -15,6 +15,13 @@ job_defaults = {
 
 def job():
 
+    """
+    Execute the classifier job.
+
+    Returns:
+        None
+    """
+
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
@@ -28,6 +35,13 @@ def job():
     os.system(classifier_job)
 
 if __name__ == '__main__':
+
+    """
+    Entry point for the job classifier script.
+
+    Returns:
+        None
+    """    
 
     scheduler = BackgroundScheduler(job_defaults=job_defaults, timezone='Europe/Berlin')
     scheduler.add_job(job, 'interval', hours=1, next_run_time=datetime.now())

@@ -1,7 +1,10 @@
 """
-Function to start the sources_scraper.
-\nThe default value for the maximum number of job instances is 3, but it can be changed depending on the server capacity.
-\nThe job is executed every 60 seconds by default, but it can also be changed according to the server's capacities.
+Start Sources Scraper Job
+
+This script defines a job function to start the sources scraper. The maximum number of job instances is set to 2 by default, but can be changed based on server capacity. The job is executed every 10 seconds by default, but can also be adjusted according to server capacity.
+
+Functions:
+    job(): Calls the `sources.sources_scraper` function to start the sources scraper.
 """
 
 #import required libs

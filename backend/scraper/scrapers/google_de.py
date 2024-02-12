@@ -1,6 +1,17 @@
 from scrapers.requirements import *
 
 def run(query, limit, scraping, headless):
+    """
+    Run the Google DE scraper.
+
+    Args:
+        query (str): The search query.
+        limit (int): The maximum number of search results to retrieve.
+        scraping: The Scraping object.
+
+    Returns:
+        list: List of search results.
+    """    
     try:
         #Definition of args for scraping the search engine
         search_url = "https://www.google.de/webhp?hl=de&gl=DE&uule=w+CAIQICIXQmVybGluLCBCZXJsaW4sIEdlcm1hbnk=" #URL of search engine
@@ -33,6 +44,8 @@ def run(query, limit, scraping, headless):
 
             soup = BeautifulSoup(source, features="lxml")
 
+            #addtional steps to extract undesired elements from the Search Engine Result Page (SERP)
+
             for s in soup.find_all("div", class_="d4rhi"):
                 s.extract()
 
@@ -41,6 +54,8 @@ def run(query, limit, scraping, headless):
 
             for s in soup.find_all("div", class_="UDZeY fAgajc OTFaAf"):
                 s.extract()
+
+            #find the list with the search results by extracting the div container
 
             for result in soup.find_all("div", class_=["tF2Cxc"]):
                 url_list = []
@@ -54,8 +69,9 @@ def run(query, limit, scraping, headless):
                 except:
                     result_title = "N/A"
 
-                try:
-                    for description in result.find("div", class_=["VwiC3b yXK7lf MUxGbd yDYNvb lyLwlc lEBKkf", "VwiC3b yXK7lf MUxGbd yDYNvb lyLwlc"]):
+                try:                  
+                    for description in result.find("div", class_=re.compile("VwiC3b", re.I)):
+                       
                         result_description+=description.text.strip()
                 except:
                     result_description = "N/A"
@@ -82,26 +98,30 @@ def run(query, limit, scraping, headless):
             else:
                 return False
 
-        chrome_extension = scraping.get_chrome_extension() #Get Path for I don't care about cookies extension
-
         #initialize Selenium
-        options = Options()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--start-maximized")
-        if headless == 1:
-            options.add_argument('--headless=new')
-        options.add_argument("--lang=de")
-        options.add_experimental_option("detach", True)
-        options.add_extension(chrome_extension)
-        driver = webdriver.Chrome(options=options)
+        #https://github.com/seleniumbase/SeleniumBase/blob/master/seleniumbase/plugins/driver_manager.py For all options
+        #https://seleniumbase.io/help_docs/locale_codes/
+
+        driver = Driver(
+                browser="chrome",
+                wire=True,
+                uc=True,
+                headless2=headless,
+                incognito=False,
+                agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                do_not_track=True,
+                undetectable=True,
+                extension_dir=ext_path,
+                locale_code="de",
+                #mobile=True,
+                )
+        
+        driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
-        driver.maximize_window()
-        random_sleep = random.randint(2, 5)
+        random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
         time.sleep(random_sleep)
-
     
         #Start scraping if no CAPTCHA
         if not check_captcha(driver):
@@ -128,7 +148,7 @@ def run(query, limit, scraping, headless):
                         random_sleep = random.randint(2, 5)
                         time.sleep(random_sleep)
                         page+=1
-                        page_label = "Page "+str(page)
+                        page_label = f"Page {page}"
                         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                         try:
                             next = driver.find_element(By.XPATH, next_page.format(page_label))
@@ -141,8 +161,7 @@ def run(query, limit, scraping, headless):
                         continue_scraping = False
                         search_results = -1
 
-                if headless == 1:
-                    driver.quit()
+                driver.quit()
 
                 return search_results
 
@@ -165,16 +184,14 @@ def run(query, limit, scraping, headless):
                         continue_scraping = False
                         search_results = -1
 
-                if headless == 1:
-                    driver.quit()
+                driver.quit()
                     
                 return search_results
 
 
         else:
             search_results = -1
-            if headless == 1:
-                driver.quit()
+            driver.quit()
 
     except Exception as e:
         print(str(e))

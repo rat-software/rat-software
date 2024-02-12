@@ -15,37 +15,52 @@
       <div class="card-body">
 
         <div class="hstack">
-          <div class="crd-header">Results Collection</div>
+          <div class="crd-header">Search Results Collection</div>
         </div>
 
         <div class="py-2">
           {% if study.status == 0 %}
-            Status: Open. Run a pre-test!
+            Status: Open.
+          {% elif study.status == -1 %}
+            Status: Oops. Something went wrong. Please contact us.
           {% elif study.status == 1 %}
-            Status: Pre-Test running.
+            Status: Collection running.
           {% elif study.status == 2 %}
-            Status: Pre-Test finished.
+            Status: Collection finished.
           {% elif study.status == 3 %}
-            Status: Study running.
+            {% if study.answers | length == 0 %}
+              Status: Collection finished.
+            {% else %}
+              Status: Assessments finished.
+            {% endif %}
           {% elif study.status == 4 %}
-            Status: Study finished.
-          {% elif study.status == 5 %}
-            Status: Closed.
+            Status: Archived.
           {% endif %}
 
           {% if study.results | length == 0 %}
-          No results yet.
+            {% if study.status != -1 %}
+              No results yet.
+            {% endif %}
           {% else %}
-          {{ study.results | length }} / {{ study.result_count * (study.queries | length) * (study.searchengines | length)}}
+          {{ results }} Results collected.
           {% endif %}
         </div>
 
-        <a href="{{ url_for('run_pretest', id=study.id) }}" class="btn btn-sm btn-primary float-end"><i class="fa-solid fa-play"></i> Pre-Test</a>
-
+        <!--<a href="{{ url_for('run_pretest', id=study.id) }}" class="btn btn-sm btn-primary float-end"><i class="fa-solid fa-play"></i> Pre-Test</a>-->
+        {% if study.status == 0 %}
         <!-- Button trigger modal -->
-        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy">
+        <button type="button" class="btn btn-sm btn-outline-primary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy">
           <i class="fa-solid fa-forward-step"></i> Start
         </button>
+        {% elif study.status == 3 %}
+        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#closeStudy">
+          <i class="fa-regular fa-circle-stop"></i> Archive
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy" disabled>
+          <i class="fa-solid fa-forward-step"></i> Started
+        </button>
+        {% endif %}
 
         <!-- Modal -->
         <div class="modal fade" id="startStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
@@ -57,11 +72,29 @@
               </div>
               <div class="modal-body">
                 <p>Once you start the result collection <b class="text-danger">you won't be able to edit your search queries and selected search engines</b>.</p>
-                <p>For a preview of the results, you can run a pre-test that selects a random subsample of five queries and collects the full number of specified results for each of them.</p>
                 <p>Do you want to start the collection of results anyway and loose the ability to edit your study settings?</p>
               </div>
               <div class="modal-footer">
-                <a href="{{ url_for('run_study', id=study.id) }}" class="btn btn-sm btn-danger float-end">Yes, I am ready to start</a>
+                <button class="btn btn-sm btn-danger" data-bs-dismiss="modal" aria-label="Close">No, I want to edit my study</button>
+                <a href="{{ url_for('run_study', id=study.id) }}" class="btn btn-sm btn-success float-end">Yes, I am ready to start</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="closeStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title crd-header" id="exampleModalLabel">Warning</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Once you close the study <b class="text-danger">you won't be able to add more participants to assess your results</b>.</p>
+                <p>Do you want to close the study anyway and archive the results of your study?</p>
+              </div>
+              <div class="modal-footer">
+                <a href="{{ url_for('close_study', id=study.id) }}" class="btn btn-sm btn-danger float-end">Yes, I am ready to close</a>
               </div>
             </div>
           </div>
@@ -79,7 +112,7 @@
         </div>
         <div class="py-2">
           {% if study.questions | length == 0 %}
-          No questions yet. <a href="#">Create one!</a>
+          No questions yet. <a href="{{ url_for('new_question', id=study.id) }}">Create one!</a>
           {% elif study.questions | length == 1 %}
           {{ study.questions | length }} Question
           {% else %}
@@ -107,18 +140,19 @@
       </div>
     </div>
   </div>
-  {% if (study.results | length) > 0%}
+  {% if ((study.results | length) > 0) and (study.status >= 2 ) %}
   <div class="col">
     <div class="card">
       <div class="card-body">
-
         <div class="hstack">
           <div class="crd-header">Participants</div>
         </div>
 
         <div class="py-2">
           {% if study.participants | length == 0 %}
-          No participants yet. <a href="#">Invite one!</a>
+          No participants yet. <a href="" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
+            Invite one
+          </a>
           {% else %}
           Number of registered participants: {{ study.participants | length }}
           {% endif %}
@@ -126,7 +160,7 @@
 
         <!-- Button trigger modal -->
         <button type="button" class="btn btn-outline-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
-          <i class="fa-solid fa-user-plus"></i> Invite
+          <i class="fa-solid fa-user-plus"></i> Get initivation link
         </button>
 
         <!-- Modal -->
@@ -142,9 +176,9 @@
 
                 <div class="input-group mb-3">
                   <input type="text" id="inviteURL" class="form-control" aria-describedby="inviteBTN" value="{{ base }}join/{{ study.id }}" disabled />
-                  <button class="btn btn-outline-secondary" type="button" id="inviteBTN" onclick="copyURL(inviteURL, inviteBTN)">
+                  <!--<button class="btn btn-outline-secondary" type="button" id="inviteBTN" onclick="copyURL(inviteURL, inviteBTN)">
                     <i class="fa-solid fa-clipboard"></i> Copy
-                  </button>
+                  </button>-->
                 </div>
 
               </div>
@@ -178,7 +212,9 @@
                   <i class="fa-solid fa-gear"></i> Settings
                 </button>
                 <ul class="dropdown-menu">
+                  {% if study.status == 0 %}
                   <li><a class="dropdown-item" href="{{ url_for('edit_study', id=study.id) }}"><i class="fa-solid fa-pen"></i> Edit Study</a></li>
+                  {% endif %}
                   <!--<li><a class="dropdown-item" href="#"><i class="fa-solid fa-lock"></i> Manage Access</a></li>-->
                   <li><a class="dropdown-item text-danger" href="{{ url_for('delete_study', id=study.id) }}"><i class="fa-solid fa-trash-can"></i> Delete Study</a></li>
                 </ul>
@@ -214,6 +250,10 @@
                   {% for e in study.searchengines %}
                   <span class="badge rounded-pill bg-primary mr-2">{{ e.name }}</span>
                   {% endfor %}
+                </div>
+                <div class="col-12 pl-0 mb-4">
+                  <div class="summary-desc">Search Task</div>
+                  {{ study.task }}
                 </div>
                 <div class="col-12 pl-0">
                   <div class="summary-desc">

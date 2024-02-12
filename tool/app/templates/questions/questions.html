@@ -5,17 +5,25 @@
 
 {% block content %}
 <h1 class="sr-only">RAT</h1>
+<div class="pb-4">
+  <a class="text-dark" href="{{ url_for('study', id=study.id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Study</a>
+</div>
 
 <div class="row">
-  <div class="col-8 offset-2">
-    <div class="card shadow-sm">
-      <h2 class="card-header crd-header">Questions</h2>
+  <div class="col pb-4">
+    <div class="card">
       <div class="card-body">
-        <table class="table table-hover">
+        <div class="hstack">
+          <div class="crd-header">Questions</div>
+        </div>
+
+        <div class="py-2">
+        <table class="table table-striped table-borderless">
           <thead>
             <th>#</th>
             <th>Question</th>
             <th>Type</th>
+            <th class="text-end">Actions</th>
           </thead>
           <tbody>
             {% for q in pagination.items %}
@@ -23,13 +31,25 @@
               <td>{{ q.position }}</td>
               <td style="transform: rotate(0);"><a href="{{ url_for('question', id=q.id) }}" class="stretched-link text-dark">{{ q.title }}</a></td>
               <td>{{ q.questiontype.name }}</td>
+              <td class="text-end">
+                <div class="btn-group" role="group" aria-label="Basic example">
+                  <a href="{{ url_for('question', id=q.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="View">
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+                  <a href="{{ url_for('delete_question', id=q.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="Delete">
+                    <i class="fa-solid fa-trash"></i>
+                  </a>
+                </div>
+              </td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
+        </div>
 
         <nav aria-label="Page navigation example">
           <ul class="pagination pagination-sm justify-content-center">
+            {% if pagination.pages > 1 %}
             {% if pagination.has_prev %}
             <li class="page-item">
               <a class="page-link text-dark" href="{{ url_for('questions', id=study.id, page=pagination.prev_num) }}" aria-label="Previous">
@@ -55,6 +75,7 @@
                 <span aria-hidden="true"><i class="fa-solid fa-angle-right"></i></span>
               </a>
             </li>
+            {% endif %}
             {% endif %}
           </ul>
         </nav>

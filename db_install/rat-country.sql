@@ -1,0 +1,49 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 11.20 (Debian 11.20-0+deb10u1)
+-- Dumped by pg_dump version 16.0
+
+-- Started on 2023-11-29 11:50:16
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 3135 (class 0 OID 331730)
+-- Dependencies: 200
+-- Data for Name: country; Type: TABLE DATA; Schema: public; Owner: rat
+--
+
+INSERT INTO public.country (id, name, code, language) VALUES (1, 'Germany', 'de', NULL);
+INSERT INTO public.country (id, name, code, language) VALUES (2, 'USA', 'us', NULL);
+INSERT INTO public.country (id, name, code, language) VALUES (3, 'Sweden', 'se', NULL);
+INSERT INTO public.country (id, name, code, language) VALUES (5, 'Mexico', 'mx', NULL);
+INSERT INTO public.country (id, name, code, language) VALUES (6, 'United Kingdom', 'gb', NULL);
+INSERT INTO public.country (id, name, code, language) VALUES (4, 'Ireland', 'ie', NULL);
+
+
+--
+-- TOC entry 3142 (class 0 OID 0)
+-- Dependencies: 201
+-- Name: country_id_seq; Type: SEQUENCE SET; Schema: public; Owner: rat
+--
+
+SELECT pg_catalog.setval('public.country_id_seq', 1, false);
+
+
+-- Completed on 2023-11-29 11:50:19
+
+--
+-- PostgreSQL database dump complete
+--
+

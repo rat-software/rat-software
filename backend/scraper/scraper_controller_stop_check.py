@@ -1,3 +1,24 @@
+"""
+ScraperController
+
+This class represents a controller for managing the stopping of scraper jobs.
+
+Methods:
+    __init__(): Initializes the ScraperController object.
+    __del__(): Destructor for the ScraperController object.
+    stop(args): Stops the running scraper and scraper check processes.
+
+Args:
+    args (list): The arguments for stopping the processes.
+        args[0] (list): List of process names to stop.
+        args[1] (object): Database object.
+
+Example:
+    scraper_controller = ScraperController()
+    scraper_controller.stop([["chrome", "chromium"], db])
+    del scraper_controller
+"""
+
 #processing libraries
 import threading
 from subprocess import call
@@ -15,13 +36,6 @@ import inspect
 
 class ScraperController:
 
-    """SourcesController"""
-    args: list
-    """The args for the controller to stop it
-    \nparam: args[0]:list = name of browser process (chrome, chromium, firefox)
-    \nparam: db:object = Database object
-    """
-
     def __init__(self):
         self = self
 
@@ -29,7 +43,6 @@ class ScraperController:
         print('Scraper Controller object destroyed')
 
     def stop(self, args:list):
-        """SourcesController"""
 
         for proc in psutil.process_iter(attrs=['pid', 'name']):
 

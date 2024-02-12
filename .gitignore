@@ -1,3 +1,10 @@
-
-.DS_Store
-*__pycache__*
+**/scrapers2implement
+**/__pycache__/
+**/tmp/*.png
+*.txt
+**/.pytest_cache
+*.log
+!empty.txt
+!todo.txt
+!info.txt
+!requirements.txt

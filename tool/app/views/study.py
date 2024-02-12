@@ -1,9 +1,9 @@
 from .. import app, db
 from ..forms import StudyForm, ConfirmationForm
-from ..models import Study, StudyType, ResultType, SearchEngine, Query, Scraper, Answer
+from ..models import Study, StudyType, ResultType, SearchEngine, Query, Scraper, Answer, Result, Source, Classifier, User
 from flask import render_template, flash, redirect, url_for, request, abort, Markup
 from sqlalchemy.orm import raiseload, joinedload
-from flask_security import login_required, current_user
+from flask_security import login_required, current_user, roles_accepted
 from datetime import datetime
 import pandas as pd
 from io import BytesIO
@@ -12,9 +12,11 @@ import json
 
 @app.route('/studies', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('Admin')
 def studies():
     page = request.args.get('page', 1, type=int)
-    pagination = Study.query.options(joinedload(Study.studytype), raiseload('*')).filter(Study.id >= 58).paginate(page, per_page=5)
+    pagination = db.session.query(Study).order_by(
+        Study.id).paginate(page, per_page=10)
 
     return render_template('studies/studies.html',
                            pagination=pagination)
@@ -28,16 +30,40 @@ def study(id):
 
         base = request.url_root
 
+        scraper_progress = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == 0 & 2).count()
+        source_progress = Result.query.filter(Result.study == study).filter(Result.sources.any(Source.progress == 0 & 2)).count()
+        answer_progress = Answer.query.filter(Answer.study == study).filter((Answer.status == 0) & (Answer.source_status_code == 200)).count()
+
+        scraper_error = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == -1).count()
+
+        # status 2: results AND sources collected
+
+        if (study.status != 4) & (study.status != 0):
+            if (source_progress == 0) & (scraper_progress == 0):
+                study.status = 2
+                db.session.commit()
+            # study status 3: assessments finished
+            if (source_progress == 0) & (answer_progress == 0):#
+                if scraper_error > 0:
+                    study.status = -1
+                else:
+                    study.status = 3
+                db.session.commit()
+
+
         # get results info
-        results = len(study.results)
+        results = db.session.query(Result).join(Result.sources).where((Source.status_code == 200) & (Source.progress == 1)).where(Result.study == study).count()
         max_results = sum([s.limit for s in study.scrapers])
-        r_pct = round(results/max_results*100) if max_results != 0 else 0
+        r_pct = round(results / max_results * 100) if max_results != 0 else 0
 
         # get answers info
-        answers = Answer.query.filter(Answer.study == study, Answer.status != 0).count()
+        answers = Answer.query.filter(
+            Answer.study == study, Answer.status != 0).count()
         max_answers = Answer.query.filter(Answer.study == study).count()
-        a_pct = round(answers/max_answers*100) if max_answers != 0 else 0
-    except Exception:
+        a_pct = round(answers / max_answers * 100) if max_answers != 0 else 0
+
+    except Exception as e:
+        print(e)
         abort(500)
 
     return render_template('studies/study.html',
@@ -59,11 +85,11 @@ def new_study():
 
     # gets study types from db to populate form selection
     form.type.choices = [(str(s.id), s.name)
-                         for s in StudyType.query.filter(StudyType.id <= 2)]
+                         for s in StudyType.query.all()]
 
     # gets search engines from db to populate form selection
     form.search_engines.choices = [(str(s.id), s.name)
-                                   for s in SearchEngine.query.filter(SearchEngine.id <= 2)]
+                                   for s in SearchEngine.query.filter(SearchEngine.test == 1).all()]
 
     return render_template('studies/new_study.html',
                            form=form,
@@ -82,7 +108,7 @@ def confirm_new_study():
         query_filename = files["query_list"].filename
         print(form)
 
-        ### get search engines
+        # get search engines
         engines_ = []
         engine_ls = []
         if "search_engines" in form:
@@ -91,14 +117,13 @@ def confirm_new_study():
                 engines_.append(e)
                 engine_ls.append(id)
 
-        ### get study type
+        # get study type
         type_ = StudyType.query.get_or_404(form["type"][0])
 
-
-        ### get result type
+        # get result type
         result_type_ = ResultType.query.get_or_404(form["result_type"][0])
-
-        ### get queries
+        print(result_type_)
+        # get queries
         queries_ = []
         query_ls = []
 
@@ -111,7 +136,6 @@ def confirm_new_study():
                 q["source"] = 'text'
 
                 queries_.append(q)
-
 
         # from file upload
         else:
@@ -130,7 +154,6 @@ def confirm_new_study():
                 elif files["query_list"].content_type == content_type[1]:
                     df = pd.read_excel(BytesIO(bytes_data))
 
-
                 for row in df.to_dict(orient="records"):
                     print(row)
                     q = {}
@@ -143,7 +166,6 @@ def confirm_new_study():
             else:
                 flash("Uploaded file is invalid.", "error")
 
-        queries_ = queries_[:3]
         form["queries"] = queries_
         print(form)
         return render_template('studies/confirm_new_study.html',
@@ -191,10 +213,14 @@ def create_new_study():
             new_engines.append(e)
 
         new_type = StudyType.query.get_or_404(int(dt["type"][0]))
-        new_result_type = ResultType.query.get_or_404(int(dt["result_type"][0]))
+        new_result_type = ResultType.query.get_or_404(
+            int(dt["result_type"][0]))
+
+        classifier = Classifier.query.get_or_404(1)
 
         study = Study()
         study.name = dt["name"][0]
+        study.status = 0
         study.description = dt["description"][0]
         study.studytype = new_type
         study.resulttype = new_result_type
@@ -202,9 +228,21 @@ def create_new_study():
         study.searchengines.extend(new_engines)
         study.imported = False
         study.result_count = int(dt["result_count"][0])
+        study.task = dt["task"][0]
         study.created_at = datetime.now()
 
-        study.users.append(current_user)
+        study.classifier.append(classifier)
+
+        user_list = [current_user]
+        if current_user.id != 31:
+            admin1 = User.query.get(31)
+            user_list.append(admin1)
+        if current_user.id != 19:
+            admin2 = User.query.get(19)
+            user_list.append(admin2)
+
+        study.users.extend(user_list)
+
 
         insert = []
         insert.extend(new_queries)
@@ -264,10 +302,12 @@ def create_new_study():
                 study.searchengines.remove(se)
 
         new_type = StudyType.query.get_or_404(int(dt["type"][0]))
-        new_result_type = ResultType.query.get_or_404(int(dt["result_type"][0]))
+        new_result_type = ResultType.query.get_or_404(
+            int(dt["result_type"][0]))
 
         # update entry
         study.name = dt["name"][0]
+        study.task = dt["task"][0]
         study.description = dt["description"][0]
         study.studytype = new_type
         study.resulttype = new_result_type
@@ -327,6 +367,7 @@ def edit_study(id):
 
     form.id.data = study.id
     form.name.data = study.name
+    form.task.data = study.task
     form.description.data = study.description
     form.type.choices = [(str(s.id), s.name)
                          for s in StudyType.query.filter(StudyType.id <= 2)]
@@ -342,3 +383,15 @@ def edit_study(id):
                            form=form,
                            study=study,
                            title=title)
+
+
+@app.route('/study/<id>/close')
+@login_required
+def close_study(id):
+
+    study = Study.query.get_or_404(id)
+    study.status = 4
+    db.session.commit()
+
+    flash('Study closed. Thank you for using RAT', 'success')
+    return redirect(url_for("study", id=id))

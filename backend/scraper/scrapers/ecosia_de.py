@@ -1,6 +1,17 @@
 from scrapers.requirements import *
 
 def run(query, limit, scraping, headless):
+    """
+    Run the Ecosia DE scraper.
+
+    Args:
+        query (str): The search query.
+        limit (int): The maximum number of search results to retrieve.
+        scraping: The Scraping object.
+
+    Returns:
+        list: List of search results.
+    """    
     try:
         #Definition of args for scraping the search engine
         search_url = "https://www.ecosia.org/" #URL of search engine
@@ -10,8 +21,6 @@ def run(query, limit, scraping, headless):
         page = 0 #initialize SERP page
         search_results = [] #initialize search_results list
         limit+=10
-
-
 
         #Definition of custom functions
 
@@ -75,24 +84,30 @@ def run(query, limit, scraping, headless):
             else:
                 return False
 
-        chrome_extension = scraping.get_chrome_extension() #Get Path for I don't care about cookies extension
 
         #initialize Selenium
-        options = Options()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        if headless == 1:
-            options.add_argument('--headless=new')
-        options.add_experimental_option("detach", True)
-        options.add_argument("window-size=1920,1080")
-        options.add_argument("--start-maximized")
-        options.add_argument("--lang=de")
-        options.add_extension(chrome_extension)
-        driver = webdriver.Chrome(options=options)
+        #https://github.com/seleniumbase/SeleniumBase/blob/master/seleniumbase/plugins/driver_manager.py For all options
+        #https://seleniumbase.io/help_docs/locale_codes/
+
+        driver = Driver(
+                browser="chrome",
+                wire=True,
+                uc=True,
+                headless2=headless,
+                incognito=False,
+                agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                do_not_track=True,
+                undetectable=True,
+                extension_dir=ext_path,
+                locale_code="de",
+                #mobile=True,
+                )
+
+        driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
-        random_sleep = random.randint(2, 5)
+        random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
         time.sleep(random_sleep)
 
     #Start scraping if no CAPTCHA
@@ -102,6 +117,9 @@ def run(query, limit, scraping, headless):
             search = driver.find_element(By.NAME, search_box)
             search.send_keys(query)
             search.send_keys(Keys.RETURN)
+
+            random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
+            time.sleep(random_sleep)                    
 
             search_results = get_search_results(driver, page)
             results_number = len(search_results)
@@ -115,7 +133,7 @@ def run(query, limit, scraping, headless):
                     time.sleep(random_sleep)
                     page+=1
                     try:
-                        next_page_url = "https://www.ecosia.org/search?method=index&q="+query+"&p="+str(page)
+                        next_page_url = f"https://www.ecosia.org/search?method=index&q={query}&p={page}"
                         print(next_page_url)
                         driver.get(next_page_url)
                         search_results+= get_search_results(driver, page)
@@ -129,14 +147,12 @@ def run(query, limit, scraping, headless):
                     continue_scraping = False
                     search_results = -1
 
-            if headless == 1:
-                driver.quit()
+            driver.quit()
                     
             return search_results
         else:
             search_results = -1
-            if headless == 1:
-                driver.quit()
+            driver.quit()
             return search_results
 
     except Exception as e:

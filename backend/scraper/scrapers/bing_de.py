@@ -1,9 +1,20 @@
 from scrapers.requirements import *
 
 def run(query, limit, scraping, headless):
+    """
+    Run the Bing DE scraper.
+
+    Args:
+        query (str): The search query.
+        limit (int): The maximum number of search results to retrieve.
+        scraping: The Scraping object.
+        
+    Returns:
+        list: List of search results.
+    """    
     try:
         #Definition of args for scraping the search engine
-        search_url = "https://www.bing.com/?cc=de" #URL of search engine
+        search_url = "https://www.bing.com/?cc=de&setLang=de" #URL of search engine
         search_box = "sb_form_q.sb_form_ta" #Class name of search box
         captcha = "g-recaptcha" #Source code hint for CAPTCHA
         next_page = "//a[@aria-label='{}']" #CSS to find click on next SERP
@@ -78,24 +89,31 @@ def run(query, limit, scraping, headless):
             else:
                 return False
 
-        chrome_extension = scraping.get_chrome_extension() #Get Path for I don't care about cookies extension
 
         #initialize Selenium
-        options = Options()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        if headless == 1:
-            options.add_argument('--headless=new')
-        options.add_experimental_option("detach", True)
-        options.add_argument("--start-maximized")
-        options.add_argument("--lang=de")
-        options.add_extension(chrome_extension)
-        driver = webdriver.Chrome(options=options)
+        #https://github.com/seleniumbase/SeleniumBase/blob/master/seleniumbase/plugins/driver_manager.py For all options
+        #https://seleniumbase.io/help_docs/locale_codes/
+
+
+        driver = Driver(
+                browser="chrome",
+                wire=True,
+                uc=True,
+                headless2=headless,
+                incognito=False,
+                agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                do_not_track=True,
+                undetectable=True,
+                extension_dir=ext_path,
+                locale_code="de",
+                #mobile=True,
+                )
+
+        driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
-        driver.maximize_window()
-        random_sleep = random.randint(2, 5)
+        random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
         time.sleep(random_sleep)
 
         #Start scraping if no CAPTCHA
@@ -105,6 +123,9 @@ def run(query, limit, scraping, headless):
             search = driver.find_element(By.CLASS_NAME, search_box)
             search.send_keys(query)
             search.send_keys(Keys.RETURN)
+
+            random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
+            time.sleep(random_sleep)             
 
             search_results = get_search_results(driver, page)
 
@@ -118,41 +139,39 @@ def run(query, limit, scraping, headless):
                     random_sleep = random.randint(2, 5)
                     time.sleep(random_sleep)
                     page+=1
-                    #page_label = "Seite "+str(page)
-                    page_label = "Page "+str(page)
+                    page_labels = [f"Seite {page}", f"Page {page}"]
                     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                    try:
-                        next = driver.find_element(By.XPATH, next_page.format(page_label))
-                        next.click()
-                        check_search_results = get_search_results(driver, page)
-                        check_search_results_len = len(check_search_results)
-                        duplicate_counter = 0
+                    for page_label in page_labels:
+                        if f'aria-label="{page_label}' in driver.page_source:
+                            try:
+                                next = driver.find_element(By.XPATH, next_page.format(page_label))
+                                next.click()
+                                check_search_results = get_search_results(driver, page)
+                                check_search_results_len = len(check_search_results)
+                                duplicate_counter = 0
 
-                        for check_search_result in check_search_results:
-                            if check_search_result in search_results:
-                                duplicate_counter+=1
+                                for check_search_result in check_search_results:
+                                    if check_search_result in search_results:
+                                        duplicate_counter+=1
 
-                        if duplicate_counter < check_search_results_len:
-                            search_results+= check_search_results
-                            results_number = len(search_results)
+                                if duplicate_counter < check_search_results_len:
+                                    search_results+= check_search_results
+                                    results_number = len(search_results)
 
-                        else:
-                            continue_scraping = False
+                                else:
+                                    continue_scraping = False
 
-                    except:
-                        continue_scraping = False
+                            except:
+                                continue_scraping = False
                 else:
                     continue_scraping = False
                     search_results = -1
 
-            if headless == 1:
-                driver.quit()
-                    
+            driver.quit()        
             return search_results
         else:
             search_results = -1
-            if headless == 1:
-                driver.quit()
+            driver.quit()
             return search_results
     
     
