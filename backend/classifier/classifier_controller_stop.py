@@ -1,3 +1,20 @@
+"""
+Controller class for stopping the classifier.
+
+Methods:
+    __init__: Initialize the ClassifierController object.
+    __del__: Destructor for the ClassifierController object.
+    stop: Stop the classifier and associated processes.
+
+Attributes:
+    args (list): The args for the controller to stop it.
+
+Args:
+    args[0] (list): List of browser processes to stop.
+    db (object): Database object.
+
+"""   
+
 #processing libraries
 import threading
 from subprocess import call
@@ -15,22 +32,30 @@ import inspect
 
 class ClassifierController:
 
-    """SourcesController"""
-    args: list
-    """The args for the controller to stop it
-    \nparam: args[0]:list = name of browser process (chrome, chromium, firefox)
-    \nparam: db:object = Database object
-    """
-
     def __init__(self):
+        """
+        Initialize the ClassifierController object.
+        """        
         self = self
 
     def __del__(self):
+        """
+        Destructor for the ClassifierController object.
+        """        
         print('Classifier Controller object destroyed')
 
 
     def stop(self, args:list):
-        """SourcesController"""
+        """
+        Stop the classifier and associated processes.
+
+        Args:
+            args[0] (list): List of browser processes to stop.
+            db (object): Database object.
+
+        Returns:
+            None
+        """
 
         for proc in psutil.process_iter(attrs=['pid', 'name']):
 

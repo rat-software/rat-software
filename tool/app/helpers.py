@@ -21,8 +21,8 @@ def get_options(question):
             form.true_false.choices = choices
 
         elif display == "likert_scale":
-            #choices = [(c[0], Markup(str(c[1])+"<br/>"+str(c[0]))) for c in choices]
-            choices = [(c[0], c[1]) for c in choices]
+            choices = [(c[0], Markup(str(c[0])+"&nbsp&nbsp"+str(c[1]))) for c in choices]
+            #choices = [(c[0], c[1]) for c in choices]
             form.likert_scale.choices = choices
 
         elif display == "multiple_choice":
@@ -60,3 +60,27 @@ def create_monitoring(id, form):
     job = cron.new(command=cmd_full)
     job.setall(timer)
     cron.write()
+
+
+def percentage_calc(value, total_value, type):
+    '''
+    calculates the percentage of given value in regard to total value.
+    based on type, func for 10/100 returns
+        "int" -> 10
+        "float" ->  0.1
+        "str" -> 10%
+    if total value is 0 -> "-"
+    '''
+
+    if total_value > 0:
+        r = value / total_value
+        if type == "int":
+            result = r * 100
+        elif type == "float":
+            result = r
+        elif type == "str":
+            result = str(round(r * 100)) + " %"
+    else:
+        result = "-"
+
+    return result

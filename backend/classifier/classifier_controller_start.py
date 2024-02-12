@@ -1,4 +1,26 @@
-#processing libraries
+"""
+ClassifierController
+
+This class represents a controller for starting the classifier and resetting jobs.
+
+Methods:
+    __init__(): Initializes the ClassifierController object.
+    __del__(): Destructor for the ClassifierController object.
+    start(workingdir): Starts the classifier and resets jobs.
+
+Args:
+    workingdir (str): The working directory.
+
+Returns:
+    None
+
+Example:
+    classifier_controller = ClassifierController()
+    classifier_controller.start(workingdir)
+    del classifier_controller
+"""
+
+# Processing libraries
 import threading
 from subprocess import call
 import sys
@@ -15,21 +37,28 @@ import inspect
 
 class ClassifierController:
 
-    """SourcesController"""
-    args: list
-    """The args for the controller to stop it
-    \nparam: args[0]:list = name of browser process (chrome, chromium, firefox)
-    \nparam: db:object = Database object
-    """
-
     def __init__(self):
+        """
+        Initialize the ClassifierController object.
+        """
         self = self
 
     def __del__(self):
+        """
+        Destructor for the ClassifierController object.
+        """        
         print('Classifier Controller object destroyed')
 
     def start(self, workingdir):
+        """
+        Start the classifier and reset jobs.
 
+        Args:
+            workingdir (str): The working directory.
+
+        Returns:
+            None
+        """        
         def classifier():
             call(["python", workingdir + "/jobs/job_classifier.py"])
 

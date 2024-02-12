@@ -1,83 +1,84 @@
 from .. import app, db
-from ..models import Study, ClassificationResult, Result, Scraper
+from ..models import Study, ClassifierIndicator, Classifier, Result, Scraper
 from flask import render_template, flash, redirect, url_for
 from flask_security import login_required, current_user
 from collections import Counter
 from sqlalchemy import func
+from itertools import combinations
+from .analysis_func import get_seo_classification, get_result_stats, get_evaluation_stats
+
 
 @app.route('/<id>/analysis')
 @login_required
 def analysis(id):
     study = Study.query.get_or_404(id)
 
-    classes = ['most_probably_optimized',
-               'probably_optimized',
-               'most_probably_not_optimized',
-               'probably_not_optimized',
-               'uncertain',
-               'error']
+    classes = get_seo_classification(study)
 
-    classification = db.session.query(func.count(Result.id), ClassificationResult.value)\
-                               .join(ClassificationResult)\
-                               .filter(Result.study == study)\
-                               .group_by(ClassificationResult.value).order_by(func.count(Result.id).desc()).all()
+    result_stats = get_result_stats(study)
 
-    csum = [c[0] for c in classification]
-    classes = []
-
-    for c in classification:
-        cpct = c[0]/sum(csum)*100
-        classes.append([c[1], c[0], cpct])
+    evaluation_stats = get_evaluation_stats(study)
 
 
-    dup_total = db.session.query(Result.final_url, func.count(Result.final_url))\
+    # OVERLAP
+    if len(study.searchengines) > 1:
+        # get all final urls that appear more than once
+        dup_total = db.session.query(Result.final_url, func.count(Result.final_url))\
+                              .filter(Result.study == study)\
+                              .group_by(Result.final_url)\
+                              .having(func.count(Result.final_url) > 1)\
+                              .count()
+
+        # iterate over the search engines to get the list of final urls
+        # to create a pairwise comparison
+        se_list = {}
+
+        for se in study.searchengines:
+
+            q = db.session.query(Result.final_url)\
+                          .join(Scraper)\
                           .filter(Result.study == study)\
-                          .group_by(Result.final_url)\
-                          .having(func.count(Result.final_url) > 1)\
-                          .count()
+                          .filter(Scraper.searchengine_id == se.id)
 
-    # get url list for each search engine
-    # create pairwise comparison between
-    bing_q = db.session.query(Result.final_url)\
-                       .join(Scraper)\
-                       .filter(Result.study == study)\
-                       .filter(Scraper.searchengine_id == 2)
+            urls = [r.final_url for r in q.all()]
+            count = len(urls)
+            url_set = set(urls)
+            dup_count = count - len(url_set)
 
-    bing = [r.final_url for r in bing_q.all()]
+            se_list[se.name] = {"Urls": urls,
+                                "Total count": count,
+                                "Duplicate count": dup_count,
+                                "Sources": url_set}
 
+        overlap_list = []
+        pairs = list(map(dict, combinations(se_list.items(), 2)))
+        for p in pairs:
+            se_keys = list(p.keys())
+            se_1 = se_list[se_keys[0]]
+            se_2 = se_list[se_keys[1]]
 
-    google_q = db.session.query(Result.final_url)\
-                         .join(Scraper)\
-                         .filter(Result.study == study)\
-                         .filter(Scraper.searchengine_id == 1)
+            k = "-".join(p.keys())
 
-    google = [r.final_url for r in google_q.all()]
+            only_1 = len(se_1["Sources"] - se_2["Sources"])
+            only_2 = len(se_2["Sources"] - se_1["Sources"])
+            overlap = len(se_1["Sources"].intersection(se_2["Sources"]))
+            total = len(se_1["Sources"] | se_2["Sources"])
 
+            overlap = {"SE_Pair": k,
+                       "SE_1": se_keys[0],
+                       "SE_1 exclusive": only_1,
+                       "SE_2": se_keys[1],
+                       "SE_2 exclusive": only_2,
+                       "Overlap": overlap,
+                       "Total": total}
 
-    google_org = len(google)
-    google_set = set(google)
-    google_dup = google_org - len(google_set)
-
-    bing_org = len(bing)
-    bing_set = set(bing)
-    bing_dup = bing_org - len(bing_set)
-
-    google_only = len(google_set - bing_set)
-    bing_only = len(bing_set - google_set)
-    overlap = len(google_set.intersection(bing_set))
-
-    total_set = len(google_set.union(bing_set))
-    total = len(google + bing)
-
+            overlap_list.append(overlap)
+    else:
+        overlap_list = None
 
     return render_template('analysis/analysis.html',
                            study=study,
-                           classes=classes,
-                           google_org=google_org,
-                           google_dup=google_dup,
-                           bing_org=bing_org,
-                           bing_dup=bing_dup,
-                           google_only=google_only,
-                           bing_only=bing_only,
-                           overlap=overlap,
-                           total=total, total_set=total_set)
+                           result_stats=result_stats,
+                           evaluation_stats=evaluation_stats,
+                           overlap_list=overlap_list,
+                           classes=classes)

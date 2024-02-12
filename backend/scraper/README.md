@@ -15,8 +15,23 @@ The scraper application is a software to collect search results from any informa
 |--------------------|--------------------------|---------------------------------|------------------------------|
 | search engine name<br/>(e.g. Google) | python file with scraper<br/>(e. g. google.py) | foreign key to resulttype table<br/>(e. g. 1 = organic results) | foreign key to country table<br/>(e. g. 1 = Germany) |
 
-- Define a scraper by using the template **/scrapers/template_new_scraper.py**. The template explains how to add a new scraper.
-- Optionally download the zip file for **/scrapers/add_scrapers_notebook.zip** to test your scraping approaches before you add it to the software.
+- Define a scraper by using the template **/backend/scrapers/scraper/template_new_scraper.py**. The template explains how to add a new scraper.
+- Optionally download the zip file for **/templates/new_scraper.ipynb** to test your scraping approaches before you add it to the software.
+
+## Customisation of language and location is a challenge for scrapers. We are currently working on adapting the browser language in Selenium and using URL parameters from search engines. 
+
+With Google, the local location can be specified by combining the language parameter (hl), the global location parameter (gl) and the uule parameter:
+https://www.google.com/search?q=biden&hl=en&gl=US&uule=w+CAIQICImV2VzdCBOZXcgWW9yayxOZXcgSmVyc2V5LFVuaXRlZCBTdGF0ZXM%3D
+
+More information at:
+- https://valentin.app/uule.html
+- https://padavvan.github.io/
+
+Various parameters are also available at Bing (cc=Location, setLang=Language): https://www.bing.com/cc=us&setLang=en
+
+More info about the parameters in Bing:
+https://github.com/MicrosoftDocs/bing-docs/blob/main/bing-docs/bing-news-search/reference/query-parameters.md#setlang
+
 
 ## Running the application
 

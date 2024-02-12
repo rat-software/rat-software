@@ -24,9 +24,10 @@ class StudyForm(FlaskForm):
                                                                (2, "Snippets"),
                                                                (3, "Universal Search Results"),
                                                                (4, "Advertisements")], coerce=int)
-    queries = TextAreaField("Queries (use new line for each query; max. 3 Queries)")
+    queries = TextAreaField("Queries (use new line for each query)", validators=[validators.Length(min=1, max=50000, message="Please enter at least one query.")])
     query_list = FileField("List of queries (csv)")
-    result_count = IntegerField("Number of results to collect", default=10)
+    task = StringField("Search Task (use *** as a placeholder for the query)", default="In the following, you see the results for the query ***. Please assess the results using the questions below.")
+    result_count = IntegerField("Number of results to collect", default=10, validators=[validators.NumberRange(min=1, max=200, message="The number of results can be between 1 and 200.")])
     submit = SubmitField("Create study")
 
 
@@ -54,17 +55,19 @@ class AnswerOptions(FlaskForm):
 
 
 class RangeOptions(FlaskForm):
-    start = IntegerField("Start")
-    stop = IntegerField("Stop")
-    step = DecimalField("Steps")
+    start = IntegerField("Starting Value", default=0)
+    stop = IntegerField("End Value", default=100)
+    step = DecimalField("Steps", default=1)
+    start_text = StringField("Start Text")
+    stop_text = StringField("Stop Text")
 
 
 class QuestionForm(FlaskForm):
     q_type = SelectField("Question type")
     text = StringField("Question")
     position = IntegerField("Question number")
-    interval = RadioField("Display question for...", choices=[(1, "Each Result"), (10, "Every 10 Results")], coerce=int)
-    description = StringField("Description (optional)")
+    #interval = RadioField("Display question for...", choices=[(1, "each result individually"), (10, "10 results together")], default=1, coerce=int)
+    #description = StringField("Description (optional)")
     options = FieldList(FormField(AnswerOptions), min_entries=2, label="Answer Options")
     ranges = FieldList(FormField(RangeOptions), min_entries=1, label="Range Options")
     submit = SubmitField("Create question")

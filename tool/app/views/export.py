@@ -22,7 +22,7 @@ def export(id):
     tables = {}
     tables[0] = ["Assessments", Answer]
     tables[1] = ["Questions", Question]
-    tables[2] = ["Results", Result]
+    tables[2] = ["Search Results", Result]
 
     form.tables.choices = [(k, v[0]) for k, v in tables.items()]
 

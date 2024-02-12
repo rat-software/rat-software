@@ -5,8 +5,10 @@ from flask_mailman import Mail
 from sqlalchemy import MetaData
 from flask_migrate import Migrate
 from config import Config
-from flask_security import Security, SQLAlchemyUserDatastore, auth_required, hash_password
+from flask_security import Security, SQLAlchemyUserDatastore, auth_required
 from flask_security.models import fsqla_v3 as fsqla
+from flask_security.utils import hash_password
+
 
 app = Flask(__name__)
 app.config.from_object(Config)

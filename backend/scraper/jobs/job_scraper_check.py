@@ -15,6 +15,12 @@ job_defaults = {
 }
 
 def job():
+    """
+    Job function for running the scraper check.
+
+    Returns:
+        None
+    """    
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
@@ -28,7 +34,12 @@ def job():
     os.system(scraper_job)
 
 if __name__ == '__main__':
+    """
+    Entry point for running the scraper check job.
 
+    Returns:
+        None
+    """
 
     scheduler = BackgroundScheduler(job_defaults=job_defaults, timezone='Europe/Berlin')
     scheduler.add_job(job, 'interval', hours=24, next_run_time=datetime.now())

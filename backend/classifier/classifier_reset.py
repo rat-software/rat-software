@@ -1,3 +1,14 @@
+"""
+Class for resetting the classifier.
+
+Methods:
+    __init__: Initialize the ClassifierReset object.
+    __del__: Destructor for the ClassifierReset object.
+    reset: Reset the classifier.
+
+Args:
+    db (object): Database object.
+"""
 
 from libs.lib_helper import *
 from libs.lib_db import *
@@ -11,21 +22,32 @@ import inspect
 
 class ClassifierReset:
 
-    """Sources_Reset_Controller Scraper"""
-    args: list
-    """The args for the controller to stop it
-    \nparam: args[0]:list = name of browser process (chrome, chromium, firefox)
-    \nparam: db:object = Database object
-    """
-
     def __init__(self, db):
+        """
+        Initialize the ClassifierReset object.
+
+        Args:
+            db (object): Database object.
+        """        
         self = self
         self.db = db
 
     def __del__(self):
-        print('Sources Reset object destroyed')
+        """
+        Destructor for the ClassifierReset object.
+        """        
+        print('ClassifierReset object destroyed')
 
     def reset(self, db):
+        """
+        Reset the classifier.
+
+        Args:
+            db (object): Database object.
+
+        Returns:
+            None
+        """        
         db.reset()
 
 if __name__ == "__main__":

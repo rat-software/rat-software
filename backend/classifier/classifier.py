@@ -1,3 +1,18 @@
+"""
+Class for loading and running classifiers.
+
+Methods:
+    __init__: Initialize the Classifier object.
+    __del__: Destructor for the Classifier object.
+    load_classifier: Load and run classifiers.
+
+Args:
+    classifiers (list): List of classifiers.
+    db (object): Database object.
+    helper (object): Helper object.
+
+"""
+
 import json
 import importlib
 
@@ -11,13 +26,30 @@ from libs.lib_db import *
 class Classifier:
 
     def __init__(self):
+        """
+        Initialize the Classifier object.
+        """        
         self = self
 
     def __del__(self):
+        """
+        Destructor for the Classifier object.
+        """        
         print('Classifier object destroyed')
 
 
     def load_classifier(self, classifiers, db, helper):
+        """
+        Load and run classifiers.
+
+        Args:
+            classifiers (list): List of classifiers.
+            db (object): Database object.
+            helper (object): Helper object.
+
+        Returns:
+            None
+        """        
         for c in classifiers:
             classifier_id = c['id']
             classifier_name = c['name']

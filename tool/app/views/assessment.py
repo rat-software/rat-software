@@ -1,74 +1,83 @@
 from .. import app, db
 from ..forms import AnswerForm
 from ..helpers import get_options
-from app.models import Study, Participant, Answer, Question, Result
+from app.models import Study, Participant, Answer, Question, Result, Source
 from flask import render_template, flash, redirect, url_for
 from sqlalchemy import asc
+from flask_login import logout_user
 from datetime import datetime
 from sqlalchemy.sql.expression import func
 
 
 @app.route('/<study_id>/participant/<participant_id>/assessments')
 def assessments(participant_id, study_id):
+    logout_user()
     participant = Participant.query.get(participant_id)
     study = Study.query.get(study_id)
 
-    answers = Answer.query.filter(Answer.participant == participant, Answer.study == study)
-    answers_all = answers.count()
-    print(answers_all)
-    answers_open = answers.filter(Answer.status == 0).count()
-    answers_closed = answers.filter(Answer.status != 0).count()
+    # set up baseline query
+    query = db.session.query(Answer).filter(Answer.source_status_code == 200,
+                                            Answer.participant == participant,
+                                            Answer.study == study)
 
-    if answers_closed != 0:
-        pct = round(answers_closed / answers_all * 100)
-    else:
-        pct = 0
+    # get number of assessments
+    all_answers = query.count()
+    open_answers = query.filter(Answer.status == 0).count()
+    closed_answers = query.filter(Answer.status == 1).count()
+    skipped_answers = query.filter(Answer.status == 2).count()
+
 
     return render_template('assessments/assessments.html',
                            participant=participant,
                            study=study,
-                           answers_all=answers_all,
-                           answers_open=answers_open,
-                           answers_closed=answers_closed,
-                           pct=pct)
+                           all_answers=all_answers,
+                           open_answers=open_answers,
+                           closed_answers=closed_answers,
+                           skipped_answers=skipped_answers)
 
 
 @app.route('/assessment/<participant_id>/<study_id>', methods=["GET", "POST"])
 def assessment(participant_id, study_id):
+    logout_user()
     participant = Participant.query.get(participant_id)
     study = Study.query.get(study_id)
 
-    def check_source(answer):
-        if answer.result.source:
-            return True
-        else:
-            return False
+    # get assessment for participant from study that is open, has source
+    # if no answer: return to overview page
 
-    def get_answer():
-        answer = db.session.query(Answer).\
-                            filter(Answer.participant == participant,
-                                   Answer.study == study,
-                                   Answer.status == 0).\
-                            first()
+    # if answer:
+    # get answer choices
+    # calculate status of
 
-        if check_source(answer):
-            return answer
-        else:
-            print(answer.result.source)
-            get_answer()
+    # query for all open assessments
+    query = db.session.query(Answer).filter(Answer.source_status_code == 200,
+                                            Answer.participant == participant,
+                                            Answer.study == study)
+    print(query)
+    # get number of assessments
+    all_answers = query.count()
+    open_answers = query.filter(Answer.status == 0).count()
+    closed_answers = query.filter(Answer.status == 1).count()
+    skipped_answers = query.filter(Answer.status == 2).count()
 
-    answer = get_answer()
+    print(all_answers, open_answers, closed_answers, skipped_answers)
 
-    form = get_options(answer.question)
-
-    answers = Answer.query.filter(Answer.participant == participant, Answer.study == study)
-    all = answers.count()
-    closed = answers.filter(Answer.status != 0).count()
-
-    if closed != 0:
-        pct = round(closed / all * 100)
+    if closed_answers != 0:
+        pct = closed_answers / all_answers * 100
     else:
         pct = 0
+
+    # get first available assessment
+    answer = query.filter(Answer.status == 0).first()
+    if answer:
+        # get answer options
+        form = get_options(answer.question)
+        print(answer.id)
+
+    else:
+        flash('No more available assessments.', 'info')
+        return redirect(url_for("participant", id=participant.id))
+
 
     if form.is_submitted():
         if form.skip.data:
@@ -92,6 +101,6 @@ def assessment(participant_id, study_id):
     return render_template('assessments/assessment.html',
                            form=form,
                            answer=answer,
-                           all=all,
-                           closed=closed,
+                           all=all_answers,
+                           closed=closed_answers,
                            pct=pct)

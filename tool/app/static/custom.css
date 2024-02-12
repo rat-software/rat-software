@@ -1,12 +1,13 @@
 body {
   padding-top: 100px;
   /*padding-bottom: 100px;*/
-  background-color: #f8f9fa!important;
+  background-color: #f8f9fa !important;
+  font-size:0.9rem;
 }
 
 .bg-blue {
   padding-top: 50px;
-  background-color: #e6eaed!important;
+  background-color: #e6eaed !important;
 }
 
 a {
@@ -51,7 +52,6 @@ ul li {
   font-size: 0.8rem;
 }
 
-
 .nav-pills .nav-link .step-number {
   background-color: #aaa;
   color: #fff;
@@ -91,21 +91,21 @@ ul li {
 
 ul#result_types {
   columns: 2;
-  padding-left:20px;
+  padding-left: 20px;
   -webkit-columns: 2;
   -moz-columns: 2;
 }
 
 ul#search_engines {
   columns: 3;
-  padding-left:20px;
+  padding-left: 20px;
   -webkit-columns: 3;
   -moz-columns: 3;
 }
 
 ul.cols {
   columns: 3;
-  padding-left:0;
+  padding-left: 0;
   -webkit-columns: 3;
   -moz-columns: 3;
 }
@@ -117,7 +117,7 @@ ul.cols {
   }
 
   .step-number {
-    padding: 0 17px!important;
+    padding: 0 17px !important;
   }
 
   ul#result_types {
@@ -125,6 +125,7 @@ ul.cols {
     -webkit-columns: 1;
     -moz-columns: 1;
   }
+
   ul#search_engines {
     columns: 2;
     -webkit-columns: 2;
@@ -148,7 +149,8 @@ ul.cols {
   border-bottom: 3px solid #333;
   position: absolute;
   width: 100%;
-  left: 0; top: 50%;
+  left: 0;
+  top: 50%;
   margin-top: -1px;
   z-index: 1;
 }
@@ -158,7 +160,8 @@ ul.cols {
   position: relative;
   z-index: 2;
   padding: 10px;
-  display: inline-block;}
+  display: inline-block;
+}
 
 .help a {
   color: #888;
@@ -184,7 +187,7 @@ ul.cols {
   padding: 10px;
   font-size: .75rem;
   color: #212529;
-  background-color: #fff!important;
+  background-color: #fff !important;
 }
 
 .accordion-button:focus {
@@ -192,7 +195,7 @@ ul.cols {
 }
 
 .accordion-button.collapsed {
-  color: #777!important;
+  color: #777 !important;
 }
 
 .accordion-body {
@@ -200,24 +203,25 @@ ul.cols {
 }
 
 .accordion-button::after {
-    width: auto;
-    height: auto;
-    font-family: "Font Awesome 5 Free";
-    content: "\2b";
-    font-size: .75rem;
-    background-image: none;
-    color: #777;
-    transform: translateY(-4px);
+  width: auto;
+  height: auto;
+  font-family: "Font Awesome 5 Free";
+  content: "\2b";
+  font-size: .75rem;
+  background-image: none;
+  color: #777;
+  transform: translateY(-4px);
 }
+
 .accordion-button:not(.collapsed)::after {
-    width: auto;
-    height: auto;
-    background-image: none;
-    font-family: "Font Awesome 5 Free";
-    content: "\f068";
-    font-size: .75rem;
-    transform: translate(-5px, -4px);
-    transform: rotate(0deg);
+  width: auto;
+  height: auto;
+  background-image: none;
+  font-family: "Font Awesome 5 Free";
+  content: "\f068";
+  font-size: .75rem;
+  transform: translate(-5px, -4px);
+  transform: rotate(0deg);
 }
 
 .accordion-button:not(.collapsed) {
@@ -244,11 +248,9 @@ ul.cols {
   padding: 10px 0;
 }
 
-
 .form-control {
   padding: .375rem .75rem;
 }
-
 
 .summary-desc {
   text-transform: uppercase;
@@ -269,10 +271,35 @@ ul.cols {
   position: fixed;
   bottom: -330px;
   left: -430px;
-  z-index:-9999;
+  z-index: -9999;
   opacity: .15;
 }
 
 .img-layer img {
   width: 800px;
+}
+
+.hover-text {
+  display: none;
+}
+
+button:hover .hover-text {
+  display: inline-block;
+}
+
+.source-container {
+  min-height: 110vh;
+  overflow: visible;
+  max-width: 100%;
+}
+
+img {
+  image-rendering: crisp-edges !important;
+}
+
+.back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
 }

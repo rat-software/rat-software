@@ -11,7 +11,7 @@ def run_study(id):
     # set scraper/study status to running
     study = Study.query.get_or_404(id)
 
-    study.status = 3
+    study.status = 1
     study.updated_at = datetime.now()
 
     # create scraper for each search engine and each query
@@ -28,7 +28,7 @@ def run_study(id):
             scraper.created_at = datetime.now()
             scraper.type = 1 #1: regular study; 2: pre-test
 
-            scraper.query = query
+            scraper.query_ = query
             scraper.searchengine = searchengine
             scraper.study = study
 
@@ -63,7 +63,7 @@ def run_pretest(id):
             scraper.created_at = datetime.now()
             scraper.type = 2 #1: regular study; 2: pre-test
 
-            scraper.query = query
+            scraper.query_ = query
             scraper.searchengine = searchengine
             scraper.study = study
 

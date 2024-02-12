@@ -1,5 +1,5 @@
 from .. import app, db
-from ..forms import QuestionForm, AnswerForm
+from ..forms import QuestionForm, AnswerForm, ConfirmationForm
 from ..models import Study, Option, QuestionType, Question
 from ..helpers import get_options
 from flask import render_template, flash, redirect, url_for, request
@@ -25,10 +25,6 @@ def question(id):
     question = Question.query.get_or_404(id)
     form = get_options(question)
 
-    if form.is_submitted():
-        flash('Boop', 'success')
-        print(form.data)
-
     return render_template("questions/question.html",
                            question=question,
                            form=form)
@@ -37,13 +33,15 @@ def question(id):
 @app.route("/study/<id>/question/new", methods=["GET", "POST"])
 @login_required
 def new_question(id):
+    study = Study.query.get(id)
+    q_count = db.session.query(Question).filter(Question.study == study).count()
+    q_pos = q_count + 1
     form = QuestionForm()
     form.q_type.choices = [(q.display, q.name)
                            for q in QuestionType.query.all()]
 
-
-    q = QuestionType.query.get(3)
-    form.q_type.choices = [(q.display, q.name)]
+    form.q_type.choices = [(q.display, q.name)
+                           for q in QuestionType.query.all()]
 
     if form.is_submitted():
         # set position counter to one for options
@@ -82,9 +80,9 @@ def new_question(id):
 
         q = Question()
         q.title = form.text.data
-        q.description = form.description.data
+        #q.description = form.description.data
         q.questiontype = type
-        q.interval = form.interval.data
+        #q.interval = form.interval.data
         q.position = form.position.data
         q.study = Study.query.get(id)
         q.options.extend(options)
@@ -101,11 +99,35 @@ def new_question(id):
         flash("Your question has been created.", "success")
         return redirect(url_for("study", id=id))
 
-    return render_template("questions/new_question.html", form=form)
+    return render_template("questions/new_question.html", form=form, q_pos=q_pos)
 
 
-#@app.route("/question/<id>/delete", methods=["GET", "POST"])
-#def delete_question(id):
+@app.route("/question/<id>/delete", methods=["GET", "POST"])
+def delete_question(id):
     # get question
+    question = Question.query.get_or_404(id)
+    form = ConfirmationForm()
+
+    if form.is_submitted():
+        if form.submit.data:
+
+            study_id = question.study.id
+
+            for answer in question.answers:
+                db.session.delete(answer)
+
+            for option in question.options:
+                db.session.delete(option)
+            db.session.delete(question)
+
+            db.session.commit()
+
+            flash('Question deleted', 'success')
+            return redirect(url_for('study', id=study_id))
+
+    return render_template('questions/delete_question.html',
+                           form=form,
+                           question=question)
+
     # delete question
     # delete all related options and answers

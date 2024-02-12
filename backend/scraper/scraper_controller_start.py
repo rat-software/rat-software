@@ -1,3 +1,20 @@
+"""
+ScraperController
+
+This class represents a controller for managing the execution of scraper jobs.
+
+Methods:
+    __init__(): Initializes the ScraperController object.
+    __del__(): Destructor for the ScraperController object.
+    start(workingdir): Starts the scraper and reset jobs in separate threads.
+
+Example:
+    scraper_controller = ScraperController()
+    scraper_controller.start(workingdir)
+    del scraper_controller
+"""
+
+
 #processing libraries
 import threading
 from subprocess import call
@@ -14,13 +31,6 @@ import os
 import inspect
 
 class ScraperController:
-
-    """SourcesController"""
-    args: list
-    """The args for the controller to stop it
-    \nparam: args[0]:list = name of browser process (chrome, chromium, firefox)
-    \nparam: db:object = Database object
-    """
 
     def __init__(self):
         self = self

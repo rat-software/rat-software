@@ -1,3 +1,46 @@
+"""
+Scraper
+
+This class represents a scraper object that is responsible for scraping search results.
+
+Methods:
+    __init__(): Initializes the Scraper object.
+    __del__(): Destructor for the Scraper object.
+    scrape(scraper_jobs, db, scraping, job_server): Performs the scraping of search results.
+
+Args:
+    scraper_jobs (list): List of scraper jobs to be executed.
+    db (object): Database object.
+    scraping (object): Scraping object.
+    job_server (str): Job server information.
+
+Example:
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    parentdir = os.path.dirname(currentdir)
+
+    helper = Helper()
+
+    scraping = Scraping()
+
+    db_cnf = currentdir+"/../config/config_db.ini"
+
+    db_cnf = helper.file_to_dict(db_cnf)
+
+    db = DB(db_cnf)
+
+    path_sources_cnf = currentdir+"/../config/config_sources.ini"
+
+    sources_cnf = helper.file_to_dict(path_sources_cnf)
+
+    job_server = sources_cnf['job_server']
+
+    scraper_jobs = db.get_scraper_jobs()
+
+    scraper = Scraper()
+
+    scraper.scrape(scraper_jobs, db, scraping, job_server)
+"""
+
 import json
 import importlib
 
@@ -12,6 +55,8 @@ from libs.lib_helper import *
 from libs.lib_scraping import *
 
 class Scraper:
+
+
 
     def __init__(self):
         self = self
@@ -50,7 +95,7 @@ class Scraper:
                     if db.check_scraper_progress(scraper_id):
 
                         scraper = importlib.import_module(mod_folder)
-                        scraping_results = scraper.run(query, limit, scraping, headless = 1)
+                        scraping_results = scraper.run(query, limit, scraping, True)
 
                         if scraping_results != -1:
 

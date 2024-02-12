@@ -14,6 +14,12 @@ job_defaults = {
 }
 
 def job():
+    """
+    Job function for resetting the scraper.
+
+    Returns:
+        None
+    """
 
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
@@ -29,8 +35,15 @@ def job():
 
 if __name__ == '__main__':
 
+    """
+    Entry point for running the scraper reset job.
+
+    Returns:
+        None
+    """
+
     scheduler = BackgroundScheduler(job_defaults=job_defaults, timezone='Europe/Berlin')
-    scheduler.add_job(job, 'interval', hours=6, next_run_time=datetime.now())
+    scheduler.add_job(job, 'interval', hours=1, next_run_time=datetime.now())
     scheduler.start()
 
     try:

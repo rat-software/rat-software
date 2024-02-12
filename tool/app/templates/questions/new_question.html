@@ -20,24 +20,9 @@
       </div>
       <div class="mb-3">
         {{ form.position.label(class_="form-label") }}
-        {{ form.position(class_="form-control") }}
+        {{ form.position(class_="form-control", value=q_pos) }}
       </div>
-      <div class="mb-3">
-        {{ form.description.label(class_="form-label") }}
-        {{ form.description(class_="form-control") }}
-      </div>
-      <!--<div class="mb-3">
-        {{ form.interval.label(class_="form-label") }}
-        {% for radio in form.interval %}
-        <div class="form-check form-check">
-          {{ radio(class_="form-check-input") }}
-          {{ radio.label(class_="form-check-label") }}
-        </div>
-        {% endfor %}
-      </div>-->
-
-      <div id="options-wrapper">
-      <!--<div id="options-wrapper" class="visually-hidden">-->
+      <div id="options-wrapper" class="visually-hidden">
       <div class="mb-3  mt-4">
         {{ form.options.label }} (Labels and Values can be adjusted individually)
       </div>
@@ -69,14 +54,14 @@
         {% endfor %}
         </div>
 
-            <!--<div class="mb-3 col">
+            <div class="mb-3 col">
                 <a class="btn btn-outline-success btn-sm me-1" onclick="addOptions()">
                   <i class="fas fa-plus"></i> More Options
                 </a>
                 <a class="btn btn-outline-danger btn-sm" onclick="removeOptions()">
                   <i class="fas fa-minus"></i> Less Options
                 </a>
-            </div>-->
+            </div>
         </div>
 
         <div id="range-wrapper" class="visually-hidden">
@@ -84,6 +69,16 @@
           {{ form.ranges.label }}
         </div>
           {% for ranges in form.ranges %}
+          <div class="row">
+            <div class="mb-3 col-4">
+            {{ ranges.form.start_text.label(class_="form-label") }}
+            {{ ranges.form.start_text(class_="form-control") }}
+            </div>
+            <div class="mb-3 col-4">
+            {{ ranges.form.stop_text.label(class_="form-label") }}
+            {{ ranges.form.stop_text(class_="form-control") }}
+            </div>
+          </div>
           <div class="row">
             <div class="mb-3 col-4">
             {{ ranges.form.start.label(class_="form-label") }}
@@ -110,3 +105,19 @@
   </div>
 </div>
 {% endblock %}
+
+
+<!-- <div class="mb-3">
+        {{ form.description.label(class_="form-label") }}
+        {{ form.description(class_="form-control") }}
+      </div>
+      <div class="mb-3">
+        {{ form.interval.label(class_="form-label") }}
+        {% for radio in form.interval %}
+        <div class="form-check form-check">
+          {{ radio(class_="form-check-input") }}
+          {{ radio.label(class_="form-check-label") }}
+        </div>
+        {% endfor %}
+      </div>
+-->

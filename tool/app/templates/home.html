@@ -15,9 +15,30 @@
     </p>
     <a href="{{url_for('security.login')}}" class="btn btn-primary rounded-pill">Launch Demo</a>
     <a href="{{url_for('about')}}" class="ms-2 btn btn-outline-secondary rounded-pill">Learn More</a>
+    <button type="button" class="ms-2 btn btn-outline-secondary rounded-pill" data-bs-toggle="modal" data-bs-target="#video">
+      <i class="fa-solid fa-play"></i><span class="hover-text ps-1">Watch Screencast</span>
+    </button>
   </div>
   <div class="col-4 offset-md-1 pt-2">
     <img src="{{ url_for('static', filename='img/rat_intro.png')}}" alt="" class="w-100 pt-5">
+  </div>
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="video" tabindex="-1" aria-labelledby="videoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title crd-header" id="exampleModalLabel">RAT Demo Screencast</h3>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <video width="100%" controls>
+          <source src="{{ url_for('static', filename='video/RAT-Demo.mp4') }}" type="video/mp4">
+        </video>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

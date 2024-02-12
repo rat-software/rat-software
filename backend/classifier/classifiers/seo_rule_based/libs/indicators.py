@@ -2,43 +2,43 @@ import fnmatch
 from urllib.parse import urlparse
 import csv
 import json
-from lxml import html
-from bs4 import BeautifulSoup
 import time
 import os
-
-import os
-import sys
 import inspect
-
-#library with functions for web scraping
-
-#import external libraries
-
-#library with functions for web scraping
-
-#import external libraries
-
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-
-from selenium.common.exceptions import TimeoutException #used to interrupt loding of websites and needed as workaround to download files with selenium
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains #used to simulate pressing of a key
+from selenium.common.exceptions import TimeoutException
+from bs4 import BeautifulSoup
 
 options = Options()
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--headless=new')
 
-#function to get the content of a robots.txt file of a domain. it is necessary to get the main url first
+def create_webdriver():
+    return webdriver.Chrome(options=options)
+
+def read_config_file(filename):
+    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    parentdir = os.path.dirname(currentdir)
+    with open(os.path.join(parentdir, filename), 'r') as f:
+        return json.load(f)
+
 def save_robot_txt(main):
+    """
+    Function to get the content of a robots.txt file of a domain.
+
+    Args:
+        main (str): The main URL of the website.
+
+    Returns:
+        str: The content of the robots.txt file, or False if it cannot be retrieved.
+    """
     url = main+'/robots.txt'
     if ("https://" or "http://") not in url:
         url = "https://"+url
 
-    driver = webdriver.Chrome(options=options)
+    driver = create_webdriver()
     driver.set_page_load_timeout(10)
     try:
         driver.get(url)
@@ -52,9 +52,18 @@ def save_robot_txt(main):
 
     return code
 
-#function to calculate the loading time of an url
+
 def calculate_loading_time(url):
-    driver = webdriver.Chrome(options=options)
+    """
+    Function to calculate the loading time of a URL.
+
+    Args:
+        url (str): The URL to calculate the loading time for.
+
+    Returns:
+        float: The loading time in seconds, or -1 if it cannot be calculated.
+    """
+    driver = create_webdriver()
     driver.set_page_load_timeout(10)
     loading_time = -1
 
@@ -80,12 +89,31 @@ def calculate_loading_time(url):
     return loading_time
 
 def match_text(text, pattern):
+    """
+    Function to check if a text matches a pattern using wildcard characters.
+
+    Args:
+        text (str): The text to check.
+        pattern (str): The pattern to match against.
+
+    Returns:
+        bool: True if the text matches the pattern, False otherwise.
+    """
     text = text.lower()
     pattern= pattern.lower()
     check = fnmatch.fnmatch(text, pattern)
     return check
 
 def is_valid_url(url):
+    """
+    Function to check if a URL is valid.
+
+    Args:
+        url (str): The URL to check.
+
+    Returns:
+        bool: True if the URL is valid, False otherwise.
+    """
     try:
         parsed = urlparse(url)
         return bool(parsed.netloc) and bool(parsed.scheme)
@@ -93,14 +121,42 @@ def is_valid_url(url):
         return False
 
 def get_scheme(url):
+    """
+    Function to get the scheme (http or https) of a URL.
+
+    Args:
+        url (str): The URL to get the scheme from.
+
+    Returns:
+        str: The scheme of the URL.
+    """
     parsed = urlparse(url)
     return parsed.scheme
 
 def get_netloc(url):
+    """
+    Function to get the netloc (domain) of a URL.
+
+    Args:
+        url (str): The URL to get the netloc from.
+
+    Returns:
+        str: The netloc of the URL.
+    """
     parsed = urlparse(url)
     return parsed.netloc
 
 def get_hyperlinks(source, main):
+    """
+    Function to extract hyperlinks from the source code of a webpage.
+
+    Args:
+        source (str): The source code of the webpage.
+        main (str): The main URL of the website.
+
+    Returns:
+        str: The extracted hyperlinks.
+    """
     hyperlinks = ""
 
     if source !="error":
@@ -125,11 +181,16 @@ def get_hyperlinks(source, main):
         return hyperlinks
 
 def get_plugins():
+    """
+    Function to get the list of plugins from the configuration file.
 
+    Returns:
+        list: The list of plugins.
+    """
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
-    with open(parentdir+'/config/evaluation.ini', 'r') as f:
+    with open(os.path.join(parentdir, 'config/evaluation.ini'), 'r') as f:
         array = json.load(f)
 
     plugins_json = array["text-match"]
@@ -138,7 +199,7 @@ def get_plugins():
     for get_plugin in plugins_json:
         name = get_plugin
         source = plugins_json[name]["source"]
-        source = parentdir+source
+        source = os.path.join(parentdir, source)
         with open(source, 'r') as csvfile:
             csv_result = csv.reader(csvfile, delimiter=',', quotechar='"')
             source = list(csv_result)
@@ -151,11 +212,16 @@ def get_plugins():
     return plugins
 
 def get_sources():
+    """
+    Function to get the list of sources from the configuration file.
 
+    Returns:
+        list: The list of sources.
+    """
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
-    with open(parentdir+'/config/sources.ini', 'r') as f:
+    with open(os.path.join(parentdir, 'config/sources.ini'), 'r') as f:
         array = json.load(f)
 
     sources_json = array["text-match"]
@@ -164,7 +230,7 @@ def get_sources():
     for get_source in sources_json:
         name = get_source
         source = sources_json[name]["source"]
-        source = parentdir+source
+        source = os.path.join(parentdir, source)
         with open(source, 'r') as csvfile:
             csv_result = csv.reader(csvfile, delimiter=',', quotechar='"')
             source = list(csv_result)
@@ -178,6 +244,15 @@ def get_sources():
 
 
 def identify_url_length(url):
+    """
+    Function to identify the length of a URL.
+
+    Args:
+        url (str): The URL to identify the length of.
+
+    Returns:
+        str: The length of the URL.
+    """
     result = -1
     url = url.replace("www.", "")
 
@@ -192,6 +267,15 @@ def identify_url_length(url):
     return result
 
 def identify_https(url):
+    """
+    Function to identify if a URL uses HTTPS.
+
+    Args:
+        url (str): The URL to identify.
+
+    Returns:
+        int: 1 if the URL uses HTTPS, 0 otherwise.
+    """
     scheme = get_scheme(url)
     result = 0
 
@@ -201,12 +285,20 @@ def identify_https(url):
     return result
 
 def identify_micros(source):
+    """
+    Function to identify microdata/microformats in the source code of a webpage.
 
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        list: The list of identified microdata/microformats.
+    """
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
     micros_list = []
-    with open(parentdir+'/lists/micro.csv', 'r') as csvfile:
+    with open(os.path.join(parentdir, 'lists/micro.csv'), 'r') as csvfile:
         micros = csv.reader(csvfile)
         for m in micros:
             module = m[0]
@@ -223,13 +315,18 @@ def identify_micros(source):
         if match_text(source, pattern):
             micros_found.append(obj)
 
-
-
     return micros_found
 
-
 def identify_og(source):
+    """
+    Function to identify if Open Graph tags are present in the source code of a webpage.
 
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: 1 if Open Graph tags are present, 0 otherwise.
+    """
     pattern = '<*meta*og:*>'
     result = 0
 
@@ -239,7 +336,15 @@ def identify_og(source):
     return result
 
 def identify_viewport(source):
+    """
+    Function to identify if a viewport meta tag is present in the source code of a webpage.
 
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: 1 if a viewport meta tag is present, 0 otherwise.
+    """
     pattern = '*meta*name*viewport*'
     result = 0
 
@@ -249,17 +354,33 @@ def identify_viewport(source):
     return result
 
 def identify_sitemap(source):
+    """
+    Function to identify if a sitemap link is present in the source code of a webpage.
 
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: 1 if a sitemap link is present, 0 otherwise.
+    """
     pattern = "*a*href*sitemap*"
     result = 0
 
     if (match_text(source, pattern)):
         result = 1
 
-
     return result
 
 def identify_wordpress(source):
+    """
+    Function to identify if a webpage is built with WordPress based on the source code.
+
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: 1 if the webpage is built with WordPress, 0 otherwise.
+    """
     tree = html.fromstring(source)
     xpath = "//meta[@name='generator']/@content"
     content = tree.xpath(xpath)
@@ -276,6 +397,15 @@ def identify_wordpress(source):
     return result
 
 def identify_canonical(source):
+    """
+    Function to identify the number of canonical links in the source code of a webpage.
+
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: The number of canonical links.
+    """
     tree = html.fromstring(source)
     xpath = '//a[@rel="canonical"] | //link[@rel="canonical"]'
     hyperlink_counter = 0
@@ -288,6 +418,15 @@ def identify_canonical(source):
     return hyperlink_counter
 
 def identify_nofollow(source):
+    """
+    Function to identify the number of nofollow links in the source code of a webpage.
+
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: The number of nofollow links.
+    """
     tree = html.fromstring(source)
     xpath_code = '//a[@rel="nofollow"]'
     hyperlink_counter = 0
@@ -308,6 +447,15 @@ def identify_nofollow(source):
     return hyperlink_counter
 
 def identify_h1(source):
+    """
+    Function to identify the number of H1 tags in the source code of a webpage.
+
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: The number of H1 tags.
+    """
     tree = html.fromstring(source)
     xpath = "//h1/text()"
     counter = 0
@@ -318,9 +466,17 @@ def identify_h1(source):
 
     return counter
 
-
 def identify_keywords_in_source(source, search_query):
+    """
+    Function to identify the number of occurrences of keywords in the source code of a webpage.
 
+    Args:
+        source (str): The source code of the webpage.
+        search_query (str): The search query containing the keywords.
+
+    Returns:
+        int: The number of occurrences of keywords.
+    """
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
@@ -330,7 +486,7 @@ def identify_keywords_in_source(source, search_query):
 
     tree = html.fromstring(source)
 
-    with open(parentdir+'/config/kw.ini', 'r') as f:
+    with open(os.path.join(parentdir, 'config/kw.ini'), 'r') as f:
         array = json.load(f)
 
     kw_array = array['keywords']
@@ -346,22 +502,38 @@ def identify_keywords_in_source(source, search_query):
 
     return counter
 
-
 def identify_keywords_in_url(url, search_query):
+    """
+    Function to identify the number of occurrences of keywords in a URL.
 
-        counter = 0
+    Args:
+        url (str): The URL to check.
+        search_query (str): The search query containing the keywords.
 
-        keywords = search_query.split()
+    Returns:
+        int: The number of occurrences of keywords.
+    """
+    counter = 0
 
-        for kw in keywords:
-            if kw.lower() in url.lower():
-                counter = counter + 1
+    keywords = search_query.split()
 
-        return counter
+    for kw in keywords:
+        if kw.lower() in url.lower():
+            counter = counter + 1
 
+    return counter
 
 def identify_keyword_density(source, search_query):
+    """
+    Function to identify the keyword density in the source code of a webpage.
 
+    Args:
+        source (str): The source code of the webpage.
+        search_query (str): The search query containing the keywords.
+
+    Returns:
+        float: The keyword density.
+    """
     soup = BeautifulSoup(source, 'lxml')
 
     w_counter = 0
@@ -407,7 +579,15 @@ def identify_keyword_density(source, search_query):
         return kw_density
 
 def identify_description(source):
+    """
+    Function to identify if a webpage has a meta description.
 
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: 1 if a meta description is present, 0 otherwise.
+    """
     source = source.lower()
 
     tree = html.fromstring(source)
@@ -430,6 +610,15 @@ def identify_description(source):
     return result
 
 def identify_title(source):
+    """
+    Function to identify if a webpage has a title.
+
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        int: 1 if a title is present, 0 otherwise.
+    """
     source = source.lower()
     tree = html.fromstring(source)
     result = 0
@@ -449,6 +638,16 @@ def identify_title(source):
     return result
 
 def identify_hyperlinks(hyperlinks, main):
+    """
+    Function to identify the number of internal and external hyperlinks in a webpage.
+
+    Args:
+        hyperlinks (str): The extracted hyperlinks from the webpage.
+        main (str): The main URL of the website.
+
+    Returns:
+        dict: The number of internal and external hyperlinks.
+    """
     link = ""
     internal_links = 0
     external_links = 0
@@ -480,7 +679,15 @@ def identify_hyperlinks(hyperlinks, main):
     return hyper_links_counter
 
 def identify_plugins(source):
+    """
+    Function to identify the plugins used in a webpage based on the source code.
 
+    Args:
+        source (str): The source code of the webpage.
+
+    Returns:
+        dict: The identified plugins.
+    """
     plugins = get_plugins()
     found_plugins = {}
 
@@ -499,10 +706,18 @@ def identify_plugins(source):
             update = {plugin_type:plugin_names}
             found_plugins.update(update)
 
-
     return found_plugins
 
 def identify_sources(main):
+    """
+    Function to identify the sources used in a webpage based on the main URL.
+
+    Args:
+        main (str): The main URL of the website.
+
+    Returns:
+        dict: The identified sources.
+    """
     sources = get_sources()
     found_urls = {}
 
@@ -528,7 +743,15 @@ def identify_sources(main):
     return found_urls
 
 def identify_robots_txt(main):
+    """
+    Function to identify if a webpage has a robots.txt file.
 
+    Args:
+        main (str): The main URL of the website.
+
+    Returns:
+        int: 1 if a robots.txt file is present, 0 otherwise.
+    """
     result = 0
 
     try:

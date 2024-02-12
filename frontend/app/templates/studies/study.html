@@ -1,0 +1,312 @@
+{% extends "master.html" %}
+
+{% block title %}Study{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="pb-4">
+    <a class="text-dark" href="{{ url_for('dashboard') }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard</a>
+  </div>
+  <div class="col pb-4">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="hstack">
+          <div class="crd-header">Search Results Collection</div>
+        </div>
+
+        <div class="py-2">
+          {% if study.status == 0 %}
+            Status: Open.
+          {% elif study.status == -1 %}
+            Status: Oops. Something went wrong. Please contact us.
+          {% elif study.status == 1 %}
+            Status: Collection running.
+          {% elif study.status == 2 %}
+            Status: Collection finished.
+          {% elif study.status == 3 %}
+            {% if study.answers | length == 0 %}
+              Status: Collection finished.
+            {% else %}
+              Status: Assessments finished.
+            {% endif %}
+          {% elif study.status == 4 %}
+            Status: Archived.
+          {% endif %}
+
+          {% if study.results | length == 0 %}
+            {% if study.status != -1 %}
+              No results yet.
+            {% endif %}
+          {% else %}
+          {{ results }} Results collected.
+          {% endif %}
+        </div>
+
+        <!--<a href="{{ url_for('run_pretest', id=study.id) }}" class="btn btn-sm btn-primary float-end"><i class="fa-solid fa-play"></i> Pre-Test</a>-->
+        {% if study.status == 0 %}
+        <!-- Button trigger modal -->
+        <button type="button" class="btn btn-sm btn-outline-primary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy">
+          <i class="fa-solid fa-forward-step"></i> Start
+        </button>
+        {% elif study.status == 3 %}
+        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#closeStudy">
+          <i class="fa-regular fa-circle-stop"></i> Archive
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy" disabled>
+          <i class="fa-solid fa-forward-step"></i> Started
+        </button>
+        {% endif %}
+
+        <!-- Modal -->
+        <div class="modal fade" id="startStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title crd-header" id="exampleModalLabel">Warning</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Once you start the result collection <b class="text-danger">you won't be able to edit your search queries and selected search engines</b>.</p>
+                <p>Do you want to start the collection of results anyway and loose the ability to edit your study settings?</p>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-sm btn-danger" data-bs-dismiss="modal" aria-label="Close">No, I want to edit my study</button>
+                <a href="{{ url_for('run_study', id=study.id) }}" class="btn btn-sm btn-success float-end">Yes, I am ready to start</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="closeStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title crd-header" id="exampleModalLabel">Warning</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Once you close the study <b class="text-danger">you won't be able to add more participants to assess your results</b>.</p>
+                <p>Do you want to close the study anyway and archive the results of your study?</p>
+              </div>
+              <div class="modal-footer">
+                <a href="{{ url_for('close_study', id=study.id) }}" class="btn btn-sm btn-danger float-end">Yes, I am ready to close</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="hstack">
+          <div class="crd-header">Search Tasks & Questions</div>
+        </div>
+        <div class="py-2">
+          {% if study.questions | length == 0 %}
+          No questions yet. <a href="{{ url_for('new_question', id=study.id) }}">Create one!</a>
+          {% elif study.questions | length == 1 %}
+          {{ study.questions | length }} Question
+          {% else %}
+          {{ study.questions | length }} Questions
+          {% endif %}
+        </div>
+
+        <!--<div class="dropdown float-end">
+          <a class="btn btn-outline-primary btn-sm dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa-solid fa-plus"></i> Add...
+          </a>
+
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+            <li><a class="dropdown-item" href="#">Search Task</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('new_question', id=study.id) }}">Question</a></li>
+          </ul>
+        </div>-->
+        <a href="{{ url_for('new_question', id=study.id) }}" class="btn btn-outline-primary btn-sm float-end"><i class="fa-solid fa-plus"></i> Add Question</a>
+
+
+        {% if study.questions | length != 0 %}
+        <a href="{{ url_for('questions', id=study.id) }}" class="btn btn-outline-secondary btn-sm float-end me-2"><i class="fa-solid fa-eye"></i> View</a>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  {% if ((study.results | length) > 0) and (study.status >= 2 ) %}
+  <div class="col">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">Participants</div>
+        </div>
+
+        <div class="py-2">
+          {% if study.participants | length == 0 %}
+          No participants yet. <a href="" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
+            Invite one
+          </a>
+          {% else %}
+          Number of registered participants: {{ study.participants | length }}
+          {% endif %}
+        </div>
+
+        <!-- Button trigger modal -->
+        <button type="button" class="btn btn-outline-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
+          <i class="fa-solid fa-user-plus"></i> Get initivation link
+        </button>
+
+        <!-- Modal -->
+        <div class="modal fade" id="inviteURLmodal" tabindex="-1" aria-labelledby="inviteURLLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title crd-header">Invitation URL</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body p-4 text-center">
+                <p>Use this URL to invite participants to join your study:</p>
+
+                <div class="input-group mb-3">
+                  <input type="text" id="inviteURL" class="form-control" aria-describedby="inviteBTN" value="{{ base }}join/{{ study.id }}" disabled />
+                  <!--<button class="btn btn-outline-secondary" type="button" id="inviteBTN" onclick="copyURL(inviteURL, inviteBTN)">
+                    <i class="fa-solid fa-clipboard"></i> Copy
+                  </button>-->
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        {% if study.participants | length != 0 %}
+        <a class="btn btn-outline-secondary btn-sm float-end me-2" href="{{ url_for('participants', id=study.id) }}">
+          <i class="fa-solid fa-eye"></i> View
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row">
+  <div class="col-12 pb-4">
+    <div class="row justify-content-center">
+      <div class="col">
+        <div class="card">
+          <div class="card-body">
+            <div class="row">
+              <div class="crd-header col">
+                Study Summary
+              </div>
+
+              <div class="dropdown text-end col">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fa-solid fa-gear"></i> Settings
+                </button>
+                <ul class="dropdown-menu">
+                  {% if study.status == 0 %}
+                  <li><a class="dropdown-item" href="{{ url_for('edit_study', id=study.id) }}"><i class="fa-solid fa-pen"></i> Edit Study</a></li>
+                  {% endif %}
+                  <!--<li><a class="dropdown-item" href="#"><i class="fa-solid fa-lock"></i> Manage Access</a></li>-->
+                  <li><a class="dropdown-item text-danger" href="{{ url_for('delete_study', id=study.id) }}"><i class="fa-solid fa-trash-can"></i> Delete Study</a></li>
+                </ul>
+              </div>
+            </div>
+
+            <h4 class="mb-0 py-2">{{ study.name }}</h4>
+            <p class="text-muted">
+              {% for user in study.users %}
+                <span class="pe-2">{{ user.username }}</span>
+              {% endfor %}
+            </p>
+            <p class="text-muted mb-4">{{ study.description }}</p>
+
+            <div class="col mb-4">
+              <div class="row">
+                <div class="col-4 pl-0">
+                  <div class="summary-desc">Study Type</div>
+                  {{ study.studytype.name }}
+
+                </div>
+                <div class="col-4 border-start">
+                  <div class="summary-desc">Result Type</div>
+                  {{ study.resulttype.name }}
+
+                </div>
+                <div class="col-4 border-start">
+                  <div class="summary-desc">Result Count</div>
+                  {{ study.result_count }}
+                </div>
+              </div>
+            </div>
+
+            <div class="col">
+              <div class="row">
+                <div class="col-12 pl-0 mb-4">
+                  <div class="summary-desc">Search Engines</div>
+                  {% for e in study.searchengines %}
+                  <span class="badge rounded-pill bg-primary mr-2">{{ e.name }}</span>
+                  {% endfor %}
+                </div>
+                <div class="col-12 pl-0 mb-4">
+                  <div class="summary-desc">Search Task</div>
+                  {{ study.task }}
+                </div>
+                <div class="col-12 pl-0">
+                  <div class="summary-desc">
+                    Search Queries
+                    {% if study.queries | length > 5 %}
+                    (Showing 5 out of {{ study.queries | length }}.
+                    <a href="{{ url_for('queries', id=study.id) }}">See all <i class="fa-solid fa-arrow-up-right-from-square"></i></a>)
+                    {% endif %}
+                  </div>
+                  <p>
+                    {% for q in study.queries[:5] %}
+                    <span class="badge rounded-pill bg-primary mr-2">{{ q.query }}</span>
+                    {% endfor %}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row pb-4">
+  {% if (study.results | length) > 0 %}
+  <div class="col">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">Analysis</div>
+        </div>
+        <div class="py-2">Find general study statistics and additional data about SEO analysis and source overlap.</div>
+        <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i class="fa-solid fa-chart-simple"></i> View Analysis</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="col">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">Export</div>
+        </div>
+        <div class="py-2">Download results as Excel Tables for further use and research data management.</div>
+        <a href="{{ url_for('export', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i class="fa-solid fa-table-list"></i> Download Results</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

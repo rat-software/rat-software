@@ -1,12 +1,17 @@
 """
-Extensible class for scraping additional content from URLs stored in the database.
-\nIt is possible to add new methods here to get additional content information to a given URL. The results of the content scraping will be stored in JSON-Objects in the database.
-\nNew content methods need to be declared here and additional changes at `sources.libs.lib_sources` have to be made to implement the extension of the content dictionary. It is necessary to customize the internal function save_content(attr) and to extend the dictionary like that:
-```
-attr = {"additional_content":value_to_process} #Definition of key and value for the dictionary
-content_value = save_content(attr)
-content_dict["additional_content"] = content_value #Store the return value of the save_content(attr)-function
-```
+Content
+
+This class provides extensibility for scraping additional content from URLs stored in the database. It allows adding new methods to retrieve additional content information for a given URL. The results of the content scraping are stored as JSON objects in the database.
+
+Methods:
+    __init__(): Initializes the Content object.
+    __del__(): Destructor for the Content object.
+    get_ipinfo(ip_address): Retrieves additional information using the ipinfo.io service based on the IP address of a URL.
+
+Example:
+    content = Content()
+    ip_info = content.get_ipinfo(ip_address)
+    del content
 """
 
 #load required libs

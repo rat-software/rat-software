@@ -218,9 +218,9 @@ class Sources:
                 main = meta["main"]
             except:
                 pass
-            print(url)
             content_type = ""
             status_code = -1
+            
             try:
                 response = requests.get(url,  verify=False, timeout=10, headers ={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"})
                 status_code = response.status_code
@@ -241,8 +241,13 @@ class Sources:
 
             if status_code == 302:
                 status_code = 200
+
+            
+
+            if status_code != 200 and status_code != -1:
+
                 
-            if status_code != 200:
+                
                 try:
                     driver = webdriver.Chrome(options=options)
                     driver.set_page_load_timeout(sources_cnf['timeout'])
@@ -250,7 +255,7 @@ class Sources:
                     driver.get(url)
 
                 # Access requests via the `requests` attribute
-                    for request in driver.requests:
+                    for request in driver.requests:   
 
                         if url or main in request.url:
                             status_code = request.response.status_code
@@ -264,8 +269,11 @@ class Sources:
                         status_code = 200
 
                     driver.quit()
+                    
+
                 except Exception as e:
                     print(str(e))
+               
                     pass
                 
             if "binary" in content_type:
@@ -275,11 +283,7 @@ class Sources:
                 content_type = "html"
                 
             if "plain" in content_type:
-                content_type = "html"
-
-            print(status_code)
-            print(content_type)
-            
+                content_type = "html"          
 
             dict_request = {"content_type": content_type, "status_code": status_code}
             return dict_request
@@ -326,8 +330,6 @@ class Sources:
                     time.sleep(scroll_time_in_seconds)
 
                 required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
-
-                print(required_height)
 
                 scrolling = [driver, required_height]
 

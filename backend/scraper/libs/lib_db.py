@@ -1,3 +1,25 @@
+"""
+Database class for interacting with the database.
+
+Args:
+    db_cnf (dict): Dictionary containing the database configuration.
+
+Methods:
+    __init__: Initialize the DB object.
+    __del__: Destructor for the DB object.
+    connect_to_db: Connect to the database using psycopg2.
+    get_scraper_jobs: Get scraper jobs from the database.
+    update_scraper_job: Update the progress of a scraper job in the database.
+    insert_result: Insert a result into the database.
+    insert_serp: Insert a SERP (Search Engine Results Page) into the database.
+    check_progress: Check if a result is already declared as a scraping job.
+    check_scraper_progress: Check if a scraper job is already in progress.
+    check_duplicate_result: Check if a result with the same URL, main, study, and scraper ID already exists.
+    reset: Reset the progress of scraper jobs in the database.
+    get_searchengines: Get the list of search engines from the database.
+    update_searchengine_test: Update the test field of a search engine in the database.
+"""
+
 import psycopg2
 from psycopg2.extras import execute_values
 import json
@@ -9,11 +31,19 @@ import base64
 from bs4 import BeautifulSoup
 
 class DB:
-
     def __init__(self, db_cnf: dict):
+        """
+        Initialize the DB object.
+
+        Args:
+            db_cnf (dict): Dictionary containing the database configuration.
+        """        
         self.db_cnf = db_cnf
 
     def __del__(self):
+        """
+        Destructor for the DB object.
+        """        
         print('DB Controller object destroyed')
 
     def connect_to_db(self):
@@ -24,15 +54,34 @@ class DB:
         return conn
 
     def get_scraper_jobs(self):
+        """
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0  ORDER BY scraper.id ASC  LIMIT 2")
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11  ORDER BY scraper.id ASC  LIMIT 2")
         conn.commit()
         scraper_jobs = cur.fetchall()
         conn.close()
         return scraper_jobs
 
     def update_scraper_job(self, progress, counter, error_code, job_server, scraper_id):
+        """
+        Update the progress of a scraper job in the database.
+
+        Args:
+            progress (int): Progress value.
+            counter (int): Counter value.
+            error_code (str): Error code.
+            job_server (str): Job server.
+            scraper_id (int): Scraper ID.
+
+        Returns:
+            None
+        """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("Update scraper SET progress=%s, counter=%s, error_code=%s, job_server=%s WHERE id = %s", (progress, counter, error_code, job_server, scraper_id))
@@ -41,7 +90,23 @@ class DB:
 
     def insert_result(self, title, description, url, position, created_at, main, ip, study, scraper, query, serp):
         """
-        Set a placeholder for sources in result table to prevent execution of same source scraper jobs.
+        Insert a result into the database.
+
+        Args:
+            title (str): Title of the result.
+            description (str): Description of the result.
+            url (str): URL of the result.
+            position (int): Position of the result.
+            created_at (datetime): Creation timestamp of the result.
+            main (bool): Flag indicating if it's a main result.
+            ip (str): IP address of the result.
+            study (int): Study ID.
+            scraper (int): Scraper ID.
+            query (int): Query ID.
+            serp (int): SERP ID.
+
+        Returns:
+            None
         """
         #result: id	title	description	url	position	created_at	main	ip	origin	imported	study	scraper	old_id	resulttype	monitoring	serp	query	final_url
         conn = DB.connect_to_db(self)
@@ -52,7 +117,18 @@ class DB:
 
     def insert_serp(self, scraper, page, code, img, created_at, query):
         """
-        Set a placeholder for sources in result table to prevent execution of same source scraper jobs.
+        Insert a SERP (Search Engine Results Page) into the database.
+
+        Args:
+            scraper (int): Scraper ID.
+            page (int): Page number.
+            code (str): Code of the SERP.
+            img (str): Image of the SERP.
+            created_at (datetime): Creation timestamp of the SERP.
+            query (int): Query ID.
+
+        Returns:
+            int: ID of the inserted SERP.
         """
         #serp id	scraper	page	code	img	progress	created_at	old_id	monitoring	query
         conn = DB.connect_to_db(self)
@@ -71,7 +147,14 @@ class DB:
 
     def check_progress(self, study, query_id):
         """
-        Another checkpoint to verify if a result is already declared as scraping job
+        Check if a result is already declared as a scraping job.
+
+        Args:
+            study (int): Study ID.
+            query_id (int): Query ID.
+
+        Returns:
+            bool: True if the progress is 2, False otherwise.
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -85,9 +168,14 @@ class DB:
             return False
 
     def check_scraper_progress(self, scraper_id):
-
         """
-        Another checkpoint to verify if a result is already declared as scraping job
+        Check if a scraper job is already in progress.
+
+        Args:
+            scraper_id (int): Scraper ID.
+
+        Returns:
+            bool: True if the progress is 2, False otherwise.
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -103,7 +191,16 @@ class DB:
 
     def check_duplicate_result(self, url, main, study, scraper_id):
         """
-        Another checkpoint to verify if a result is already declared as scraping job
+        Check if a result with the same URL, main, study, and scraper ID already exists.
+
+        Args:
+            url (str): URL of the result.
+            main (bool): Flag indicating if it's a main result.
+            study (int): Study ID.
+            scraper_id (int): Scraper ID.
+
+        Returns:
+            bool: True if a duplicate result exists, False otherwise.
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -118,7 +215,10 @@ class DB:
 
     def reset(self):
         """
-        Update result_source table when scraping job is done
+        Reset the progress of scraper jobs in the database.
+
+        Returns:
+            None
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -128,7 +228,10 @@ class DB:
         
     def get_searchengines(self):
         """
-        Another checkpoint to verify if a result is already declared as scraping job
+        Get the list of search engines from the database.
+
+        Returns:
+            list: List of search engines.
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -140,7 +243,14 @@ class DB:
     
     def update_searchengine_test(self, se_id, test):     
         """
-        Update result_source table when scraping job is done
+        Update the test field of a search engine in the database.
+
+        Args:
+            se_id (int): Search engine ID.
+            test (str): Test value.
+
+        Returns:
+            None
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)

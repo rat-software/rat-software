@@ -1,58 +1,126 @@
-"""
-Example classifier with all relevant functions to work with the scraped data.
-\nTutorial to create your classifier:
-1. First item
-2. Second item
-"""
+'''
+Classifier template
+'''
 
+import os
+import inspect
+import sys
 
-class Classifier:
+def main(classifier_id, db, helper):
+    """
+    Main function for the classifier.
 
-    """Classifier"""
-    args: list
-    """The args for the controller to stop it
-    \nparam: args[0]:list = name of browser process (chrome, chromium, firefox)
-    \nparam: db:object = Database object
+    Args:
+        classifier_id (int): The ID of the classifier.
+        db: An instance of the DB class for database operations.
+        helper: An instance of the helper class for helper functions.
+
+    Returns:
+        None
     """
 
-    def __init__(self, classifier_id, db, helper):
-        self = self
-        self.classifier_id = classifier_id
-        self.db = db
-        self.helper = helper
-
-    def __del__(self):
-        print('Classifier object destroyed')
-
-    def get_results(self):
-        results = self.db.get_results(self.classifier_id)
-        return results
-
-    def classifiy_results(self, results):
-
+    def check_for_duplicates(check_dup):
         """
-        Function to classify results. First step is storing some placeholder progresses in the database for the classification_results before reading the available data for custom classifiers.
-        While the function is developed to run parallel several steps are taken to ensure that no duplicates will be saved. There are also loops to check if results with same data are classified already. If that's the case, the script copies
-        the stored results and assigns them to the result_id. Such checks are also done for indicators. Some strict rules are applied here to work just with data which were scraped successfully. To check that just documents with a server status code of 200
-        will be classified.
-        """
+        Check for duplicate classification results.
 
-        data = {}
+        Args:
+            check_dup: The check for duplicates.
+
+        Returns:
+            bool: False if there are more than 1000 duplicates, True otherwise.
+        """
+        if len(check_dup) > 1000:
+            result_sources = db.duplicate_classification_result(source_id)
+
+            for result_source in result_sources:
+                rs = result_source[0]
+                classifier_result = db.get_classifier_result(rs)
+                if classifier_result:
+                    result_indicators = db.get_indicators(rs)
+                    break
+
+            for result_source in result_sources:
+                rs = result_source[0]
+                classifier_result = db.get_classifier_result(rs)
+                if classifier_result:
+                    insert_classification = classifier_result[0][0]
+                    break
+                else:
+                    insert_classification = False
+
+            for result_source in result_sources:
+                rs = result_source[0]
+                classifier_result = db.get_classifier_result(rs)
+
+                if not classifier_result and insert_classification:
+                    if not db.check_classification_result(classifier_id, rs):
+                        db.insert_classification_result(classifier_id, insert_classification, rs)
+
+                if not classifier_result and insert_classification:
+                    for ri in result_indicators:
+                        indicator = ri[1]
+                        value = ri[2]
+                        if not db.check_indicator_result(classifier_id, rs) and indicator and value:
+                            db.insert_indicator(indicator, value, classifier_id, rs)
+
+            if insert_classification:
+                db.update_classification_result(classifier_id, insert_classification, result_id)
+
+            return False
+        else:
+            return True
+
+    def classify_results(results):
+        """
+        Classify the results based on the provided data.
+
+        Args:
+            results (list): The results to classify.
+
+        Returns:
+            None
+        """
+        def write_indicators_to_db(indicators, result):
+            """
+            Write indicators to the database.
+
+            Args:
+                indicators (dict): The indicators to write.
+                result: The result to associate the indicators with.
+
+            Returns:
+                None
+            """
+            for key, ind in indicators.items():
+                if type(ind) != list and type(ind) is not dict:
+                    indicator = key
+                    insert_result = str(ind)
+                    db.insert_indicator(indicator, insert_result, classifier_id, result)
+                else:
+                    if type(ind) is list:
+                        indicator = key
+                        insert_result = ", ".join(ind)
+                        db.insert_indicator(indicator, insert_result, classifier_id, result)
+                    if type(ind) is dict:
+                        for k, v in ind.items():
+                            indicator = k
+                            insert_result = v
+                            if type(v) is list:
+                                insert_result = ", ".join(v)
+                            else:
+                                insert_result = str(v)
+                            db.insert_indicator(indicator, insert_result, classifier_id, result)
 
         for result in results:
-            '''Function to block a result to classify'''
             result_id = result['id']
             db.insert_classification_result(classifier_id, "in process", result_id)
 
         for result in results:
             data = {}
-
-            for k,v in result.items():
+            for k, v in result.items():
                 data.update({k: v})
 
-        if data:
-            '''Available data from scraping to work with'''
-            result = data["id"]
+            result_id = data["id"]
             url = data["url"]
             main = data["main"]
             position = data["position"]
@@ -68,78 +136,19 @@ class Classifier:
             final_url = data["final_url"]
             query = data["query"]
             source_id = data["source"]
+
             check_dup = db.check_source_dup(source_id)
 
-            '''Check whether the result has already been classified.'''
+            if check_for_duplicates(check_dup):
+                classification_result = ''
+                indicators = {}
 
-            if len(check_dup) > 1:
-                result_sources = db.duplicate_classification_result(source_id)
+                # add your custom code here to calculate the indicators and classify a result
 
-                for result_source in result_sources:
-                    rs = result_source[0]
-                    classifier_result = db.get_classifier_result(rs)
-                    if classifier_result:
-                        result_indicators = db.get_indicators(rs)
-                        break
+                # end of your custom code
 
-                for result_source in result_sources:
-                    rs = result_source[0]
-                    classifier_result = db.get_classifier_result(rs)
-                    if classifier_result:
-                        insert_classification = classifier_result[0][0]
-                        break
+                write_indicators_to_db(indicators, result)  # save indicators to the database
+                db.update_classification_result(classifier_id, classification_result, result_id)
 
-
-                for result_source in result_sources:
-                    rs = result_source[0]
-                    classifier_result = db.get_classifier_result(rs)
-
-                    if not classifier_result:
-                        if not db.check_classification_result(classifier_id, rs):
-                            db.insert_classification_result(classifier_id, insert_classification, rs)
-
-                    if not classifier_result:
-                        for ri in result_indicators:
-                            indicator = ri[1]
-                            value = ri[2]
-                            if not db.check_indicator_result(classifier_id, rs):
-                                db.insert_indicator(indicator, value, classifier_id, rs)
-
-                db.update_classification_result(classifier_id, insert_classification, result_id)
-                
-                '''Define your indicators and classification rules here'''
-
-            try:
-
-                if status_code == 200 and len(error_code) == 0 and not db.check_classification_result(classifier_id, result):
-
-
-                    '''A very simple example for creating an indicator from the data and to use it to classify a result'''
-
-                    indicator = "code_length"
-
-                    if len(code) > 1000:
-                        insert_result = 1
-                        classification_result = "Long Code"
-                    else:
-                        insert_result = 0
-                        classification_result = "Short Code"
-
-                    db.insert_indicator(indicator, insert_result, classifier_id, result) #function to write the indicator to the db
-
-                    db.update_classification_result(classifier_id, classification_result, result) #function to write the classifier result to the db
-            except:
-                pass
-
-'''Example main function to read all available data from the database'''
-
-def main(classifier_id, db, helper):
-
-    '''Initialize classifier object'''
-    classifier_obj = Classifier(classifier_id, db, helper)
-
-    '''Get results from Database'''
-    results = classifier_obj.get_results()
-
-    '''Classify results from Database'''
-    classifier_obj.classifiy_results(results)
+    results = db.get_results(classifier_id)
+    classify_results(results)

@@ -1,5 +1,44 @@
 """
-Library for database operations.
+DB
+
+This class provides database operations for the application.
+
+Attributes:
+    db_cnf (dict): Dictionary for the database connection.
+    job_server (str): Name of the job server.
+    refresh_time (int): Hours for refreshing scraped sources.
+
+Methods:
+    __init__(db_cnf, job_server, refresh_time): Initializes the DB object.
+    __del__(): Destructor for the DB object.
+    connect_to_db(): Connects to the database using psycopg2.
+    insert_result_source(result_id, progress, created_at, job_server): Inserts a placeholder for sources in the result table to prevent execution of the same source scraper jobs.
+    get_sources_pending(): Retrieves all failed sources (progress = 2 or progress = -1).
+    get_source_check(url): Reads a scraped source by URL and checks if it needs to be scraped again based on the refresh time.
+    get_source_check_by_result_id(result_id): Checks if a result has already been declared as a scraping job.
+    get_result_content(source_id): Retrieves content from an existing result to copy it to a source with the same URL.
+    insert_source(url, progress, created_at, job_server): Inserts a new source into the database.
+    check_progress(url, result_id): Checks if a result is already declared as a scraping job.
+    update_source(source_id, code, bin, progress, content_type, error_code, status_code, created_at, content_dict): Updates source content when the scraping job is done.
+    replace_source_bin(source_id, bin): Updates source content by replacing the binary data.
+    update_result(result_id, ip, main, final_url): Updates result content when the scraping job is done.
+    get_source_counter_result(result_id): Retrieves the counter value for a result source.
+    update_result_source(result_id, source_id, progress, counter, created_at, job_server): Updates the result_source table when the scraping job is done.
+    update_result_source_result(result_id, progress, counter, created_at): Updates the result_source table with the progress, counter, and created_at values.
+    delete_source_pending(source_id, progress, created_at): Deletes pending sources.
+    reset_result_source(progress, counter, created_at, source_id): Resets a source in the result_source table.
+    reset(): Calls reset when the sources_controller stops and deletes pending sources.
+    get_result_source(result_id): Checks if a result has already been declared as a scraping job.
+    get_result_source_source(result_id): Retrieves the source ID for a result.
+    get_sources(job_server): Retrieves all results with no source ID (no source code or screenshot).
+    check_db_connection(): Tests the database connection.
+
+Example:
+    db = DB(db_cnf, job_server, refresh_time)
+    sources_pending = db.get_sources_pending()
+    source_id = db.insert_source(url, progress, created_at, job_server)
+    db.update_source(source_id, code, bin, progress, content_type, error_code, status_code, created_at, content_dict)
+    del db
 """
 #load required libs
 import psycopg2

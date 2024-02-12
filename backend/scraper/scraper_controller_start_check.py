@@ -1,3 +1,20 @@
+"""
+ScraperController
+
+The ScraperController class controls the execution of the scraper check job.
+
+Attributes:
+    args (list): The args for the controller to stop it.
+        args[0] (str): Name of browser process (chrome, chromium, firefox).
+
+Methods:
+    start(workingdir): Starts the scraper check job in a separate thread.
+
+Example:
+    scraper_controller = ScraperController()
+    scraper_controller.start(workingdir)
+"""
+
 #processing libraries
 import threading
 from subprocess import call
@@ -15,12 +32,6 @@ import inspect
 
 class ScraperController:
 
-    """SourcesController"""
-    args: list
-    """The args for the controller to stop it
-    \nparam: args[0]:list = name of browser process (chrome, chromium, firefox)
-    \nparam: db:object = Database object
-    """
 
     def __init__(self):
         self = self

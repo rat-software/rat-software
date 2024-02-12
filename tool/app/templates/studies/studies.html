@@ -7,7 +7,7 @@
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
-  <div class="col-8 offset-2">
+  <div class="col-10 offset-1">
     <div class="card shadow-sm">
       <h2 class="card-header crd-header">Studies</h2>
       <div class="card-body">
@@ -15,8 +15,8 @@
           <thead>
             <th>ID</th>
             <th>Name</th>
-            <th>Created at</th>
-            <th>Updated at</th>
+            <th>Creator</th>
+            <th>Date</th>
             <th class="text-end">Actions</th>
           </thead>
           <tbody>
@@ -24,22 +24,22 @@
             <tr>
               <td>{{ s.id }}</td>
               <td style="transform: rotate(0);"><a href="{{ url_for('study', id=s.id) }}" class="stretched-link text-dark">{{ s.name }}</a></td>
-              <td>{% if s.created_at %}
-                {{ s.created_at.strftime('%d.%m.%Y %H:%M') }}
-                {% endif%}
+              <td>{% for u in s.users %}
+                {{ u.email }}
+                {% endfor %}
               </td>
               <td>{% if s.updated_at %}
-                {{ s.updated_at.strftime('%d.%m.%Y %H:%M') }}{% else %}－
+                {{ s.created_at.strftime('%d.%m.%Y') }}{% else %}－
                 {% endif %}
               </td>
               <td class="text-end">
                 <div class="btn-group" role="group" aria-label="Basic example">
                   <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="View">
                     <i class="fa-solid fa-eye"></i>
-                  </a>
+                  </a>{% if s.status == 0 %}
                   <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="Edit">
                     <i class="fa-solid fa-pen"></i>
-                  </a>
+                  </a>{% endif %}
                   <a href="{{ url_for('delete_study', id=s.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="Delete">
                     <i class="fa-solid fa-trash"></i>
                   </a>

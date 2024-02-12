@@ -67,13 +67,12 @@
 <!-- test -->
 {% macro question_display(question, form) %}
   {% if question.questiontype.display == 'short_text' %}
-    <i class="fas fa-grip-lines"></i> {{ question.title}}
+    {{ form.short_text(class_="form-control") }}
 
   {% elif question.questiontype.display == 'long_text' %}
-    <i class="fas fa-align-justify"></i> {{ question.title}}
+    {{ form.long_text(class_="form-control") }}
 
   {% elif question.questiontype.display == 'true_false' %}
-    <!--<i class="fas fa-toggle-on"></i> {{ question.title}}-->
     <table class="table table-borderless mb-0 ms-4">
       {% for radio in form.true_false %}
       <tr>
@@ -83,22 +82,28 @@
       {% endfor %}
     </table>
 
-
   {% elif question.questiontype.display == 'likert_scale' %}
-    <table class="table table-borderless mb-0">
+    <table class="table table-borderless mb-0 ms-4">
       {% for radio in form.likert_scale %}
       <tr>
-        <td>{{ radio }}</td>
+        <td width="1%">{{ radio }}</td>
         <td>{{ radio.label(class_="form-label d-block my-0")}}</td>
       </tr>
       {% endfor %}
     </table>
 
   {% elif question.questiontype.display == 'multiple_choice' %}
-    <i class="fas fa-grip-horizontal"></i> {{ question.title}}
+    <div class="m-4">
+      {{ form.multiple_choice() }}
+    </div>
 
   {% elif question.questiontype.display == 'scale_number' %}
-    <i class="fas fa-sliders-h"></i> {{ question.title}}
+      <div class="row mb-2 m-4">
+      <div class="col-6" id="scale_start"></div>
+      <div class="col-6 text-end" id="scale_stop"></div>
+      <div class="col-12">{{ form.scale_number(class_="form-range") }}</div>
+
+      </div>
 
   {% endif %}
 {% endmacro %}

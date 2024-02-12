@@ -1,0 +1,32 @@
+{% extends "master.html" %}
+
+{% block title %}Study{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-lg-4 offset-lg-4">
+    <h3></h3>
+    <div class="card shadow-sm mt-4">
+      <h6 class="card-header">Log In</h6>
+      <form method="POST">
+        <div class="card-body">
+          <div class="mb-3">
+            {{ form.username.label(class_="form-label") }}
+            {{ form.username(class_="form-control") }}
+          </div>
+          <div class="mb-3">
+            {{ form.password.label(class_="form-label") }}
+            {{ form.password(class_="form-control") }}
+          </div>
+          <div class="mb-3 text-end">
+            {{ form.submit(class_="btn btn-primary") }}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

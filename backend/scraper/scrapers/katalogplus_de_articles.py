@@ -25,6 +25,18 @@ from scrapers.requirements import *
 
 
 def run(query, limit, scraping, headless):
+    """
+    Run the KatalogPlus DE Articles scraper.
+
+    Args:
+        query (str): The search query.
+        limit (int): The maximum number of search results to retrieve.
+        scraping: The Scraping object.
+        headless (int): Flag indicating whether to run the scraper in headless mode.
+
+    Returns:
+        list: List of search results.
+    """    
     try:
         #Definition of args for scraping the search engine
         search_url = "https://katalogplus.sub.uni-hamburg.de/vufind/Search2/" #URL of search engine, e. g. www.google.de
@@ -84,7 +96,7 @@ def run(query, limit, scraping, headless):
                         url = url.attrs['href']
                         url_list.append(url)
                         result_url = url_list[0]
-                        result_url = "https://katalogplus.sub.uni-hamburg.de"+result_url
+                        result_url = f"https://katalogplus.sub.uni-hamburg.de{result_url}"
                 except:
                     result_url = "N/A"
 
@@ -100,19 +112,25 @@ def run(query, limit, scraping, headless):
             else:
                 return False
 
-        chrome_extension = scraping.get_chrome_extension() #Get Path for I don't care about cookies extension
+        #initialize Selenium
+        #https://github.com/seleniumbase/SeleniumBase/blob/master/seleniumbase/plugins/driver_manager.py For all options
+        #https://seleniumbase.io/help_docs/locale_codes/
 
-        #initialize Selenium with options and arguments. Chrome supports a lot of arguments, a comprehensive list can be found here: https://peter.sh/experiments/chromium-command-line-switches/
-        options = Options()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        if headless == 1: #argument to check if browser should be started in headless mode or not
-            options.add_argument('--headless=new')
-        options.add_argument("--start-maximized")
-        options.add_experimental_option("detach", True)
-        options.add_argument("--lang=de")
-        options.add_extension(chrome_extension)
-        driver = webdriver.Chrome(options=options)
+        driver = Driver(
+                browser="chrome",
+                wire=True,
+                uc=True,
+                headless2=headless,
+                incognito=False,
+                agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                do_not_track=True,
+                undetectable=True,
+                extension_dir=ext_path,
+                locale_code="de",
+                #mobile=True,
+                )
+        
+        driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
@@ -129,6 +147,9 @@ def run(query, limit, scraping, headless):
             search = driver.find_element(By.NAME, search_box)
             search.send_keys(query)
             search.send_keys(Keys.RETURN)
+
+            random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
+            time.sleep(random_sleep)                    
 
             search_results = get_search_results(driver, page)
             results_number = len(search_results)

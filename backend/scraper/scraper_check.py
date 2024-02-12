@@ -17,6 +17,12 @@ db_cnf = helper.file_to_dict(db_cnf)
 db = DB(db_cnf)
 
 def get_scrapers():
+    """
+    Check the scrapers.
+
+    Returns:
+        list: List of search engines.
+    """    
     searchengines = db.get_searchengines()
     return searchengines
               
