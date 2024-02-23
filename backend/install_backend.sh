@@ -21,7 +21,8 @@ pip install pdoc
 pip install ipinfo
 pip install pytest
 pip install selenium-wire
-pip install seleniumbase
 pip install Pillow
+pip install seleniumbase
+pip install undetected-chromedriver
 deactivate
 apt --fix-broken install
