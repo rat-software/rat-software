@@ -1,9 +1,9 @@
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
-
+database_uri = 'postgresql://your_db_user:your_db_password@your_db_host/your_db_name'
 
 class Config(object):
-    SQLALCHEMY_DATABASE_URI = 'postgresql://rat:6n9TYHN@85.214.110.132/rat3'
+    SQLALCHEMY_DATABASE_URI = database_uri
     SQLALCHEMY_ENGINE_OPTIONS = {'pool_pre_ping': True,}
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -39,10 +39,10 @@ class Config(object):
     #MAIL_USE_TLS = True
     #MAIL_USE_SSL = False
 
-    MAIL_SERVER = 'server228.campusspeicher.de'
+    MAIL_SERVER = 'your_mail_server'
     MAIL_PORT = 465
-    MAIL_USERNAME = 'info@searchstudies.org'
-    MAIL_PASSWORD = 'qT3kHlSZd_zk38eK'
+    MAIL_USERNAME = 'your_mail_username'
+    MAIL_PASSWORD = 'your_mail_password'
     MAIL_USE_TLS = False
     MAIL_USE_SSL = True
     # SQLALCHEMY_ECHO = False
