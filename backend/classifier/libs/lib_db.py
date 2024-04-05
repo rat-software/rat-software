@@ -34,28 +34,20 @@ import base64
 from bs4 import BeautifulSoup
 
 class DB:
+    """Database class"""
+    db_cnf: dict
+    """Dictionary for the database connection"""
 
     def __init__(self, db_cnf: dict):
-        """
-        Initialize the DB controller object.
-
-        Args:
-            db_cnf (dict): The database configuration.
-        """        
         self.db_cnf = db_cnf
 
     def __del__(self):
-        """
-        Destructor for the DB controller object.
-        """        
-        print('DB Controller object destroyed')
+        """Destroy Database object"""
+        print('DB object destroyed')
 
     def connect_to_db(self):
         """
-        Connect to the database using psycopg2.
-
-        Returns:
-            psycopg2.extensions.connection: The database connection object.
+        Connect to the database using psycopg2
         """
         conn =  psycopg2.connect(**self.db_cnf)
         return conn
@@ -129,7 +121,7 @@ class DB:
         queries = []
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, result_source.source FROM result, source, result_source, classifier_study WHERE result.study = classifier_study.study AND classifier_study.classifier = %s AND result_source.result = result.id AND result_source.source = source.id AND (source.progress = 1 OR source.progress = -1) AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result where classifier_result.classifier = %s) ORDER BY result.created_at, result.id LIMIT 10" , (classifier_id, classifier_id))
+        cur.execute("SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, result_source.source FROM result, source, result_source, classifier_study WHERE result.study = classifier_study.study AND classifier_study.classifier = %s AND result_source.result = result.id AND result_source.source = source.id AND (source.progress = 1 OR source.progress = -1) AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result where classifier_result.classifier = %s) ORDER BY result.created_at, result.id LIMIT 3" , (classifier_id, classifier_id))
         conn.commit()
         results = cur.fetchall()
         results = get_search_engines(results)
@@ -359,3 +351,22 @@ class DB:
         result_indicators = cur.fetchall()
         conn.close()
         return result_indicators
+
+    def deleteClassifierDuplicates(self):
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("DELETE FROM classifier_result WHERE id IN (SELECT id FROM(SELECT id,ROW_NUMBER() OVER( PARTITION BY result ORDER BY id) AS row_num FROM classifier_result) t WHERE t.row_num > 1 );")
+        conn.commit()
+        conn.close()
+
+
+    def check_db_connection(self):
+        """
+        Test the database connection
+        """
+        try:
+            conn = DB.connect_to_db(self)
+            conn.close()
+            return True
+        except:
+            return False

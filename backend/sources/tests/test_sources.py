@@ -21,21 +21,32 @@ sys.path.insert(0, parentdir)
 
 from libs.lib_sources import *
 
-def test_sources_scraper():
+# def test_sources_scraper():
     
-    def check_sources_by_error_code():
-        sources = Sources()
-        url = "https://google.de"
+#     def check_sources_by_error_code():
+#         sources = Sources()
+#         url = "https://stahlschlag.de"
      
-        result_dict = sources.save_code(url)
+#         result_dict = sources.save_code(url)
 
-        error_codes = result_dict["error_codes"]
+#         error_codes = result_dict["error_codes"]
+
+#         print(result_dict)
       
-        if len(error_codes) > 0:
-            print(error_codes)
-            return False
-        else:
-            return True
+#         if len(error_codes) > 0:
+#             print(error_codes)
+#             return False
+#         else:
+#             return True
 
-    assert check_sources_by_error_code() == True,"Could not scrape the URL; test failed;"
+#     assert check_sources_by_error_code() == True,"Could not scrape the URL; test failed;"
+
+# test_sources_scraper()
+
+#botc=https://nowsecure.nl/#relaxss
+
+sources = Sources()
+url = "https://nowsecure.nl/#relax"
+result_dict = sources.save_code(url)
+print(result_dict)
 

@@ -12,7 +12,7 @@ path = Path(parentdir)
 
 path =str((path.parents[0]))
 
-ext_path = path+"\i_care_about_cookies_unpacked"
+ext_path = path+"/i_care_about_cookies_unpacked"
 
 
 
