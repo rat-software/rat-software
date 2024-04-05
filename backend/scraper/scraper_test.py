@@ -15,6 +15,10 @@ def test_scraper(query, limit, scraper, headless):
         print("Scraping test failed")
 
 
+from scrapers.google_de import *
+google_de = Scraping()
+test_scraper("Umwelt gutes tun", 20, google_de, True)
+
 #Test
 
 # from scrapers.google_se import *
@@ -78,9 +82,9 @@ def test_scraper(query, limit, scraper, headless):
 
 #from scrapers.test import *
 
-from scrapers.brave_de import *
+# from scrapers.brave_de import *
 
-brave_de = Scraping()
+# brave_de = Scraping()
 
-test_scraper("korg", 30, brave_de, True)
+# test_scraper("korg", 30, brave_de, True)
 

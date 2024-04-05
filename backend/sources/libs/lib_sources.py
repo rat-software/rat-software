@@ -133,9 +133,20 @@ options.add_argument("--hide-scrollbars")
 
 if sources_cnf['headless'] == 1:
     options.add_argument('--headless=new')
+    headless = True
 
 options.add_extension(extension_path)
 #options.add_argument(f"--force-device-scale-factor={desired_dpi}")
+
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+parentdir = os.path.dirname(parentdir)
+
+ext_path = parentdir+"/i_care_about_cookies_unpacked"
+
+from seleniumbase import Driver
+
+
 
 
 class Sources:
@@ -151,21 +162,22 @@ class Sources:
     def save_code(self, url):
 
         def build_proxy_addon(self, use_proxy=False, user_agent=None):
-            path = os.path.dirname(os.path.abspath(__file__))
-            chrome_options = webdriver.ChromeOptions()
-            if use_proxy:
-                pluginfile = 'proxy_auth_plugin.zip'
+            pass
+            # path = os.path.dirname(os.path.abspath(__file__))
+            # chrome_options = webdriver.ChromeOptions()
+            # if use_proxy:
+            #     pluginfile = 'proxy_auth_plugin.zip'
 
-                with zipfile.ZipFile(pluginfile, 'w') as zp:
-                    zp.writestr("manifest.json", manifest_json)
-                    zp.writestr("background.js", background_js)
-                chrome_options.add_extension(pluginfile)
-            if user_agent:
-                chrome_options.add_argument('--user-agent=%s' % user_agent)
-            driver = webdriver.Chrome(
-                os.path.join(path, 'chromedriver'),
-                chrome_options=chrome_options)
-            return driver
+            #     with zipfile.ZipFile(pluginfile, 'w') as zp:
+            #         zp.writestr("manifest.json", manifest_json)
+            #         zp.writestr("background.js", background_js)
+            #     chrome_options.add_extension(pluginfile)
+            # if user_agent:
+            #     chrome_options.add_argument('--user-agent=%s' % user_agent)
+            # driver = webdriver.Chrome(
+            #     os.path.join(path, 'chromedriver'),
+            #     chrome_options=chrome_options)
+            # return driver
 
 
         #functions to encode and decode the code codes of webpages
@@ -242,6 +254,9 @@ class Sources:
             if status_code == 302:
                 status_code = 200
 
+            if status_code == 403:
+                status_code = 200
+
             
 
             if status_code != 200 and status_code != -1:
@@ -249,7 +264,22 @@ class Sources:
                 
                 
                 try:
-                    driver = webdriver.Chrome(options=options)
+                    #driver = webdriver.Chrome(options=options)
+
+                    driver = Driver(
+                            browser="chrome",
+                            wire=True,
+                            uc=True,
+                            headless2=headless,
+                            incognito=False,
+                            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                            do_not_track=True,
+                            undetectable=True,
+                            extension_dir=ext_path,
+                            locale_code="de",
+                            no_sandbox=True,
+                            #mobile=True,
+                            )
                     driver.set_page_load_timeout(sources_cnf['timeout'])
                     driver.implicitly_wait(60)
                     driver.get(url)
@@ -318,7 +348,6 @@ class Sources:
                 current_height = 0
                 block_size = sources_cnf['block-size']
                 scroll_time_in_seconds =  sources_cnf['scroll-time']
-                blocks = required_height / block_size
                 scrolling = []
 
                 while current_height < height and current_height < sources_cnf['max-height']:
@@ -378,16 +407,11 @@ class Sources:
                     required_width = sources_cnf['min-width']
                 if required_height > sources_cnf['max-height']:
                     required_height = sources_cnf['max-height']
+                required_width = 1024
                 driver.set_window_size(required_width, required_height)
                 driver.save_screenshot(screenshot_file) #take screenshot
             except:
-
-                try: #try to get the body of the page
-                    body_screenshot = driver.find_elemnts(By.TAG_NAME, "body")
-                    body_screenshot.save_screenshot(screenshot_file)
-
-                except: #if all fails take screenshot of the browser view
-                    driver.save_screenshot(screenshot_file) #take screenshot
+                driver.save_screenshot(screenshot_file) #take screenshot
 
 
             #open screenshot and save as base64
@@ -419,7 +443,23 @@ class Sources:
                 error_codes+= "Requests failed"
 
             if dict_request["status_code"] == 200:
-                driver = webdriver.Chrome(options=options)
+                #driver = webdriver.Chrome(options=options)
+
+                driver = Driver(
+                        browser="chrome",
+                        wire=True,
+                        uc=True,
+                        headless2=headless,
+                        incognito=False,
+                        agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                        do_not_track=True,
+                        undetectable=True,
+                        extension_dir=ext_path,
+                        locale_code="de",
+                        no_sandbox=True,
+                        #mobile=True,
+                        )
+
                 driver.set_page_load_timeout(sources_cnf['timeout'])
                 driver.implicitly_wait(60)
 
@@ -444,7 +484,7 @@ class Sources:
 
                     try:
                         meta = get_result_meta(self, final_url)
-                        #ip = meta["ip"]
+                        ip = meta["ip"]
                     except:
                         error_codes+= "Get result meta failed"
 

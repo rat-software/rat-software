@@ -179,45 +179,9 @@ class Scraping:
         time.sleep(2)
 
         driver.maximize_window() #maximize browser window for screenshot
-        
-        try:
-            driver.execute_script("window.scrollTo(0,1)")
-        except Exception as e:
-            print(str(e))
-            pass
+        driver.save_screenshot(screenshot_file)
 
-        #try to get the whole browser window
-        try: 
-            required_width = driver.execute_script('return document.body.parentNode.scrollWidth')
-            required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
-            
-            print(required_height)
-            
-            scroll = "window.scrollTo(0,{})".format(required_height)
-            
-            driver.execute_script(scroll)
-
-            required_height+= 50
-            
-            driver.execute_script("window.scrollTo(0,1)")
-            
-            driver.set_window_size(required_width, required_height)
-            
-            driver.maximize_window()
-            
-            driver.save_screenshot(screenshot_file) #take screenshot
-            
-        except Exception as e:
-            print(str(e)) #next try to get the body of the page
-
-            try: 
-                body_screenshot = driver.find_element(By.TAG_NAME, "body")
-                body_screenshot.screenshot(screenshot_file)
-            except Exception as e:
-                print(str(e)) #if all fails take screenshot of the browser view
-                driver.save_screenshot(screenshot_file) #take screenshot
-
-        #open screenshot and save as base64
+        # #open screenshot and save as base64
         screenshot = encode_file_base64(self, screenshot_file)
 
         os.remove(screenshot_file)

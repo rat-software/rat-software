@@ -9,6 +9,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
+from lxml import html
+
 
 options = Options()
 options.add_argument('--no-sandbox')
@@ -44,11 +46,20 @@ def save_robot_txt(main):
         driver.get(url)
         time.sleep(1)
         code = driver.page_source
+        driver.quit()
 
     except:
         code = False
+        try:
+            driver.quit()
+        except Exception as e:
+            print(str(e))
 
-    driver.quit()
+    try:
+        driver.quit()
+    except Exception as e:
+        print(str(e))
+        
 
     return code
 
@@ -81,10 +92,19 @@ def calculate_loading_time(url):
         frontendPerformance_calc = domComplete - responseStart
         loadingTime = EventEnd - navigationStart
         loading_time = loadingTime / 1000
+        driver.quit()
     except:
         loading_time = -1
+        try:
+            driver.quit()
+        except Exception as e:
+            print(str(e))
 
-    driver.quit()
+    try:
+        driver.quit()
+    except Exception as e:
+        print(str(e))
+    
 
     return loading_time
 
@@ -196,11 +216,13 @@ def get_plugins():
     plugins_json = array["text-match"]
     plugins = []
 
+    
+
     for get_plugin in plugins_json:
         name = get_plugin
         source = plugins_json[name]["source"]
-        source = os.path.join(parentdir, source)
-        with open(source, 'r') as csvfile:
+        source_dir = parentdir+source
+        with open(source_dir, 'r') as csvfile:
             csv_result = csv.reader(csvfile, delimiter=',', quotechar='"')
             source = list(csv_result)
         plugin = {
@@ -210,6 +232,9 @@ def get_plugins():
         plugins.append(plugin)
 
     return plugins
+
+
+
 
 def get_sources():
     """
@@ -230,8 +255,8 @@ def get_sources():
     for get_source in sources_json:
         name = get_source
         source = sources_json[name]["source"]
-        source = os.path.join(parentdir, source)
-        with open(source, 'r') as csvfile:
+        source_dir = parentdir+source
+        with open(source_dir, 'r') as csvfile:
             csv_result = csv.reader(csvfile, delimiter=',', quotechar='"')
             source = list(csv_result)
         load_url = {
@@ -241,6 +266,7 @@ def get_sources():
         sources.append(load_url)
 
     return sources
+
 
 
 def identify_url_length(url):

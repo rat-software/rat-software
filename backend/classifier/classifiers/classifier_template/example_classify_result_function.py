@@ -30,7 +30,7 @@ def classify_result(data):
         data (dict): The data for the classifier.
 
     Returns:
-        None
+        str: Classification result.
     """
 
     url = data["url"]
@@ -38,50 +38,41 @@ def classify_result(data):
     code = data["code"].lower().split()
     query = data["query"].lower()
 
-    indicators = {}
-
-    # generate indicators. indicators should be stored dictionaries with a key with the name of the indicator and the value to store them in the database.
-
-    query_counter = code.count(query)
-    indicators = {"query_counter": query_counter}
-
-    url_counter = url.count(query)
-    indicators = {"url_counter": url_counter}
-
-    main_counter = main.count(query)
-    indicators = {"main_counter": main_counter}
+    # generate indicators in a single operation
+    indicators = {
+        "query_counter": code.count(query),
+        "url_counter": url.count(query),
+        "main_counter": main.count(query)
+    }
 
     # classify the results
-
-    classification_result = ""
-
-    if query_counter > 5 and (url_counter > 0 or main_counter > 0):
-        classification_result = "Webpage is about RAT"
+    if indicators["query_counter"] > 5 and (indicators["url_counter"] > 0 or indicators["main_counter"] > 0):
+        return "Webpage is about RAT"
     else:
-        classification_result = "Webpage is not about RAT"
+        return "Webpage is not about RAT"
 
-    print(classification_result)
+# Function to read file content
+def read_file_content(filename):
+    with open(filename, encoding='utf-8', errors='ignore') as f:
+        return f.read()
 
-# Create the data for the classifier
+# Example usage
+if __name__ == "__main__":
+    data_examples = [
+        {
+            "url": "https://searchstudies.org/research/rat/",
+            "main": "https://searchstudies.org/",
+            "query": "rat",
+            "code": read_file_content("example_for_classifier_01.html")
+        },
+        {
+            "url": "https://www.haw-hamburg.de",
+            "main": "https://www.haw-hamburg.de",
+            "query": "rat",
+            "code": read_file_content("example_for_classifier_02.html")
+        }
+    ]
 
-data = {
-    "url": "https://searchstudies.org/research/rat/",
-    "main": "https://searchstudies.org/",
-    "query": "rat",
-}
-
-with open("example_for_classifier_01.html", encoding='utf-8', errors='ignore') as f:
-    data["code"] = f.read()
-
-classify_result(data)
-
-data = {
-    "url": "https://www.haw-hamburg.de",
-    "main": "https://www.haw-hamburg.de",
-    "query": "rat",
-}
-
-with open("example_for_classifier_02.html", encoding='utf-8', errors='ignore') as f:
-    data["code"] = f.read()
-
-classify_result(data)
+    for data in data_examples:
+        result = classify_result(data)
+        print(result)

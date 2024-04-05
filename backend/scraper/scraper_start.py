@@ -167,6 +167,8 @@ if __name__ == "__main__":
 
     scraper_jobs = db.get_scraper_jobs()
 
+    print(scraper_jobs)
+
     scraper = Scraper()
 
     scraper.scrape(scraper_jobs, db, scraping, job_server)

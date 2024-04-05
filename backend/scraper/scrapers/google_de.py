@@ -18,9 +18,13 @@ def run(query, limit, scraping, headless):
         search_box = "q" #Class name of search box
         captcha = "g-recaptcha" #Source code hint for CAPTCHA
         next_page = "//a[@aria-label='{}']" #CSS to find click on next SERP
+        next_scroll = "//span[@class='RVQdVd']"
         results_number = 0 #initialize results_number
         page = 1 #initialize SERP page
         search_results = [] #initialize search_results list
+        get_search_url = "https://www.google.de/search?q="
+
+        
 
         #Definition of custom functions
 
@@ -57,7 +61,7 @@ def run(query, limit, scraping, headless):
 
             #find the list with the search results by extracting the div container
 
-            for result in soup.find_all("div", class_=["tF2Cxc"]):
+            for result in soup.find_all("div", class_=["tF2Cxc", "dURPMd"]):
                 url_list = []
                 search_result = []
                 result_title = ""
@@ -113,10 +117,10 @@ def run(query, limit, scraping, headless):
                 undetectable=True,
                 extension_dir=ext_path,
                 locale_code="de",
+                no_sandbox=True,
                 #mobile=True,
                 )
-        
-        driver.maximize_window()
+
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
@@ -167,18 +171,55 @@ def run(query, limit, scraping, headless):
 
             else:
                 SCROLL_PAUSE_TIME = 1
-
+                start = 0
+                query = query.lower()
+                get_query = query.replace(" ", "+")
+                search_results = []
+                print(limit)
+                    
                 while (results_number < limit) and continue_scraping:
 
                     if not check_captcha(driver):
                         try:
-                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                            time.sleep(SCROLL_PAUSE_TIME)
-                            driver.execute_script("return document.body.scrollHeight") + 400
+                            start = start + 10
+                            edit_search_url = get_search_url+get_query+"&start="+str(start)
+                            print(edit_search_url)
+                            driver.get(edit_search_url)
+                            random_sleep = random.randint(2, 4) #random timer trying to prevent quick automatic blocking
+                            time.sleep(random_sleep)
                             page+=1
-                            search_results+= get_search_results(driver, page)
-                            results_number = len(search_results)
-                        except:
+                            extract_search_results = get_search_results(driver, page)
+                            if len(extract_search_results) > 0:
+                                print("go on")
+                                search_results+= extract_search_results
+                                results_number = len(search_results)
+                            else:
+                                continue_scraping = False
+                  
+
+                        #     required_width = driver.execute_script('return document.body.parentNode.scrollWidth')
+                        #     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        #     time.sleep(SCROLL_PAUSE_TIME)
+                        #     required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
+                        #     driver.set_window_size(required_width, required_height)
+                        #     time.sleep(SCROLL_PAUSE_TIME)
+                        #     scroll_height = required_height + 400
+                        #     scroll = "window.scrollTo(0,{})".format(scroll_height)
+                        #     print(scroll)
+                        #     driver.execute_script(scroll)
+                        #     try:
+                        #         next = driver.find_element(By.XPATH, next_scroll)
+                        #         next.click()
+                        #     except Exception as e:
+                        #         print(str(e))
+                        #     page+=1
+                        #     search_results+= get_search_results(driver, page)
+                        #     results_number = len(search_results)
+                        #     if results_number > limit:
+                        #         continue_scraping = False
+                                
+                        except Exception as e:
+                            print(str(e))
                             continue_scraping = False
                     else:
                         continue_scraping = False

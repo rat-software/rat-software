@@ -34,10 +34,9 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 
-ext_path = parentdir+"\i_care_about_cookies_unpacked"
+ext_path = parentdir+"/i_care_about_cookies_unpacked"
 
 from seleniumbase import Driver
-
 
 
 
