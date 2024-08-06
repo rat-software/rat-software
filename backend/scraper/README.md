@@ -54,7 +54,7 @@ driver = Driver(
 ```
 
 ## Available Jupyter Notebooks
-We also offer a Jupyter Notebook for setting up and testing a new scraper directly, available at **/templates/new_scraper.ipynb**.
+We also offer a Jupyter Notebook for setting up and testing a new scraper directly, available at [/templates/new_scraper.ipynb](https://github.com/rat-software/rat-software/blob/main/templates/new_scraper.ipynb).
 
 ## Running the Application
 
