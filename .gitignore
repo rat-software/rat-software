@@ -1,5 +1,6 @@
 **/scrapers2implement
 **/__pycache__/
+**/__downloades_files__/
 **/tmp/*.png
 *.txt
 **/.pytest_cache
@@ -7,4 +8,3 @@
 !empty.txt
 !todo.txt
 !info.txt
-!requirements.txt
