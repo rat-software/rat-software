@@ -55,8 +55,8 @@ To set up classifiers, use the RAT database to store and manage classification d
    ``` 
 
 4. **Available Jupyter Notebooks**
-   - To test your new classifier function, use the Jupyter Notebook template found at **/templates/new_classifier_function.ipynb**.
-   - To add a new classifier to the database, refer to the Jupyter Notebook located at **/templates/add_classifier_to_database.ipynb**.
+   - To test your new classifier function, use the Jupyter Notebook template found at [/templates/new_classifier_function.ipynb](https://github.com/rat-software/rat-software/blob/main/templates/new_classifier_function.ipynb).
+   - To add a new classifier to the database, refer to the Jupyter Notebook located at [/templates/add_classifier_to_database.ipynb](https://github.com/rat-software/rat-software/blob/main/templates/add_classifier_to_database.ipynb).
 
 ## Starting and Stopping the Classifier
 
