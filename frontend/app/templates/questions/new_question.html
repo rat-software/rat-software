@@ -4,120 +4,137 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Container for creating a new question -->
 <div class="row">
   <div class="col-8 offset-2">
-  <div class="card">
-    <h2 class="card-header crd-header">Create new question</h2>
-    <div class="card-body">
-    <form method="POST" class="">
-      <div class="mb-3">
-        {{ form.q_type.label(class_="form-label") }}
-        {{ form.q_type(class_="form-select") }}
-      </div>
-      <div class="mb-3">
-        {{ form.text.label(class_="form-label") }}
-        {{ form.text(class_="form-control") }}
-      </div>
-      <div class="mb-3">
-        {{ form.position.label(class_="form-label") }}
-        {{ form.position(class_="form-control", value=q_pos) }}
-      </div>
-      <div id="options-wrapper" class="visually-hidden">
-      <div class="mb-3  mt-4">
-        {{ form.options.label }} (Labels and Values can be adjusted individually)
-      </div>
-      <div id="options">
-        {% for options in form.options %}
-          {% if loop.index == 1 %}
-          <div class="row">
-            <div class="mb-3 col-3">
-            {{ options.form.value.label(class_="form-label") }}
-            {{ options.form.value(class_="form-control",value=0) }}
-            </div>
-            <div class="mb-3 col-9">
-            {{ options.form.label.label(class_="form-label") }}
-            {{ options.form.label(class_="form-control", value="False") }}
-            </div>
-          </div>
-          {% else %}
-          <div class="row">
-            <div class="mb-3 col-3">
-            {{ options.form.value.label(class_="form-label") }}
-            {{ options.form.value(class_="form-control",value=1) }}
-            </div>
-            <div class="mb-3 col-9">
-            {{ options.form.label.label(class_="form-label") }}
-            {{ options.form.label(class_="form-control", value="True") }}
-            </div>
-          </div>
-          {% endif %}
-        {% endfor %}
-        </div>
+    <div class="card">
+      <!-- Card header displaying the title -->
+      <h2 class="card-header crd-header">Create new question</h2>
+      <div class="card-body">
+        <!-- Form for creating a new question -->
+        <form method="POST" class="">
 
+          <!-- Dropdown for selecting the question type -->
+          <div class="mb-3">
+            {{ form.q_type.label(class_="form-label") }}
+            {{ form.q_type(class_="form-select") }}
+          </div>
+
+          <!-- Text input for the question text -->
+          <div class="mb-3">
+            {{ form.text.label(class_="form-label") }}
+            {{ form.text(class_="form-control") }}
+          </div>
+
+          <!-- Position input for the question -->
+          <div class="mb-3">
+            {{ form.position.label(class_="form-label") }}
+            {{ form.position(class_="form-control", value=q_pos) }}
+          </div>
+
+          <!-- Options section (hidden by default) -->
+          <div id="options-wrapper" class="visually-hidden">
+            <div class="mb-3 mt-4">
+              {{ form.options.label }} (Labels and Values can be adjusted individually)
+            </div>
+            <div id="options">
+              <!-- Loop through options and render form fields -->
+              {% for options in form.options %}
+              {% if loop.index == 1 %}
+              <div class="row">
+                <div class="mb-3 col-3">
+                  {{ options.form.value.label(class_="form-label") }}
+                  {{ options.form.value(class_="form-control",value=0) }}
+                </div>
+                <div class="mb-3 col-9">
+                  {{ options.form.label.label(class_="form-label") }}
+                  {{ options.form.label(class_="form-control", value="False") }}
+                </div>
+              </div>
+              {% else %}
+              <div class="row">
+                <div class="mb-3 col-3">
+                  {{ options.form.value.label(class_="form-label") }}
+                  {{ options.form.value(class_="form-control",value=1) }}
+                </div>
+                <div class="mb-3 col-9">
+                  {{ options.form.label.label(class_="form-label") }}
+                  {{ options.form.label(class_="form-control", value="True") }}
+                </div>
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+
+            <!-- Buttons to add or remove options -->
             <div class="mb-3 col">
-                <a class="btn btn-outline-success btn-sm me-1" onclick="addOptions()">
-                  <i class="fas fa-plus"></i> More Options
-                </a>
-                <a class="btn btn-outline-danger btn-sm" onclick="removeOptions()">
-                  <i class="fas fa-minus"></i> Less Options
-                </a>
+              <a class="btn btn-outline-success btn-sm me-1" onclick="addOptions()">
+                <i class="fas fa-plus"></i> More Options
+              </a>
+              <a class="btn btn-outline-danger btn-sm" onclick="removeOptions()">
+                <i class="fas fa-minus"></i> Less Options
+              </a>
             </div>
-        </div>
-
-        <div id="range-wrapper" class="visually-hidden">
-        <div class="mb-3 mt-4">
-          {{ form.ranges.label }}
-        </div>
-          {% for ranges in form.ranges %}
-          <div class="row">
-            <div class="mb-3 col-4">
-            {{ ranges.form.start_text.label(class_="form-label") }}
-            {{ ranges.form.start_text(class_="form-control") }}
-            </div>
-            <div class="mb-3 col-4">
-            {{ ranges.form.stop_text.label(class_="form-label") }}
-            {{ ranges.form.stop_text(class_="form-control") }}
-            </div>
-          </div>
-          <div class="row">
-            <div class="mb-3 col-4">
-            {{ ranges.form.start.label(class_="form-label") }}
-            {{ ranges.form.start(class_="form-control") }}
-            </div>
-            <div class="mb-3 col-4">
-            {{ ranges.form.stop.label(class_="form-label") }}
-            {{ ranges.form.stop(class_="form-control") }}
-            </div>
-            <div class="mb-3 col-4">
-            {{ ranges.form.step.label(class_="form-label") }}
-            {{ ranges.form.step(class_="form-control") }}
-            </div>
-          </div>
-          {% endfor %}
           </div>
 
-      <div class="my-3 clearfix">
-        {{ form.submit(class_="btn btn-primary float-end") }}
+          <!-- Range section (hidden by default) -->
+          <div id="range-wrapper" class="visually-hidden">
+            <div class="mb-3 mt-4">
+              {{ form.ranges.label }}
+            </div>
+            <!-- Loop through ranges and render form fields -->
+            {% for ranges in form.ranges %}
+            <div class="row">
+              <div class="mb-3 col-4">
+                {{ ranges.form.start_text.label(class_="form-label") }}
+                {{ ranges.form.start_text(class_="form-control") }}
+              </div>
+              <div class="mb-3 col-4">
+                {{ ranges.form.stop_text.label(class_="form-label") }}
+                {{ ranges.form.stop_text(class_="form-control") }}
+              </div>
+            </div>
+            <div class="row">
+              <div class="mb-3 col-4">
+                {{ ranges.form.start.label(class_="form-label") }}
+                {{ ranges.form.start(class_="form-control") }}
+              </div>
+              <div class="mb-3 col-4">
+                {{ ranges.form.stop.label(class_="form-label") }}
+                {{ ranges.form.stop(class_="form-control") }}
+              </div>
+              <div class="mb-3 col-4">
+                {{ ranges.form.step.label(class_="form-label") }}
+                {{ ranges.form.step(class_="form-control") }}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Submit button for the form -->
+          <div class="my-3 clearfix">
+            {{ form.submit(class_="btn btn-primary float-end") }}
+          </div>
+        </form>
       </div>
-    </form>
     </div>
-  </div>
   </div>
 </div>
 {% endblock %}
 
-
-<!-- <div class="mb-3">
-        {{ form.description.label(class_="form-label") }}
-        {{ form.description(class_="form-control") }}
-      </div>
-      <div class="mb-3">
-        {{ form.interval.label(class_="form-label") }}
-        {% for radio in form.interval %}
-        <div class="form-check form-check">
-          {{ radio(class_="form-check-input") }}
-          {{ radio.label(class_="form-check-label") }}
-        </div>
-        {% endfor %}
-      </div>
+<!-- Commented out sections for additional form fields -->
+<!-- 
+<div class="mb-3">
+  {{ form.description.label(class_="form-label") }}
+  {{ form.description(class_="form-control") }}
+</div>
+<div class="mb-3">
+  {{ form.interval.label(class_="form-label") }}
+  {% for radio in form.interval %}
+  <div class="form-check form-check">
+    {{ radio(class_="form-check-input") }}
+    {{ radio.label(class_="form-check-label") }}
+  </div>
+  {% endfor %}
+</div>
 -->

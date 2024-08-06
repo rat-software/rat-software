@@ -4,16 +4,24 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
+<!-- Container for the user selection options -->
 <div class="row">
   <div class="col-lg-4 offset-lg-4">
-    <h3></h3>
+    <!-- Card for user type selection -->
     <div class="card shadow-sm mt-4">
+      <!-- Header of the card asking if the user is new or returning -->
       <h6 class="card-header">Are you a new or returning user?</h6>
+
+      <!-- Form for selecting user type -->
       <form method="POST">
         <div class="card-body text-end">
+          <!-- Button for returning users -->
           {{ form.returning(class_="btn btn-outline-secondary me-2") }}
+
+          <!-- Button for new users -->
           {{ form.new(class_="btn btn-primary") }}
         </div>
       </form>

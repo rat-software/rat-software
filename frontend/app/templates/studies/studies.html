@@ -1,18 +1,32 @@
 {% extends "master.html" %}
+{# Extend the base master template #}
 
 {% block title %}Studies{% endblock %}
+{# Set the page title to "Studies" #}
+
 {% block head %}{{ super() }}{% endblock %}
+{# Include additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
+
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row">
+  {# Create a row for layout #}
   <div class="col-10 offset-1">
+    {# Define a column that spans 10 out of 12 columns with an offset of 1 column #}
     <div class="card shadow-sm">
+      {# Create a card with shadow effect #}
       <h2 class="card-header crd-header">Studies</h2>
+      {# Card header with the title "Studies" #}
       <div class="card-body">
+        {# Card body containing the main content #}
         <table class="table table-hover">
+          {# Create a table with hover effect #}
           <thead>
+            {# Table header #}
             <th>ID</th>
             <th>Name</th>
             <th>Creator</th>
@@ -20,29 +34,51 @@
             <th class="text-end">Actions</th>
           </thead>
           <tbody>
+            {# Table body where each study is listed #}
             {% for s in pagination.items %}
+            {# Iterate over each study in the paginated items #}
             <tr>
               <td>{{ s.id }}</td>
-              <td style="transform: rotate(0);"><a href="{{ url_for('study', id=s.id) }}" class="stretched-link text-dark">{{ s.name }}</a></td>
-              <td>{% for u in s.users %}
+              {# Display study ID #}
+              <td style="transform: rotate(0);">
+                <a href="{{ url_for('study', id=s.id) }}" class="stretched-link text-dark">{{ s.name }}</a>
+              </td>
+              {# Display study name with a link to the study detail page #}
+              <td>
+                {% for u in s.users %}
                 {{ u.email }}
                 {% endfor %}
               </td>
+              {# Display creator's email(s) #}
               <td>{% if s.updated_at %}
-                {{ s.created_at.strftime('%d.%m.%Y') }}{% else %}－
+                {{ s.created_at.strftime('%d.%m.%Y') }}
+                {# Display the creation date in the specified format if it exists #}
+                {% else %}－
                 {% endif %}
               </td>
+              {# Display the date if available, otherwise show a dash #}
               <td class="text-end">
+                {# Actions column aligned to the end #}
                 <div class="btn-group" role="group" aria-label="Basic example">
-                  <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="View">
+                  {# Button group for actions #}
+                  <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="tooltip" data-bs-title="View">
                     <i class="fa-solid fa-eye"></i>
-                  </a>{% if s.status == 0 %}
-                  <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="Edit">
+                  </a>
+                  {# View button with tooltip #}
+                  {% if s.status == 0 %}
+                  {# Show edit button only if status is 0 #}
+                  <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="tooltip" data-bs-title="Edit">
                     <i class="fa-solid fa-pen"></i>
-                  </a>{% endif %}
-                  <a href="{{ url_for('delete_study', id=s.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="Delete">
+                  </a>
+                  {% endif %}
+                  {# Edit button with tooltip #}
+                  <a href="{{ url_for('delete_study', id=s.id) }}" class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="tooltip" data-bs-title="Delete">
                     <i class="fa-solid fa-trash"></i>
                   </a>
+                  {# Delete button with tooltip #}
                 </div>
               </td>
             </tr>
@@ -51,29 +87,38 @@
         </table>
 
         <nav aria-label="Page navigation example">
+          {# Navigation for pagination #}
           <ul class="pagination pagination-sm justify-content-center">
+            {# Create a list of pagination items with small size and centered #}
             {% if pagination.has_prev %}
+            {# Check if there is a previous page #}
             <li class="page-item">
-              <a class="page-link text-dark" href="{{ url_for('studies', page=pagination.prev_num) }}" aria-label="Previous">
+              <a class="page-link text-dark" href="{{ url_for('studies', page=pagination.prev_num) }}"
+                aria-label="Previous">
                 <span aria-hidden="true"><i class="fa-solid fa-angle-left"></i></span>
               </a>
             </li>
             {% endif %}
             {% for number in pagination.iter_pages() %}
-              {% if pagination.page != number %}
-                <li class="page-item">
-                  <a class="page-link text-dark" href="{{ url_for('studies', page=number) }}">{{ number }}</a>
-                </li>
-              {% else %}
-              <li class="page-item">
-                <a class="page-link text-light active" href="{{ url_for('studies', page=number) }}">{{ number }}</a>
-              </li>
-              {% endif %}
+            {# Iterate over pagination page numbers #}
+            {% if pagination.page != number %}
+            {# Display page numbers that are not the current page #}
+            <li class="page-item">
+              <a class="page-link text-dark" href="{{ url_for('studies', page=number) }}">{{ number }}</a>
+            </li>
+            {% else %}
+            {# Highlight the current page number #}
+            <li class="page-item">
+              <a class="page-link text-light active" href="{{ url_for('studies', page=number) }}">{{ number }}</a>
+            </li>
+            {% endif %}
             {% endfor %}
 
             {% if pagination.has_next %}
+            {# Check if there is a next page #}
             <li class="page-item">
-              <a class="page-link text-dark" href="{{ url_for('studies', page=pagination.next_num) }}" aria-label="Next">
+              <a class="page-link text-dark" href="{{ url_for('studies', page=pagination.next_num) }}"
+                aria-label="Next">
                 <span aria-hidden="true"><i class="fa-solid fa-angle-right"></i></span>
               </a>
             </li>
@@ -85,3 +130,4 @@
   </div>
 </div>
 {% endblock %}
+{# End of the content block #}

@@ -10,60 +10,61 @@ import pandas as pd
 from io import BytesIO
 import json
 from flask_simplelogin import is_logged_in
-#bp = Blueprint('study', __name__)
+# bp = Blueprint('study', __name__)
 
 @app.route('/studies', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Admin')
 def studies():
+    """
+    Displays a paginated list of studies. Accessible only to users with the 'Admin' role.
+    """
     page = request.args.get('page', 1, type=int)
-    pagination = db.session.query(Study).order_by(
-        Study.id).paginate(page, per_page=10)
+    pagination = db.session.query(Study).order_by(Study.id).paginate(page, per_page=10)
 
-    return render_template('studies/studies.html',
-                        pagination=pagination)
-  
-
-
+    return render_template('studies/studies.html', pagination=pagination)
 
 @app.route('/study/<id>')
 @login_required
 def study(id):
+    """
+    Displays detailed information about a specific study, including progress and statistics.
     
+    Args:
+        id (int): The ID of the study to be displayed.
+
+    Returns:
+        Rendered HTML template with study details and progress information.
+    """
     try:
         study = Study.query.get_or_404(id)
 
         base = request.url_root
 
+        # Calculate progress for scrapers, sources, and answers
         scraper_progress = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == 0 & 2).count()
         source_progress = Result.query.filter(Result.study == study).filter(Result.sources.any(Source.progress == 0 & 2)).count()
         answer_progress = Answer.query.filter(Answer.study == study).filter((Answer.status == 0) & (Answer.source_status_code == 200)).count()
-
         scraper_error = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == -1).count()
 
-            # status 2: results AND sources collected
-
+        # Update study status based on progress
         if (study.status != 4) & (study.status != 0):
             if (source_progress == 0) & (scraper_progress == 0):
                 study.status = 2
                 db.session.commit()
-                # study status 3: assessments finished
-            if (source_progress == 0) & (answer_progress == 0):#
+            if (source_progress == 0) & (answer_progress == 0):
                 if scraper_error > 0:
                     study.status = -1
                 else:
                     study.status = 3
                 db.session.commit()
 
-
-        # get results info
+        # Get results and answers information
         results = db.session.query(Result).join(Result.sources).where((Source.status_code == 200) & (Source.progress == 1)).where(Result.study == study).count()
         max_results = sum([s.limit for s in study.scrapers])
         r_pct = round(results / max_results * 100) if max_results != 0 else 0
 
-        # get answers info
-        answers = Answer.query.filter(
-            Answer.study == study, Answer.status != 0).count()
+        answers = Answer.query.filter(Answer.study == study, Answer.status != 0).count()
         max_answers = Answer.query.filter(Answer.study == study).count()
         a_pct = round(answers / max_answers * 100) if max_answers != 0 else 0
 
@@ -80,45 +81,48 @@ def study(id):
                         max_answers=max_answers,
                         a_pct=a_pct,
                         base=base)
-   
-
 
 @app.route('/study/new', methods=['GET', 'POST'])
 @login_required
 def new_study():
+    """
+    Renders the form for creating a new study, with populated choices for type, search engines, and classifiers.
+    
+    Returns:
+        Rendered HTML template with the new study form.
+    """
     form = StudyForm()
     title = "Create Study"
 
-    # gets study types from db to populate form selection
-    form.type.choices = [(str(s.id), s.name)
-                         for s in StudyType.query.all()]
+    # Gets study types from database to populate form selection
+    form.type.choices = [(str(s.id), s.name) for s in StudyType.query.all()]
 
-    # gets search engines from db to populate form selection
-    form.search_engines.choices = [(str(s.id), s.name)
-                                   for s in SearchEngine.query.filter(SearchEngine.test == 1).all()]
+    # Gets search engines from database to populate form selection
+    form.search_engines.choices = [(str(s.id), s.name) for s in SearchEngine.query.filter(SearchEngine.test == 1).all()]
     
-    # gets classifier from db to populate form selection
-    form.classifier.choices = [(str(s.id), s.display_name)
-                                   for s in Classifier.query.all()]    
+    # Gets classifiers from database to populate form selection
+    form.classifier.choices = [(str(s.id), s.display_name) for s in Classifier.query.all()]    
 
-    return render_template('studies/new_study.html',
-                           form=form,
-                           title=title)
-
+    return render_template('studies/new_study.html', form=form, title=title)
 
 @app.route('/study/new/confirm', methods=['GET', 'POST'])
 @login_required
 def confirm_new_study():
+    """
+    Confirms the creation of a new study by processing the submitted form data and providing a preview.
+    
+    Returns:
+        Rendered HTML template to confirm the new study creation.
+    """
     confirm = ConfirmationForm()
 
     if request.method == "POST":
-
         form = dict(request.form.lists())
         files = request.files
         query_filename = files["query_list"].filename
         print(form)
 
-        # get search engines
+        # Get search engines from form
         engines_ = []
         engine_ls = []
         if "search_engines" in form:
@@ -127,40 +131,36 @@ def confirm_new_study():
                 engines_.append(e)
                 engine_ls.append(id)
 
-        # get study type
+        # Get study type from form
         type_ = StudyType.query.get_or_404(form["type"][0])
 
-        # get result type
+        # Get result type from form
         result_type_ = ResultType.query.get_or_404(form["result_type"][0])
         print(result_type_)
-        # get queries
+        
+        # Get queries from form
         queries_ = []
         query_ls = []
 
-        # from text box
+        # From text box
         if form["queries"] != [""]:
             for query in form["queries"][0].splitlines():
                 q = {}
                 q["query"] = query
                 q["limit"] = form["result_count"] if form["result_count"] else 10
                 q["source"] = 'text'
-
                 queries_.append(q)
-
-        # from file upload
         else:
-            # check if file is csv or excel
-            content_type = ["text/csv",
-                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
-
+            # Handle file upload (CSV or Excel)
+            content_type = ["text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
             if files["query_list"].content_type in content_type:
                 bytes_data = files["query_list"].read()
 
-                # read csv
+                # Read CSV
                 if files["query_list"].content_type == content_type[0]:
                     df = pd.read_csv(BytesIO(bytes_data))
 
-                # read excel
+                # Read Excel
                 elif files["query_list"].content_type == content_type[1]:
                     df = pd.read_excel(BytesIO(bytes_data))
 
@@ -170,9 +170,7 @@ def confirm_new_study():
                     q["query"] = row["Query"]
                     q["limit"] = row["Limit"] if row["Limit"] else form["result_count"]
                     q["source"] = 'upload'
-
                     queries_.append(q)
-
             else:
                 flash("Uploaded file is invalid.", "error")
 
@@ -189,19 +187,23 @@ def confirm_new_study():
                                query_ls=query_ls,
                                engine_ls=engine_ls)
 
-
 @app.route('/study/new/create/', methods=['GET', 'POST'])
 @login_required
 def create_new_study():
+    """
+    Creates a new study based on confirmed data and stores it in the database.
+    
+    Returns:
+        Redirects to the newly created study's page or updates an existing study.
+    """
     data = dict(request.form)
     data = data["data"].replace("'", '"')
     print(data)
     dt = json.loads(data)
-
     id = int(dt['id'][0])
 
     if id == 0:
-
+        # Create a new study
         new_queries = []
         for query in dt["queries"]:
             print(query)
@@ -212,20 +214,16 @@ def create_new_study():
             else:
                 q.limit = int(query["limit"][0])
             q.created_at = datetime.now()
-
             new_queries.append(q)
 
         new_engines = []
         for engine in dt["search_engines"]:
             id = int(engine)
             e = SearchEngine.query.get_or_404(id)
-
             new_engines.append(e)
 
         new_type = StudyType.query.get_or_404(int(dt["type"][0]))
-        new_result_type = ResultType.query.get_or_404(
-            int(dt["result_type"][0]))
-
+        new_result_type = ResultType.query.get_or_404(int(dt["result_type"][0]))
         classifier = Classifier.query.get_or_404(1)
 
         study = Study()
@@ -244,7 +242,7 @@ def create_new_study():
         study.classifier.append(classifier)
 
         user_list = [current_user]
-        #admin users
+        # Add admin users
         if current_user.id != 31:
             admin1 = User.query.get(31)
             user_list.append(admin1)
@@ -253,7 +251,6 @@ def create_new_study():
             user_list.append(admin2)
 
         study.users.extend(user_list)
-
 
         insert = []
         insert.extend(new_queries)
@@ -266,44 +263,41 @@ def create_new_study():
         return redirect(url_for('study', id=study.id))
 
     else:
+        # Update an existing study
         study = Study.query.get_or_404(id)
-
-        # queries
         query_add = []
         query_drop = []
 
         db_queries = [q.query for q in study.queries]
         frm_queries = [q["query"] for q in dt["queries"]]
 
-        # generate list of queries to add
+        # Generate list of queries to add
         for q in frm_queries:
             if q not in db_queries:
                 query_add.append(q)
 
-        # generate list of queries to drop
+        # Generate list of queries to drop
         for q in db_queries:
             if q not in frm_queries:
                 query_drop.append(q)
 
-        # drop queries
+        # Drop queries
         for query in study.queries:
             if query.query in query_drop:
                 db.session.delete(query)
 
-        # create new queries
+        # Create new queries
         updated_queries = []
         for query in query_add:
             q = Query()
             q.query = query
             q.limit = int(dt["result_count"][0])
             q.created_at = datetime.now()
-
             updated_queries.append(q)
 
-        # search engines
+        # Update search engines
         frm_se = [int(se) for se in dt["search_engines"]]
         db_se = [se.id for se in study.searchengines]
-
         se_all = SearchEngine.query.all()
 
         for se in se_all:
@@ -313,10 +307,9 @@ def create_new_study():
                 study.searchengines.remove(se)
 
         new_type = StudyType.query.get_or_404(int(dt["type"][0]))
-        new_result_type = ResultType.query.get_or_404(
-            int(dt["result_type"][0]))
+        new_result_type = ResultType.query.get_or_404(int(dt["result_type"][0]))
 
-        # update entry
+        # Update study entry
         study.name = dt["name"][0]
         study.task = dt["task"][0]
         study.description = dt["description"][0]
@@ -332,11 +325,18 @@ def create_new_study():
         flash('Your study has been updated.', 'success')
         return redirect(url_for('study', id=study.id))
 
-
 @app.route('/study/<id>/delete', methods=['GET', 'POST'])
 @login_required
 def delete_study(id):
-    # are you sure you want to delete? y/n
+    """
+    Deletes a specific study and its associated data after user confirmation.
+    
+    Args:
+        id (int): The ID of the study to be deleted.
+
+    Returns:
+        Redirects to the dashboard if the study is deleted.
+    """
     study = Study.query.get_or_404(id)
     form = ConfirmationForm()
 
@@ -344,62 +344,67 @@ def delete_study(id):
     print(study.queries)
     print(study)
 
-    if form.is_submitted():
-        if form.submit.data:
-            # delete scrapers_
-            for scraper in study.scrapers:
-                db.session.delete(scraper)
+    if form.is_submitted() and form.submit.data:
+        # Delete associated scrapers
+        for scraper in study.scrapers:
+            db.session.delete(scraper)
 
-            # delete queries
-            for query in study.queries:
-                db.session.delete(query)
+        # Delete associated queries
+        for query in study.queries:
+            db.session.delete(query)
 
-            # delete study
-            db.session.delete(study)
+        # Delete the study
+        db.session.delete(study)
+        db.session.commit()
 
-            # commit to db
-            db.session.commit()
+        flash('Study deleted', 'success')
+        return redirect(url_for('dashboard'))
 
-            flash('Study deleted', 'success')
-            return redirect(url_for('dashboard'))
-
-    return render_template('studies/delete_study.html',
-                           form=form,
-                           study=study)
-
+    return render_template('studies/delete_study.html', form=form, study=study)
 
 @app.route('/study/<id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_study(id):
+    """
+    Renders the form to edit an existing study, with pre-filled data.
+    
+    Args:
+        id (int): The ID of the study to be edited.
+
+    Returns:
+        Rendered HTML template with the study edit form.
+    """
     study = Study.query.get_or_404(id)
     form = StudyForm()
-
     title = "Edit Study"
 
+    # Populate form fields with data from the existing study
     form.id.data = study.id
     form.name.data = study.name
     form.task.data = study.task
     form.description.data = study.description
-    form.type.choices = [(str(s.id), s.name)
-                         for s in StudyType.query.filter(StudyType.id <= 2)]
+    form.type.choices = [(str(s.id), s.name) for s in StudyType.query.filter(StudyType.id <= 2)]
     form.type.data = study.studytype.id
-    form.search_engines.choices = [(str(s.id), s.name)
-                                   for s in SearchEngine.query.filter(SearchEngine.id <= 2)]
+    form.search_engines.choices = [(str(s.id), s.name) for s in SearchEngine.query.filter(SearchEngine.id <= 2)]
     form.search_engines.data = [s.id for s in study.searchengines]
     form.queries.data = '\n'.join([q.query for q in study.queries])
     form.result_type.data = study.resulttype.id
     form.result_count.data = study.result_count
 
-    return render_template('studies/new_study.html',
-                           form=form,
-                           study=study,
-                           title=title)
-
+    return render_template('studies/new_study.html', form=form, study=study, title=title)
 
 @app.route('/study/<id>/close')
 @login_required
 def close_study(id):
+    """
+    Closes a study by setting its status to closed (status 4).
+    
+    Args:
+        id (int): The ID of the study to be closed.
 
+    Returns:
+        Redirects to the study page with a success message.
+    """
     study = Study.query.get_or_404(id)
     study.status = 4
     db.session.commit()

@@ -4,23 +4,32 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
+
 <div class="row">
   <div class="col-12 mb-4">
+    <!-- Main heading for the assessments page -->
     <h3>Assessments</h3>
   </div>
   <div class="col-4">
     <div class="card shadow-sm">
+      <!-- Card header for the progress section -->
       <h6 class="card-header">Your Progress</h6>
       <div class="card-body">
+        <!-- Display user's progress with a percentage -->
         <div class="text-center lead mb-2">{{ answers_closed }} out of {{ answers_all }}</div>
         <div class="progress" style="height: 40px;">
-          <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{answers_closed}}" aria-valuemin="0" aria-valuemax="{{answers_all}}">{{pct}}%</div>
+          <!-- Progress bar showing completion percentage -->
+          <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;"
+            aria-valuenow="{{answers_closed}}" aria-valuemin="0" aria-valuemax="{{answers_all}}">{{pct}}%</div>
         </div>
       </div>
       <ul class="list-group list-group-flush">
+        <!-- Button to start the assessment, linking to the appropriate page -->
         <li class="small list-group-item list-group-item-light">
-          <a href="{{ url_for('assessment', participant_id=participant.id, study_id=study.id) }}" class="btn btn-primary btn-sm">
+          <a href="{{ url_for('assessment', participant_id=participant.id, study_id=study.id) }}"
+            class="btn btn-primary btn-sm">
             Start <i class="fas fa-share-square"></i>
           </a>
         </li>
