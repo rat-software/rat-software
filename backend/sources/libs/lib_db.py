@@ -43,11 +43,6 @@ Example:
 #load required libs
 import psycopg2
 from psycopg2.extras import execute_values
-import json
-import random
-import time
-import math
-import json
 from datetime import datetime
 
 class DB:
@@ -86,13 +81,13 @@ class DB:
         conn.close()
 
 
-    def get_sources_pending(self):
+    def get_sources_pending(self, job_server):
         """
         Get all failed sources (progress = 2 or progress = -1)
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT source.id, source.created_at, result_source.result from source, result_source where (source.progress = 2 or source.progress = -1) and result_source.source = source.id  and result_source.counter < 11")
+        cur.execute("SELECT result_source.id, result_source.source, result_source.result  FROM result_source where (result_source.progress = 2 or result_source.progress = -1)  and result_source.counter < 11 and result_source.job_server = %s and result_source.created_at < now() - interval '30 minutes'",(job_server,))
         conn.commit()
         sources_pending = cur.fetchall()
         conn.close()
@@ -119,13 +114,16 @@ class DB:
 
             created_at = sc[1]
 
-            # Get interval between two timstamps as timedelta object
+            # Get interval between two timestamps as timedelta object
             diff = timestamp - created_at
 
             # Get interval between two timstamps in hours
             diff_in_hours = diff.total_seconds() / 3600
 
+
+
             if diff_in_hours < self.refresh_time:
+                print(diff_in_hours)
                 return source_id
             else:
                 return False
@@ -213,7 +211,7 @@ class DB:
         cur.execute("Update result SET ip=%s, main=%s, final_url=%s WHERE id = %s", (ip, main, final_url, result_id))
         conn.commit()
         conn.close()
-    
+
     def get_source_counter_result(self, result_id):
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -233,7 +231,7 @@ class DB:
         cur.execute("Update result_source SET source=%s, progress = %s, counter = %s, created_at =%s, job_server =%s WHERE result = %s", (source_id, progress, counter, created_at, job_server, result_id))
         conn.commit()
         conn.close()
-        
+
     def update_result_source_result(self, result_id, progress, counter, created_at):
         """
         Update result_source table when scraping job is done
@@ -260,17 +258,27 @@ class DB:
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        created_at = datetime.now()
         cur.execute("Update result_source SET progress = %s, counter = %s, created_at =%s WHERE source = %s", (progress, counter, created_at, source_id))
         conn.commit()
         conn.close()
 
 
+    def delete_result_source_pending(self, result_source_id):
+        """
+        Delete pending sources
+        """
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("Delete from result_source WHERE id = %s", (result_source_id,))
+        conn.commit()
+        conn.close()
 
-    def reset(self):
+    def reset(self, job_server):
         """
         Call reset when the sources_controller stops and delete pending sources
         """
-        sources_pending = DB.get_sources_pending(self)
+        sources_pending = DB.get_sources_pending(self, job_server)
         for sources_pending in sources_pending:
             source_id = sources_pending[0]
             DB.delete_source_pending(self, source_id)
@@ -287,7 +295,7 @@ class DB:
         scr = cur.fetchone()
         conn.close()
         return scr
-    
+
     def get_result_source_source(self, result_id):
         """
         Check if a result has allready be declared as job to scrape
@@ -307,8 +315,9 @@ class DB:
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-        sql = "SELECT result.id, result.url FROM result LEFT JOIN result_source ON result_source.result = result.id WHERE (result_source.source is NULL AND NOT EXISTS (SELECT result from result_source WHERE result = result.id) OR result_source.progress = 0 and result_source.counter < 11)  LIMIT 5"
-
+        #sql = "SELECT result.id, result.url FROM result LEFT JOIN result_source ON result_source.result = result.id WHERE (result_source.source is NULL AND NOT EXISTS (SELECT result from result_source WHERE result = result.id) OR result_source.progress = 0 and result_source.counter < 11)  LIMIT 5"
+        sql = "SELECT result.id, result.url, study.studytype FROM result JOIN study on result.study = study.id LEFT JOIN result_source ON result_source.result = result.id WHERE (result_source.source is NULL AND NOT EXISTS (SELECT result from result_source WHERE result = result.id) OR result_source.progress = 0 and result_source.counter < 11) AND study.studytype !=6 LIMIT 5"
+        #sql = "SELECT result.id, result.url, study.studytype FROM result JOIN study on result.study = study.id LEFT JOIN result_source ON result_source.result = result.id WHERE (result_source.source is NULL AND NOT EXISTS (SELECT result from result_source WHERE result = result.id) OR result_source.progress = 0 and result_source.counter < 11) AND study.studytype !=6 and study.id > 181"
         cur.execute(sql)
         conn.commit()
         sources = cur.fetchall()

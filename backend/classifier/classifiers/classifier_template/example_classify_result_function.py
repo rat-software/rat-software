@@ -23,29 +23,31 @@ Add the name of your classifier (same name as the folder and Python file) and a 
 '''
 
 def classify_result(data):
+
     """
-    Main function for your classifier.
+    Classify a webpage based on input data and return the classification result.
 
     Args:
-        data (dict): The data for the classifier.
+        data: Dictionary containing 'url', 'main', 'code', and 'query' keys with corresponding values.
 
     Returns:
-        str: Classification result.
+        str: Classification result indicating whether the webpage is about RAT or not.
     """
 
+    # Extract data from the input dictionary
     url = data["url"]
     main = data["main"]
     code = data["code"].lower().split()
     query = data["query"].lower()
 
-    # generate indicators in a single operation
+    # Generate indicators in a single operation
     indicators = {
         "query_counter": code.count(query),
         "url_counter": url.count(query),
         "main_counter": main.count(query)
     }
 
-    # classify the results
+    # Classify the results based on indicators
     if indicators["query_counter"] > 5 and (indicators["url_counter"] > 0 or indicators["main_counter"] > 0):
         return "Webpage is about RAT"
     else:
@@ -53,6 +55,16 @@ def classify_result(data):
 
 # Function to read file content
 def read_file_content(filename):
+    """
+    Read and return the content of a file.
+
+    Args:
+        filename: The path to the file to read.
+
+    Returns:
+        str: Content of the file as a string.
+    """
+
     with open(filename, encoding='utf-8', errors='ignore') as f:
         return f.read()
 

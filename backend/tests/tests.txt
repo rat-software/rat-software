@@ -1,3 +1,0 @@
-Integration tests:
-DB Tests:
-1. DB Connection test

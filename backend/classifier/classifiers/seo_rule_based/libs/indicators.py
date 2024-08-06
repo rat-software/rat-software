@@ -5,20 +5,26 @@ import json
 import time
 import os
 import inspect
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
+from seleniumbase import Driver
 from bs4 import BeautifulSoup
 from lxml import html
 
-
-options = Options()
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
-options.add_argument('--headless=new')
-
 def create_webdriver():
-    return webdriver.Chrome(options=options)
+
+    driver = Driver(
+            browser="chrome",
+            wire=True,
+            uc=True,
+            headless2=True,
+            incognito=False,
+            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            do_not_track=True,
+            undetectable=True,
+            locale_code="de",
+            no_sandbox=True,
+            #mobile=True,
+            )
+    return driver
 
 def read_config_file(filename):
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))

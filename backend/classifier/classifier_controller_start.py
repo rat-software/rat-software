@@ -4,8 +4,6 @@ ClassifierController
 This class represents a controller for starting the classifier and resetting jobs.
 
 Methods:
-    __init__(): Initializes the ClassifierController object.
-    __del__(): Destructor for the ClassifierController object.
     start(workingdir): Starts the classifier and resets jobs.
 
 Args:
@@ -17,37 +15,22 @@ Returns:
 Example:
     classifier_controller = ClassifierController()
     classifier_controller.start(workingdir)
-    del classifier_controller
 """
 
-# Processing libraries
+# Import necessary libraries
 import threading
 from subprocess import call
-import sys
-
-import psutil
-
-from libs.lib_helper import *
-from libs.lib_db import *
-
-import time
-
 import os
 import inspect
 
+
 class ClassifierController:
+    """
+    A class used to control the starting of the classifier and resetting jobs.
 
-    def __init__(self):
-        """
-        Initialize the ClassifierController object.
-        """
-        self = self
-
-    def __del__(self):
-        """
-        Destructor for the ClassifierController object.
-        """        
-        print('Classifier Controller object destroyed')
+    Methods:
+        start: Starts the classifier and resets jobs.
+    """
 
     def start(self, workingdir):
         """
@@ -58,31 +41,43 @@ class ClassifierController:
 
         Returns:
             None
-        """        
+        """
         def classifier():
-            call(["python", workingdir + "/jobs/job_classifier.py"])
+            """
+            Function to start the classifier job.
+            This function calls the job_classifier.py script using the subprocess call.
+            """
+            job = 'python ' + os.path.join(workingdir, "jobs", 'job_classifier.py')
+            os.system(job)
 
         def reset():
-            call(["python", workingdir + "/jobs/job_reset_classifier.py"])
+            """
+            Function to start the job reset classifier.
+            This function calls the job_reset_classifier.py script using the subprocess call.
+            """
+            job = 'python ' + os.path.join(workingdir, "jobs", 'job_reset_classifier.py')
+            os.system(job)
 
+        # Create a new thread for the classifier function and start it
         process1 = threading.Thread(target=classifier)
         process1.start()
 
+        # Create a new thread for the reset function and start it
         process2 = threading.Thread(target=reset)
         process2.start()
 
 
 if __name__ == "__main__":
+    # Initialize the ClassifierController object
     classifier_controller = ClassifierController()
 
+    # Get the current directory of the script
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    # Get the parent directory of the current directory
     parentdir = os.path.dirname(currentdir)
 
-    if os.path.exists(currentdir + '/jobs/job_classifier.py' ):
-        workingdir = currentdir
+    # Determine the working directory based on the presence of job_classifier.py
+    workingdir = currentdir if os.path.exists(os.path.join(currentdir, 'jobs', 'job_classifier.py')) else parentdir
 
-    elif os.path.exists(parentdir + '/jobs/job_classifier.py' ):
-        workingdir = parentdir
-
+    # Start the classifier and reset jobs
     classifier_controller.start(workingdir)
-    del classifier_controller

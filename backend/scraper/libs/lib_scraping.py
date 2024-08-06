@@ -8,7 +8,6 @@ Methods:
     decode_code: Decode base64-encoded code.
     decode_picture: Decode base64-encoded picture.
     get_result_meta: Get metadata for a given URL.
-    get_chrome_extension: Get the path to the Chrome extension.
     take_screenshot: Take a screenshot of the browser window.
     get_real_url: Get the real URL after any redirects.
 
@@ -128,20 +127,6 @@ class Scraping:
 
         return meta
 
-    def get_chrome_extension(self):
-        """
-        Get the path to the Chrome extension.
-
-        Returns:
-            str: Path to the Chrome extension.
-        """        
-        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        parentdir = os.path.dirname(currentdir)
-        if os.name == "nt":
-            extension_path = parentdir+'\\..\\crx\I-don-t-care-about-cookies.crx'
-        else:
-            extension_path = parentdir+'//..//crx/I-don-t-care-about-cookies.crx'
-        return extension_path
 
 
     def take_screenshot(self, driver):
