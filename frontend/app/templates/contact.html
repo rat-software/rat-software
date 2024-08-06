@@ -1,34 +1,56 @@
 {% extends "master.html" %}
+{# Extend the base master template #}
 
 {% block title %}Contact{% endblock %}
+{# Set the title of the page to "Contact" #}
 {% block head %}{{ super() }}{% endblock %}
+{# Include any additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row pt-3 m-5 align-items-top justify-content-center" style="min-height: 400px">
+  {# Create a row with padding, margin, top alignment, and center alignment #}
   <div class="col-12 pt-3 mb-5">
+    {# Define a column that spans the full width with padding and margin-bottom #}
     <form method="post" class="card p-5 border-0" style="opacity:.9">
+      {# Create a form with POST method, card styling, padding, and reduced opacity #}
       <h5>Contact</h5>
+      {# Heading for the form #}
       <p class="mb-3">
         Do you have any questions, feedback, or want to tell us something else?
         Contact us using the form below and we will get back to you.</p>
+      {# Informational text for the form #}
       <div class="mb-3">
+        {# Create a division with margin-bottom #}
         {{ form.name.label(class_="form-label")}}
+        {# Render the label for the name field with a form-label class #}
         {{ form.name(class_="form-control")}}
+        {# Render the name input field with a form-control class #}
       </div>
       <div class="mb-3">
+        {# Create a division with margin-bottom #}
         {{ form.email.label(class_="form-label")}}
+        {# Render the label for the email field with a form-label class #}
         {{ form.email(class_="form-control")}}
+        {# Render the email input field with a form-control class #}
       </div>
       <div class="mb-3">
+        {# Create a division with margin-bottom #}
         {{ form.message.label(class_="form-label")}}
+        {# Render the label for the message field with a form-label class #}
         {{ form.message(class_="form-control")}}
+        {# Render the message input field with a form-control class #}
       </div>
       <div class="mb-3">
+        {# Create a division with margin-bottom #}
         {{ form.submit(class_="btn btn-primary float-end") }}
+        {# Render the submit button with a primary button class and float-end alignment #}
       </div>
     </form>
   </div>
 </div>
 {% endblock %}
+{# End the content block #}

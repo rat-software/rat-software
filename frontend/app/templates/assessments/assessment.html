@@ -4,46 +4,66 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
+
 <div class="row">
   <div class="col-3">
+    <!-- Progress bar showing the completion percentage -->
     <div class="row mb-2 py-0">
       <div class="col-10">
         <div class="progress" style="height: 25px">
-          <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{closed}}" aria-valuemin="0" aria-valuemax="{{all}}"></div>
+          <!-- Progress bar filled according to the percentage completion -->
+          <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{closed}}"
+            aria-valuemin="0" aria-valuemax="{{all}}"></div>
         </div>
       </div>
+      <!-- Display the percentage completion -->
       <div class="col text-start">
         {{ (pct | round(0) | string)[:-2] }}%
       </div>
-
     </div>
+
+    <!-- Display the study task if it exists -->
     {% if answer.study.task %}
     <div class="card mb-4 shadow-sm">
       <div class="card-body">
+        <!-- Display the task text with a query highlighted -->
         <p class="card-text">{{ answer.study.task | replace('***', '<b>'~answer.result.query_.query~'</b>') | safe}}</p>
       </div>
     </div>
     {% endif %}
+
+    <!-- Display the question and form for answering -->
     <div class="card mb-4 shadow-sm">
       <div class="card-header"><b>{{ answer.question.title }}</b></div>
       <form method="POST">
+        <!-- Display the question and its form elements -->
         {{ question_display(answer.question, form) }}
         <div class="card-body">
+          <!-- Submit button for the form -->
           {{ form.submit(class_="btn btn-outline-primary btn-sm") }}
+          <!-- Skip button to move to the next question -->
           {{ form.skip(class_="btn btn-link btn-sm ms-2") }}
         </div>
       </form>
     </div>
   </div>
+
   <div class="col-9">
+    <!-- Display the source content based on its type -->
     {% if "html" in answer.result.sources[0].content_type %}
-      <embed class="source-container" src="data:image/png;base64,{{ answer.result.sources[0].bin.decode('ascii') }}" />
+    <!-- Embed image if the content type is HTML -->
+    <embed class="source-container" src="data:image/png;base64,{{ answer.result.sources[0].bin.decode('ascii') }}" />
     {% elif "pdf" in answer.result.sources[0].content_type %}
-      <embed class="source-container" width="100%" src="data:application/pdf;base64,{{ answer.result.sources[0].bin.decode('ascii') }}" />
+    <!-- Embed PDF if the content type is PDF -->
+    <embed class="source-container" width="100%"
+      src="data:application/pdf;base64,{{ answer.result.sources[0].bin.decode('ascii') }}" />
     {% else %}
-      <embed class="source-container" src="data:image/png;base64,{{ answer.result.sources[0].bin.decode('ascii') }}" />
+    <!-- Default case: Embed image -->
+    <embed class="source-container" src="data:image/png;base64,{{ answer.result.sources[0].bin.decode('ascii') }}" />
     {% endif %}
   </div>
 </div>
+
 {% endblock %}

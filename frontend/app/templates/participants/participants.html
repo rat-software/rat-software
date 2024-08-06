@@ -4,22 +4,31 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
+
+<!-- Link to navigate back to the study page -->
 <div class="pb-4">
-  <a class="text-dark" href="{{ url_for('study', id=study.id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Study</a>
+  <a class="text-dark" href="{{ url_for('study', id=study.id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to
+    Study</a>
 </div>
+
+<!-- Container for the participants table -->
 <div class="row">
   <div class="col pb-4">
     <div class="card">
       <div class="card-body">
 
+        <!-- Header for the participants section -->
         <div class="hstack">
           <div class="crd-header">Participants</div>
         </div>
 
+        <!-- Table displaying participant information -->
         <div class="py-2">
           <table class="table table-striped table-borderless">
             <thead>
+              <!-- Table headers -->
               <th>#</th>
               <th>Name</th>
               <th>Finished Evaluations</th>
@@ -28,17 +37,27 @@
               <th>Created at</th>
               <th>URL (for Demo)</th>
             </thead>
-            {% for p in info %}
+            <tbody>
+              <!-- Loop through participant information and display each row -->
+              {% for p in info %}
               <tr>
+                <!-- Display participant index -->
                 <td>{{ loop.index }}</td>
+                <!-- Display participant name -->
                 <td>{{ p[0].name }}</td>
+                <!-- Display number of finished evaluations -->
                 <td>{{ p[3] }}</td>
+                <!-- Display number of open evaluations -->
                 <td>{{ p[2] }}</td>
+                <!-- Display number of skipped evaluations -->
                 <td>{{ p[4] }}</td>
+                <!-- Display participant creation date -->
                 <td>{{ p[0].created_at.strftime('%d.%m.%Y') }}</td>
+                <!-- Link to participant's demo page -->
                 <td><a href="{{url_for('participant', id=p[0].id)}}">Participate</a></td>
               </tr>
-            {% endfor %}
+              {% endfor %}
+            </tbody>
           </table>
         </div>
       </div>

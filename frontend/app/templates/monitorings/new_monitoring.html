@@ -4,37 +4,58 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
   <div class="col">
+    <!-- Main heading for the form -->
     <h3>Create new monitoring</h3>
+
+    <!-- Form for creating new monitoring, with POST method and support for file uploads -->
     <form method="POST" class="card p-4 shadow-sm" enctype="multipart/form-data">
+      <!-- Input field for the name of the monitoring -->
       <div class="mb-3">
         {{ form.name.label(class_="form-label") }}
         {{ form.name(class_="form-control") }}
       </div>
+
+      <!-- Input field for the description of the monitoring -->
       <div class="mb-3">
         {{ form.description.label(class_="form-label") }}
         {{ form.description(class_="form-control") }}
       </div>
+
+      <!-- Input field for queries related to the monitoring -->
       <div class="mb-3">
         {{ form.queries.label(class_="form-label") }}
         {{ form.queries(class_="form-control") }}
       </div>
+
+      <!-- Input field for selecting countries -->
       <div class="mb-3">
         {{ form.countries.label(class_="form-label") }}
         {{ form.countries() }}
       </div>
+
+      <!-- Input field for specifying the result count -->
       <div class="mb-3">
         {{ form.result_count.label(class_="form-label") }}
         {{ form.result_count(class_="form-control") }}
       </div>
+
+      <!-- Dropdown for selecting the result type -->
       <div class="mb-3">
         {{ form.result_type.label(class_="form-label") }}
         {{ form.result_type(class_="form-select") }}
       </div>
-      <div><div class="form-label">Interval</div></div>
+
+      <!-- Label for the interval section -->
+      <div>
+        <div class="form-label">Interval</div>
+      </div>
+
+      <!-- Input fields for specifying interval frequency and mode -->
       <div class="row mb-3">
         <div class="col-6">
           {{ form.interval_frequency(class_="form-select") }}
@@ -43,6 +64,8 @@
           {{ form.interval_mode(class_="form-select") }}
         </div>
       </div>
+
+      <!-- Submit button for the form -->
       <div class="mb-3">
         {{ form.submit(class_="btn btn-primary") }}
       </div>

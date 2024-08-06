@@ -1,20 +1,32 @@
 {% extends "master.html" %}
+{# Extend the base master template #}
 
 {% block title %}Delete study{% endblock %}
+{# Set the title of the page to "Delete study" #}
 {% block head %}{{ super() }}{% endblock %}
+{# Include any additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row">
+  {# Create a row for layout #}
   <div class="col">
+    {# Define a column that spans the full width #}
     <h3>Delete Study</h3>
+    {# Heading for the delete study form #}
     <form method="POST" class="card p-4 shadow-sm">
+      {# Start a form with POST method inside a card component with padding and shadow #}
       <div class="mb-3">Are you sure you want to delete {{ study.name }}?</div>
+      {# Message asking for confirmation to delete the specific study #}
       <div class="mb-3">
         {{ form.submit(class_="btn btn-danger") }}
+        {# Render a submit button with a "danger" style indicating a destructive action #}
       </div>
     </form>
   </div>
 </div>
 {% endblock %}
+{# End the content block #}

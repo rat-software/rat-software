@@ -4,16 +4,26 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for accessibility -->
 <h1 class="sr-only">RAT</h1>
+
+<!-- Link to return to the study page -->
 <div class="pb-4">
-  <a class="text-dark" href="{{ url_for('study', id=question.study.id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Study</a>
+  <a class="text-dark" href="{{ url_for('study', id=question.study.id) }}">
+    <i class="fa-solid fa-angle-left me-2"></i> Back to Study
+  </a>
 </div>
 
+<!-- Container for the question form -->
 <div class="row">
   <div class="col">
+    <!-- Display the title of the question -->
     <h3>{{ question.title }}</h3>
 
+    <!-- Form for answering the question -->
     <form method="POST" class="card p-4 shadow-sm">
+
+      <!-- Short text input field -->
       {% if question.questiontype.display == "short_text" %}
       <div class="mb-3">
         {{ form.short_text.label(class_="form-label") }}
@@ -21,6 +31,7 @@
       </div>
       {% endif %}
 
+      <!-- Long text input field -->
       {% if question.questiontype.display == "long_text" %}
       <div class="mb-3">
         {{ form.long_text.label(class_="form-label") }}
@@ -28,33 +39,39 @@
       </div>
       {% endif %}
 
+      <!-- True/False radio buttons -->
       {% if question.questiontype.display == "true_false" %}
       <div class="mb-3">
         {{ form.true_false.label }}
         {% for radio in form.true_false %}
-          <div class="form-check form-check-inline">
-            {{ radio(class_="form-check-input") }}
-            {{ radio.label(class_="form-check-label") }}
-          </div>
+        <div class="form-check form-check-inline">
+          {{ radio(class_="form-check-input") }}
+          {{ radio.label(class_="form-check-label") }}
+        </div>
         {% endfor %}
       </div>
       {% endif %}
 
+      <!-- Likert scale (rating) -->
       {% if question.questiontype.display == "likert_scale" %}
       <div class="mb-3">
         <table class="table text-center table-borderless">
           <thead>
+            <!-- Column headers for Likert scale -->
             {% for radio in form.likert_scale %}
-              <th width="{{ 100 / form.likert_scale.choices | length}}%">{{ radio.label(class_="form-label") }}</th>
+            <th width="{{ 100 / form.likert_scale.choices | length}}%">
+              {{ radio.label(class_="form-label") }}
+            </th>
             {% endfor %}
           </thead>
           <tbody>
             <tr>
+              <!-- Row for Likert scale options -->
               {% for radio in form.likert_scale %}
-                <td>
-                  <span class="mb-2 d-block">{{ radio.data }}</span>
-                  {{ radio }}
-                </td>
+              <td>
+                <span class="mb-2 d-block">{{ radio.data }}</span>
+                {{ radio }}
+              </td>
               {% endfor %}
             </tr>
           </tbody>
@@ -62,7 +79,7 @@
       </div>
       {% endif %}
 
-
+      <!-- Multiple choice field -->
       {% if question.questiontype.display == "multiple_choice" %}
       <div class="mb-3">
         {{ form.multiple_choice.label(class_="form-label") }}
@@ -70,6 +87,7 @@
       </div>
       {% endif %}
 
+      <!-- Scale number input field -->
       {% if question.questiontype.display == "scale_number" %}
       <div class="mb-3">
         {{ form.scale_number.label(class_="form-label") }}
@@ -77,6 +95,7 @@
       </div>
       {% endif %}
 
+      <!-- Submit button -->
       <div class="my-3 clearfix">
         {{ form.submit(class_="btn btn-success float-end") }}
       </div>

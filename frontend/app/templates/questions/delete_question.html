@@ -4,13 +4,21 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
+<!-- Container for the delete question form -->
 <div class="row">
   <div class="col">
+    <!-- Heading for the delete question page -->
     <h3>Delete Question</h3>
+
+    <!-- Form for confirming the deletion of a question -->
     <form method="POST" class="card p-4 shadow-sm">
+      <!-- Confirmation message asking if the user is sure they want to delete the question -->
       <div class="mb-3">Are you sure you want to delete {{ question.title }}?</div>
+
+      <!-- Submit button for confirming the deletion -->
       <div class="mb-3">
         {{ form.submit(class_="btn btn-danger") }}
       </div>

@@ -4,23 +4,33 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
+<!-- Container for the login form centered on the page -->
 <div class="row">
   <div class="col-lg-4 offset-lg-4">
-    <h3></h3>
+    <!-- Card element to contain the login form -->
     <div class="card shadow-sm mt-4">
+      <!-- Card header with the title "Log In" -->
       <h6 class="card-header">Log In</h6>
+
+      <!-- Form for user login -->
       <form method="POST">
         <div class="card-body">
+          <!-- Username input field -->
           <div class="mb-3">
             {{ form.username.label(class_="form-label") }}
             {{ form.username(class_="form-control") }}
           </div>
+
+          <!-- Password input field -->
           <div class="mb-3">
             {{ form.password.label(class_="form-label") }}
             {{ form.password(class_="form-control") }}
           </div>
+
+          <!-- Submit button aligned to the end of the form -->
           <div class="mb-3 text-end">
             {{ form.submit(class_="btn btn-primary") }}
           </div>

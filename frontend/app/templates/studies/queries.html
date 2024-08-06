@@ -1,31 +1,51 @@
 {% extends "master.html" %}
+{# Extend the base master template #}
 
 {% block title %}Queries{% endblock %}
+{# Set the page title to "Queries" #}
+
 {% block head %}{{ super() }}{% endblock %}
+{# Include additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
+
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row">
+  {# Create a row for layout #}
   <div class="col-8 offset-2">
+    {# Define a column that spans 8 out of 12 columns with an offset of 2 columns #}
     <div class="card shadow-sm">
+      {# Create a card with shadow effect #}
       <h2 class="card-header crd-header">Queries</h2>
+      {# Card header with the title "Queries" #}
       <div class="card-body">
+        {# Card body containing the main content #}
         <table class="table table-hover">
+          {# Create a table with hover effect #}
           <thead>
+            {# Table header #}
             <th>ID</th>
             <th>Query</th>
             <th>Limit</th>
             <th>Created at</th>
           </thead>
           <tbody>
+            {# Table body where each query is listed #}
             {% for q in pagination.items %}
+            {# Iterate over each query in the paginated items #}
             <tr>
               <td>{{ q.id }}</td>
+              {# Display query ID #}
               <td>{{ q.query }}</td>
+              {# Display the query text #}
               <td>{{ q.limit }}</td>
+              {# Display the query limit #}
               <td>{% if q.created_at %}
                 {{ q.created_at.strftime('%d.%m.%Y %H:%M') }}
+                {# Display the query creation date in the specified format if it exists #}
                 {% endif%}
               </td>
             </tr>
@@ -34,30 +54,39 @@
         </table>
 
         <nav aria-label="Page navigation example">
+          {# Navigation for pagination #}
           <ul class="pagination pagination-sm justify-content-center">
+            {# Create a list of pagination items with small size and centered #}
             {% if pagination.has_prev %}
+            {# Check if there is a previous page #}
             <li class="page-item">
-              <a class="page-link text-dark" href="{{ url_for('queries', page=pagination.prev_num, id=id) }}" aria-label="Previous">
+              <a class="page-link text-dark" href="{{ url_for('queries', page=pagination.prev_num, id=id) }}"
+                aria-label="Previous">
                 <span aria-hidden="true"><i class="fa-solid fa-angle-left"></i></span>
               </a>
             </li>
             {% endif %}
             {% for number in pagination.iter_pages() %}
-
-              {% if pagination.page != number %}
-                <li class="page-item">
-                  <a class="page-link text-dark" href="{{ url_for('queries', page=number, id=id) }}">{{ number }}</a>
-                </li>
-              {% else %}
-              <li class="page-item">
-                <a class="page-link text-light active" href="{{ url_for('queries', page=number, id=id) }}">{{ number }}</a>
-              </li>
-              {% endif %}
+            {# Iterate over pagination page numbers #}
+            {% if pagination.page != number %}
+            {# Display page numbers that are not the current page #}
+            <li class="page-item">
+              <a class="page-link text-dark" href="{{ url_for('queries', page=number, id=id) }}">{{ number }}</a>
+            </li>
+            {% else %}
+            {# Highlight the current page number #}
+            <li class="page-item">
+              <a class="page-link text-light active" href="{{ url_for('queries', page=number, id=id) }}">{{ number
+                }}</a>
+            </li>
+            {% endif %}
             {% endfor %}
 
             {% if pagination.has_next %}
+            {# Check if there is a next page #}
             <li class="page-item">
-              <a class="page-link text-dark" href="{{ url_for('queries', page=pagination.next_num, id=id) }}" aria-label="Next">
+              <a class="page-link text-dark" href="{{ url_for('queries', page=pagination.next_num, id=id) }}"
+                aria-label="Next">
                 <span aria-hidden="true"><i class="fa-solid fa-angle-right"></i></span>
               </a>
             </li>
@@ -69,3 +98,4 @@
   </div>
 </div>
 {% endblock %}
+{# End of the content block #}

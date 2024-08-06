@@ -4,31 +4,46 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
   <div class="col">
+    <!-- Main heading for the list of studies -->
     <h2>Studies</h2>
+
+    <!-- Table displaying the list of studies -->
     <table class="table table-hover">
+      <!-- Table headers -->
       <thead>
-        <th>Name</th>
-        <th>Study Type</th>
-        <th>Created at</th>
-        <th>Updated at</th>
-        <th></th>
+        <th>Name</th> <!-- Column for the name of the study -->
+        <th>Study Type</th> <!-- Column for the type of study -->
+        <th>Created at</th> <!-- Column for the creation date of the study -->
+        <th>Updated at</th> <!-- Column for the last update date of the study -->
+        <th></th> <!-- Empty column for actions (e.g., view details) -->
       </thead>
       <tbody>
+        <!-- Loop through each study and display its details -->
         {% for s in studies %}
         <tr>
+          <!-- Study name -->
           <td>{{ s.name }}</td>
+
+          <!-- Study type -->
           <td>{{ s.studytype.name }}</td>
+
+          <!-- Creation date, formatted if it exists -->
           <td>{% if s.created_at %}
             {{ s.created_at.strftime('%d.%m.%Y') }}
-          {% endif%}</td>
+            {% endif%}</td>
+
+          <!-- Last updated date, formatted if it exists, otherwise display a dash -->
           <td>{% if s.updated_at %}
             {{ s.updated_at.strftime('%d.%m.%Y') }}{% else %}－
-          {% endif %}</td>
-          <td><a href="{{ url_for('study', id=s.id) }}" class="link-secondary"><i class="fas fa-search"></i></td>
+            {% endif %}</td>
+
+          <!-- Link to view details of the study -->
+          <td><a href="{{ url_for('study', id=s.id) }}" class="link-secondary"><i class="fas fa-search"></i></a></td>
         </tr>
         {% endfor %}
       </tbody>

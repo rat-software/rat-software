@@ -4,30 +4,38 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
   <div class="col-md-6 offset-md-3">
+    <!-- Link to navigate back to the study page -->
     <div class="pb-4">
-      <a class="text-dark" href="{{ url_for('study', id=id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Study</a>
+      <a class="text-dark" href="{{ url_for('study', id=id) }}">
+        <i class="fa-solid fa-angle-left me-2"></i> Back to Study
+      </a>
     </div>
 
+    <!-- Card container for the export results functionality -->
     <div class="card">
       <h2 class="card-header crd-header">Export Results</h2>
       <div class="card-body">
 
+        <!-- Form to handle exporting results -->
+        <form method="POST">
+          <!-- Form field for selecting tables to export -->
+          <div class="mb-3">
+            {{ form.tables.label(class_="form-label") }}
+            {{ form.tables() }}
+          </div>
 
-    <form method="POST">
-      <div class="mb-3">
-        {{ form.tables.label(class_="form-label") }}
-        {{ form.tables() }}
+          <!-- Submit button to export results -->
+          <div class="mb-3">
+            {{ form.submit(class_="btn btn-primary") }}
+          </div>
+        </form>
       </div>
-      <div class="mb-3">
-        {{ form.submit(class_="btn btn-primary") }}
-      </div>
-    </form>
-  </div>
-</div>
+    </div>
   </div>
 </div>
 {% endblock %}

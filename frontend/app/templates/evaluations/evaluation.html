@@ -4,24 +4,35 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
+
 <div class="row">
+  <!-- Column for displaying result data and feedback form -->
   <div class="col-3">
 
+    <!-- Section for displaying result data -->
     <h6>Result Data</h6>
     <div class="card mb-4 shadow-sm">
       <ul class="list-group list-group-flush">
+        <!-- Display error code -->
         <li class="small list-group-item"><small>Error Code</small> {{ source.error_code }}</li>
+        <!-- Display status code -->
         <li class="small list-group-item"><small>Status Code</small> {{ source.status_code }}</li>
+        <!-- Display MIME type -->
         <li class="small list-group-item"><small>Mime Type</small> {{ source.mime_type }}</li>
+        <!-- Display URL with a link to open the website in a new tab -->
         <li class="small list-group-item">
-          <small>URL</small> <a href="{{ source.url }}" target="_blank">Open Website <i class="fas fa-share-square"></i></a>
+          <small>URL</small> <a href="{{ source.url }}" target="_blank">Open Website <i
+              class="fas fa-share-square"></i></a>
         </li>
       </ul>
     </div>
 
+    <!-- Section for providing feedback -->
     <h6>Feedback</h6>
     <form method="POST" class="card p-4 shadow-sm">
+      <!-- Feedback status options -->
       <div class="mb-3">
         {{ form.status.label(class_="form-label") }}
         {% for radio in form.status %}
@@ -31,31 +42,40 @@
         </div>
         {% endfor %}
       </div>
+      <!-- Comment field for additional feedback -->
       <div class="mb-3">
         {{ form.comment.label(class_="form-label") }}
         {{ form.comment(class_="form-control") }}
       </div>
+      <!-- Submit and skip buttons -->
       <div class="mb-3">
         {{ form.submit(class_="btn btn-success float-end") }}
         <a href="{{url_for('evaluation', id=next_id)}}" class="btn me-2 btn-link link-danger float-end">Skip</a>
       </div>
     </form>
 
+    <!-- Section for displaying previous evaluations if available -->
     {% if evals %}
     <div class="card p-4 mt-4 shadow-sm">
       {% for eval in evals %}
       <p><b>Previous Evaluations</b></p>
+      <!-- Display status of previous evaluation -->
       <p>Status: {{ eval.status }}</p>
+      <!-- Display comment from previous evaluation -->
       <p>Comment: {{ eval.comment }}</p>
       {% endfor %}
     </div>
     {% endif %}
   </div>
+
+  <!-- Column for displaying embedded content based on MIME type -->
   <div class="col-9">
     {% if "html" in source.mime_type %}
-      <embed width="100%" src="data:image/png;base64,{{ source.bin.decode('ascii') }}" />
+    <!-- Display HTML content as an embedded image -->
+    <embed width="100%" src="data:image/png;base64,{{ source.bin.decode('ascii') }}" />
     {% elif "pdf" in source.mime_type %}
-      <embed width="100%" height="100%" src="data:application/pdf;base64,{{ source.bin.decode('ascii') }}" />
+    <!-- Display PDF content as an embedded PDF viewer -->
+    <embed width="100%" height="100%" src="data:application/pdf;base64,{{ source.bin.decode('ascii') }}" />
     {% endif %}
   </div>
 </div>
