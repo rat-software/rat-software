@@ -1,6 +1,7 @@
 from app import db
-from flask_security.models import fsqla_v3 as fsqla
+from flask_security import UserMixin, RoleMixin
 
+# Define association tables for many-to-many relationships
 country_monitoring = db.Table('country_monitoring',
                               db.Column('country', db.ForeignKey(
                                   'country.id'), primary_key=True),
@@ -96,6 +97,7 @@ classifier_study = db.Table('classifier_study',
                          )
 
 class Answer(db.Model):
+    """Model for storing answers given by participants to questions."""
     __tablename__ = 'answer'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -122,6 +124,7 @@ class Answer(db.Model):
 
 
 class ClassifierResult(db.Model):
+    """Model for storing the results produced by classifiers."""
     __tablename__ = 'classifier_result'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -137,6 +140,7 @@ class ClassifierResult(db.Model):
 
 
 class Classifier(db.Model):
+    """Model for storing classifiers used in studies."""
     __tablename__ = 'classifier'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -154,6 +158,7 @@ class Classifier(db.Model):
 
 
 class ClassifierIndicator(db.Model):
+    """Model for storing indicators used by classifiers."""
     __tablename__ = 'classifier_indicator'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -171,6 +176,7 @@ class ClassifierIndicator(db.Model):
 
 
 class Content(db.Model):
+    """Model for storing content related to results."""
     __tablename__ = 'content'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -182,6 +188,7 @@ class Content(db.Model):
 
 
 class Country(db.Model):
+    """Model for storing countries involved in various studies."""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     code = db.Column(db.String)
@@ -201,6 +208,7 @@ class Country(db.Model):
 
 
 class Evaluation(db.Model):
+    """Model for storing evaluations of sources."""
     __tablename__ = 'evaluation'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -213,6 +221,7 @@ class Evaluation(db.Model):
 
 
 class Experiment(db.Model):
+    """Model for storing experiments conducted within studies."""
     __tablename__ = 'experiment'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -223,6 +232,7 @@ class Experiment(db.Model):
 
 
 class Group(db.Model):
+    """Model for storing participant groups."""
     __tablename__ = 'group'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -234,6 +244,7 @@ class Group(db.Model):
 
 
 class Incentive(db.Model):
+    """Model for storing incentives given to participants."""
     __tablename__ = 'incentive'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -249,6 +260,7 @@ class Incentive(db.Model):
 
 
 class Language(db.Model):
+    """Model for storing languages used in studies."""
     __tablename__ = 'language'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -262,6 +274,7 @@ class Language(db.Model):
 
 
 class Logger(db.Model):
+    """Model for storing loggers that manage various tasks and interactions."""
     __tablename__ = 'logger'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -283,6 +296,7 @@ class Logger(db.Model):
 
 
 class Monitoring(db.Model):
+    """Model for storing monitoring processes."""
     __tablename__ = 'monitoring'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -307,6 +321,7 @@ class Monitoring(db.Model):
 
 
 class Option(db.Model):
+    """Model for storing options information for questions."""
     __tablename__ = 'option'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -321,6 +336,7 @@ class Option(db.Model):
 
 
 class Participant(db.Model):
+    """Model for storing participant information."""
     __tablename__ = 'participant'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -342,6 +358,7 @@ class Participant(db.Model):
 
 
 class Query(db.Model):
+    """Model for storing queries related to results."""
     __tablename__ = 'query'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -368,6 +385,7 @@ class Query(db.Model):
 
 
 class Question(db.Model):
+    """Model for storing questions posed in studies."""
     __tablename__ = 'question'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -436,6 +454,7 @@ class Reporting(db.Model):
 
 
 class Result(db.Model):
+    """Model for storing results from various studies."""
     __tablename__ = 'result'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -499,7 +518,8 @@ class ResultType(db.Model):
         'Study', back_populates='resulttype', lazy='select')
 
 
-class Role(db.Model, fsqla.FsRoleMixin):
+class Role(db.Model, RoleMixin):
+    """Model for storing user roles."""
     __tablename__ = 'role'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -513,6 +533,7 @@ class Role(db.Model, fsqla.FsRoleMixin):
 
 
 class Scraper(db.Model):
+    """Model for storing scraper jobs related to queries and search engines."""
     __tablename__ = 'scraper'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -544,16 +565,13 @@ class Scraper(db.Model):
 
 
 class SearchEngine(db.Model):
+    """Model for storing search engines used in studies."""
     __tablename__ = 'searchengine'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     module = db.Column(db.String)
     test = db.Column(db.Integer)
-    error_code = db.Column(db.Integer)
-    resulttype = db.Column(db.Integer)
-    country = db.Column(db.String)
-    provider = db.Column(db.String)
 
     scrapers = db.relationship(
         'Scraper', back_populates='searchengine', lazy='select')
@@ -566,6 +584,7 @@ class SearchEngine(db.Model):
 
 
 class Serp(db.Model):
+    """Model for storing SERPs (Search Engine Results Pages)."""
     __tablename__ = 'serp'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -593,6 +612,7 @@ class Serp(db.Model):
 
 
 class Source(db.Model):
+    """Model for storing sources used in studies."""
     __tablename__ = 'source'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -614,6 +634,7 @@ class Source(db.Model):
 
 
 class Statistic(db.Model):
+    """Model for storing statistics."""
     __tablename__ = 'statistic'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -626,6 +647,7 @@ class Statistic(db.Model):
 
 
 class Study(db.Model):
+    """Model for storing studies."""
     __tablename__ = 'study'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -669,12 +691,12 @@ class Study(db.Model):
                             back_populates='studies', lazy='select')
     participants = db.relationship(
         'Participant', secondary=participant_study, back_populates='studies', lazy='select')
-
     classifier = db.relationship(
         'Classifier', secondary=classifier_study, back_populates='studies', lazy='select')
 
 
 class StudyType(db.Model):
+    """Model for storing study types."""
     __tablename__ = 'studytype'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -685,6 +707,7 @@ class StudyType(db.Model):
 
 
 class Task(db.Model):
+    """Model for storing tasks associated with loggers."""
     __tablename__ = 'task'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -693,13 +716,15 @@ class Task(db.Model):
     logger = db.relationship('Logger', back_populates='tasks', lazy='select')
 
 
-class User(db.Model, fsqla.FsUserMixin):
+class User(db.Model, UserMixin):
+    """Model for storing users."""
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String)
     password = db.Column(db.String)
     active = db.Column(db.Boolean)
+
     fs_uniquifier = db.Column(db.String)
 
     confirmed_at = db.Column(db.DateTime)
@@ -718,7 +743,6 @@ class User(db.Model, fsqla.FsUserMixin):
     create_datetime = db.Column(db.DateTime)
     update_datetime = db.Column(db.DateTime)
     username = db.Column(db.String)
-    affiliation = db.Column(db.String)
     us_totp_secrets = db.Column(db.String)
     fs_webauthn_user_handle = db.Column(db.String)
     mf_recovery_codes = db.Column(db.String)

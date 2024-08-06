@@ -11,6 +11,7 @@
 <div class="card col-md-6 offset-md-3">
   <div class="card-body">
     <h4 class="crd-header">Register</h4>
+   
       <form action="{{ url_for_security('register') }}" method="POST" name="register_user_form">
       {{ register_user_form.hidden_tag() }}
 
@@ -24,14 +25,6 @@
           <i class="fa-solid fa-arrow-right-to-bracket me-2"></i>
           Log in
         </a>
-      </div>
-
-      <div class="mb-3">
-        {{ render_field_with_errors(register_user_form.username, class_="form-control") }}
-      </div>
-
-      <div class="mb-3">
-        {{ render_field_with_errors(register_user_form.affiliation, class_="form-control") }}
       </div>
 
       <div class="mb-3">
@@ -52,6 +45,16 @@
         {{ register_user_form.submit(class="btn btn-outline-primary me-2") | safe }}
       </div>
     </form>
+
+
   </div>
 </div>
+
+<div class="col-md-6 offset-md-3">
+    <p class="info">
+      <br />
+      Thank you for your interest in using the RAT. <br /><br />You can now register to use the tool and we will contact you
+      in the coming days to discuss your requirements and then activate your account.
+    </p></div>
+
 {% endblock %}

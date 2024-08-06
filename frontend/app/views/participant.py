@@ -1,14 +1,14 @@
 from .. import app, db
 from app.models import Study, Participant, Answer, Result, Question
 from ..forms import JoinForm, ParticipantLogInForm
-from flask import render_template, flash, redirect, url_for, request, send_file
+from flask import Blueprint, render_template, flash, redirect, url_for, request, send_file
 from datetime import datetime
 from flask_login import logout_user
 import random
 from io import BytesIO
 from sqlalchemy import func, update
 import sqlalchemy
-
+#bp = Blueprint('participant', __name__)
 
 @app.route('/study/<id>/participants')
 def participants(id):

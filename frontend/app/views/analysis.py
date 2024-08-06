@@ -1,12 +1,12 @@
 from .. import app, db
 from ..models import Study, ClassifierIndicator, Classifier, Result, Scraper
-from flask import render_template, flash, redirect, url_for
+from flask import Blueprint, render_template, flash, redirect, url_for
 from flask_security import login_required, current_user
 from collections import Counter
 from sqlalchemy import func
 from itertools import combinations
 from .analysis_func import get_seo_classification, get_result_stats, get_evaluation_stats
-
+#bp = Blueprint('analysis', __name__)
 
 @app.route('/<id>/analysis')
 @login_required
