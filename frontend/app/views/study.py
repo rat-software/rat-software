@@ -1,14 +1,16 @@
 from .. import app, db
 from ..forms import StudyForm, ConfirmationForm
 from ..models import Study, StudyType, ResultType, SearchEngine, Query, Scraper, Answer, Result, Source, Classifier, User
-from flask import render_template, flash, redirect, url_for, request, abort, Markup
+from flask import Blueprint, render_template, flash, redirect, url_for, request, abort
+from markupsafe import Markup
 from sqlalchemy.orm import raiseload, joinedload
 from flask_security import login_required, current_user, roles_accepted
 from datetime import datetime
 import pandas as pd
 from io import BytesIO
 import json
-
+from flask_simplelogin import is_logged_in
+#bp = Blueprint('study', __name__)
 
 @app.route('/studies', methods=['GET', 'POST'])
 @login_required
@@ -19,12 +21,15 @@ def studies():
         Study.id).paginate(page, per_page=10)
 
     return render_template('studies/studies.html',
-                           pagination=pagination)
+                        pagination=pagination)
+  
+
 
 
 @app.route('/study/<id>')
 @login_required
 def study(id):
+    
     try:
         study = Study.query.get_or_404(id)
 
@@ -36,13 +41,13 @@ def study(id):
 
         scraper_error = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == -1).count()
 
-        # status 2: results AND sources collected
+            # status 2: results AND sources collected
 
         if (study.status != 4) & (study.status != 0):
             if (source_progress == 0) & (scraper_progress == 0):
                 study.status = 2
                 db.session.commit()
-            # study status 3: assessments finished
+                # study status 3: assessments finished
             if (source_progress == 0) & (answer_progress == 0):#
                 if scraper_error > 0:
                     study.status = -1
@@ -67,14 +72,15 @@ def study(id):
         abort(500)
 
     return render_template('studies/study.html',
-                           study=study,
-                           results=results,
-                           max_results=max_results,
-                           r_pct=r_pct,
-                           answers=answers,
-                           max_answers=max_answers,
-                           a_pct=a_pct,
-                           base=base)
+                        study=study,
+                        results=results,
+                        max_results=max_results,
+                        r_pct=r_pct,
+                        answers=answers,
+                        max_answers=max_answers,
+                        a_pct=a_pct,
+                        base=base)
+   
 
 
 @app.route('/study/new', methods=['GET', 'POST'])
@@ -89,7 +95,11 @@ def new_study():
 
     # gets search engines from db to populate form selection
     form.search_engines.choices = [(str(s.id), s.name)
-                                   for s in SearchEngine.query.filter(SearchEngine.test == 1).order_by(SearchEngine.provider.asc(), SearchEngine.resulttype.asc(), SearchEngine.country.asc()).all()]
+                                   for s in SearchEngine.query.filter(SearchEngine.test == 1).all()]
+    
+    # gets classifier from db to populate form selection
+    form.classifier.choices = [(str(s.id), s.display_name)
+                                   for s in Classifier.query.all()]    
 
     return render_template('studies/new_study.html',
                            form=form,
@@ -234,6 +244,7 @@ def create_new_study():
         study.classifier.append(classifier)
 
         user_list = [current_user]
+        #admin users
         if current_user.id != 31:
             admin1 = User.query.get(31)
             user_list.append(admin1)

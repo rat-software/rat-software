@@ -14,6 +14,20 @@
 {% endif %}
 {% endmacro %}
 
+{% macro render_form_errors(form) %}
+  {% if form.errors %}
+    <div class="form-errors">
+      <ul>
+        {% for field, errors in form.errors.items() %}
+          {% for error in errors %}
+            <li>{{ field }}: {{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{% endmacro %}
+
 {% macro nav_link_id(endpoint, id, text, icon) %}
 {% if request.endpoint is not none and request.endpoint.endswith(endpoint) %}
       <li class="nav-item ms-3">
@@ -107,3 +121,5 @@
 
   {% endif %}
 {% endmacro %}
+
+

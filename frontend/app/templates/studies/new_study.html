@@ -21,9 +21,12 @@
 
 <h1 class="sr-only">RAT</h1>
 
+
 <div class="row">
   <div class="col-8 offset-2">
+     <!-- Navigation pills for tabbed interface -->
     <ul class="nav nav-pills mb-3" id="create-stepper" role="tablist" onchange="progress()">
+      <!-- Step 1: Study Details -->
       <li class="nav-item col-3">
         <a class="nav-link text-muted active" id="study-stepper-1" data-bs-toggle="tab" data-bs-target="#tab-1" type="button" role="tab" aria-controls="tab-1" aria-selected="true">
           <table class="row">
@@ -32,6 +35,7 @@
           </table>
         </a>
       </li>
+      <!-- Step 2: Search Engines -->
       <li class="nav-item col-3">
         <a class="nav-link" id="study-stepper-2" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab" aria-controls="tab-2" aria-selected="false">
           <table class="row">
@@ -40,6 +44,7 @@
           </table>
         </a>
       </li>
+      <!-- Step 3: Search Queries -->
       <li class="nav-item col-3">
         <a class="nav-link" id="study-stepper-3" data-bs-toggle="tab" data-bs-target="#tab-3" type="button" role="tab" aria-controls="tab-3" aria-selected="false">
           <table class="row">
@@ -48,6 +53,7 @@
           </table>
         </a>
       </li>
+      <!-- Step 4: Result Options -->
       <li class="nav-item col-3">
         <a class="nav-link" id="study-stepper-4" data-bs-toggle="tab" data-bs-target="#tab-4" type="button" role="tab" aria-controls="tab-4" aria-selected="false">
           <table class="row">
@@ -56,38 +62,58 @@
           </table>
         </a>
       </li>
+      <!-- Step 5: Classifier -->
+      <li class="nav-item col-3">
+        <a class="nav-link" id="study-stepper-5" data-bs-toggle="tab" data-bs-target="#tab-5" type="button" role="tab" aria-controls="tab-5" aria-selected="false">
+          <table class="row">
+            <td class="step-number rounded"><i class="fa-solid fa-5"></i></td>
+            <td class="step-text d-none d-lg-table-cell">Classifier</td>
+          </table>
+        </a>
+      </li>
+
     </ul>
+    <!-- Progress bar for the stepper -->
     <div class="progress progress-fixed" style="height: 3px;">
       <div id="stepper" class="progress-bar bg-secondary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
     </div>
   </div>
   <div class="col-12">
+    <!-- Form to create or update a study -->
     <form action="{{ url_for('confirm_new_study') }}" method="POST" enctype="multipart/form-data">
     <div class="tab-content">
+      <!-- Tab Pane 1: Study Details -->
       <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="study-stepper-1">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Study Details</h2>
               <div class="card-body">
+                <!-- Study ID field -->
                 <div class="mb-3">{{ form.id }}</div>
+                <!-- Study name field -->
                 <div class="mb-3">{{ render_create_study_fields(form.name, "#name", "form-control") }}</div>
+                <!-- Description field -->
                 <div class="mb-3">{{ render_create_study_fields(form.description, "#description", "form-control") }}</div>
-                <div class="mb-3 d-none">{{ render_create_study_fields(form.type, "#type", "form-select") }}</div>
+                <!-- Study type field -->
+                <div class="mb-3">{{ render_create_study_fields(form.type, "#type", "form-select") }}</div>
+                <!-- Button to go to the next tab -->
                 <div onclick="showTab('study-stepper-2')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <!-- Tab Pane 2: Search Engines -->
       <div class="tab-pane fade" id="tab-2" role="tabpanel" aria-labelledby="study-stepper-2">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Search Engines</h2>
               <div class="card-body">
+                <!-- Search Engines field -->
                 <div class="mb-3">{{ render_create_study_fields(form.search_engines, "#search_engines", "") }}</div>
-
+                <!-- Buttons to go to the previous or next tab -->
                 <div onclick="showTab('study-stepper-1')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
                 <div onclick="showTab('study-stepper-3')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
@@ -95,28 +121,29 @@
           </div>
         </div>
       </div>
+      <!-- Tab Pane 3: Search Queries -->
       <div class="tab-pane fade" id="tab-3" role="tabpanel" aria-labelledby="study-stepper-3">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Search Queries</h2>
               <div class="card-body">
-                <div class="mb-3">
-                  {{ form.task.label(class_="form-label") }}
-                  <span class="float-end help"><a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="Search Tasks" data-content="If you have more than one search task, add the first one and its corresponding queries here. You can add the others later on."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ form.task(class_="form-control") }}
-                </div>
+                <!-- Task field -->
+                <div class="mb-3">{{ render_create_study_fields(form.task, "#task", "form-control") }}</div>
+                <!-- Queries field -->
                 <div class="mb-3">
                   {{ form.queries.label(class_="form-label") }}
                   <span class="float-end help"><a href="#"><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.queries(class_="form-control") }}
                 </div>
                 <div class="divider"><span class="border"></span><span class="text">OR</span></div>
+                <!-- Query list upload field -->
                 <div class="mb-3">
                   {{ form.query_list.label(class_="form-label") }}
-                  <span class="float-end help"><a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="Search Tasks" data-content="If you have more than one search task, add the first one and its corresponding queries here. You can add the others later on."><i class="fa-solid fa-circle-question"></i></a></span>
+                  <span class="float-end help"><a href="#"><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.query_list(class_="form-control") }}
                 </div>
+                <!-- Buttons to go to the previous or next tab -->
                 <div onclick="showTab('study-stepper-2')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
                 <div onclick="showTab('study-stepper-4')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
@@ -124,23 +151,46 @@
           </div>
         </div>
       </div>
+      <!-- Tab Pane 4: Result Options -->
       <div class="tab-pane fade" id="tab-4" role="tabpanel" aria-labelledby="study-stepper-4">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Result Options</h2>
               <div class="card-body">
-                <div class="mb-3 d-none">
+                <!-- Result type selection field -->
+                <div class="mb-3">
                   {{ form.result_type.label(class_="form-label") }}
                   <span class="float-end help"><a href="#"><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.result_type(class_="form-select") }}
                 </div>
+                 <!-- Result count field to set number of results to collect -->
                 <div class="mb-3">
                   {{ form.result_count.label(class_="form-label") }}
                   <span class="float-end help"><a href="#"><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.result_count(class_="form-control") }}
                 </div>
-                <div onclick="showTab('study-stepper-3')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
+                <!-- Buttons to go to the previous tab -->
+                <div onclick="showTab('study-stepper-3')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div> 
+                <!-- Buttons to go to the next tab -->
+                <div onclick="showTab('study-stepper-5')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div> 
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Tab Pane 5: Classifier -->
+      <div class="tab-pane fade" id="tab-5" role="tabpanel" aria-labelledby="study-stepper-5">
+        <div class="row justify-content-center">
+          <div class="col-xl-8">
+            <div class="card">
+              <h2 class="card-header crd-header">Classifier</h2>
+              <div class="card-body">
+                <!-- Classifier field for selecting classifiers -->
+                <div class="mb-3">{{ render_create_study_fields(form.classifier, "#classifier", "") }}</div>
+                <!-- Button to go to the previous tab  -->
+                <div onclick="showTab('study-stepper-4')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
+                 <!-- Button to submit study  -->
                 <button type="submit" class="btn btn-primary float-end mt-5">
                   {% if title == "Create Study" %}
                   Create Study <i class="fa-solid fa-check"></i>
@@ -153,6 +203,7 @@
           </div>
         </div>
       </div>
+
     </div>
     </form>
   </div>

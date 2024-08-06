@@ -10,11 +10,16 @@ from sqlalchemy.orm import load_only
 @app.route('/evaluations')
 def evaluations():
     # randomly selects one not evaluated source
+    # source = Source.query.filter(~Source.evaluation.has())\
+    #                      .filter(Source.progress == 1)\
+    #                      .options(load_only("id"))\
+    #                      .order_by(func.random())\
+    #                      .first()
+    
     source = Source.query.filter(~Source.evaluation.has())\
                          .filter(Source.progress == 1)\
                          .options(load_only("id"))\
-                         .order_by(func.random())\
-                         .first()
+                         .first()    
 
     # gets count of evaluated sources
     eval = Source.query.filter(Source.evaluation.has())\
@@ -43,10 +48,14 @@ def evaluations():
         s_pct = 0
 
     # randomly gets 10 comments from evaluations
+    # comments = Evaluation.query.filter(Evaluation.comment != '')\
+    #                            .order_by(func.random())\
+    #                            .limit(10)\
+    #                            .all()
+    
     comments = Evaluation.query.filter(Evaluation.comment != '')\
-                               .order_by(func.random())\
                                .limit(10)\
-                               .all()
+                               .all()    
 
     return render_template('evaluations/evaluations.html',
                            source=source,
@@ -69,8 +78,11 @@ def evaluation(id):
     evals = Evaluation.query.filter(Evaluation.source == source).all()
 
     # randomly gets next unevaluated source
+    # next = Source.query.filter(~Source.evaluation.has())\
+    #                    .order_by(func.random())\
+    #                    .first()
+
     next = Source.query.filter(~Source.evaluation.has())\
-                       .order_by(func.random())\
                        .first()
 
     # sets next_id if one unevaluated source is found

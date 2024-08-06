@@ -1,3 +1,4 @@
+
 {% extends "master.html" %}
 
 {% block title %}Home{% endblock %}
@@ -15,6 +16,7 @@
     </p>
     <a href="{{url_for('security.login')}}" class="btn btn-primary rounded-pill">Launch Demo</a>
     <a href="{{url_for('about')}}" class="ms-2 btn btn-outline-secondary rounded-pill">Learn More</a>
+    
     <button type="button" class="ms-2 btn btn-outline-secondary rounded-pill" data-bs-toggle="modal" data-bs-target="#video">
       <i class="fa-solid fa-play"></i><span class="hover-text ps-1">Watch Screencast</span>
     </button>

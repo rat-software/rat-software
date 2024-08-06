@@ -1,9 +1,9 @@
 from .. import app, db
 from ..models import Study, Scraper
-from flask import render_template, flash, redirect, url_for
+from flask import Blueprint, render_template, flash, redirect, url_for
 from flask_security import login_required, current_user
 from datetime import datetime
-
+#bp = Blueprint('scraper', __name__)
 
 @app.route('/study/<id>/run')
 @login_required

@@ -2,12 +2,13 @@ from .. import app, db
 from ..forms import MonitoringForm, ConfirmationForm
 from ..models import Monitoring, Country, Query, ResultType, Serp
 from ..helpers import create_monitoring
-from flask import render_template, flash, redirect, url_for, request
+from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_security import login_required, current_user
 from datetime import datetime
 import pandas as pd
 from crontab import CronTab
 
+#bp = Blueprint('monitoring', __name__)
 
 @app.route('/monitorings')
 @login_required

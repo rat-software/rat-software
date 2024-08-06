@@ -2,9 +2,9 @@ from .. import app, db
 from ..forms import QuestionForm, AnswerForm, ConfirmationForm
 from ..models import Study, Option, QuestionType, Question
 from ..helpers import get_options
-from flask import render_template, flash, redirect, url_for, request
+from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_security import login_required, current_user
-
+#bp = Blueprint('question', __name__)
 
 @app.route("/study/<id>/questions", methods=['GET', 'POST'])
 @login_required
