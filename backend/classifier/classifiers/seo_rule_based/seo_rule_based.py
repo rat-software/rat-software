@@ -2,42 +2,41 @@ import os
 import inspect
 import sys
 
-import importlib.util
-
+# Determine the directory where this script is located
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+# Add the /libs/ directory to the system path to enable imports from that location
 sys.path.append(currentdir + "/libs/")
 
+# Import everything from the 'indicators' module
 from indicators import *
 
-
-def main(classifier_id, db, helper):
-
+def main(classifier_id, db, helper, job_server):
     """
-    Main function for the classifier.
+    Main function for the classifier, which processes and classifies web results.
 
     Args:
-        classifier_id (int): The ID of the classifier.
-        db: An instance of the DB class for database operations.
-        helper: An instance of the helper class for helper functions.
+        classifier_id (int): The ID of the classifier to use for classification.
+        db: An instance of the DB class for interacting with the database.
+        helper: An instance of the helper class for utility functions.
 
     Returns:
         None
     """
 
     def check_for_duplicates(check_dup):
-
         """
-        Check for duplicate classification results.
+        Checks for duplicate classification results and handles them accordingly.
 
         Args:
-            check_dup: The check for duplicates.
+            check_dup: A list of classification results to check for duplicates.
 
         Returns:
-            bool: False if there are more than 1000 duplicates, True otherwise.
+            bool: Returns False if there are more than 1000 duplicates and processing is done; True otherwise.
         """
-
         if len(check_dup) > 1000:
             result_sources = db.duplicate_classification_result(source_id)
+            
+            # Retrieve existing classifier results and indicators
             for result_source in result_sources:
                 rs = result_source[0]
                 classifier_result = db.get_classifier_result(rs)
@@ -60,14 +59,14 @@ def main(classifier_id, db, helper):
 
                 if not classifier_result and insert_classification:
                     if not db.check_classification_result(classifier_id, rs):
-                        db.insert_classification_result(classifier_id, insert_classification, rs)
+                        db.insert_classification_result(classifier_id, insert_classification, rs, job_server)
 
                 if not classifier_result and insert_classification:
                     for ri in result_indicators:
                         indicator = ri[1]
                         value = ri[2]
                         if not db.check_indicator_result(classifier_id, rs) and indicator and value:
-                            db.insert_indicator(indicator, value, classifier_id, rs)
+                            db.insert_indicator(indicator, value, classifier_id, rs, job_server)
 
             if insert_classification:
                 db.update_classification_result(classifier_id, insert_classification, result_id)
@@ -77,40 +76,38 @@ def main(classifier_id, db, helper):
             return True
 
     def classify_results(results):
-
         """
-        Classify the results based on the provided data.
+        Classifies the provided results based on various indicators and updates the database.
 
         Args:
-            results (list): The results to classify.
+            results (list): A list of results to classify.
 
         Returns:
             None
         """
 
         def write_indicators_to_db(indicators, result):
-
             """
-            Write indicators to the database.
+            Writes classification indicators to the database.
 
             Args:
-                indicators (dict): Dictionary of indicators to be written to the database.
-                result: The result to which the indicators belong.
+                indicators (dict): Dictionary of indicators to be written.
+                result: The result associated with these indicators.
 
             Returns:
                 None
             """
-
             for key, ind in indicators.items():
                 if isinstance(ind, (list, dict)):
                     insert_result = ", ".join(ind) if isinstance(ind, list) else ", ".join([f"{k}: {v}" for k, v in ind.items()])
                 else:
                     insert_result = str(ind)
-                db.insert_indicator(key, insert_result, classifier_id, result)
+                db.insert_indicator(key, insert_result, classifier_id, result, job_server)
 
+        # Mark all results as "in process"
         for result in results:
             result_id = result['id']
-            db.insert_classification_result(classifier_id, "in process", result_id)
+            db.insert_classification_result(classifier_id, "in process", result_id, job_server)
 
         for result in results:
             data = {k: v for k, v in result.items()}
@@ -139,6 +136,7 @@ def main(classifier_id, db, helper):
 
                 try:
                     if status_code == 200 and not error_code and not db.check_classification_result(classifier_id, result_id):
+                        # Identify plugins from the code
                         plugins = identify_plugins(code)
                         indicators.update({'tools analytics': plugins['tools analytics'],
                                            'tools seo': plugins['tools seo'],
@@ -146,6 +144,7 @@ def main(classifier_id, db, helper):
                                            'tools social': plugins['tools social'],
                                            'tools ads': plugins['tools ads']})
 
+                        # Count various tools and sources
                         tools_analytics = len(plugins['tools analytics'])
                         tools_seo = len(plugins['tools seo'])
                         tools_caching = len(plugins['tools caching'])
@@ -172,6 +171,7 @@ def main(classifier_id, db, helper):
                         robots_txt = identify_robots_txt(main)
                         indicators.update({'robots_txt': robots_txt})
 
+                        # Calculate loading time and extract hyperlinks
                         loading_time = calculate_loading_time(url)
                         indicators.update({'loading_time': loading_time})
 
@@ -213,6 +213,7 @@ def main(classifier_id, db, helper):
                         indicators.update({'h1': h1})
 
                         if query:
+                            # Identify keywords in code and URL, and calculate keyword density
                             keywords_in_code = identify_keywords_in_source(code, query)
                             keywords_in_url = identify_keywords_in_url(url, query)
                             keyword_density = identify_keyword_density(code, query)
@@ -231,8 +232,10 @@ def main(classifier_id, db, helper):
                         title = identify_title(code)
                         indicators.update({'title': title})
 
+                        # Write indicators to the database
                         write_indicators_to_db(indicators, result_id)
 
+                        # Determine classification result based on indicators
                         optimized = 0
                         probably_optimized = 0
                         probably_not_optimized = 0
@@ -255,6 +258,7 @@ def main(classifier_id, db, helper):
                     else:
                         classification_result = 'error'
 
+                    # Update the classification result in the database
                     db.update_classification_result(classifier_id, classification_result, result_id)
 
                 except Exception as e:
@@ -263,5 +267,6 @@ def main(classifier_id, db, helper):
                     classification_result = 'error'
                     db.update_classification_result(classifier_id, classification_result, result_id)
 
+    # Retrieve results for the given classifier_id and classify them
     results = db.get_results(classifier_id)
     classify_results(results)

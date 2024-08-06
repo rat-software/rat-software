@@ -10,6 +10,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException #used to interrupt loding of websites and needed as workaround to download files with selenium
 from selenium.webdriver.common.action_chains import ActionChains #used to simulate pressing of a key
 
+from selenium.webdriver.support.ui import Select
+
+
 import uuid #used to generate random file names
 
 import time #used to do timeout breaks
