@@ -1,4 +1,5 @@
 # RAT
+#### Access the documentation for the backend at: https://searchstudies.org/rat-backend-documentation/
 
 ## Setting Up the Server Backend
 
