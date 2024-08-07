@@ -59,7 +59,7 @@ python -m pip install --no-cache-dir -r requirements.txt
 ```
 
 
-## Set up the web interface (Flaks Application / Frontend)
+## Set up the web interface (Flask Application / Frontend)
 #### Access the documentation for the frontend at: https://searchstudies.org/rat-frontend-documentation/
 
 - Create a virtual environment
