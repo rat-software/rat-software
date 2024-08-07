@@ -80,7 +80,7 @@ def internal_server_error(e):
 # register_blueprints(app)
 
 # Import view modules to register routes
-from .views import (dashboard, evaluation, study, monitoring, question, 
+from .views import (dashboard, evaluation, study, question, 
                     assessment, analysis, participant, export, scraper, query)
 
 # Ensure that all imported view modules are registered correctly

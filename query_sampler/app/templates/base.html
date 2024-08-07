@@ -1,0 +1,81 @@
+<!-- Base document -->
+<!doctype html>
+<html>
+
+<head>
+  {% block head %}
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous"
+    referrerpolicy="no-referrer" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='custom_bootstrap.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+
+  <title>{% block title %}{% endblock %} - RAT: Query Sampler</title>
+
+  {% endblock %}
+</head>
+
+
+<body class="bg-blue d-flex flex-column min-vh-100">
+  <div class="img-layer">
+    <img src="{{ url_for('static', filename='img/rat_icon_schwarz.png') }}">
+  </div>
+
+{% block content %}{% endblock %}
+
+<!-- Error messages and flash alert when a user tries to login using Flask Simplelogin-->
+
+<div class="jumbotron">
+  <div class="container">
+    {% block messages %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes alert">
+      {% for category, message in messages %}
+      <li class="flashes alert alert-{{category}}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    {% if request.path == url_for('simplelogin.login') %}
+    <ul class="flashes alert alert-primary">
+      <li>Please provide username and password to login</li>
+    </ul>
+    {% endif %}
+    {% endif %}
+    {% endwith %}
+    {% endblock %}
+  </div>
+</div>
+
+<!-- Footer -->
+
+<div class="container-fluid text-small bg-primary mt-auto">
+  <footer class="d-flex flex-wrap justify-content-between align-items-center py-3">
+    <p class="col-md-8 d-flex align-items-center text-white justify-content-start mb-3 mb-md-0 me-md-auto">
+      <span>Copyright © 2024 Result Assessment Tool</span>
+      <span class="px-4">Developed by <a href="https://searchstudies.org/" class="text-white" target="_blank">Search
+          Studies</a> (HAW Hamburg)</span>
+      <span>Funded by <a href="https://gepris.dfg.de/gepris/projekt/460676551" class="text-white" target="_blank">the
+          German Research Foundation (DFG)</a></span>
+    </p>
+
+    <ul class="nav col-md-4 justify-content-end">
+      <li class="nav-item"><a href="https://searchstudies.org/privacy/" class="nav-link px-2 text-white" target="_blank">Privacy</a></li>
+      <li class="nav-item"><a href="{{url_for('legal')}}" class="nav-link px-2 text-white">Legal Notice</a></li>
+
+
+    </ul>
+  </footer>
+</div>
+
+</body>
+
+</html>

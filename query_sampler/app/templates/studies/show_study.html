@@ -1,0 +1,82 @@
+<!-- Dashboard for a created study -->
+
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+
+
+<div class="card col-md-6 offset-md-3">
+    <div class="card-body">
+        <div class="py-2">
+
+            <div class="row align-items-center py-2">
+
+                <div class="col-md-10">
+
+
+                    <h3>Study: {{study.name}}</h3>
+
+                    <!-- Show used keywords, if keywords could be found in the database -->
+
+                    {% if keywords %}
+
+                    <h4 class="crd-header">Input Keyword List</h4>
+
+                    {% include '/keywords/keywords.html' %}
+
+                    <br />
+
+                    <!-- Show option to start the script to generate keyword ideas as long the keyword generator is not busy -->
+
+                    {% if status %}
+
+                    <a href="{{ url_for('start_query_sampler', id=study.id)}}" class="btn btn-primary"
+                        id="generate_keyword_ideas">Generate Keyword Ideas</a>
+
+                    {% endif %}
+
+                    {% endif %}
+
+                    <hr />
+
+                    <!-- Show number of generated ideas and a download button-->
+
+                    <div class="col-md-6">
+
+                        <span class="keyword_ideas">Number of generated Keyword ideas: {{
+                            keyword_ideas_count }}</span>
+
+                        <br /><br />
+
+                        <a href="{{ url_for('export_keyword_ideas', id=study.id)}}" class="btn btn-primary"
+                            id="download_button">Download Keyword Ideas</a>
+
+                    </div>
+
+                    <hr />
+
+                    <!-- Custom script to show the form to insert new keywords-->
+
+                    <script type="text/javascript">
+                        function change() {
+                            document.getElementById("create_keywords").style.visibility = "visible";
+                            document.getElementById("keywords_button").style.visibility = "hidden";
+                        }
+                    </script>
+
+                    <a href="#" class="btn btn-primary" id="keywords_button" onclick="change();">Insert Keywords</a>
+
+                    <div style="visibility: hidden;" id="create_keywords">
+                        {% include '/keywords/create_keywords.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+{% endblock %}

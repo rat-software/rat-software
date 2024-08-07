@@ -49,9 +49,9 @@ test_query = "test"
 # se = Scraping()
 # test_scraper_results(test_query, 10, se, True)
 
-from scrapers.duckduckgo_de import *
-se = Scraping()
-test_scraper_results(test_query, 10, se, False)
+# from scrapers.duckduckgo_de import *
+# se = Scraping()
+# test_scraper_results(test_query, 10, se, False)
 
 # from scrapers.ecosia_de import *
 # se = Scraping()

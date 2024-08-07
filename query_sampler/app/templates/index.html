@@ -1,0 +1,49 @@
+<!-- Start page, showing created studies with CRUD-Options / Todo: edit and delete studies -->
+
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+
+<div class="card col-md-6 offset-md-3">
+  <div class="card-body">
+        <div class="py-2">
+
+          {% if studies %}
+          <h4 class="crd-header">Keyword Studies:</h4>
+          {% for s in studies %}
+          <div class="row align-items-center py-2">
+            <div class="col-md-10">
+              <a class="text-dark" href="{{ url_for('show_study', id=s.id) }}">{{ s.name }}</a>
+            </div>
+            <div class="col-md-2">
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <a href="{{ url_for('show_study', id=s.id)}}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip"
+                  data-bs-title="View">
+                  <i class="fa-solid fa-eye"></i>
+                </a>{% if s.status == 0 %}
+                <a href="{{ url_for('edit_study', id=s.id)}}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip"
+                  data-bs-title="Edit">
+                  <i class="fa-solid fa-pen"></i>
+                </a>{% endif %}
+                <a href="{{ url_for('delete_study', id=s.id)}}" class="btn btn-sm btn-outline-secondary"
+                  data-bs-toggle="tooltip" data-bs-title="Delete">
+                  <i class="fa-solid fa-trash"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% endif %}
+          <div class="row align-items-center py-2">
+            <div class="col-md-12">
+              <a href="{{ url_for('create_study') }}" class="btn btn-primary">Create a new study!</a>
+            </div>
+          </div>
+        </div>
+</div>
+  </div>
+
+{% endblock %}

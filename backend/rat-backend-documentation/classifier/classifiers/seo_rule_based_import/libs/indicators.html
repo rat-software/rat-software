@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.1">
+<title>backend.classifier.classifiers.seo_rule_based_import.libs.indicators API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>backend.classifier.classifiers.seo_rule_based_import.libs.indicators</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.calculate_loading_time"><code class="name flex">
+<span>def <span class="ident">calculate_loading_time</span></span>(<span>url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to calculate the loading time of a URL.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL to calculate the loading time for.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code></dt>
+<dd>The loading time in seconds, or -1 if it cannot be calculated.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.create_webdriver"><code class="name flex">
+<span>def <span class="ident">create_webdriver</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_hyperlinks"><code class="name flex">
+<span>def <span class="ident">get_hyperlinks</span></span>(<span>source, main)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to extract hyperlinks from the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+<dt><strong><code>main</code></strong> :&ensp;<code>str</code></dt>
+<dd>The main URL of the website.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>The extracted hyperlinks.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_netloc"><code class="name flex">
+<span>def <span class="ident">get_netloc</span></span>(<span>url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to get the netloc (domain) of a URL.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL to get the netloc from.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>The netloc of the URL.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_plugins"><code class="name flex">
+<span>def <span class="ident">get_plugins</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to get the list of plugins from the configuration file.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>The list of plugins.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_scheme"><code class="name flex">
+<span>def <span class="ident">get_scheme</span></span>(<span>url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to get the scheme (http or https) of a URL.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL to get the scheme from.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>The scheme of the URL.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_sources"><code class="name flex">
+<span>def <span class="ident">get_sources</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to get the list of sources from the configuration file.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>The list of sources.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_canonical"><code class="name flex">
+<span>def <span class="ident">identify_canonical</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the number of canonical links in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>The number of canonical links.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_description"><code class="name flex">
+<span>def <span class="ident">identify_description</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if a webpage has a meta description.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if a meta description is present, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_h1"><code class="name flex">
+<span>def <span class="ident">identify_h1</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the number of H1 tags in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>The number of H1 tags.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_https"><code class="name flex">
+<span>def <span class="ident">identify_https</span></span>(<span>url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if a URL uses HTTPS.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL to identify.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if the URL uses HTTPS, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_hyperlinks"><code class="name flex">
+<span>def <span class="ident">identify_hyperlinks</span></span>(<span>hyperlinks, main)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the number of internal and external hyperlinks in a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>hyperlinks</code></strong> :&ensp;<code>str</code></dt>
+<dd>The extracted hyperlinks from the webpage.</dd>
+<dt><strong><code>main</code></strong> :&ensp;<code>str</code></dt>
+<dd>The main URL of the website.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>The number of internal and external hyperlinks.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keyword_density"><code class="name flex">
+<span>def <span class="ident">identify_keyword_density</span></span>(<span>source, search_query)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the keyword density in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+<dt><strong><code>search_query</code></strong> :&ensp;<code>str</code></dt>
+<dd>The search query containing the keywords.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code></dt>
+<dd>The keyword density.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keywords_in_source"><code class="name flex">
+<span>def <span class="ident">identify_keywords_in_source</span></span>(<span>source, search_query)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the number of occurrences of keywords in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+<dt><strong><code>search_query</code></strong> :&ensp;<code>str</code></dt>
+<dd>The search query containing the keywords.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>The number of occurrences of keywords.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keywords_in_url"><code class="name flex">
+<span>def <span class="ident">identify_keywords_in_url</span></span>(<span>url, search_query)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the number of occurrences of keywords in a URL.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL to check.</dd>
+<dt><strong><code>search_query</code></strong> :&ensp;<code>str</code></dt>
+<dd>The search query containing the keywords.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>The number of occurrences of keywords.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_micros"><code class="name flex">
+<span>def <span class="ident">identify_micros</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify microdata/microformats in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>The list of identified microdata/microformats.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_nofollow"><code class="name flex">
+<span>def <span class="ident">identify_nofollow</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the number of nofollow links in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>The number of nofollow links.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_og"><code class="name flex">
+<span>def <span class="ident">identify_og</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if Open Graph tags are present in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if Open Graph tags are present, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_plugins"><code class="name flex">
+<span>def <span class="ident">identify_plugins</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the plugins used in a webpage based on the source code.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>The identified plugins.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_robots_txt"><code class="name flex">
+<span>def <span class="ident">identify_robots_txt</span></span>(<span>main)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if a webpage has a robots.txt file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>main</code></strong> :&ensp;<code>str</code></dt>
+<dd>The main URL of the website.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if a robots.txt file is present, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_sitemap"><code class="name flex">
+<span>def <span class="ident">identify_sitemap</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if a sitemap link is present in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if a sitemap link is present, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_sources"><code class="name flex">
+<span>def <span class="ident">identify_sources</span></span>(<span>main)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the sources used in a webpage based on the main URL.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>main</code></strong> :&ensp;<code>str</code></dt>
+<dd>The main URL of the website.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>The identified sources.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_title"><code class="name flex">
+<span>def <span class="ident">identify_title</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if a webpage has a title.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if a title is present, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_url_length"><code class="name flex">
+<span>def <span class="ident">identify_url_length</span></span>(<span>url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify the length of a URL.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL to identify the length of.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>The length of the URL.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_viewport"><code class="name flex">
+<span>def <span class="ident">identify_viewport</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if a viewport meta tag is present in the source code of a webpage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if a viewport meta tag is present, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_wordpress"><code class="name flex">
+<span>def <span class="ident">identify_wordpress</span></span>(<span>source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to identify if a webpage is built with WordPress based on the source code.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>str</code></dt>
+<dd>The source code of the webpage.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>1 if the webpage is built with WordPress, 0 otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.is_valid_url"><code class="name flex">
+<span>def <span class="ident">is_valid_url</span></span>(<span>url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to check if a URL is valid.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>The URL to check.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the URL is valid, False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.match_text"><code class="name flex">
+<span>def <span class="ident">match_text</span></span>(<span>text, pattern)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to check if a text matches a pattern using wildcard characters.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>text</code></strong> :&ensp;<code>str</code></dt>
+<dd>The text to check.</dd>
+<dt><strong><code>pattern</code></strong> :&ensp;<code>str</code></dt>
+<dd>The pattern to match against.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the text matches the pattern, False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.read_config_file"><code class="name flex">
+<span>def <span class="ident">read_config_file</span></span>(<span>filename)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.save_robot_txt"><code class="name flex">
+<span>def <span class="ident">save_robot_txt</span></span>(<span>main)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Function to get the content of a robots.txt file of a domain.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>main</code></strong> :&ensp;<code>str</code></dt>
+<dd>The main URL of the website.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>The content of the robots.txt file, or False if it cannot be retrieved.</dd>
+</dl></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs" href="index.html">backend.classifier.classifiers.seo_rule_based_import.libs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.calculate_loading_time" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.calculate_loading_time">calculate_loading_time</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.create_webdriver" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.create_webdriver">create_webdriver</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_hyperlinks" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_hyperlinks">get_hyperlinks</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_netloc" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_netloc">get_netloc</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_plugins" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_plugins">get_plugins</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_scheme" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_scheme">get_scheme</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_sources" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.get_sources">get_sources</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_canonical" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_canonical">identify_canonical</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_description" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_description">identify_description</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_h1" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_h1">identify_h1</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_https" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_https">identify_https</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_hyperlinks" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_hyperlinks">identify_hyperlinks</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keyword_density" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keyword_density">identify_keyword_density</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keywords_in_source" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keywords_in_source">identify_keywords_in_source</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keywords_in_url" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_keywords_in_url">identify_keywords_in_url</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_micros" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_micros">identify_micros</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_nofollow" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_nofollow">identify_nofollow</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_og" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_og">identify_og</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_plugins" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_plugins">identify_plugins</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_robots_txt" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_robots_txt">identify_robots_txt</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_sitemap" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_sitemap">identify_sitemap</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_sources" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_sources">identify_sources</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_title" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_title">identify_title</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_url_length" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_url_length">identify_url_length</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_viewport" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_viewport">identify_viewport</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_wordpress" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.identify_wordpress">identify_wordpress</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.is_valid_url" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.is_valid_url">is_valid_url</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.match_text" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.match_text">match_text</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.read_config_file" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.read_config_file">read_config_file</a></code></li>
+<li><code><a title="backend.classifier.classifiers.seo_rule_based_import.libs.indicators.save_robot_txt" href="#backend.classifier.classifiers.seo_rule_based_import.libs.indicators.save_robot_txt">save_robot_txt</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+</footer>
+</body>
+</html>

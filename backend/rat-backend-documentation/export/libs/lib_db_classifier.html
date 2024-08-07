@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.1">
+<title>backend.export.libs.lib_db_classifier API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>backend.export.libs.lib_db_classifier</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="backend.export.libs.lib_db_classifier.DB"><code class="flex name class">
+<span>class <span class="ident">DB</span></span>
+<span>(</span><span>db_cnf: dict)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Database interaction class for managing and querying a PostgreSQL database.</p>
+<p>Initializes the DB object with the given database configuration.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_cnf</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionary containing database configuration details.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DB:
+    &#34;&#34;&#34;Database interaction class for managing and querying a PostgreSQL database.&#34;&#34;&#34;
+    
+    def __init__(self, db_cnf: dict):
+        &#34;&#34;&#34;
+        Initializes the DB object with the given database configuration.
+
+        Args:
+            db_cnf (dict): Dictionary containing database configuration details.
+        &#34;&#34;&#34;
+        self.db_cnf = db_cnf
+
+    def __del__(self):
+        &#34;&#34;&#34;Destructor for the DB object.&#34;&#34;&#34;
+        print(&#39;DB object destroyed&#39;)
+
+    def connect_to_db(self):
+        &#34;&#34;&#34;
+        Provides a context manager for managing database connections.
+
+        Returns:
+            ConnectionManager: A context manager for handling the database connection.
+        &#34;&#34;&#34;
+        class ConnectionManager:
+            def __init__(self, db_cnf):
+                self.db_cnf = db_cnf
+                self.conn = None
+
+            def __enter__(self):
+                &#34;&#34;&#34;Establishes a database connection.&#34;&#34;&#34;
+                self.conn = psycopg2.connect(**self.db_cnf)
+                return self.conn
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                &#34;&#34;&#34;Closes the database connection.&#34;&#34;&#34;
+                if self.conn:
+                    self.conn.close()
+
+        return ConnectionManager(self.db_cnf)
+
+    def get_classifiers(self):
+        &#34;&#34;&#34;
+        Retrieves all classifiers from the database.
+
+        Returns:
+            list: A list of classifiers with their IDs and names.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(&#34;SELECT classifier.id, classifier.name FROM classifier&#34;)
+            conn.commit()
+            classifiers = cur.fetchall()
+        return classifiers
+
+    def get_search_engines(self, results):
+        &#34;&#34;&#34;
+        Retrieves the search engines associated with the given results.
+
+        Args:
+            results (list): A list of results, each represented as a dictionary.
+
+        Returns:
+            list: The updated list of results with search engine names added.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            for result in results:
+                result_id = result[&#39;id&#39;]
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute(&#34;&#34;&#34;
+                    SELECT searchengine.name 
+                    FROM result
+                    JOIN scraper ON result.scraper = scraper.id
+                    JOIN searchengine ON scraper.searchengine = searchengine.id
+                    WHERE result.id = %s
+                &#34;&#34;&#34;, (result_id,))
+                conn.commit()
+                searchengine = cur.fetchone()
+                result[&#39;searchengine&#39;] = searchengine[&#39;name&#39;] if searchengine else &#34;N/A&#34;
+        return results
+
+    def get_queries(self, results):
+        &#34;&#34;&#34;
+        Retrieves the queries associated with the given results.
+
+        Args:
+            results (list): A list of results, each represented as a dictionary.
+
+        Returns:
+            list: The updated list of results with queries added.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            for result in results:
+                result_id = result[&#39;id&#39;]
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute(&#34;&#34;&#34;
+                    SELECT query.query 
+                    FROM query
+                    JOIN result ON result.query = query.id
+                    WHERE result.id = %s
+                &#34;&#34;&#34;, (result_id,))
+                conn.commit()
+                query = cur.fetchone()
+                result[&#39;query&#39;] = query[&#39;query&#39;] if query else &#34;N/A&#34;
+        return results
+
+    def get_results(self, classifier_id):
+        &#34;&#34;&#34;
+        Retrieves results for a specific classifier ID.
+
+        Args:
+            classifier_id (int): The ID of the classifier for which to retrieve results.
+
+        Returns:
+            list: A list of results for the specified classifier.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(&#34;&#34;&#34;
+                SELECT result.id, result.url, result.main, result.position, result.title, 
+                       result.description, result.ip, result.final_url, source.code, 
+                       source.bin, source.content_type, source.error_code, source.status_code, 
+                       result_source.source 
+                FROM result
+                JOIN source ON result_source.source = source.id
+                JOIN result_source ON result_source.result = result.id
+                JOIN classifier_study ON result.study = classifier_study.study
+                WHERE classifier_study.classifier = %s
+                  AND (source.progress = 1 OR source.progress = -1)
+                  AND result.id NOT IN (
+                      SELECT classifier_result.result 
+                      FROM classifier_result 
+                      WHERE classifier_result.classifier = %s
+                  )
+                ORDER BY result.created_at, result.id 
+                LIMIT 10
+            &#34;&#34;&#34;, (classifier_id, classifier_id))
+            conn.commit()
+            results = cur.fetchall()
+        
+        # Enrich results with search engine and query information
+        results = self.get_search_engines(results)
+        results = self.get_queries(results)
+        return results
+
+    def insert_classification_result(self, classifier_id, value, result):
+        &#34;&#34;&#34;
+        Inserts a classification result into the database.
+
+        Args:
+            classifier_id (int): The ID of the classifier.
+            value (str): The classification result value.
+            result (int): The ID of the result being classified.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        try:
+            created_at = datetime.now()
+            with self.connect_to_db() as conn:
+                cur = conn.cursor(cursor_factory=DictCursor)
+                cur.execute(&#34;&#34;&#34;
+                    INSERT INTO classifier_result (classifier, value, result, created_at) 
+                    VALUES (%s, %s, %s, %s);
+                &#34;&#34;&#34;, (classifier_id, value, result, created_at))
+                conn.commit()
+        except Exception as e:
+            print(f&#34;Error inserting classification result: {e}&#34;)
+
+    def insert_indicator(self, indicator, value, classifier_id, result):
+        &#34;&#34;&#34;
+        Inserts an indicator into the database.
+
+        Args:
+            indicator (str): The indicator name.
+            value (str): The value of the indicator.
+            classifier_id (int): The ID of the classifier.
+            result (int): The ID of the result.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        try:
+            created_at = datetime.now()
+            with self.connect_to_db() as conn:
+                cur = conn.cursor(cursor_factory=DictCursor)
+                cur.execute(&#34;&#34;&#34;
+                    INSERT INTO classifier_indicator (indicator, value, classifier, result, created_at) 
+                    VALUES (%s, %s, %s, %s, %s);
+                &#34;&#34;&#34;, (indicator, value, classifier_id, result, created_at))
+                conn.commit()
+        except Exception as e:
+            print(f&#34;Error inserting indicator: {e}&#34;)
+
+    def update_classification_result(self, classifier_id, value, result):
+        &#34;&#34;&#34;
+        Updates a classification result in the database.
+
+        Args:
+            classifier_id (int): The ID of the classifier.
+            value (str): The updated classification result value.
+            result (int): The ID of the result being updated.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        try:
+            created_at = datetime.now()
+            with self.connect_to_db() as conn:
+                cur = conn.cursor(cursor_factory=DictCursor)
+                cur.execute(&#34;&#34;&#34;
+                    UPDATE classifier_result 
+                    SET classifier=%s, value=%s, created_at=%s 
+                    WHERE result = %s
+                &#34;&#34;&#34;, (classifier_id, value, created_at, result))
+                conn.commit()
+        except Exception as e:
+            print(f&#34;Error updating classification result: {e}&#34;)
+
+    def reset_classifiers(self, result):
+        &#34;&#34;&#34;
+        Resets the classifiers for a given result by deleting related entries.
+
+        Args:
+            result (int): The ID of the result to reset classifiers for.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;DELETE FROM classifier_indicator WHERE result = %s&#34;, (result,))
+            cur.execute(&#34;DELETE FROM classifier_result WHERE result = %s&#34;, (result,))
+            cur.execute(&#34;DELETE FROM classifier_result WHERE value = &#39;in process&#39;&#34;, (result,))
+            conn.commit()
+
+    def reset(self):
+        &#34;&#34;&#34;
+        Resets the classifiers in the database by cleaning up orphaned classifier indicators.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(&#34;&#34;&#34;
+                SELECT classifier_indicator.result 
+                FROM classifier_indicator
+                LEFT JOIN classifier_result ON classifier_indicator.result = classifier_result.result
+                WHERE classifier_result.result IS NULL
+                GROUP BY classifier_indicator.result
+            &#34;&#34;&#34;)
+            conn.commit()
+            values = cur.fetchall()
+        
+        for v in values:
+            result = v[&#39;result&#39;]
+            self.reset_classifiers(result)
+
+    def check_classification_result(self, classifier, result):
+        &#34;&#34;&#34;
+        Checks if a classification result for a given result ID and classifier ID already exists.
+
+        Args:
+            classifier (int): The ID of the classifier.
+            result (int): The ID of the result.
+
+        Returns:
+            bool: True if the result is classified; False otherwise.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;&#34;&#34;
+                SELECT id 
+                FROM classifier_result 
+                WHERE classifier = %s AND result = %s AND value != &#39;in process&#39;
+            &#34;&#34;&#34;, (classifier, result))
+            conn.commit()
+            check_progress = cur.fetchall()
+        return bool(check_progress)
+
+    def check_indicator_result(self, classifier, result):
+        &#34;&#34;&#34;
+        Checks if an indicator result for a given result ID and classifier ID already exists.
+
+        Args:
+            classifier (int): The ID of the classifier.
+            result (int): The ID of the result.
+
+        Returns:
+            bool: True if the indicator result exists; False otherwise.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;&#34;&#34;
+                SELECT id 
+                FROM classifier_indicator 
+                WHERE classifier = %s AND result = %s
+            &#34;&#34;&#34;, (classifier, result))
+            conn.commit()
+            check_progress = cur.fetchall()
+        return bool(check_progress)
+
+    def check_source_dup(self, source):
+        &#34;&#34;&#34;
+        Checks for duplicate sources in the database.
+
+        Args:
+            source (int): The ID of the source to check for duplicates.
+
+        Returns:
+            list: List of duplicate source entries.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;SELECT * FROM result_source WHERE source = %s&#34;, (source,))
+            conn.commit()
+            check_source = cur.fetchall()
+        return check_source
+
+    def duplicate_classification_result(self, source):
+        &#34;&#34;&#34;
+        Retrieves duplicate classification results for a given source.
+
+        Args:
+            source (int): The ID of the source.
+
+        Returns:
+            list: List of duplicate classification results.
+        &#34;&#34;&#34;
+        return self.get_results_result_source(source)
+
+    def get_results_result_source(self, source):
+        &#34;&#34;&#34;
+        Retrieves results associated with a given source.
+
+        Args:
+            source (int): The ID of the source.
+
+        Returns:
+            list: List of result IDs associated with the source.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;SELECT result FROM result_source WHERE source = %s&#34;, (source,))
+            conn.commit()
+            result_sources = cur.fetchall()
+        return result_sources
+
+    def get_classifier_result(self, result):
+        &#34;&#34;&#34;
+        Retrieves the classification result for a given result ID.
+
+        Args:
+            result (int): The ID of the result.
+
+        Returns:
+            list: List of classification results for the given result.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;&#34;&#34;
+                SELECT value 
+                FROM classifier_result 
+                WHERE result = %s AND value != &#39;in process&#39;
+            &#34;&#34;&#34;, (result,))
+            conn.commit()
+            result_sources = cur.fetchall()
+        return result_sources
+
+    def get_indicators(self, result):
+        &#34;&#34;&#34;
+        Retrieves indicators associated with a given result ID.
+
+        Args:
+            result (int): The ID of the result.
+
+        Returns:
+            list: List of indicators for the given result.
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;SELECT * FROM classifier_indicator WHERE result = %s&#34;, (result,))
+            conn.commit()
+            result_indicators = cur.fetchall()
+        return result_indicators
+
+    def deleteClassifierDuplicates(self):
+        &#34;&#34;&#34;
+        Deletes duplicate classification results based on result ID.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute(&#34;&#34;&#34;
+                DELETE FROM classifier_result 
+                WHERE id IN (
+                    SELECT id 
+                    FROM (
+                        SELECT id, ROW_NUMBER() OVER(PARTITION BY result ORDER BY id) AS row_num 
+                        FROM classifier_result
+                    ) t 
+                    WHERE t.row_num &gt; 1
+                );
+            &#34;&#34;&#34;)
+            conn.commit()
+
+    def check_db_connection(self):
+        &#34;&#34;&#34;
+        Tests the database connection by attempting to connect.
+
+        Returns:
+            bool: True if the connection is successful, False otherwise.
+        &#34;&#34;&#34;
+        try:
+            with self.connect_to_db():
+                return True
+        except Exception as e:
+            print(f&#34;Error checking DB connection: {e}&#34;)
+            return False</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="backend.export.libs.lib_db_classifier.DB.check_classification_result"><code class="name flex">
+<span>def <span class="ident">check_classification_result</span></span>(<span>self, classifier, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if a classification result for a given result ID and classifier ID already exists.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>classifier</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the classifier.</dd>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the result is classified; False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.check_db_connection"><code class="name flex">
+<span>def <span class="ident">check_db_connection</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Tests the database connection by attempting to connect.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the connection is successful, False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.check_indicator_result"><code class="name flex">
+<span>def <span class="ident">check_indicator_result</span></span>(<span>self, classifier, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if an indicator result for a given result ID and classifier ID already exists.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>classifier</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the classifier.</dd>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the indicator result exists; False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.check_source_dup"><code class="name flex">
+<span>def <span class="ident">check_source_dup</span></span>(<span>self, source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks for duplicate sources in the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the source to check for duplicates.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of duplicate source entries.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.connect_to_db"><code class="name flex">
+<span>def <span class="ident">connect_to_db</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Provides a context manager for managing database connections.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>ConnectionManager</code></dt>
+<dd>A context manager for handling the database connection.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.deleteClassifierDuplicates"><code class="name flex">
+<span>def <span class="ident">deleteClassifierDuplicates</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Deletes duplicate classification results based on result ID.</p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.duplicate_classification_result"><code class="name flex">
+<span>def <span class="ident">duplicate_classification_result</span></span>(<span>self, source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves duplicate classification results for a given source.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the source.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of duplicate classification results.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.get_classifier_result"><code class="name flex">
+<span>def <span class="ident">get_classifier_result</span></span>(<span>self, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the classification result for a given result ID.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of classification results for the given result.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.get_classifiers"><code class="name flex">
+<span>def <span class="ident">get_classifiers</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves all classifiers from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>A list of classifiers with their IDs and names.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.get_indicators"><code class="name flex">
+<span>def <span class="ident">get_indicators</span></span>(<span>self, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves indicators associated with a given result ID.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of indicators for the given result.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.get_queries"><code class="name flex">
+<span>def <span class="ident">get_queries</span></span>(<span>self, results)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the queries associated with the given results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>results</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of results, each represented as a dictionary.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>The updated list of results with queries added.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.get_results"><code class="name flex">
+<span>def <span class="ident">get_results</span></span>(<span>self, classifier_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves results for a specific classifier ID.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>classifier_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the classifier for which to retrieve results.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>A list of results for the specified classifier.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.get_results_result_source"><code class="name flex">
+<span>def <span class="ident">get_results_result_source</span></span>(<span>self, source)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves results associated with a given source.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the source.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of result IDs associated with the source.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.get_search_engines"><code class="name flex">
+<span>def <span class="ident">get_search_engines</span></span>(<span>self, results)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the search engines associated with the given results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>results</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of results, each represented as a dictionary.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>The updated list of results with search engine names added.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.insert_classification_result"><code class="name flex">
+<span>def <span class="ident">insert_classification_result</span></span>(<span>self, classifier_id, value, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Inserts a classification result into the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>classifier_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the classifier.</dd>
+<dt><strong><code>value</code></strong> :&ensp;<code>str</code></dt>
+<dd>The classification result value.</dd>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result being classified.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.insert_indicator"><code class="name flex">
+<span>def <span class="ident">insert_indicator</span></span>(<span>self, indicator, value, classifier_id, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Inserts an indicator into the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>indicator</code></strong> :&ensp;<code>str</code></dt>
+<dd>The indicator name.</dd>
+<dt><strong><code>value</code></strong> :&ensp;<code>str</code></dt>
+<dd>The value of the indicator.</dd>
+<dt><strong><code>classifier_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the classifier.</dd>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Resets the classifiers in the database by cleaning up orphaned classifier indicators.</p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.reset_classifiers"><code class="name flex">
+<span>def <span class="ident">reset_classifiers</span></span>(<span>self, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Resets the classifiers for a given result by deleting related entries.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result to reset classifiers for.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_classifier.DB.update_classification_result"><code class="name flex">
+<span>def <span class="ident">update_classification_result</span></span>(<span>self, classifier_id, value, result)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates a classification result in the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>classifier_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the classifier.</dd>
+<dt><strong><code>value</code></strong> :&ensp;<code>str</code></dt>
+<dd>The updated classification result value.</dd>
+<dt><strong><code>result</code></strong> :&ensp;<code>int</code></dt>
+<dd>The ID of the result being updated.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="backend.export.libs" href="index.html">backend.export.libs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="backend.export.libs.lib_db_classifier.DB" href="#backend.export.libs.lib_db_classifier.DB">DB</a></code></h4>
+<ul class="">
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.check_classification_result" href="#backend.export.libs.lib_db_classifier.DB.check_classification_result">check_classification_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.check_db_connection" href="#backend.export.libs.lib_db_classifier.DB.check_db_connection">check_db_connection</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.check_indicator_result" href="#backend.export.libs.lib_db_classifier.DB.check_indicator_result">check_indicator_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.check_source_dup" href="#backend.export.libs.lib_db_classifier.DB.check_source_dup">check_source_dup</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.connect_to_db" href="#backend.export.libs.lib_db_classifier.DB.connect_to_db">connect_to_db</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.deleteClassifierDuplicates" href="#backend.export.libs.lib_db_classifier.DB.deleteClassifierDuplicates">deleteClassifierDuplicates</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.duplicate_classification_result" href="#backend.export.libs.lib_db_classifier.DB.duplicate_classification_result">duplicate_classification_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.get_classifier_result" href="#backend.export.libs.lib_db_classifier.DB.get_classifier_result">get_classifier_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.get_classifiers" href="#backend.export.libs.lib_db_classifier.DB.get_classifiers">get_classifiers</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.get_indicators" href="#backend.export.libs.lib_db_classifier.DB.get_indicators">get_indicators</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.get_queries" href="#backend.export.libs.lib_db_classifier.DB.get_queries">get_queries</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.get_results" href="#backend.export.libs.lib_db_classifier.DB.get_results">get_results</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.get_results_result_source" href="#backend.export.libs.lib_db_classifier.DB.get_results_result_source">get_results_result_source</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.get_search_engines" href="#backend.export.libs.lib_db_classifier.DB.get_search_engines">get_search_engines</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.insert_classification_result" href="#backend.export.libs.lib_db_classifier.DB.insert_classification_result">insert_classification_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.insert_indicator" href="#backend.export.libs.lib_db_classifier.DB.insert_indicator">insert_indicator</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.reset" href="#backend.export.libs.lib_db_classifier.DB.reset">reset</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.reset_classifiers" href="#backend.export.libs.lib_db_classifier.DB.reset_classifiers">reset_classifiers</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_classifier.DB.update_classification_result" href="#backend.export.libs.lib_db_classifier.DB.update_classification_result">update_classification_result</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+</footer>
+</body>
+</html>

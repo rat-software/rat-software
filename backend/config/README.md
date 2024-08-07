@@ -24,7 +24,7 @@ The RAT-Backend applications use configuration files to connect to the database 
    debug_screenshots = 0         # Set to 1 to save screenshots of the scraping process for debugging; 0 to disable.
    timeout = 45                  # Maximum time in seconds before a scraping process is canceled.
    headless = 1                  # Set to 1 to enable headless mode (no browser UI), 0 to disable.
-   job_server = local_windows    # Name of the server where scraping occurs. Relevant if using multiple servers.
+   job_server = your_job_server  # Name of the server where scraping occurs. Relevant if using multiple servers.
    refresh_time = 48             # Interval in hours to ensure sources are refreshed, preventing more than one scrape within 48 hours for similar queries or search engines.
    max_height = 50000            # Maximum height in pixels for scraping. Lower values speed up scraping but may result in incomplete content.
    min_width = 1024              # Minimum width in pixels for scraping.

@@ -59,7 +59,7 @@ def contact():
             subject='RAT Form Submission %s' % (form.name.data),
             sender=form.email.data,
             body=form.message.data,
-            recipients=["your_mail-address"],
+            recipients=["recipent_email"],
         )        
 
         # Send the email
@@ -100,8 +100,8 @@ def login_redirect():
     # Create and send a registration confirmation email
     msg = Message(
         subject='Registration confirmation for RAT',
-        sender='your_mail-address',
-        body='Welcome Text' % (user_mail),
+        sender='your_sender',
+        body='Hello %s, \r\n\r\n thank you for your interest in using the RAT.\r\n\r\nWe will contact you in the coming days to discuss your requirements and then activate your account.\r\n\r\nBest,\r\nThe Search Studies Team\r\nhttps://searchstudies.org/' % (user_mail),
         recipients=[user_mail],
     )        
 

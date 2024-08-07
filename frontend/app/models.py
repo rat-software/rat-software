@@ -2,103 +2,106 @@ from app import db
 from flask_security import UserMixin, RoleMixin
 
 # Define association tables for many-to-many relationships
+
 country_monitoring = db.Table('country_monitoring',
                               db.Column('country', db.ForeignKey(
                                   'country.id'), primary_key=True),
                               db.Column('monitoring', db.ForeignKey(
-                                  'monitoring.id'), primary_key=True)
+                                  'monitoring.id'), primary_key=True), extend_existing=True,
                               )
 
 language_study = db.Table('language_study',
                           db.Column('language', db.ForeignKey(
                               'language.id'), primary_key=True),
                           db.Column('study', db.ForeignKey(
-                              'study.id'), primary_key=True)
+                              'study.id'), primary_key=True), extend_existing=True,
                           )
 
 logger_query = db.Table('logger_query',
                         db.Column('logger', db.ForeignKey(
                             'logger.id'), primary_key=True),
                         db.Column('query', db.ForeignKey(
-                            'query.id'), primary_key=True)
+                            'query.id'), primary_key=True), extend_existing=True,
                         )
 
 logger_result = db.Table('logger_result',
                          db.Column('logger', db.ForeignKey(
                              'logger.id'), primary_key=True),
                          db.Column('result', db.ForeignKey(
-                             'result.id'), primary_key=True)
+                             'result.id'), primary_key=True), extend_existing=True,
                          )
 
 logger_scraper = db.Table('logger_scraper',
                           db.Column('logger', db.ForeignKey(
                               'logger.id'), primary_key=True),
                           db.Column('scraper', db.ForeignKey(
-                              'scraper.id'), primary_key=True)
+                              'scraper.id'), primary_key=True), extend_existing=True,
                           )
 
 logger_searchengine = db.Table('logger_searchengine',
                                db.Column('logger', db.ForeignKey(
                                    'logger.id'), primary_key=True),
                                db.Column('searchengine', db.ForeignKey(
-                                   'searchengine.id'), primary_key=True)
+                                   'searchengine.id'), primary_key=True), extend_existing=True,
                                )
 
 logger_serp = db.Table('logger_serp',
                        db.Column('logger', db.ForeignKey(
                            'logger.id'), primary_key=True),
                        db.Column('serp', db.ForeignKey(
-                           'serp.id'), primary_key=True)
+                           'serp.id'), primary_key=True), extend_existing=True,
                        )
 
 participant_study = db.Table('participant_study',
                              db.Column('participant', db.ForeignKey(
                                  'participant.id'), primary_key=True),
                              db.Column('study', db.ForeignKey(
-                                 'study.id'), primary_key=True)
+                                 'study.id'), primary_key=True), extend_existing=True,
                              )
 
 question_result = db.Table('question_result',
                            db.Column('question', db.ForeignKey(
                                'question.id'), primary_key=True),
                            db.Column('result', db.ForeignKey(
-                               'result.id'), primary_key=True)
+                               'result.id'), primary_key=True), extend_existing=True,
                            )
 
 searchengine_study = db.Table('searchengine_study',
                               db.Column('searchengine', db.ForeignKey(
                                   'searchengine.id'), primary_key=True),
                               db.Column('study', db.ForeignKey(
-                                  'study.id'), primary_key=True)
+                                  'study.id'), primary_key=True), extend_existing=True,
                               )
 
 study_user = db.Table('study_user',
                       db.Column('study', db.ForeignKey(
                           'study.id'), primary_key=True),
                       db.Column('user', db.ForeignKey(
-                          'user.id'), primary_key=True)
+                          'user.id'), primary_key=True), extend_existing=True,
                       )
 
 user_role = db.Table('user_role',
                      db.Column('user', db.ForeignKey(
                          'user.id'), primary_key=True),
                      db.Column('role', db.ForeignKey(
-                         'role.id'), primary_key=True)
+                         'role.id'), primary_key=True), extend_existing=True,
                      )
 
 result_source = db.Table('result_source',
                          db.Column('result', db.ForeignKey('result.id')),
-                         db.Column('source', db.ForeignKey('source.id'))
+                         db.Column('source', db.ForeignKey('source.id')), extend_existing=True,
                          )
 
 classifier_study = db.Table('classifier_study',
                          db.Column('classifier', db.ForeignKey('classifier.id')),
-                         db.Column('study', db.ForeignKey('study.id'))
+                         db.Column('study', db.ForeignKey('study.id')), extend_existing=True,
                          )
 
 class Answer(db.Model):
     """Model for storing answers given by participants to questions."""
     __tablename__ = 'answer'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     value = db.Column(db.String)
@@ -126,6 +129,8 @@ class Answer(db.Model):
 class ClassifierResult(db.Model):
     """Model for storing the results produced by classifiers."""
     __tablename__ = 'classifier_result'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -142,6 +147,8 @@ class ClassifierResult(db.Model):
 class Classifier(db.Model):
     """Model for storing classifiers used in studies."""
     __tablename__ = 'classifier'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('name', db.String)
@@ -160,6 +167,8 @@ class Classifier(db.Model):
 class ClassifierIndicator(db.Model):
     """Model for storing indicators used by classifiers."""
     __tablename__ = 'classifier_indicator'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     indicator = db.Column('indicator', db.String)
@@ -178,6 +187,8 @@ class ClassifierIndicator(db.Model):
 class Content(db.Model):
     """Model for storing content related to results."""
     __tablename__ = 'content'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     value = db.Column(db.String)
@@ -189,6 +200,9 @@ class Content(db.Model):
 
 class Country(db.Model):
     """Model for storing countries involved in various studies."""
+    __tablename__ = 'country'
+    __table_args__ = {'extend_existing': True}
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     code = db.Column(db.String)
@@ -210,6 +224,8 @@ class Country(db.Model):
 class Evaluation(db.Model):
     """Model for storing evaluations of sources."""
     __tablename__ = 'evaluation'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     status = db.Column(db.Integer)
@@ -223,6 +239,8 @@ class Evaluation(db.Model):
 class Experiment(db.Model):
     """Model for storing experiments conducted within studies."""
     __tablename__ = 'experiment'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -234,6 +252,8 @@ class Experiment(db.Model):
 class Group(db.Model):
     """Model for storing participant groups."""
     __tablename__ = 'group'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -246,6 +266,8 @@ class Group(db.Model):
 class Incentive(db.Model):
     """Model for storing incentives given to participants."""
     __tablename__ = 'incentive'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -262,6 +284,7 @@ class Incentive(db.Model):
 class Language(db.Model):
     """Model for storing languages used in studies."""
     __tablename__ = 'language'
+    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -276,6 +299,8 @@ class Language(db.Model):
 class Logger(db.Model):
     """Model for storing loggers that manage various tasks and interactions."""
     __tablename__ = 'logger'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     clicked = db.Column(db.Boolean)
@@ -298,6 +323,8 @@ class Logger(db.Model):
 class Monitoring(db.Model):
     """Model for storing monitoring processes."""
     __tablename__ = 'monitoring'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -323,6 +350,8 @@ class Monitoring(db.Model):
 class Option(db.Model):
     """Model for storing options information for questions."""
     __tablename__ = 'option'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     value = db.Column(db.String)
@@ -338,6 +367,8 @@ class Option(db.Model):
 class Participant(db.Model):
     """Model for storing participant information."""
     __tablename__ = 'participant'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -360,6 +391,8 @@ class Participant(db.Model):
 class Query(db.Model):
     """Model for storing queries related to results."""
     __tablename__ = 'query'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     query = db.Column(db.String)
@@ -387,6 +420,8 @@ class Query(db.Model):
 class Question(db.Model):
     """Model for storing questions posed in studies."""
     __tablename__ = 'question'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String)
@@ -417,6 +452,8 @@ class Question(db.Model):
 
 class QuestionTemplate(db.Model):
     __tablename__ = 'questiontemplate'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -428,6 +465,8 @@ class QuestionTemplate(db.Model):
 
 class QuestionType(db.Model):
     __tablename__ = 'questiontype'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -439,6 +478,8 @@ class QuestionType(db.Model):
 
 class Reporting(db.Model):
     __tablename__ = 'reporting'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     result_count = db.Column(db.Integer)
@@ -456,6 +497,8 @@ class Reporting(db.Model):
 class Result(db.Model):
     """Model for storing results from various studies."""
     __tablename__ = 'result'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String)
@@ -507,6 +550,8 @@ class Result(db.Model):
 
 class ResultType(db.Model):
     __tablename__ = 'resulttype'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -521,6 +566,8 @@ class ResultType(db.Model):
 class Role(db.Model, RoleMixin):
     """Model for storing user roles."""
     __tablename__ = 'role'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -535,6 +582,8 @@ class Role(db.Model, RoleMixin):
 class Scraper(db.Model):
     """Model for storing scraper jobs related to queries and search engines."""
     __tablename__ = 'scraper'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     progress = db.Column(db.Integer)
@@ -567,6 +616,8 @@ class Scraper(db.Model):
 class SearchEngine(db.Model):
     """Model for storing search engines used in studies."""
     __tablename__ = 'searchengine'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -586,6 +637,8 @@ class SearchEngine(db.Model):
 class Serp(db.Model):
     """Model for storing SERPs (Search Engine Results Pages)."""
     __tablename__ = 'serp'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     page = db.Column(db.Integer)
@@ -614,6 +667,8 @@ class Serp(db.Model):
 class Source(db.Model):
     """Model for storing sources used in studies."""
     __tablename__ = 'source'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.LargeBinary)
@@ -636,6 +691,8 @@ class Source(db.Model):
 class Statistic(db.Model):
     """Model for storing statistics."""
     __tablename__ = 'statistic'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -649,6 +706,8 @@ class Statistic(db.Model):
 class Study(db.Model):
     """Model for storing studies."""
     __tablename__ = 'study'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -698,6 +757,8 @@ class Study(db.Model):
 class StudyType(db.Model):
     """Model for storing study types."""
     __tablename__ = 'studytype'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -709,6 +770,8 @@ class StudyType(db.Model):
 class Task(db.Model):
     """Model for storing tasks associated with loggers."""
     __tablename__ = 'task'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -719,6 +782,8 @@ class Task(db.Model):
 class User(db.Model, UserMixin):
     """Model for storing users."""
     __tablename__ = 'user'
+    __table_args__ = {'extend_existing': True}
+
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String)

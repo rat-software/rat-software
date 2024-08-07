@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.1">
+<title>backend.export.libs.lib_db_results API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>backend.export.libs.lib_db_results</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="backend.export.libs.lib_db_results.DB"><code class="flex name class">
+<span>class <span class="ident">DB</span></span>
+<span>(</span><span>db_cnf: dict, job_server: str, refresh_time: int)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Database interaction class for managing and querying a PostgreSQL database.</p>
+<p>Initializes the DB object with the given database configuration, job server, and refresh time.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_cnf</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionary containing database configuration details.</dd>
+<dt><strong><code>job_server</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the job server.</dd>
+<dt><strong><code>refresh_time</code></strong> :&ensp;<code>int</code></dt>
+<dd>Time in hours to refresh scraped sources.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DB:
+    &#34;&#34;&#34;Database interaction class for managing and querying a PostgreSQL database.&#34;&#34;&#34;
+    
+    db_cnf: dict
+    &#34;&#34;&#34;Dictionary containing the database connection configuration.&#34;&#34;&#34;
+    
+    job_server: str
+    &#34;&#34;&#34;Name of the job server that is processing the data.&#34;&#34;&#34;
+    
+    refresh_time: int
+    &#34;&#34;&#34;Time in hours to refresh scraped sources.&#34;&#34;&#34;
+
+    def __init__(self, db_cnf: dict, job_server: str, refresh_time: int):
+        &#34;&#34;&#34;
+        Initializes the DB object with the given database configuration, job server, and refresh time.
+
+        Args:
+            db_cnf (dict): Dictionary containing database configuration details.
+            job_server (str): Name of the job server.
+            refresh_time (int): Time in hours to refresh scraped sources.
+        &#34;&#34;&#34;
+        self.db_cnf = db_cnf
+        self.job_server = job_server
+        self.refresh_time = refresh_time
+
+    def __del__(self):
+        &#34;&#34;&#34;Destructor for the DB object, prints a message when the object is destroyed.&#34;&#34;&#34;
+        print(&#39;DB object destroyed&#39;)
+
+    def connect_to_db(self):
+        &#34;&#34;&#34;
+        Establishes a connection to the PostgreSQL database using psycopg2.
+
+        Returns:
+            psycopg2.extensions.connection: Database connection object.
+        &#34;&#34;&#34;
+        conn = psycopg2.connect(**self.db_cnf)
+        return conn
+
+    def insert_result_source(self, result_id, progress, created_at, job_server):
+        &#34;&#34;&#34;
+        Inserts a placeholder entry into the result_source table to track sources and avoid duplicate scraping jobs.
+
+        Args:
+            result_id (int): ID of the result.
+            progress (int): Progress status of the scraping job.
+            created_at (datetime): Timestamp when the entry was created.
+            job_server (str): Job server name.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            INSERT INTO result_source (result, progress, created_at, job_server) 
+            VALUES (%s, %s, %s, %s);
+        &#34;&#34;&#34;, (result_id, progress, created_at, job_server))
+        conn.commit()
+        conn.close()
+
+    def get_sources_pending(self):
+        &#34;&#34;&#34;
+        Retrieves sources that have failed (progress = 2 or progress = -1) and have not exceeded retry limit.
+
+        Returns:
+            list: List of dictionaries containing failed sources with their details.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT source.id, source.created_at, result_source.result 
+            FROM source
+            JOIN result_source ON result_source.source = source.id 
+            WHERE (source.progress = 2 OR source.progress = -1) 
+              AND result_source.counter &lt; 11
+        &#34;&#34;&#34;)
+        conn.commit()
+        sources_pending = cur.fetchall()
+        conn.close()
+        return sources_pending
+
+    def get_source_check(self, url):
+        &#34;&#34;&#34;
+        Checks if a source with the specified URL exists and if it should be refreshed based on its creation time.
+
+        Args:
+            url (str): URL of the source.
+
+        Returns:
+            int or bool: Source ID if the source should be refreshed, otherwise False.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT id, created_at 
+            FROM source 
+            WHERE progress = 1 AND url = %s 
+            ORDER BY created_at DESC
+        &#34;&#34;&#34;, (url,))
+        conn.commit()
+        sc = cur.fetchone()
+        conn.close()
+
+        if sc:
+            timestamp = datetime.now()
+            source_id = sc[0]
+            created_at = sc[1]
+            diff = timestamp - created_at
+            diff_in_hours = diff.total_seconds() / 3600
+
+            if diff_in_hours &lt; self.refresh_time:
+                return source_id
+            else:
+                return False
+        else:
+            return False
+
+    def get_source_check_by_result_id(self, result_id):
+        &#34;&#34;&#34;
+        Checks if a result has already been declared as a scraping job.
+
+        Args:
+            result_id (int): ID of the result.
+
+        Returns:
+            tuple or None: Source ID if a scraping job is declared, otherwise None.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT id 
+            FROM result_source 
+            WHERE result = %s AND progress = 2
+        &#34;&#34;&#34;, (result_id,))
+        conn.commit()
+        scr = cur.fetchone()
+        conn.close()
+        return scr
+
+    def get_result_content(self, source_id):
+        &#34;&#34;&#34;
+        Retrieves content from an existing result associated with the specified source.
+
+        Args:
+            source_id (int): ID of the source.
+
+        Returns:
+            tuple: Content details of the associated result.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT result.ip, result.main, result.final_url 
+            FROM result
+            JOIN result_source ON result_source.result = result.id
+            WHERE result_source.source = %s
+        &#34;&#34;&#34;, (source_id,))
+        conn.commit()
+        rc = cur.fetchone()
+        conn.close()
+        return rc
+
+    def insert_source(self, url, progress, created_at, job_server):
+        &#34;&#34;&#34;
+        Inserts a new source into the database.
+
+        Args:
+            url (str): URL of the source.
+            progress (int): Progress status of the source.
+            created_at (datetime): Timestamp when the source was created.
+            job_server (str): Job server name.
+
+        Returns:
+            int: ID of the newly inserted source.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            INSERT INTO source (url, progress, created_at, job_server) 
+            VALUES (%s, %s, %s, %s)  
+            RETURNING id;
+        &#34;&#34;&#34;, (url, progress, created_at, job_server))
+        conn.commit()
+        lastrowid = cur.fetchone()[0]
+        conn.close()
+        return lastrowid
+
+    def check_progress(self, url, result_id):
+        &#34;&#34;&#34;
+        Checks if a result is already declared as a scraping job for the given URL.
+
+        Args:
+            url (str): URL of the source.
+            result_id (int): ID of the result.
+
+        Returns:
+            bool: True if the result is already declared, otherwise False.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT result_source.id 
+            FROM result_source
+            JOIN source ON result_source.source = source.id 
+            WHERE source.url = %s 
+              AND source.progress = 2 
+              AND result_source.result = %s
+        &#34;&#34;&#34;, (url, result_id))
+        conn.commit()
+        check_progress = cur.fetchall()
+        conn.close()
+        return bool(check_progress)
+
+    def update_source(self, source_id, code, bin, progress, content_type, error_code, status_code, created_at, content_dict):
+        &#34;&#34;&#34;
+        Updates the content of a source when the scraping job is completed.
+
+        Args:
+            source_id (int): ID of the source to be updated.
+            code (int): HTTP response code.
+            bin (bytearray): Binary content of the source.
+            progress (int): Progress status of the source.
+            content_type (str): MIME type of the content.
+            error_code (int): Error code if any.
+            status_code (int): Status code of the request.
+            created_at (datetime): Timestamp when the source was created.
+            content_dict (dict): Additional content details.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            UPDATE source 
+            SET code = %s, bin = %s, progress = %s, content_type = %s, 
+                error_code = %s, status_code = %s, created_at = %s, content_dict = %s 
+            WHERE id = %s
+        &#34;&#34;&#34;, (code, bin, progress, content_type, error_code, status_code, created_at, content_dict, source_id))
+        conn.commit()
+        conn.close()
+
+    def replace_source_bin(self, source_id, bin):
+        &#34;&#34;&#34;
+        Updates the binary content of a source when the scraping job is completed.
+
+        Args:
+            source_id (int): ID of the source to be updated.
+            bin (bytearray): New binary content for the source.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            UPDATE source 
+            SET bin = %s 
+            WHERE id = %s
+        &#34;&#34;&#34;, (bin, source_id))
+        conn.commit()
+        conn.close()
+
+    def update_result(self, result_id, ip, main, final_url):
+        &#34;&#34;&#34;
+        Updates the result content when the scraping job is completed.
+
+        Args:
+            result_id (int): ID of the result to be updated.
+            ip (str): IP address associated with the result.
+            main (str): Main content of the result.
+            final_url (str): Final URL after scraping.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            UPDATE result 
+            SET ip = %s, main = %s, final_url = %s 
+            WHERE id = %s
+        &#34;&#34;&#34;, (ip, main, final_url, result_id))
+        conn.commit()
+        conn.close()
+
+    def get_source_counter_result(self, result_id):
+        &#34;&#34;&#34;
+        Retrieves the counter value for a result from the result_source table.
+
+        Args:
+            result_id (int): ID of the result.
+
+        Returns:
+            int: Counter value associated with the result.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT counter 
+            FROM result_source 
+            WHERE result = %s
+        &#34;&#34;&#34;, (result_id,))
+        conn.commit()
+        counter = cur.fetchall()
+        conn.close()
+        return counter[0][0]
+
+    def update_result_source(self, result_id, source_id, progress, counter, created_at, job_server):
+        &#34;&#34;&#34;
+        Updates the result_source table with new details for a scraping job.
+
+        Args:
+            result_id (int): ID of the result.
+            source_id (int): ID of the source.
+            progress (int): Progress status of the scraping job.
+            counter (int): Counter value for the result.
+            created_at (datetime): Timestamp when the entry was created.
+            job_server (str): Name of the job server.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            UPDATE result_source 
+            SET source = %s, progress = %s, counter = %s, created_at = %s, job_server = %s 
+            WHERE result = %s
+        &#34;&#34;&#34;, (source_id, progress, counter, created_at, job_server, result_id))
+        conn.commit()
+        conn.close()
+
+    def update_result_source_result(self, result_id, progress, counter, created_at):
+        &#34;&#34;&#34;
+        Updates the result_source table with new details for a result.
+
+        Args:
+            result_id (int): ID of the result.
+            progress (int): Progress status of the scraping job.
+            counter (int): Counter value for the result.
+            created_at (datetime): Timestamp when the entry was created.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            UPDATE result_source 
+            SET progress = %s, counter = %s, created_at = %s 
+            WHERE result = %s
+        &#34;&#34;&#34;, (progress, counter, created_at, result_id))
+        conn.commit()
+        conn.close()
+
+    def delete_source_pending(self, source_id, progress, created_at):
+        &#34;&#34;&#34;
+        Deletes or updates pending sources that have not yet completed.
+
+        Args:
+            source_id (int): ID of the source to be updated.
+            progress (int): New progress status of the source.
+            created_at (datetime): Timestamp when the entry was created.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            UPDATE source 
+            SET progress = %s, created_at = %s 
+            WHERE id = %s
+        &#34;&#34;&#34;, (progress, created_at, source_id))
+        conn.commit()
+        conn.close()
+
+    def reset_result_source(self, progress, counter, created_at, source_id):
+        &#34;&#34;&#34;
+        Resets the result_source entry for a source.
+
+        Args:
+            progress (int): New progress status of the source.
+            counter (int): New counter value for the result.
+            created_at (datetime): Timestamp when the entry was created.
+            source_id (int): ID of the source to be reset.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        created_at = datetime.now()
+        cur.execute(&#34;&#34;&#34;
+            UPDATE result_source 
+            SET progress = %s, counter = %s, created_at = %s 
+            WHERE source = %s
+        &#34;&#34;&#34;, (progress, counter, created_at, source_id))
+        conn.commit()
+        conn.close()
+
+    def reset(self):
+        &#34;&#34;&#34;
+        Resets all pending sources by deleting or updating them and resetting result_source entries.
+        &#34;&#34;&#34;
+        sources_pending = self.get_sources_pending()
+        for source in sources_pending:
+            source_id = source[0]
+            self.delete_source_pending(source_id, source[1], source[2])
+            self.reset_result_source(source[1], source[2], source[2], source_id)
+
+    def get_result_source(self, result_id):
+        &#34;&#34;&#34;
+        Retrieves the result_source entry for a given result ID.
+
+        Args:
+            result_id (int): ID of the result.
+
+        Returns:
+            tuple: Result source entry if exists, otherwise None.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT id 
+            FROM result_source 
+            WHERE result = %s
+        &#34;&#34;&#34;, (result_id,))
+        conn.commit()
+        scr = cur.fetchone()
+        conn.close()
+        return scr
+
+    def get_result_source_source(self, result_id):
+        &#34;&#34;&#34;
+        Retrieves the source ID for a given result ID.
+
+        Args:
+            result_id (int): ID of the result.
+
+        Returns:
+            int: Source ID associated with the result.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT source 
+            FROM result_source 
+            WHERE result = %s
+        &#34;&#34;&#34;, (result_id,))
+        conn.commit()
+        scr = cur.fetchone()
+        conn.close()
+        return scr[0]
+
+    def get_sources(self, job_server):
+        &#34;&#34;&#34;
+        Retrieves results that do not have an associated source and are eligible for scraping.
+
+        Args:
+            job_server (str): Name of the job server requesting the sources.
+
+        Returns:
+            list: List of tuples containing result IDs and URLs that are ready for scraping.
+        &#34;&#34;&#34;
+        conn = self.connect_to_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;&#34;&#34;
+            SELECT result.id, result.url, study.studytype 
+            FROM result
+            JOIN study ON result.study = study.id
+            LEFT JOIN result_source ON result_source.result = result.id
+            WHERE (result_source.source IS NULL 
+                AND NOT EXISTS (SELECT result FROM result_source WHERE result = result.id) 
+                OR result_source.progress = 0 
+                AND result_source.counter &lt; 11) 
+              AND study.studytype != 6 
+            LIMIT 5
+        &#34;&#34;&#34;)
+        conn.commit()
+        sources = cur.fetchall()
+        conn.close()
+
+        sources_list = []
+
+        for s in sources:
+            progress = 2
+            result_id = s[0]
+            result_url = s[1]
+
+            if self.get_result_source(result_id):
+                counter = self.get_source_counter_result(result_id)
+                counter += 1
+                created_at = datetime.now()
+                self.update_result_source_result(result_id, progress, counter, created_at)
+            else:
+                created_at = datetime.now()
+                self.insert_result_source(result_id, progress, created_at, job_server)
+
+            sources_list.append([result_id, result_url])
+
+        return sources_list
+
+    def check_db_connection(self):
+        &#34;&#34;&#34;
+        Tests the connection to the database to ensure it is active.
+
+        Returns:
+            bool: True if the connection is successful, False otherwise.
+        &#34;&#34;&#34;
+        try:
+            conn = self.connect_to_db()
+            conn.close()
+            return True
+        except:
+            return False</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="backend.export.libs.lib_db_results.DB.db_cnf"><code class="name">var <span class="ident">db_cnf</span> : dict</code></dt>
+<dd>
+<div class="desc"><p>Dictionary containing the database connection configuration.</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.job_server"><code class="name">var <span class="ident">job_server</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Name of the job server that is processing the data.</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.refresh_time"><code class="name">var <span class="ident">refresh_time</span> : int</code></dt>
+<dd>
+<div class="desc"><p>Time in hours to refresh scraped sources.</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="backend.export.libs.lib_db_results.DB.check_db_connection"><code class="name flex">
+<span>def <span class="ident">check_db_connection</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Tests the connection to the database to ensure it is active.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the connection is successful, False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.check_progress"><code class="name flex">
+<span>def <span class="ident">check_progress</span></span>(<span>self, url, result_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if a result is already declared as a scraping job for the given URL.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>URL of the source.</dd>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the result is already declared, otherwise False.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.connect_to_db"><code class="name flex">
+<span>def <span class="ident">connect_to_db</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Establishes a connection to the PostgreSQL database using psycopg2.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>psycopg2.extensions.connection</code></dt>
+<dd>Database connection object.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.delete_source_pending"><code class="name flex">
+<span>def <span class="ident">delete_source_pending</span></span>(<span>self, source_id, progress, created_at)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Deletes or updates pending sources that have not yet completed.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the source to be updated.</dd>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>New progress status of the source.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Timestamp when the entry was created.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_result_content"><code class="name flex">
+<span>def <span class="ident">get_result_content</span></span>(<span>self, source_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves content from an existing result associated with the specified source.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the source.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple</code></dt>
+<dd>Content details of the associated result.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_result_source"><code class="name flex">
+<span>def <span class="ident">get_result_source</span></span>(<span>self, result_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the result_source entry for a given result ID.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple</code></dt>
+<dd>Result source entry if exists, otherwise None.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_result_source_source"><code class="name flex">
+<span>def <span class="ident">get_result_source_source</span></span>(<span>self, result_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the source ID for a given result ID.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>Source ID associated with the result.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_source_check"><code class="name flex">
+<span>def <span class="ident">get_source_check</span></span>(<span>self, url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if a source with the specified URL exists and if it should be refreshed based on its creation time.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>URL of the source.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code> or <code>bool</code></dt>
+<dd>Source ID if the source should be refreshed, otherwise False.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_source_check_by_result_id"><code class="name flex">
+<span>def <span class="ident">get_source_check_by_result_id</span></span>(<span>self, result_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if a result has already been declared as a scraping job.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple</code> or <code>None</code></dt>
+<dd>Source ID if a scraping job is declared, otherwise None.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_source_counter_result"><code class="name flex">
+<span>def <span class="ident">get_source_counter_result</span></span>(<span>self, result_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves the counter value for a result from the result_source table.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>Counter value associated with the result.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_sources"><code class="name flex">
+<span>def <span class="ident">get_sources</span></span>(<span>self, job_server)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves results that do not have an associated source and are eligible for scraping.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>job_server</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the job server requesting the sources.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of tuples containing result IDs and URLs that are ready for scraping.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.get_sources_pending"><code class="name flex">
+<span>def <span class="ident">get_sources_pending</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves sources that have failed (progress = 2 or progress = -1) and have not exceeded retry limit.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of dictionaries containing failed sources with their details.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.insert_result_source"><code class="name flex">
+<span>def <span class="ident">insert_result_source</span></span>(<span>self, result_id, progress, created_at, job_server)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Inserts a placeholder entry into the result_source table to track sources and avoid duplicate scraping jobs.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>Progress status of the scraping job.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Timestamp when the entry was created.</dd>
+<dt><strong><code>job_server</code></strong> :&ensp;<code>str</code></dt>
+<dd>Job server name.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.insert_source"><code class="name flex">
+<span>def <span class="ident">insert_source</span></span>(<span>self, url, progress, created_at, job_server)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Inserts a new source into the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>URL of the source.</dd>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>Progress status of the source.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Timestamp when the source was created.</dd>
+<dt><strong><code>job_server</code></strong> :&ensp;<code>str</code></dt>
+<dd>Job server name.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>ID of the newly inserted source.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.replace_source_bin"><code class="name flex">
+<span>def <span class="ident">replace_source_bin</span></span>(<span>self, source_id, bin)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates the binary content of a source when the scraping job is completed.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the source to be updated.</dd>
+<dt><strong><code>bin</code></strong> :&ensp;<code>bytearray</code></dt>
+<dd>New binary content for the source.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Resets all pending sources by deleting or updating them and resetting result_source entries.</p></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.reset_result_source"><code class="name flex">
+<span>def <span class="ident">reset_result_source</span></span>(<span>self, progress, counter, created_at, source_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Resets the result_source entry for a source.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>New progress status of the source.</dd>
+<dt><strong><code>counter</code></strong> :&ensp;<code>int</code></dt>
+<dd>New counter value for the result.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Timestamp when the entry was created.</dd>
+<dt><strong><code>source_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the source to be reset.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.update_result"><code class="name flex">
+<span>def <span class="ident">update_result</span></span>(<span>self, result_id, ip, main, final_url)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates the result content when the scraping job is completed.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result to be updated.</dd>
+<dt><strong><code>ip</code></strong> :&ensp;<code>str</code></dt>
+<dd>IP address associated with the result.</dd>
+<dt><strong><code>main</code></strong> :&ensp;<code>str</code></dt>
+<dd>Main content of the result.</dd>
+<dt><strong><code>final_url</code></strong> :&ensp;<code>str</code></dt>
+<dd>Final URL after scraping.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.update_result_source"><code class="name flex">
+<span>def <span class="ident">update_result_source</span></span>(<span>self, result_id, source_id, progress, counter, created_at, job_server)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates the result_source table with new details for a scraping job.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+<dt><strong><code>source_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the source.</dd>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>Progress status of the scraping job.</dd>
+<dt><strong><code>counter</code></strong> :&ensp;<code>int</code></dt>
+<dd>Counter value for the result.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Timestamp when the entry was created.</dd>
+<dt><strong><code>job_server</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the job server.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.update_result_source_result"><code class="name flex">
+<span>def <span class="ident">update_result_source_result</span></span>(<span>self, result_id, progress, counter, created_at)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates the result_source table with new details for a result.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>result_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the result.</dd>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>Progress status of the scraping job.</dd>
+<dt><strong><code>counter</code></strong> :&ensp;<code>int</code></dt>
+<dd>Counter value for the result.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Timestamp when the entry was created.</dd>
+</dl></div>
+</dd>
+<dt id="backend.export.libs.lib_db_results.DB.update_source"><code class="name flex">
+<span>def <span class="ident">update_source</span></span>(<span>self, source_id, code, bin, progress, content_type, error_code, status_code, created_at, content_dict)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates the content of a source when the scraping job is completed.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>ID of the source to be updated.</dd>
+<dt><strong><code>code</code></strong> :&ensp;<code>int</code></dt>
+<dd>HTTP response code.</dd>
+<dt><strong><code>bin</code></strong> :&ensp;<code>bytearray</code></dt>
+<dd>Binary content of the source.</dd>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>Progress status of the source.</dd>
+<dt><strong><code>content_type</code></strong> :&ensp;<code>str</code></dt>
+<dd>MIME type of the content.</dd>
+<dt><strong><code>error_code</code></strong> :&ensp;<code>int</code></dt>
+<dd>Error code if any.</dd>
+<dt><strong><code>status_code</code></strong> :&ensp;<code>int</code></dt>
+<dd>Status code of the request.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Timestamp when the source was created.</dd>
+<dt><strong><code>content_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Additional content details.</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="backend.export.libs" href="index.html">backend.export.libs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="backend.export.libs.lib_db_results.DB" href="#backend.export.libs.lib_db_results.DB">DB</a></code></h4>
+<ul class="">
+<li><code><a title="backend.export.libs.lib_db_results.DB.check_db_connection" href="#backend.export.libs.lib_db_results.DB.check_db_connection">check_db_connection</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.check_progress" href="#backend.export.libs.lib_db_results.DB.check_progress">check_progress</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.connect_to_db" href="#backend.export.libs.lib_db_results.DB.connect_to_db">connect_to_db</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.db_cnf" href="#backend.export.libs.lib_db_results.DB.db_cnf">db_cnf</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.delete_source_pending" href="#backend.export.libs.lib_db_results.DB.delete_source_pending">delete_source_pending</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_result_content" href="#backend.export.libs.lib_db_results.DB.get_result_content">get_result_content</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_result_source" href="#backend.export.libs.lib_db_results.DB.get_result_source">get_result_source</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_result_source_source" href="#backend.export.libs.lib_db_results.DB.get_result_source_source">get_result_source_source</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_source_check" href="#backend.export.libs.lib_db_results.DB.get_source_check">get_source_check</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_source_check_by_result_id" href="#backend.export.libs.lib_db_results.DB.get_source_check_by_result_id">get_source_check_by_result_id</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_source_counter_result" href="#backend.export.libs.lib_db_results.DB.get_source_counter_result">get_source_counter_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_sources" href="#backend.export.libs.lib_db_results.DB.get_sources">get_sources</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.get_sources_pending" href="#backend.export.libs.lib_db_results.DB.get_sources_pending">get_sources_pending</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.insert_result_source" href="#backend.export.libs.lib_db_results.DB.insert_result_source">insert_result_source</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.insert_source" href="#backend.export.libs.lib_db_results.DB.insert_source">insert_source</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.job_server" href="#backend.export.libs.lib_db_results.DB.job_server">job_server</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.refresh_time" href="#backend.export.libs.lib_db_results.DB.refresh_time">refresh_time</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.replace_source_bin" href="#backend.export.libs.lib_db_results.DB.replace_source_bin">replace_source_bin</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.reset" href="#backend.export.libs.lib_db_results.DB.reset">reset</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.reset_result_source" href="#backend.export.libs.lib_db_results.DB.reset_result_source">reset_result_source</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.update_result" href="#backend.export.libs.lib_db_results.DB.update_result">update_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.update_result_source" href="#backend.export.libs.lib_db_results.DB.update_result_source">update_result_source</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.update_result_source_result" href="#backend.export.libs.lib_db_results.DB.update_result_source_result">update_result_source_result</a></code></li>
+<li><code><a title="backend.export.libs.lib_db_results.DB.update_source" href="#backend.export.libs.lib_db_results.DB.update_source">update_source</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+</footer>
+</body>
+</html>
