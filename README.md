@@ -86,6 +86,9 @@ export FLASK_APP=rat.py
 flask run
 ```
 
+# Result Assessment Tool (RAT) Backend application.
+#### Access the documentation for the backend at: https://searchstudies.org/rat-backend-documentation/
+
 ## Setting Up the Server Backend
 
 1. **Install Google Chrome**  
@@ -113,8 +116,6 @@ Run the script initialize_seleniumbase.py to download the latest WebDriver:
     python initialize_seleniumbase.py
     ```
 
-# Result Assessment Tool (RAT) Backend application.
-#### Access the documentation for the backend at: https://searchstudies.org/rat-backend-documentation/
 
 The RAT backend application consists of three sub-applications, which can be installed separately for better resource management. However, installing all sub-applications on one server is generally recommended.
 

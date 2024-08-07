@@ -9,4 +9,3 @@
 *.log
 **.DS_Store
 !empty.txt
-frontend/app/static/video/RAT-Demo.mp4
