@@ -35,7 +35,14 @@ sources_cnf = helper.file_to_dict(os.path.join(parentdir, 'config/config_sources
 
 
 # Determine whether to run in headless mode
-headless = sources_cnf.get('headless', 0) == 1
+headless = sources_cnf.get('headless')
+
+if headless == 1:
+    headless = True
+else:
+    headless = False
+
+
 
 del helper
 

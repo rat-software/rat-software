@@ -1,0 +1,32 @@
+<!-- Login page template from flask simplelogin editet to show RAT design-->
+
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+{% block messages %}
+   {{super()}}
+   {%if form.errors %}
+     <ul class="alert alert-danger">
+       {% for field, errors in form.errors.items() %}
+         <li>{{field}} {% for error in errors %}{{ error }}{% endfor %}</li>
+       {% endfor %}
+     </ul>
+   {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card col-md-6 offset-md-3">
+  <div class="card-body">
+    <h4 class="crd-header">Log In</h4>
+       <form action="{{ url_for('simplelogin.login') }}" method="post">
+            {{ form.csrf_token }}
+            <label class="col-sm-3 col-form-label">User</label>
+            <input type="text" class="form-control" id="username" name="username"><br/>
+            <label class="col-sm-3 col-form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password"><br/>
+      
+           <input type="submit" value="Send" class="btn btn-primary">
+       </form>
+    </div>
+  </div>
+{% endblock %}

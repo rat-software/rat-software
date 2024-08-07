@@ -80,7 +80,6 @@ class DB:
         conn.commit()
         conn.close()
 
-
     def get_sources_pending(self, job_server):
         """
         Get all failed sources (progress = 2 or progress = -1)
@@ -93,6 +92,28 @@ class DB:
         conn.close()
         return sources_pending
 
+    def update_sources_failed(self, job_server):
+        """
+        Get all finally failed sources (progress = 2 and counter > 10)
+        """
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT result_source.source  FROM result_source where (result_source.progress = 2)  and result_source.counter > 10 and result_source.job_server = %s",(job_server,))
+        conn.commit()
+        sources_failed = cur.fetchall()
+        conn.close()
+
+        for s in sources_failed:
+            source = s[0]
+            print("Finalize Sources")
+            print(source)
+            conn = DB.connect_to_db(self)
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cur.execute("Update source SET progress=-1 WHERE id = %s and job_server = %s",(source, job_server))
+            conn.commit()
+            cur.execute("Update result_source SET progress=-1 WHERE result_source.source = %s and job_server = %s",(source, job_server))
+            conn.commit()                   
+            conn.close()
 
     def get_source_check(self, url):
         """
@@ -191,6 +212,8 @@ class DB:
         cur.execute("Update source SET code=%s, bin=%s, progress=%s, content_type=%s, error_code=%s, status_code=%s, created_at=%s, content_dict = %s WHERE id = %s", (code, bin, progress, content_type, error_code, status_code, created_at, content_dict, source_id))
         conn.commit()
         conn.close()
+
+
 
     def replace_source_bin(self, source_id,  bin):
         """

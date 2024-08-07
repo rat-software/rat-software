@@ -90,6 +90,10 @@ class SourcesReset:
                 self.logger.write_to_log(log)
                 db.delete_result_source_pending(result_source_id)
 
+        db.update_sources_failed(job_server) # Reset all finally failed sources (counter > 10)
+
+            
+
 
 
 if __name__ == "__main__":
