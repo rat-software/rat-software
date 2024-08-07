@@ -15,7 +15,11 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 - #### Former Frontend Developer: Nurce Yagci - https://github.com/yagci
 - #### Usability and User Experience Specialist: [Sebastian Schultheiß](https://searchstudies.org/team/schultheiss/)
 - #### Student Assistant for Software Engineering: [Sophia Bosnak](https://searchstudies.org/team/sophia-bosnak/) - https://github.com/kyuja
-- #### Current and former students from the University of Duisburg-Essen have developed extensions for RAT as part of their theses: https://github.com/rat-extensions (https://github.com/MnM3, https://github.com/mohamedsaeed21, https://github.com/g1thub-4cc0unt, https://github.com/Samustafa)
+- #### Current and former students from the University of Duisburg-Essen have developed extensions for RAT as part of their theses: https://github.com/rat-extensions
+   - https://github.com/MnM3
+   - https://github.com/mohamedsaeed21
+   - https://github.com/g1thub-4cc0unt
+   - https://github.com/Samustafa
 
 ## Publications related to the project
 - Sünkler S.; Yagci, N.; Schultheiß, S.; von Mach, S.; Lewandowski, D.; (2024) Result Assessment Tool Software to Support Studies Based on Data from Search Engines In: Part of the book series: Lecture Notes in Computer Science https://link.springer.com/chapter/10.1007/978-3-031-56069-9_19
