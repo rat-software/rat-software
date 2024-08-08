@@ -4,6 +4,7 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 
 ## RAT Project resources
 - For detailed information about the research project and additional resources, visit: https://searchstudies.org/research/rat-software/
+- Information about how to contribute: https://searchstudies.org/rat-how-to-contribute/
 - An installation of RAT can be accessed at: https://rat-software.org/
 - Datasets generated using RAT and supplementary documentation can be found at: https://osf.io/t3hg9/
 - Videos from the RAT Community Meeting are available at: https://www.youtube.com/watch?v=K2Gev8C7Xxw&list=PLiTHQpIQWsZwRaDAgFTANPvI3fHMncXUO
