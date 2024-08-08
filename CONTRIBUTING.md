@@ -28,3 +28,5 @@ For detailed instructions, see the Scraper Setup Guide: https://github.com/rat-s
 
 #### Contributing to the RAT Core
 If you want to contribute to the RAT core, please contact us at rat@searchstudies.org.
+
+Join us and help advance the field of search engine research!
