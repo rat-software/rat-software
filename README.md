@@ -11,6 +11,7 @@ The repository provides an overview of extensions created by our developer commu
 - An installation of RAT can be accessed at: https://rat-software.org/
 - Datasets generated using RAT and supplementary documentation can be found at: https://osf.io/t3hg9/
 - Videos from the RAT Community Meeting are available at: https://www.youtube.com/watch?v=K2Gev8C7Xxw&list=PLiTHQpIQWsZwRaDAgFTANPvI3fHMncXUO
+- Overview of the technical implementatio: https://osf.io/5v48w
 
 ## Contributors to RAT
 - #### Project Lead: [Professor Dirk Lewandowski](https://searchstudies.org/team/dirk-lewandowski/) - https://github.com/dirklew
