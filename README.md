@@ -2,6 +2,9 @@
 
 The Result Assessment Tool (RAT) is a software toolkit that allows researchers to conduct large-scale studies based on results from (commercial) search engines and other information retrieval systems. It is developed by the research group Search Studies at the Hamburg University of Applied Sciences in Germany. The RAT project is funded by the German Research Foundation.
 
+## RAT Extensions
+The repository provides an overview of extensions created by our developer community: https://github.com/rat-extensions
+
 ## RAT Project resources
 - For detailed information about the research project and additional resources, visit: https://searchstudies.org/research/rat-software/
 - Information about how to contribute: https://searchstudies.org/rat-how-to-contribute/
