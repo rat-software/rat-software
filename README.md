@@ -10,7 +10,7 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 - Videos from the RAT Community Meeting are available at: https://www.youtube.com/watch?v=K2Gev8C7Xxw&list=PLiTHQpIQWsZwRaDAgFTANPvI3fHMncXUO
 
 ## Contributors to RAT
-- #### Project Lead: [Professor Dirk Lewandowski](https://searchstudies.org/team/dirk-lewandowski/)
+- #### Project Lead: [Professor Dirk Lewandowski](https://searchstudies.org/team/dirk-lewandowski/) - https://github.com/dirklew
 - #### Lead Software Engineer and Developer: [Sebastian Sünkler](https://searchstudies.org/team/sebastian-suenkler/) - https://github.com/sebsuenkler
 - #### Current Frontend Developer and Assistant: [Tuhina Kumar](https://searchstudies.org/team/tuhina-kumar/) - https://github.com/tuhinak
 - #### Former Frontend Developer: Nurce Yagci - https://github.com/yagci
