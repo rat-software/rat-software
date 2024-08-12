@@ -40,7 +40,6 @@ The source code consists of three individual applications:
 
 1. Web Interface (frontend)
 2. Server backend (backend)
-3. Google Query Sampler (optional)
 
 RAT runs on Python and has a PostgreSQL database, the web interface is a Flask app. You can install both applications on one server or split the applications to share the workload, e. g. having 2 backends for scraping on one server and the flask app on another one.
 
