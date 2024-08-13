@@ -16,11 +16,13 @@ def run(query, limit, scraping, headless):
     """
     try:
         # Define URL and CSS selectors
-        search_url_base = "https://www.bing.com/search?q="
-        captcha_marker = "g-recaptcha"  # Marker for CAPTCHA detection
+        # Define constants
+        language_url = "https://www.bing.com/?cc=USA&setLang=en"  # Bing German homepage
+        search_url_base = "https://www.bing.com/search?q="  # Base URL for Bing search
+        captcha_marker = "g-recaptcha"  # Indicator for CAPTCHA
+        limit += 10  # Adjust limit for pagination
 
         # Initialize variables
-        results_number = 0
         page = 1
         search_results = []
 
@@ -128,50 +130,63 @@ def run(query, limit, scraping, headless):
         driver.implicitly_wait(30)
 
         # Open Bing search page
-        driver.get(search_url_base)
+        driver.get(language_url)
         time.sleep(random.randint(2, 3))  # Random delay to avoid detection
+
+        print(check_captcha(driver))
 
         if not check_captcha(driver):
             # Construct and navigate to the search URL
             query = query.lower().replace(" ", "+")
-            search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first=1"
+            search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first=1&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
             driver.get(search_url)
             time.sleep(random.randint(2, 3))  # Random delay to avoid detection
+
+            results_number = 0
 
             # Get initial search results
             search_results = get_search_results(driver, page)
             results_number = len(search_results)
+            print(results_number)
             start = results_number
             continue_scraping = True
 
+            if results_number and results_number > 0:
+
             # Scrape additional pages until the limit is reached or no more results
-            while (results_number <= limit and start <= limit) and continue_scraping:
-                if not check_captcha(driver):
-                    try:
-                        # Update search URL for the next page
-                        search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first={start + 10}"
-                        driver.get(search_url)
-                        time.sleep(random.randint(2, 4))  # Random delay to avoid detection
-                        page += 1
-                        extract_search_results = get_search_results(driver, page)
+                while (results_number <= limit and start <= limit) and continue_scraping:
+                    if not check_captcha(driver):
+                        try:
+                            # Update search URL for the next page
+                            search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first={start + 10}&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
+                            print(search_url)
+                            driver.get(search_url)
+                            time.sleep(random.randint(2, 4))  # Random delay to avoid detection
+                            page += 1
+                            extract_search_results = get_search_results(driver, page)
 
-                        if extract_search_results:
-                            search_results.extend(extract_search_results)
-                            search_results = remove_duplicates(search_results)
-                            results_number = len(search_results)
-                            start += 10
-                        else:
+                            if extract_search_results:
+                                search_results.extend(extract_search_results)
+                                search_results = remove_duplicates(search_results)
+                                results_number = len(search_results)
+                                start += 10
+                                print(results_number)
+                            else:
+                                continue_scraping = False
+
+                        except Exception as e:
+                            print(f"Error: {e}")
                             continue_scraping = False
-
-                    except Exception as e:
-                        print(f"Error: {e}")
+                    else:
+                        search_results = -1
                         continue_scraping = False
-                else:
-                    search_results = -1
-                    continue_scraping = False
 
-            driver.quit()
-            return search_results
+                driver.quit()
+                return search_results
+            else:
+                driver.quit()
+            return -1
+
         else:
             driver.quit()
             return -1

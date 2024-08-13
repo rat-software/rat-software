@@ -128,7 +128,7 @@ def run(query, limit, scraping, headless):
         if not check_captcha(driver):
             # Perform search
             query = query.lower().replace(" ", "+")
-            search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first=1"
+            search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first=1&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
             driver.get(search_url)
             time.sleep(random.randint(2, 3))  # Random delay to avoid detection
 
@@ -142,7 +142,7 @@ def run(query, limit, scraping, headless):
                 if not check_captcha(driver):
                     try:
                         start = results_number if results_number != len(search_results) else results_number + 10
-                        search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first={start}"
+                        search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first={start}&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
                         driver.get(search_url)
                         time.sleep(random.randint(2, 4))  # Random delay to avoid detection
 

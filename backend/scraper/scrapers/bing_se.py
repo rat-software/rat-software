@@ -127,7 +127,7 @@ def run(query, limit, scraping, headless):
 
         if not check_captcha(driver):
             query = query.lower().replace(" ", "+")
-            search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first=1"
+            search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first=1&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
             driver.get(search_url)
             time.sleep(random.randint(2, 3))  # Random delay to avoid detection
 
@@ -141,7 +141,7 @@ def run(query, limit, scraping, headless):
                 if not check_captcha(driver):
                     try:
                         next_start = start + 10
-                        search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first={next_start}"
+                        search_url = f"{search_url_base}{query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sc=11-4&sk=&first={next_start}&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
                         driver.get(search_url)
                         time.sleep(random.randint(2, 4))  # Random delay to avoid detection
                         search_results.extend(get_search_results(driver, page + 1))

@@ -25,6 +25,7 @@ def run(query, limit, scraping, headless):
         page = 1
         search_results = []
 
+
         def get_search_results(driver, page):
             """
             Extracts search results from the current page.
@@ -125,49 +126,63 @@ def run(query, limit, scraping, headless):
         driver.get(language_url)
         time.sleep(random.randint(2, 3))  # Random delay to prevent detection
 
+        print(check_captcha(driver))
+
         if not check_captcha(driver):
             # Perform the search
             query = query.lower().replace(" ", "+")
-            search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first=1"
+            search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first=1&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
+            print(search_url)
             driver.get(search_url)
             time.sleep(random.randint(2, 3))
+
+            results_number = 0
 
             # Collect initial search results
             search_results = get_search_results(driver, page)
             results_number = len(search_results)
+            print(results_number)
             continue_scraping = True
 
+            if results_number and results_number > 0:
+
             # Continue scraping while within the limit
-            while results_number <= limit and continue_scraping:
-                if not check_captcha(driver):
-                    try:
-                        start = results_number if results_number != len(search_results) else results_number + 10
-                        search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first={start}"
-                        driver.get(search_url)
-                        time.sleep(random.randint(2, 4))  # Random delay to avoid detection
+                while results_number <= limit and continue_scraping:
+                    if not check_captcha(driver):
+                        try:
+                            start = results_number if results_number != len(search_results) else results_number + 10
+                            search_url = f"https://www.bing.com/search?q={query}&qs=n&sp=-1&ghc=1&lq=0&pq={query}&sk=&first={start}&FPIG=2B3943B14F6447E0A9D14FAA50F3D51D"
+                            print(search_url)
+                            driver.get(search_url)
+                            time.sleep(random.randint(2, 4))  # Random delay to avoid detection
 
-                        page += 1
-                        new_results = get_search_results(driver, page)
+                            page += 1
+                            new_results = get_search_results(driver, page)
 
-                        if new_results:
-                            search_results.extend(new_results)
-                            search_results = remove_duplicates(search_results)
-                            results_number = len(search_results)
-                        else:
+                            if new_results:
+                                search_results.extend(new_results)
+                                search_results = remove_duplicates(search_results)
+                                results_number = len(search_results)
+                                print(results_number)
+                            else:
+                                continue_scraping = False
+
+                        except Exception as e:
+                            print(f"Error: {str(e)}")
                             continue_scraping = False
-
-                    except Exception as e:
-                        print(f"Error: {str(e)}")
+                    else:
+                        search_results = -1
                         continue_scraping = False
-                else:
-                    search_results = -1
-                    continue_scraping = False
 
-            driver.quit()
-            return search_results
+                driver.quit()
+                return search_results
+            else:
+                driver.quit()
+                return -1
+            
         else:
             driver.quit()
-            return -1
+            return -1            
 
     except Exception as e:
         print(f"Error: {str(e)}")
