@@ -155,12 +155,14 @@ class Sources:
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"
             })
             status_code = response.status_code
+           
             try:
                 headers = requests.head(url, timeout=3).headers
                 content_type = headers.get('Content-Type', "")
-            except Exception:
+            except Exception as e:
                 if any(tag in response.text.lower() for tag in ["!doctype html", "/html>"]):
                     content_type = "html"
+
         except Exception:
             import mimetypes
             mt = mimetypes.guess_type(url)
@@ -181,8 +183,13 @@ class Sources:
             except Exception as e:
                 print(str(e))
 
-        if "binary" in content_type or "json" in content_type or "plain" in content_type:
-            content_type = "html"
+        if not content_type:
+
+            if "binary" in content_type or "json" in content_type or "plain" in content_type:
+                content_type = "html"
+
+            else:
+                content_type = "error"
 
         return {"content_type": content_type, "status_code": status_code}
 

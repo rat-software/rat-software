@@ -192,9 +192,21 @@ class SourcesScraper:
                                 except Exception as e:
                                     logger.write_to_log("Updating source table failed \t \t \t"+str(e))
 
-                                log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
+                                    log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
 
-                                logger.write_to_log(log)
+                                    logger.write_to_log(log)
+
+                                    print(str(e))
+                                    error_code = "Updating source table failed: "+str(e) # Store the error code in database
+                                    error = "error"
+                                    progress = -1
+                                    status_code = -1
+                                    log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
+                                    logger.write_to_log(log)
+                                    db.update_source(source_id, error, error, progress, error, error_code, status_code, created_at, content_dict) # Update source in database with error codes
+                                    created_at = datetime.now() # Get current timestamp.
+                                    db.update_result_source(result_id, source_id, progress, counter, created_at, job_server) # Update source in database
+
 
                             # Store information about failure when the function raises an error
                             except Exception as e:
