@@ -15,7 +15,7 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 - #### Lead Software Engineer and Developer: [Sebastian Sünkler](https://searchstudies.org/team/sebastian-suenkler/) - https://github.com/sebsuenkler
 - #### Current Frontend Developer and Assistant: [Tuhina Kumar](https://searchstudies.org/team/tuhina-kumar/) - https://github.com/tuhinak
 - #### Former Frontend Developer: Nurce Yagci - https://github.com/yagci
-- #### Usability and User Experience Specialist: [Sebastian Schultheiß](https://searchstudies.org/team/schultheiss/)
+- #### Usability and User Experience Specialist: [Sebastian Schultheiß](https://searchstudies.org/team/schultheiss/) - https://github.com/SebastianSchultheiss
 - #### Student Assistant for Software Engineering: [Sophia Bosnak](https://searchstudies.org/team/sophia-bosnak/) - https://github.com/kyuja
 - #### Developers who created extensions for RAT: https://github.com/rat-extensions
    - https://github.com/MnM3
