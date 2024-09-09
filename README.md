@@ -23,7 +23,7 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
    - https://github.com/g1thub-4cc0unt
    - https://github.com/Samustafa
    - https://github.com/PhilippUDE
-   - @tanveerx
+   - https://github.com/tanveerx/
 
 ## Publications related to the project
 - Sünkler S.; Yagci, N.; Schultheiß, S.; von Mach, S.; Lewandowski, D.; (2024) Result Assessment Tool Software to Support Studies Based on Data from Search Engines In: Part of the book series: Lecture Notes in Computer Science https://link.springer.com/chapter/10.1007/978-3-031-56069-9_19
