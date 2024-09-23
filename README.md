@@ -40,6 +40,9 @@ The repository provides an overview of extensions created by our developer commu
 - **Readability Score**: A Python tool that extracts the main text content of a web document and analyzes its readability: https://github.com/rat-software/readability-score. Developey by Mohamed Elnaggar - https://github.com/mohamedsaeed21
 - **Forum Scraper**: An extension to extract comments from German online news services: https://github.com/rat-software/forum-scraper. Developed by Paul Kirch - https://github.com/g1thub-4cc0unt
 - **EI_Logger_BA**: A browser extension for conducting interactive information retrieval studies. With this extension, study participants can work on search tasks with search engines of their choice and both the search queries and the clicks on search results are saved: https://github.com/rat-software/EI_Logger_BA. Developed by Hossam Al Mustafa - https://github.com/Samustafa
+- **Identifying affiliate links in webpages**: https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages
+- **App Reviews Scraper**: https://github.com/rat-extensions/app-reviews-scraper
+- **Visualizations of IR measures**: https://github.com/rat-extensions/ir-evaluation
 
 # Installation of RAT
 
