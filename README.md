@@ -36,13 +36,13 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 
 ## RAT Extensions
 The repository provides an overview of extensions created by our developer community: https://github.com/rat-extensions
-- **Imprint Crawler**: A web crawler that is able to automatically extract legal notice information from websites while taking German legal aspects into account: https://github.com/rat-software/imprint-crawler. Developed by Marius Messer - https://github.com/MnM3
-- **Readability Score**: A Python tool that extracts the main text content of a web document and analyzes its readability: https://github.com/rat-software/readability-score. Developey by Mohamed Elnaggar - https://github.com/mohamedsaeed21
-- **Forum Scraper**: An extension to extract comments from German online news services: https://github.com/rat-software/forum-scraper. Developed by Paul Kirch - https://github.com/g1thub-4cc0unt
-- **EI_Logger_BA**: A browser extension for conducting interactive information retrieval studies. With this extension, study participants can work on search tasks with search engines of their choice and both the search queries and the clicks on search results are saved: https://github.com/rat-software/EI_Logger_BA. Developed by Hossam Al Mustafa - https://github.com/Samustafa
-- **Identifying affiliate links in webpages**: https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages
-- **App Reviews Scraper**: https://github.com/rat-extensions/app-reviews-scraper
-- **Visualizations of IR measures**: https://github.com/rat-extensions/ir-evaluation
+- **Imprint Crawler**: A web crawler that is able to automatically extract legal notice information from websites while taking German legal aspects into account: [https://github.com/rat-software/imprint-crawler](https://github.com/rat-extensions/imprint-crawler). Developed by Marius Messer - https://github.com/MnM3
+- **Readability Score**: A Python tool that extracts the main text content of a web document and analyzes its readability: [https://github.com/rat-software/readability-score](https://github.com/rat-extensions/readability-score). Developey by Mohamed Elnaggar - https://github.com/mohamedsaeed21
+- **Forum Scraper**: An extension to extract comments from German online news services: [https://github.com/rat-software/forum-scraper](https://github.com/rat-extensions/forum-scraper). Developed by Paul Kirch - https://github.com/g1thub-4cc0unt
+- **EI_Logger_BA**: A browser extension for conducting interactive information retrieval studies. With this extension, study participants can work on search tasks with search engines of their choice and both the search queries and the clicks on search results are saved: [https://github.com/rat-software/EI_Logger_BA](https://github.com/rat-extensions/EI_Logger_BA). Developed by Hossam Al Mustafa - https://github.com/Samustafa
+- **Identifying affiliate links in webpages**: [https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages](https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages)
+- **App Reviews Scraper**: [https://github.com/rat-extensions/app-reviews-scraper](https://github.com/rat-extensions/app-reviews-scraper)
+- **Visualizations of IR measures**: [https://github.com/rat-extensions/ir-evaluation](https://github.com/rat-extensions/ir-evaluation)
 
 # Installation of RAT
 
