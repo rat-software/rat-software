@@ -67,6 +67,13 @@ To set up your own version of RAT, you need to clone the repository and follow t
 - Install [Python](https://www.python.org/downloads/)
 
 ## Installation of dependencies for both applications on one server:
+- Create a virtual environment
+
+```bash
+python -m venv venv_rat
+source venv_rat_frontend/bin/activate
+```
+
 - Install Python packages from the `requirements.txt` in the root folder:
 ```
 python -m pip install --no-cache-dir -r requirements.txt
