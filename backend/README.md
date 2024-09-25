@@ -43,7 +43,7 @@ All applications share the /config/ folder, which contains JSON files for config
 - Scraping Options: `config_sources.ini`
 
 ## Running the Backend Application
-- The backend applications use `appsheduler` to run in the background. To start all services simultaneously, use:
+- The backend applications use `apsheduler` to run in the background. To start all services simultaneously, use:
     ```bash
     nohup python backend_controller_start.py &
     ```
