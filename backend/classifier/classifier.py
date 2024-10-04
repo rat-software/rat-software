@@ -45,6 +45,8 @@ class Classifier:
             module = importlib.import_module(f"classifiers.{c['name']}.{c['name']}")
             # Call the main function of the imported module with classifier ID, db, and helper as arguments
             module.main(c['id'], db, helper, job_server)
+            #db.deleteClassifierDuplicates()
+
 
 def main():
     """

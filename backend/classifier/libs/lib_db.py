@@ -100,7 +100,7 @@ class DB:
                 result['query'] = query['query'] if query else "N/A"
         return results
 
-    def get_results(self, classifier_id):
+    def get_results(self, classifier_id):     
         """
         Get the results for a given classifier ID.
 
@@ -116,19 +116,22 @@ class DB:
                 SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
                        result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, 
                        result_source.source 
-                FROM result, source, result_source, classifier_study 
-                WHERE result.study = classifier_study.study AND classifier_study.classifier = %s 
-                      AND result_source.result = result.id AND result_source.source = source.id 
+                FROM result, source, result_source
+                WHERE result_source.result = result.id AND result_source.source = source.id 
                       AND (source.progress = 1 OR source.progress = -1) 
-                      AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result WHERE classifier_result.classifier = %s) 
+                      AND result.study = 91
+                      AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result where classifier_result.classifier = %s)
                 ORDER BY result.created_at, result.id 
                 LIMIT 10
-            """, (classifier_id, classifier_id))
+            """, (classifier_id,))
             conn.commit()
             results = cur.fetchall()
         results = self.get_search_engines(results)
         results = self.get_queries(results)
         return results
+    
+
+
 
     def insert_classification_result(self, classifier_id, value, result, job_server):
         """
@@ -175,7 +178,7 @@ class DB:
         except Exception as e:
             print(f"Error inserting indicator: {e}")
 
-    def update_classification_result(self, classifier_id, value, result):
+    def update_classification_result(self, value, result_id, classifier_id):
         """
         Update a classification result in the database.
 
@@ -191,8 +194,8 @@ class DB:
             created_at = datetime.now()
             with self.connect_to_db() as conn:
                 cur = conn.cursor(cursor_factory=DictCursor)
-                cur.execute("UPDATE classifier_result SET classifier=%s, value=%s, created_at=%s WHERE result = %s", 
-                            (classifier_id, value, created_at, result))
+                cur.execute("UPDATE classifier_result SET value=%s, created_at=%s WHERE result = %s and classifier_result.classifier =%s", 
+                            (value, created_at, result_id, classifier_id))
                 conn.commit()
         except Exception as e:
             print(f"Error updating classification result: {e}")
@@ -243,13 +246,32 @@ class DB:
         """
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("SELECT id FROM classifier_result WHERE classifier = %s AND result = %s AND value !='in process'", 
+            cur.execute("SELECT id FROM classifier_result WHERE classifier = %s AND result = %s", 
                         (classifier, result))
             conn.commit()
             check_progress = cur.fetchall()
         return bool(check_progress)
+    
+    def check_classification_result_not_in_process(self, classifier, result):
+        """
+        Check if a result is already declared as a scraping job.
 
-    def check_indicator_result(self, classifier, result):
+        Args:
+            classifier (int): ID of the classifier.
+            result (int): ID of the result.
+
+        Returns:
+            bool: True if the result is already declared, False otherwise.
+        """
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=DictCursor)
+            cur.execute("SELECT id FROM classifier_result WHERE classifier = %s AND result = %s AND value !='in process'", 
+                        (classifier, result))
+            conn.commit()
+            check_progress = cur.fetchall()
+        return check_progress
+
+    def check_indicator_result(self, classifier, result, indicator, value):
         """
         Check if a result is already declared as a classifier job.
 
@@ -262,13 +284,13 @@ class DB:
         """
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("SELECT id FROM classifier_indicator WHERE classifier = %s AND result = %s", 
-                        (classifier, result))
+            cur.execute("SELECT id FROM classifier_indicator WHERE classifier = %s AND result = %s AND indicator = %s AND value = %s", 
+                        (classifier, result , indicator, value))
             conn.commit()
             check_progress = cur.fetchall()
         return bool(check_progress)
 
-    def check_source_dup(self, source):
+    def check_source_duplicates(self, source):
         """
         Check for duplicate sources in the database.
 
@@ -285,18 +307,6 @@ class DB:
             check_source = cur.fetchall()
         return check_source
 
-    def duplicate_classification_result(self, source):
-        """
-        Get duplicate classification results for a given source.
-
-        Args:
-            source (int): ID of the source.
-
-        Returns:
-            list: List of duplicate classification results.
-        """
-        return self.get_results_result_source(source)
-
     def get_results_result_source(self, source):
         """
         Get results for a given source.
@@ -311,8 +321,8 @@ class DB:
             cur = conn.cursor(cursor_factory=DictCursor)
             cur.execute("SELECT result FROM result_source WHERE source = %s", (source,))
             conn.commit()
-            result_sources = cur.fetchall()
-        return result_sources
+            result_ids = cur.fetchall()
+        return result_ids
 
     def get_classifier_result(self, result):
         """
@@ -362,7 +372,7 @@ class DB:
                 DELETE FROM classifier_result 
                 WHERE id IN (
                     SELECT id FROM (
-                        SELECT id, ROW_NUMBER() OVER (PARTITION BY result ORDER BY id) AS row_num 
+                        SELECT id, ROW_NUMBER() OVER (PARTITION BY result, classifier_result.classifier ORDER BY id) AS row_num 
                         FROM classifier_result
                     ) t WHERE t.row_num > 1
                 );
@@ -382,3 +392,31 @@ class DB:
         except Exception as e:
             print(f"Error checking DB connection: {e}")
             return False
+
+    def get_results_test(self):
+        """
+        Get the results for a given classifier ID.
+
+        Args:
+            classifier_id (int): ID of the classifier.
+
+        Returns:
+            list: List of results for the given classifier ID.
+        """
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("""
+                SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
+                       result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, 
+                       result_source.source 
+                FROM result, source, result_source 
+                WHERE result_source.result = result.id AND result_source.source = source.id 
+                      AND (source.progress = 1 OR source.progress = -1)
+                      AND result.id = 50585
+                      
+                ORDER BY result.created_at, result.id 
+                LIMIT 10
+            """)
+            conn.commit()
+            results = cur.fetchall()
+        return results
