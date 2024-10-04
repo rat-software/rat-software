@@ -25,6 +25,7 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
    - https://github.com/PhilippUDE
    - https://github.com/tanveerx/
    - https://github.com/ritushetkar
+   - https://github.com/EstherKuerbis/
 
 ## Publications related to the project
 - Sünkler S.; Yagci, N.; Schultheiß, S.; von Mach, S.; Lewandowski, D.; (2024) Result Assessment Tool Software to Support Studies Based on Data from Search Engines In: Part of the book series: Lecture Notes in Computer Science https://link.springer.com/chapter/10.1007/978-3-031-56069-9_19
@@ -43,6 +44,7 @@ The repository provides an overview of extensions created by our developer commu
 - **Identifying affiliate links in webpages**: [https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages](https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages)
 - **App Reviews Scraper**: [https://github.com/rat-extensions/app-reviews-scraper](https://github.com/rat-extensions/app-reviews-scraper)
 - **Visualizations of IR measures**: [https://github.com/rat-extensions/ir-evaluation](https://github.com/rat-extensions/ir-evaluation)
+- **Scraping News Articles**: [https://github.com/rat-extensions/NewsArticlesScraper](https://github.com/rat-extensions/NewsArticlesScraper)
 
 # Installation of RAT
 
