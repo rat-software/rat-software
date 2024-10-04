@@ -32,9 +32,9 @@ def main(classifier_id, db, helper, job_server):
             check_dup: A list of classification results to check for duplicates.
 
         Returns:
-            bool: Returns False if there are more than 1000 duplicates and processing is done; True otherwise.
+            bool: Returns False if there are more duplicates and processing is done; True otherwise.
         """
-        if len(check_dup) > 1000:
+        if check_dup:
             result_sources = db.duplicate_classification_result(source_id)
             
             # Retrieve existing classifier results and indicators

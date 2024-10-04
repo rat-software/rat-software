@@ -2,6 +2,8 @@ import os
 import inspect
 import sys
 
+#duplicates [[983], [1165]]
+
 # Determine the directory where this script is located
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 # Add the /libs/ directory to the system path to enable imports from that location
@@ -11,6 +13,7 @@ sys.path.append(currentdir + "/libs/")
 from indicators import *
 
 def main(classifier_id, db, helper, job_server):
+    print("seo rule based")
     """
     Main function for the classifier, which processes and classifies web results.
 
@@ -23,7 +26,7 @@ def main(classifier_id, db, helper, job_server):
         None
     """
 
-    def check_for_duplicates(check_dup):
+    def check_for_duplicates(len_duplicates, source_id):
         """
         Checks for duplicate classification results and handles them accordingly.
 
@@ -33,47 +36,52 @@ def main(classifier_id, db, helper, job_server):
         Returns:
             bool: Returns False if there are more than 1000 duplicates and processing is done; True otherwise.
         """
-        if len(check_dup) > 1000:
-            result_sources = db.duplicate_classification_result(source_id)
+        print(len_duplicates)
+        if len_duplicates > 1:
+            print("duplicate")
+           
+            result_ids = db.get_results_result_source(source_id)
+
+            
             
             # Retrieve existing classifier results and indicators
-            for result_source in result_sources:
-                rs = result_source[0]
-                classifier_result = db.get_classifier_result(rs)
-                if classifier_result:
-                    result_indicators = db.get_indicators(rs)
-                    break
-
-            for result_source in result_sources:
-                rs = result_source[0]
-                classifier_result = db.get_classifier_result(rs)
+            for result_id in result_ids:
+                insert_classification = False
+                result_id = result_id[0]
+                classifier_result = db.get_classifier_result(result_id)
+                
                 if classifier_result:
                     insert_classification = classifier_result[0][0]
+                    result_indicators = db.get_indicators(result_id)
                     break
-                else:
-                    insert_classification = False
+            
 
-            for result_source in result_sources:
-                rs = result_source[0]
-                classifier_result = db.get_classifier_result(rs)
 
-                if not classifier_result and insert_classification:
-                    if not db.check_classification_result(classifier_id, rs):
-                        db.insert_classification_result(classifier_id, insert_classification, rs, job_server)
+            for result_id in result_ids:
+                result_id = result_id[0]
+                if insert_classification:
+                    try:
+                        db.update_classification_result(classifier_id, insert_classification, result_id)
+                    except:
+                        pass
+                    if db.check_classification_result_not_in_process(classifier_id, result_id):
+                        db.insert_classification_result(classifier_id, insert_classification, result_id, job_server)
+                        for ri in result_indicators:
+                            indicator = ri[2]
+                            value = ri[3]
+                            if not db.check_indicator_result(classifier_id, result_id, indicator, value):
+                                db.insert_indicator(indicator, value, classifier_id, result_id, job_server)
+               
 
-                if not classifier_result and insert_classification:
-                    for ri in result_indicators:
-                        indicator = ri[1]
-                        value = ri[2]
-                        if not db.check_indicator_result(classifier_id, rs) and indicator and value:
-                            db.insert_indicator(indicator, value, classifier_id, rs, job_server)
 
             if insert_classification:
-                db.update_classification_result(classifier_id, insert_classification, result_id)
-
-            return False
+                return True
+            else:
+                return False
+      
+            
         else:
-            return True
+            return False
 
     def classify_results(results):
         """
@@ -97,52 +105,56 @@ def main(classifier_id, db, helper, job_server):
             Returns:
                 None
             """
-            for key, ind in indicators.items():
-                if isinstance(ind, (list, dict)):
-                    insert_result = ", ".join(ind) if isinstance(ind, list) else ", ".join([f"{k}: {v}" for k, v in ind.items()])
+            for key, value in indicators.items():
+                if isinstance(value, (list, dict)):
+                    insert_result = ", ".join(value) if isinstance(value, list) else ", ".join([f"{k}: {v}" for k, v in value.items()])
                 else:
-                    insert_result = str(ind)
+                    insert_result = str(value)
                 db.insert_indicator(key, insert_result, classifier_id, result, job_server)
 
         # Mark all results as "in process"
         for result in results:
             result_id = result['id']
-            db.insert_classification_result(classifier_id, "in process", result_id, job_server)
+            if not db.check_classification_result(classifier_id, result_id):
+                print("in process")
+                db.insert_classification_result(classifier_id, "in process", result_id, job_server)
+
+        
 
         for result in results:
             data = {k: v for k, v in result.items()}
-            result_id = data["id"]
-            url = data["url"]
-            main = data["main"]
-            position = data["position"]
-            searchengine = data["searchengine"]
-            searchengine_title = data["title"]
-            searchengine_description = data["description"]
-            ip = data["ip"]
-            code = helper.decode_code(data["code"])
-            picture = helper.decode_picture(data["bin"])
-            content_type = data["content_type"]
-            error_code = data["error_code"]
-            status_code = data["status_code"]
-            final_url = data["final_url"]
-            query = data["query"]
             source_id = data["source"]
+            result_id = data["id"]
+            sources_duplicates = db.check_source_duplicates(source_id)
 
-            check_dup = db.check_source_dup(source_id)
+            print(result_id)
+            print(classifier_id)
 
-            if check_for_duplicates(check_dup):
-                classification_result = ''
+
+
+
+
+            if not db.check_classification_result_not_in_process(classifier_id, result_id):
+                classification_result = 'error'
                 indicators = {}
 
+
                 try:
-                    if status_code == 200 and not error_code and not db.check_classification_result(classifier_id, result_id):
+                    
+                    url = data["url"]
+                    main = data["main"]
+                    code = helper.decode_code(data["code"])
+                    error_code = data["error_code"]
+                    status_code = data["status_code"]
+                    query = data["query"]
+                    if status_code == 200 and not error_code:
                         # Identify plugins from the code
                         plugins = identify_plugins(code)
                         indicators.update({'tools analytics': plugins['tools analytics'],
-                                           'tools seo': plugins['tools seo'],
-                                           'tools caching': plugins['tools caching'],
-                                           'tools social': plugins['tools social'],
-                                           'tools ads': plugins['tools ads']})
+                                        'tools seo': plugins['tools seo'],
+                                        'tools caching': plugins['tools caching'],
+                                        'tools social': plugins['tools social'],
+                                        'tools ads': plugins['tools ads']})
 
                         # Count various tools and sources
                         tools_analytics = len(plugins['tools analytics'])
@@ -153,12 +165,12 @@ def main(classifier_id, db, helper, job_server):
 
                         lists = identify_sources(main)
                         indicators.update({'ads': lists['ads'],
-                                           'company': lists['company'],
-                                           'seo_customers': lists['seo_customers'],
-                                           'news': lists['news'],
-                                           'not_optimized': lists['not_optimized'],
-                                           'search_engine_services': lists['search_engine_services'],
-                                           'shops': lists['shops']})
+                                        'company': lists['company'],
+                                        'seo_customers': lists['seo_customers'],
+                                        'news': lists['news'],
+                                        'not_optimized': lists['not_optimized'],
+                                        'search_engine_services': lists['search_engine_services'],
+                                        'shops': lists['shops']})
 
                         sources_ads = len(lists['ads'])
                         sources_company = len(lists['company'])
@@ -223,8 +235,8 @@ def main(classifier_id, db, helper, job_server):
                             keyword_density = -1
 
                         indicators.update({'keywords_in_code': keywords_in_code,
-                                           'keywords_in_url': keywords_in_url,
-                                           'keyword_density': keyword_density})
+                                        'keywords_in_url': keywords_in_url,
+                                        'keyword_density': keyword_density})
 
                         description = identify_description(code)
                         indicators.update({'description': description})
@@ -259,13 +271,13 @@ def main(classifier_id, db, helper, job_server):
                         classification_result = 'error'
 
                     # Update the classification result in the database
-                    db.update_classification_result(classifier_id, classification_result, result_id)
+                    db.update_classification_result(classification_result, result_id, classifier_id)
 
                 except Exception as e:
                     print("seo rule based error:\n")
                     print(str(e))
                     classification_result = 'error'
-                    db.update_classification_result(classifier_id, classification_result, result_id)
+                    db.update_classification_result(classification_result, result_id, classifier_id)
 
     # Retrieve results for the given classifier_id and classify them
     results = db.get_results(classifier_id)
