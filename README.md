@@ -73,7 +73,7 @@ To set up your own version of RAT, you need to clone the repository and follow t
 
 ```bash
 python -m venv venv_rat
-source venv_rat_frontend/bin/activate
+source venv_rat/bin/activate
 ```
 
 - Install Python packages from the `requirements.txt` in the root folder:
