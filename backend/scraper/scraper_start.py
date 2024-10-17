@@ -85,6 +85,7 @@ class Scraper:
         Returns:
             None
         """
+
         # Update progress for all scraper jobs to indicate they are starting
         for scraper_job in scraper_jobs:
             scraper_id = scraper_job['scraper_id']
@@ -99,19 +100,37 @@ class Scraper:
         # Process each scraper job
         for scraper_job in scraper_jobs:
 
-            print(job_counter)
+            print("Job:"+str(job_counter))
 
             job_counter = job_counter - 1
 
             position = 0
             counter = scraper_job['counter']
             scraper_id = scraper_job['scraper_id']
+
+            print("Scraper ID:"+str(scraper_id))
+
             study = scraper_job['study']
             limit = scraper_job['limit']
             query = scraper_job['query']
             query_id = scraper_job['query_id']
             module = scraper_job['module'].replace('.py', '')
             mod_folder = f"scrapers.{module}"
+
+            # Get result ranges from the database
+
+            range_study = db.get_range_study(study)
+            ranges = []
+
+            for r in range_study:
+                start = r[0]
+                end = r[1]
+                for i in range(start, end+1):
+                    ranges.append(i)
+
+            if ranges:
+                if limit != max(ranges):
+                    limit = max(ranges)
 
             if not db.check_progress(study, query_id):
                 continue
@@ -137,20 +156,24 @@ class Scraper:
                             created_at = datetime.now()
                             code = scraping_result[3]
                             img = scraping_result[4]
-                            page = scraping_result[5]
-
-                            
-                            
+                            page = scraping_result[5]                            
                             meta = scraping.get_result_meta(url)
                             ip = meta['ip']
                             main = meta['main']
                             created_at = datetime.now()
                             
-
                             if position <= limit:
-                                if not db.check_duplicate_result(url, main, study, scraper_id, position):
-                                    serp = db.insert_serp(scraper_id, page, code, img, created_at, query_id)
-                                    db.insert_result(title, description, url, position, created_at, main, ip, study, scraper_id, query_id, serp[0])
+                                if ranges:
+                                    if position in ranges:
+                                        if not db.check_duplicate_result(url, main, study, scraper_id, position):
+                                            serp = db.insert_serp(scraper_id, page, code, img, created_at, query_id)
+                                            db.insert_result(title, description, url, position, created_at, main, ip, study, scraper_id, query_id, serp[0])
+                                else:
+                                    if not db.check_duplicate_result(url, main, study, scraper_id, position):
+                                        serp = db.insert_serp(scraper_id, page, code, img, created_at, query_id)
+                                        db.insert_result(title, description, url, position, created_at, main, ip, study, scraper_id, query_id, serp[0])                                   
+                            
+                        print("Success:"+str(error_code))
                         
                         db.update_scraper_job(progress, counter, error_code, job_server, scraper_id, scraper_job_created_at)
 
@@ -159,9 +182,11 @@ class Scraper:
                             error_code = 3 # Indicates partial success
                             if not scraping_results:
                                 progress = -1  # Indicates failure
+                                print("Error-Code Not enough results:"+str(error_code))
                             db.update_scraper_job(progress, counter, error_code, job_server, scraper_id, scraper_job_created_at)
                     else:
                         # Update job status to failed
+                        print("Error-Code Total fail:"+str(error_code))
                         progress = -1 # Indicates failure
                         counter += 1 # Increment job counter
                         error_code = -1 # Set error code
@@ -199,8 +224,10 @@ if __name__ == "__main__":
     # Fetch scraper jobs from the database
     scraper_jobs = db.get_scraper_jobs()
 
+
     # Fetch failed scraper jobs from the job server
     failed_scraper_jobs = db.get_failed_scraper_jobs_server(job_server)
+
     scraper_jobs = db.get_all_open_scraper_jobs()
     cleaned_scraper_jobs = []
 
@@ -216,24 +243,25 @@ if __name__ == "__main__":
         se = fs['searchengine']
         failed_se[se] = i
         i = i + 1
+
     
     for key, value in failed_se.items(): 
         if value > 9:
             failed_se = key
             failed_search_engines.append(key)
        
-
+    
     if failed_search_engines:
         cleaned_scraper_jobs = []
         cleaned_scraper_jobs = [sj for sj in scraper_jobs if sj["searchengine"] not in failed_search_engines]
         scraper_jobs = cleaned_scraper_jobs
      
 
-    # Limit the number of scraper jobs to a manageable number
+    #Limit the number of scraper jobs to a manageable number
     if len(scraper_jobs) > 2:
         scraper_jobs = scraper_jobs[:2]
 
-    print(scraper_jobs)
+
 
     if scraper_jobs:
         scraper.scrape(scraper_jobs, db, Scraping(), job_server)

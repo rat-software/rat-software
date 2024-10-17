@@ -11,6 +11,7 @@ from selenium.webdriver.common.keys import Keys
 from seleniumbase import Driver
 from bs4 import BeautifulSoup
 import re
+from fake_useragent import UserAgent
 
 def run(query, limit, scraping, headless):
     """
@@ -53,6 +54,7 @@ def run(query, limit, scraping, headless):
         search_results = []  # List to store search results
         get_search_url = "https://www.google.de/search?q="
         language = "&hl=de&gl=DE"  # URL parameters for language and location
+        #limit = limit+10
         print(f"Limit set to: {limit}")
 
         def search_pagination(source):
@@ -213,7 +215,7 @@ def run(query, limit, scraping, headless):
             print(f"Initial search results count for '{query}': {results_number}")
 
             # If no results were found, retry with a new proxy
-            if results_number == 0:
+            if results_number == 0 and proxy:
                 print("No results found with the current proxy. Switching proxy.")
                 driver.quit()
                 time.sleep(random.randint(1, 2))  # Random sleep before reinitializing
@@ -246,13 +248,16 @@ def run(query, limit, scraping, headless):
                             time.sleep(random.randint(1, 2))  # Random sleep to avoid detection
                             page += 1
                             page_label = f"Page {page}"
+                            print(page_label)
                             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                             try:
+                                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                                 next_page_button = driver.find_element(By.XPATH, next_page.format(page_label))
                                 next_page_button.click()
                                 search_results += get_search_results(driver, page)
                                 search_results = remove_duplicates(search_results)
                                 results_number = len(search_results)
+                                                            
                             except Exception:
                                 continue_scraping = False
                         else:
@@ -290,7 +295,7 @@ def run(query, limit, scraping, headless):
                                     results_number = len(search_results)
                                 else:
                                     continue_scraping = False
-                                    search_results = -1
+                                    
                             except Exception as e:
                                 print(f"Error occurred: {e}")
                                 search_results = -1

@@ -1,11 +1,18 @@
 from scrapers.requirements import *
+
+import csv
+import os
+import inspect
+from pathlib import Path
+import random
+import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from seleniumbase import Driver
 from bs4 import BeautifulSoup
 import re
-import time
-import random
+from fake_useragent import UserAgent
+
 
 def run(query, limit, scraping, headless):
     """
@@ -23,6 +30,23 @@ def run(query, limit, scraping, headless):
               or if an error occurs during scraping.
     """
     try:
+
+        # Initialize the list for proxies
+        proxies = []
+
+        # Get the directory path to locate the proxy file
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        
+        # Load proxies from a CSV file
+        with open(os.path.join(currentdir, 'proxies', 'UK.csv')) as csvfile:
+            csv_reader = csv.reader(csvfile, delimiter=',')
+            for row in csv_reader:
+                proxies.append(row)
+
+        # Shuffle the proxies and select one
+        random.shuffle(proxies)
+        proxy = proxies[0][0] if proxies else None
+
         # Define constants for scraping
         search_url = "https://www.google.com/webhp?hl=en&gl=US&uule=w+CAIQICImV2VzdCBOZXcgWW9yayxOZXcgSmVyc2V5LFVuaXRlZCBTdGF0ZXM%3D"  # URL for Google search
         search_box = "q"  # Name attribute of the search input box
@@ -33,7 +57,7 @@ def run(query, limit, scraping, headless):
         page = 1  # Initialize page number
         search_results = []  # Initialize list to store search results
         get_search_url = "https://www.google.com/search?q="  # Base URL for search results
-
+        
         # Function to determine if pagination is available on the search results page
         def search_pagination(source):
             """
@@ -150,17 +174,24 @@ def run(query, limit, scraping, headless):
             return unique_results
 
         # Initialize Selenium WebDriver
+
+        ua = UserAgent(platforms='pc', browsers='chrome')
+
+        # Get a random browser user-agent string
+        user_agent = ua.random
+        print(user_agent)
+
         driver = Driver(
             browser="chrome",
             wire=True,
             uc=True,
             headless2=headless,  # Run in headless mode if specified
             incognito=False,
-            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            agent=user_agent,
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="en_us",  # Set locale to US English
+            locale_code="en-US",  # Set locale to US English
             no_sandbox=True
         )
 
@@ -182,6 +213,27 @@ def run(query, limit, scraping, headless):
             results_number = len(search_results)
 
             print(f"Initial number of search results for '{query}': {results_number}")
+
+            # If no results were found, retry with a new proxy
+            if results_number == 0 and proxy:
+                print("No results found with the current proxy. Switching proxy.")
+                driver.quit()
+                time.sleep(random.randint(1, 2))  # Random sleep before reinitializing
+                # Reinitialize the driver with a new proxy
+                driver = Driver(
+                    browser="chrome",
+                    wire=True,
+                    uc=True,
+                    headless2=headless,  # Run in headless mode if specified
+                    incognito=False,
+                    agent=user_agent,
+                    do_not_track=True,
+                    undetectable=True,
+                    extension_dir=ext_path,
+                    locale_code="en-US",  # Set locale to US English
+                    no_sandbox=True,
+                    proxy=proxy
+                )
 
             # Continue scraping if the number of results is less than the limit
             if results_number < limit:
@@ -238,7 +290,6 @@ def run(query, limit, scraping, headless):
                                     results_number = len(search_results)
                                 else:
                                     continue_scraping = False
-                                    search_results = -1
 
                             except Exception as e:
                                 print(f"Error occurred: {e}")

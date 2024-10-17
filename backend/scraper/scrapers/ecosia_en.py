@@ -26,10 +26,9 @@ def run(query, limit, scraping, headless):
 
         # Initialize variables
         results_number = 0
-        page = 0
+        page = -1
         search_results = []
-        limit += 10  # to account for extra results due to possible duplication
-
+        
         # Custom function to scrape search results
         def get_search_results(driver, page):
             """
@@ -100,6 +99,28 @@ def run(query, limit, scraping, headless):
             """
             source = driver.page_source
             return captcha in source
+        
+        def remove_duplicates(search_results):
+            """
+            Removes duplicate search results based on the URL.
+
+            Args:
+                search_results (list): List of search results to deduplicate.
+
+            Returns:
+                list: List of search results with duplicates removed.
+            """
+            seen_urls = set()
+            unique_results = []
+
+            # Append only unique results
+            for result in search_results:
+                url = result[2]
+                if url not in seen_urls:
+                    seen_urls.add(url)
+                    unique_results.append(result)
+
+            return unique_results        
 
         # Initialize Selenium driver
         driver = Driver(
@@ -139,9 +160,35 @@ def run(query, limit, scraping, headless):
                     page += 1
                     try:
                         next_page_url = f"https://www.ecosia.org/search?method=index&q={query}&p={page}"
+                        print(next_page_url)
+                        driver.quit()
+
+                        # Initialize Selenium driver
+                        driver = Driver(
+                            browser="chrome",
+                            wire=True,
+                            uc=True,
+                            headless2=headless,
+                            incognito=False,
+                            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                            do_not_track=True,
+                            undetectable=True,
+                            extension_dir=ext_path,
+                            locale_code="eb"
+                        )                        
+                        
                         driver.get(next_page_url)
-                        search_results += get_search_results(driver, page)
-                        results_number = len(search_results)
+                        extract_search_results = get_search_results(driver, page)
+
+                        print(f"Results extracted: {len(extract_search_results)}")
+
+                        if extract_search_results:
+                            print("Appending results.")
+                            search_results += extract_search_results
+                            search_results = remove_duplicates(search_results)
+                            results_number = len(search_results)
+                        else:
+                            continue_scraping = False
                     except Exception as e:
                         print(f"Failed to get next page: {e}")
                         continue_scraping = False

@@ -136,6 +136,7 @@ def run(query, limit, scraping, headless):
             search_results = get_search_results(driver, page)
             search_results = remove_duplicates(search_results)
             results_number = len(search_results)
+            print(results_number)
 
             # Continue scraping additional pages
             continue_scraping = True
@@ -151,6 +152,7 @@ def run(query, limit, scraping, headless):
                         search_results += get_search_results(driver, page)
                         search_results = remove_duplicates(search_results)
                         results_number = len(search_results)
+                        print(results_number)
                     except:
                         continue_scraping = False
                 else:

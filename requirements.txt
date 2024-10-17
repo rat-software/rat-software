@@ -76,13 +76,11 @@ parse==1.20.2
 parse-type==0.6.2
 passlib==1.7.4
 pdbp==1.5.3
-pdoc3==0.11.1
 pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
 pony==0.7.17
 psutil==6.0.0
-psycopg2==2.9.9
 psycopg2-binary==2.9.9
 py==1.11.0
 pyasn1==0.6.0
@@ -139,3 +137,4 @@ XlsxWriter==3.2.0
 yarl==1.9.4
 zipp==3.19.2
 zstandard==0.23.0
+fake_useragent

@@ -23,11 +23,15 @@ def test_scraper_results(query, limit, scraper, headless):
         # Check if the scraper returned valid results
         if search_results != -1:
             # Print the results with an index
+            counter = 0
             for i, sr in enumerate(search_results, start=1):
+                counter+=1
                 # Uncomment the following lines to print specific parts of each result
-                # print(sr[0])  # Example: Print the first element of the search result
-                # print(sr[1])  # Example: Print the second element of the search result
+                print(f"Title {i}: {sr[0]}")  # Example: Print the first element of the search result
+                print(f"Description {i}: {sr[1]}")  # Example: Print the second element of the search result
                 print(f"Result {i}: {sr[2]}")  # Print the third element of the search result
+            if counter < limit:
+                print("Number of Results < Limit")
         else:
             print("Scraping test failed: No results were returned.")
     except Exception as e:
@@ -36,7 +40,7 @@ def test_scraper_results(query, limit, scraper, headless):
 
 
 # Define the query for testing
-test_query = "test"  
+test_query = "korg"  
 
 # Example of how to use different scrapers:
 # Uncomment and modify the following lines to test different scrapers
@@ -47,11 +51,31 @@ test_query = "test"
 
 # from scrapers.bing_de import *
 # se = Scraping()
-# test_scraper_results(test_query, 10, se, True)
-
-# from scrapers.duckduckgo_de import *
-# se = Scraping()
 # test_scraper_results(test_query, 10, se, False)
+
+from scrapers.bing_us import *
+se = Scraping()
+test_scraper_results(test_query, 10, se, False)
+
+from scrapers.bing_uk import *
+se = Scraping()
+test_scraper_results(test_query, 10, se, False)
+
+from scrapers.google_us import *
+se = Scraping()
+test_scraper_results(test_query, 10, se, False)
+
+from scrapers.google_uk import *
+se = Scraping()
+test_scraper_results(test_query, 10, se, False)
+
+from scrapers.duckduckgo_us import *
+se = Scraping()
+test_scraper_results(test_query, 10, se, False)
+
+from scrapers.duckduckgo_uk import *
+se = Scraping()
+test_scraper_results(test_query, 10, se, False)
 
 # from scrapers.ecosia_de import *
 # se = Scraping()
