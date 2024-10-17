@@ -243,7 +243,6 @@ def run(query, limit, scraping, headless):
                                     results_number = len(search_results)
                                 else:
                                     continue_scraping = False
-                                    search_results = -1
 
                             except Exception as e:
                                 print(f"Error occurred: {e}")

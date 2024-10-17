@@ -161,8 +161,25 @@ def run(query, limit, scraping, headless):
                     try:
                         next_page_url = f"https://www.ecosia.org/search?method=index&q={query}&p={page}"
                         print(next_page_url)
+                        driver.quit()
+
+                        # Initialize Selenium driver
+                        driver = Driver(
+                            browser="chrome",
+                            wire=True,
+                            uc=True,
+                            headless2=headless,
+                            incognito=False,
+                            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                            do_not_track=True,
+                            undetectable=True,
+                            extension_dir=ext_path,
+                            locale_code="de"
+                        )                        
+                        
                         driver.get(next_page_url)
                         extract_search_results = get_search_results(driver, page)
+
                         print(f"Results extracted: {len(extract_search_results)}")
 
                         if extract_search_results:
@@ -172,7 +189,6 @@ def run(query, limit, scraping, headless):
                             results_number = len(search_results)
                         else:
                             continue_scraping = False
-                            search_results = -1
                     except Exception as e:
                         print(f"Failed to get next page: {e}")
                         continue_scraping = False

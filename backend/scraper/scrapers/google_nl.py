@@ -32,7 +32,7 @@ def run(query, limit, scraping, headless):
         page = 1  # Initial page number
         search_results = []  # List to store search results
         get_search_url = "https://www.google.nl/search?q="  # Base URL for search results
-
+        
         def search_pagination(source):
             """
             Checks if pagination is available on the search results page.
@@ -234,7 +234,6 @@ def run(query, limit, scraping, headless):
                                     results_number = len(search_results)
                                 else:
                                     continue_scraping = False
-                                    search_results = -1
 
                             except Exception as e:
                                 print(f"Error occurred: {e}")

@@ -25,7 +25,7 @@ def run(query, limit, scraping, headless):
         page = 1  # Initial page number
         search_results = []  # List to accumulate search results
         get_search_url = "https://www.google.it/search?q="  # Base URL for search result pages
-
+        
         def search_pagination(source):
             """
             Determines if the search results page has pagination.
@@ -228,7 +228,6 @@ def run(query, limit, scraping, headless):
                                     results_number = len(search_results)
                                 else:
                                     continue_scraping = False
-                                    search_results = -1
                                     
 
                             except Exception as e:

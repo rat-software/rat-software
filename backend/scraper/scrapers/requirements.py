@@ -32,6 +32,9 @@ import re
 
 import os
 import inspect
+import string
+
+from fake_useragent import UserAgent
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)

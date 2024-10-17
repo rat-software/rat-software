@@ -14,6 +14,8 @@ import re
 from fake_useragent import UserAgent
 
 
+
+
 def run(query, limit, scraping, headless):
     """
     Scrapes Google search results based on the provided query.
@@ -48,7 +50,7 @@ def run(query, limit, scraping, headless):
         proxy = proxies[0][0] if proxies else None
 
         # Define constants for scraping
-        search_url = "https://www.google.com/webhp?hl=en&gl=US&uule=w+CAIQICImV2VzdCBOZXcgWW9yayxOZXcgSmVyc2V5LFVuaXRlZCBTdGF0ZXM%3D"  # URL for Google search
+        search_url = "https://www.google.com/webhp?hl=en&gl=GB&&uule=w+CAIQICIOVW5pdGVkIEtpbmdkb20="  # URL for Google search
         search_box = "q"  # Name attribute of the search input box
         captcha = "g-recaptcha"  # Indicator for CAPTCHA presence
         next_page_xpath = "//a[@aria-label='{}']"  # XPath template for the "next" button
@@ -191,7 +193,7 @@ def run(query, limit, scraping, headless):
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="en-US",  # Set locale to US English
+            locale_code="en-GB",  # Set locale to US English
             no_sandbox=True
         )
 
@@ -230,7 +232,7 @@ def run(query, limit, scraping, headless):
                     do_not_track=True,
                     undetectable=True,
                     extension_dir=ext_path,
-                    locale_code="en-US",  # Set locale to US English
+                    locale_code="en-GB",  # Set locale to US English
                     no_sandbox=True,
                     proxy=proxy
                 )
