@@ -16,6 +16,7 @@ def get_seo_classification(study):
     Returns:
         list: A list of dictionaries where each dictionary represents an SEO classification label and its statistics.
     """
+    
     if study.classifier:
         seo_classes = []
     else:
@@ -28,13 +29,14 @@ def get_seo_classification(study):
 
         id_study = study.id
         
-        clfs = db.session.execute(text("select * from classifier_result, result where classifier_result.result = result.id and result.study = :id_study"), {'id_study': str(id_study)})
+        clfs = db.session.execute(text("SELECT MIN(classifier_result.id) AS classifier_result_id, result.id, MIN(classifier_result.value) AS classifier_result_value, result.url, result.main, MIN(classifier_result.created_at) AS created_at FROM classifier_result JOIN result ON classifier_result.result = result.id WHERE result.study = :id_study AND classifier_result.classifier = 1 GROUP BY result.id, result.url, result.main;"), {'id_study': str(id_study)})
 
         for c in clfs:
             vals.append(c[2])        
 
         max = len(vals)
 
+        
         # Define SEO classification labels
         seo_labels = ["most_probably_optimized", "probably_optimized",
                       "probably_not_optimized", "most_probably_not_optimized", "error"]

@@ -95,6 +95,7 @@
           <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" width="48"
             class="d-inline-block align-top" alt="RAT Logo">
         </a>
+        {% if current_user.is_authenticated %}
         <!-- Navbar toggle button for mobile view -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
           aria-expanded="false" aria-label="Toggle nav">
@@ -111,7 +112,7 @@
             {{ nav_link('home', 'Home', 'fa-solid fa-house') }}
             {{ nav_link('contact', 'Contact', 'fa-solid fa-comment') }}
 
-            {% if current_user.is_authenticated %}
+            
             <!-- Dropdown menu for authenticated users -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"

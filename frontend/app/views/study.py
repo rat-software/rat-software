@@ -1,6 +1,6 @@
 from .. import app, db
 from ..forms import StudyForm, ConfirmationForm
-from ..models import Study, StudyType, ResultType, SearchEngine, Query, Scraper, Answer, Result, Source, Classifier, User
+from ..models import Study, StudyType, ResultType, SearchEngine, Query, Scraper, Answer, Result, Source, Classifier, User, RangeStudy
 from flask import Blueprint, render_template, flash, redirect, url_for, request, abort
 from markupsafe import Markup
 from sqlalchemy.orm import raiseload, joinedload
@@ -10,6 +10,9 @@ import pandas as pd
 from io import BytesIO
 import json
 from flask_simplelogin import is_logged_in
+from sqlalchemy.sql.expression import func
+from sqlalchemy import text
+import time
 # bp = Blueprint('study', __name__)
 
 @app.route('/studies', methods=['GET', 'POST'])
@@ -36,51 +39,99 @@ def study(id):
     Returns:
         Rendered HTML template with study details and progress information.
     """
-    try:
-        study = Study.query.get_or_404(id)
 
-        base = request.url_root
+    study = Study.query.get_or_404(id)
+    base = request.url_root
+   
 
-        # Calculate progress for scrapers, sources, and answers
-        scraper_progress = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == 0 & 2).count()
-        source_progress = Result.query.filter(Result.study == study).filter(Result.sources.any(Source.progress == 0 & 2)).count()
-        answer_progress = Answer.query.filter(Answer.study == study).filter((Answer.status == 0) & (Answer.source_status_code == 200)).count()
-        scraper_error = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == -1).count()
+    if (study.studytype.id != 6):
+        try:
+            # Calculate progress for scrapers, sources, and answers
+            scraper_progress = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == 0 & 2).count()
+            source_progress = Result.query.filter(Result.study == study).filter(Result.sources.any(Source.progress == 0 & 2)).count()
+            answer_progress = Answer.query.filter(Answer.study == study).filter((Answer.status == 0) & (Answer.source_status_code == 200)).count()
+            scraper_error = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == -1).count()
 
-        # Update study status based on progress
-        if (study.status != 4) & (study.status != 0):
-            if (source_progress == 0) & (scraper_progress == 0):
-                study.status = 2
-                db.session.commit()
-            if (source_progress == 0) & (answer_progress == 0):
+            # Update study status based on progress
+            if (study.status != 4) & (study.status != 0):
+                if (source_progress == 0) & (scraper_progress == 0):
+                    study.status = 2
+                    db.session.commit()
+                if (source_progress == 0) & (answer_progress == 0):
+                    if scraper_error > 0:
+                        study.status = -1
+                    else:
+                        study.status = 3
+                    db.session.commit()
+
+            # Get results and answers information
+            results = db.session.query(Result).join(Result.sources).where((Source.status_code == 200) & (Source.progress == 1)).where(Result.study == study).count()
+            max_results = sum([s.limit for s in study.scrapers])
+            r_pct = round(results / max_results * 100) if max_results != 0 else 0
+
+            answers = Answer.query.filter(Answer.study == study, Answer.status != 0).count()
+            max_answers = Answer.query.filter(Answer.study == study).count()
+            a_pct = round(answers / max_answers * 100) if max_answers != 0 else 0
+
+     
+
+
+        except Exception as e:
+            print(e)
+            abort(500)
+
+        return render_template('studies/study.html',
+                            study=study,
+                            results=results,
+                            max_results=max_results,
+                            r_pct=r_pct,
+                            answers=answers,
+                            max_answers=max_answers,
+                            a_pct=a_pct,
+                            base=base)
+    
+    else:
+        try:
+            # Calculate progress for scrapers, sources, and answers
+            scraper_progress = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == 0 & 2).count()
+            scraper_error = Scraper.query.filter(Scraper.study == study).filter(Scraper.progress == -1).count()
+
+            # Update study status based on progress
+            if (study.status != 4) & (study.status != 0):
                 if scraper_error > 0:
-                    study.status = -1
+                        study.status = -1
                 else:
                     study.status = 3
                 db.session.commit()
 
-        # Get results and answers information
-        results = db.session.query(Result).join(Result.sources).where((Source.status_code == 200) & (Source.progress == 1)).where(Result.study == study).count()
-        max_results = sum([s.limit for s in study.scrapers])
-        r_pct = round(results / max_results * 100) if max_results != 0 else 0
+            # Get results and answers information
+            results = db.session.query(Result).filter(Result.study == study).count()
+            max_results = sum([s.limit for s in study.scrapers])
+            r_pct = round(results / max_results * 100) if max_results != 0 else 0
 
-        answers = Answer.query.filter(Answer.study == study, Answer.status != 0).count()
-        max_answers = Answer.query.filter(Answer.study == study).count()
-        a_pct = round(answers / max_answers * 100) if max_answers != 0 else 0
+            answers = -1
+            max_answers = - 1
+            a_pct = -1
 
-    except Exception as e:
-        print(e)
-        abort(500)
 
-    return render_template('studies/study.html',
-                        study=study,
-                        results=results,
-                        max_results=max_results,
-                        r_pct=r_pct,
-                        answers=answers,
-                        max_answers=max_answers,
-                        a_pct=a_pct,
-                        base=base)
+
+
+
+
+        except Exception as e:
+            print(e)
+            abort(500)
+
+        return render_template('studies/study.html',
+                            study=study,
+                            results=results,
+                            max_results=max_results,
+                            r_pct=r_pct,
+                            answers=answers,
+                            max_answers=max_answers,
+                            a_pct=a_pct,
+                            base=base)
+
 
 @app.route('/study/new', methods=['GET', 'POST'])
 @login_required
@@ -101,7 +152,9 @@ def new_study():
     form.search_engines.choices = [(str(s.id), s.name) for s in SearchEngine.query.filter(SearchEngine.test == 1).all()]
     
     # Gets classifiers from database to populate form selection
-    form.classifier.choices = [(str(s.id), s.display_name) for s in Classifier.query.all()]    
+    form.classifiers.choices = [(str(s.id), s.display_name) for s in Classifier.query.all()]
+
+
 
     return render_template('studies/new_study.html', form=form, title=title)
 
@@ -130,6 +183,38 @@ def confirm_new_study():
                 e = SearchEngine.query.get_or_404(id)
                 engines_.append(e)
                 engine_ls.append(id)
+
+        # Get classifiers from form
+        classifiers_ = []
+        classifiers_ls = []
+        if "classifiers" in form:
+            for id in form["classifiers"]:
+                e = Classifier.query.get_or_404(id)
+                classifiers_.append(e)
+                classifiers_ls.append(id)
+
+        # initializing search key string
+        search_key = 'ranges'
+                
+        # Using dict() + filter() + lambda
+        # Substring Key match in dictionary
+        res = dict(filter(lambda item: search_key in item[0], form.items()))
+
+        ranges_dict = {}
+
+        if res and res['ranges-0-start_range'] and res['ranges-0-end_range'][0]:
+            ranges_dict = {}
+            ranges_counter = 0
+            ranges_number = 0
+            for key, value in res.items():
+                if ranges_counter % 2: 
+                    ranges_dict[ranges_number]["end"] = value[0]             
+                    ranges_number+=1
+                else: 
+                    ranges_dict[ranges_number] = {"start": value[0]}
+                ranges_counter+=1
+            
+            
 
         # Get study type from form
         type_ = StudyType.query.get_or_404(form["type"][0])
@@ -175,17 +260,20 @@ def confirm_new_study():
                 flash("Uploaded file is invalid.", "error")
 
         form["queries"] = queries_
-        print(form)
+
         return render_template('studies/confirm_new_study.html',
                                form=form,
                                confirm=confirm,
                                engines_=engines_,
+                               classifiers_ = classifiers_,
                                type_=type_,
                                queries_=queries_,
                                result_type_=result_type_,
                                query_filename=query_filename,
                                query_ls=query_ls,
-                               engine_ls=engine_ls)
+                               engine_ls=engine_ls, 
+                               ranges_ = ranges_dict
+                               )
 
 @app.route('/study/new/create/', methods=['GET', 'POST'])
 @login_required
@@ -198,22 +286,29 @@ def create_new_study():
     """
     data = dict(request.form)
     data = data["data"].replace("'", '"')
-    print(data)
     dt = json.loads(data)
-    id = int(dt['id'][0])
+    id = int(dt['id'][0])  
 
     if id == 0:
+
+
+
+
         # Create a new study
         new_queries = []
         for query in dt["queries"]:
-            print(query)
             q = Query()
             q.query = query["query"]
+
+
+
             if query["source"] == "upload":
                 q.limit = int(query["limit"])
             else:
                 q.limit = int(query["limit"][0])
+
             q.created_at = datetime.now()
+            
             new_queries.append(q)
 
         new_engines = []
@@ -222,10 +317,41 @@ def create_new_study():
             e = SearchEngine.query.get_or_404(id)
             new_engines.append(e)
 
+        try:
+            classifiers = []
+            for classifier in dt["classifiers"]:
+                id = int(classifier)
+                e = Classifier.query.get_or_404(id)
+                classifiers.append(e)
+        except:
+            classifier = 0
+      
+        
+        # initializing search key string
+        search_key = 'ranges'
+                
+        # Using dict() + filter() + lambda
+        # Substring Key match in dictionary
+        res = dict(filter(lambda item: search_key in item[0], dt.items()))
+
+        ranges_dict = {}
+
+        if res and res['ranges-0-start_range'] and res['ranges-0-end_range'][0]:
+            
+            ranges_counter = 0
+            ranges_number = 0
+            for key, value in res.items():
+                if ranges_counter % 2: 
+                    ranges_dict[ranges_number]["end"] = value[0]             
+                    ranges_number+=1
+                else: 
+                    ranges_dict[ranges_number] = {"start": value[0]}
+    
+                ranges_counter+=1
+
         new_type = StudyType.query.get_or_404(int(dt["type"][0]))
         new_result_type = ResultType.query.get_or_404(int(dt["result_type"][0]))
-        classifier = Classifier.query.get_or_404(1)
-
+        
         study = Study()
         study.name = dt["name"][0]
         study.status = 0
@@ -239,7 +365,8 @@ def create_new_study():
         study.task = dt["task"][0]
         study.created_at = datetime.now()
 
-        study.classifier.append(classifier)
+        if classifier != 0:
+            study.classifier.extend(classifiers)
 
         user_list = [current_user]
         # Add admin users
@@ -249,16 +376,30 @@ def create_new_study():
         if current_user.id != 19:
             admin2 = User.query.get(19)
             user_list.append(admin2)
+        if current_user.id != 8:
+            admin3 = User.query.get(8)
+            user_list.append(admin3)
 
         study.users.extend(user_list)
 
         insert = []
-        insert.extend(new_queries)
+        #insert.extend(new_queries)
         insert.append(study)
 
         db.session.add_all(insert)
         db.session.commit()
 
+        if ranges_dict:
+            for key,value in ranges_dict.items():
+                start = value['start']
+                end = value['end']
+                newRangeStudy = RangeStudy(study = study.id,
+                        range_start = start,
+                        range_end = end)
+
+                db.session.add(newRangeStudy)   
+                db.session.commit()                       
+        
         flash('Your study has been created.', 'success')
         return redirect(url_for('study', id=study.id))
 
@@ -340,10 +481,6 @@ def delete_study(id):
     study = Study.query.get_or_404(id)
     form = ConfirmationForm()
 
-    print(study.scrapers)
-    print(study.queries)
-    print(study)
-
     if form.is_submitted() and form.submit.data:
         # Delete associated scrapers
         for scraper in study.scrapers:
@@ -352,6 +489,7 @@ def delete_study(id):
         # Delete associated queries
         for query in study.queries:
             db.session.delete(query)
+
 
         # Delete the study
         db.session.delete(study)
@@ -378,6 +516,19 @@ def edit_study(id):
     form = StudyForm()
     title = "Edit Study"
 
+
+
+    # Gets study types from database to populate form selection
+    form.type.choices = [(str(s.id), s.name) for s in StudyType.query.all()]
+
+    # Gets search engines from database to populate form selection
+    form.search_engines.choices = [(str(s.id), s.name) for s in SearchEngine.query.filter(SearchEngine.test == 1).all()]
+    
+    # Gets classifiers from database to populate form selection
+    form.classifiers.choices = [(str(s.id), s.display_name) for s in Classifier.query.all()]
+
+
+             
     # Populate form fields with data from the existing study
     form.id.data = study.id
     form.name.data = study.name

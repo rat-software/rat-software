@@ -57,7 +57,7 @@ features.</p></div>
     &#34;&#34;&#34;
     
     # Database configuration
-    SQLALCHEMY_DATABASE_URI = &#39;postgresql://your_db_connection&#39;
+    SQLALCHEMY_DATABASE_URI = &#39;postgresql://your_db_connection;
     SQLALCHEMY_ENGINE_OPTIONS = {
         &#39;pool_pre_ping&#39;: True  # Ensures connections are valid before use
     }
@@ -71,7 +71,7 @@ features.</p></div>
 
     # Security settings
     SECURITY_PASSWORD_SALT = os.environ.get(
-        &#39;SECURITY_PASSWORD_SALT&#39;,
+        &#39;your_password&#39;,
         &#39;your_salt&#39;
     )  # Salt for hashing passwords, can be overridden by environment variable
 
@@ -104,9 +104,11 @@ features.</p></div>
         &#39;error&#39;
     )
 
-    MAIL_SERVER = &#39;your_server&#39;
+
+
+    MAIL_SERVER = &#39;your_mail_server&#39;
     MAIL_PORT = 465
-    MAIL_USERNAME = &#39;your_mail&#39;
+    MAIL_USERNAME = &#39;your_email&#39;
     MAIL_PASSWORD = &#39;your_password&#39;
     MAIL_USE_TLS = False  # Use TLS for email connection (False here)
     MAIL_USE_SSL = True   # Use SSL for email connection (True here)
