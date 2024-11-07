@@ -135,6 +135,7 @@
       </div>
     </div>
   </div>
+  {% if answers != -1 %}
   <div class="col pb-4">
     {# Define another column with padding at the bottom #}
     <div class="card">
@@ -145,7 +146,11 @@
           {# Horizontal stack for the section header #}
           <div class="crd-header">Search Tasks & Questions</div>
         </div>
+
+        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Create questions for the collection of ratings on the collected search results."><i class="fa-solid fa-circle-question"></i></a></span>
+
         <div class="py-2">
+          
           {# Padding at the top and bottom of the content #}
           {% if study.questions | length == 0 %}
           No questions yet. <a href="{{ url_for('new_question', id=study.id) }}">Create one!</a>
@@ -155,6 +160,7 @@
           {{ study.questions | length }} Questions
           {% endif %}
           {# Display the number of questions or a prompt to create one if none exist #}
+    
         </div>
 
         <!-- Add Question button -->
@@ -179,6 +185,7 @@
       </div>
     </div>
   </div>
+  
   {% if ((study.results | length) > 0) and (study.status >= 2 ) %}
   {# Only display if there are results and study status is 2 or greater #}
   <div class="col pb-4">
@@ -188,6 +195,8 @@
           {# Horizontal stack for the section header #}
           <div class="crd-header">Participants</div>
         </div>
+
+        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Manage study participants here. Create links to invite participants to answer the defined questions about the search results."><i class="fa-solid fa-circle-question"></i></a></span>
 
         <div class="py-2">
           {# Padding at the top and bottom of the content #}
@@ -239,6 +248,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
   {% endif %}
 </div>
 
@@ -307,7 +317,7 @@
                 <div class="col-12 pl-0">
                   <div class="summary-desc">
                     Search Queries
-                    {% if study.queries | length > 5 %}
+                     {% if study.queries | length > 5 %}
                     (Showing 5 out of {{ study.queries | length }}.
                     <a href="{{ url_for('queries', id=study.id) }}">See all <i
                         class="fa-solid fa-arrow-up-right-from-square"></i></a>)
@@ -318,6 +328,8 @@
                     <span class="badge rounded-pill bg-primary mr-2">{{ q.query }}</span>
                     {% endfor %}
                   </p>
+                </div>
+
                 </div>
               </div>
             </div>

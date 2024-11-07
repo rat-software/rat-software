@@ -26,7 +26,15 @@ def analysis(id):
     study = Study.query.get_or_404(id)
 
     # Get SEO classification for the study
-    classes = get_seo_classification(study)
+    try:
+        classes = get_seo_classification(study)
+        classes = classes[:5]
+    except:
+        classes = ""
+
+    
+    
+
 
     # Get result statistics for the study
     result_stats = get_result_stats(study)

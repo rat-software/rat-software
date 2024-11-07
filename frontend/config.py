@@ -13,7 +13,7 @@ class Config(object):
     """
     
     # Database configuration
-    SQLALCHEMY_DATABASE_URI = 'postgresql://your_db_connection'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://rat:6n9TYHN@85.214.110.132/rat3'
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True  # Ensures connections are valid before use
     }
@@ -23,12 +23,12 @@ class Config(object):
     DEBUG = True  # Set to True for debugging; should be False in production
 
     # Secret key for securing sessions and cookies
-    SECRET_KEY = 'your_secret_key'
+    SECRET_KEY = 'xzjpsV4WupS2cyH1Q5zGvu0JWy0T_PX8q5lqdhqx4ik'
 
     # Security settings
     SECURITY_PASSWORD_SALT = os.environ.get(
         'SECURITY_PASSWORD_SALT',
-        'your_salt'
+        '105214450030549024746975179922129984153'
     )  # Salt for hashing passwords, can be overridden by environment variable
 
     REMEMBER_COOKIE_SAMESITE = 'strict'  # Controls cross-site cookie behavior
@@ -60,12 +60,18 @@ class Config(object):
         'error'
     )
 
+    # Email server configuration (commented out configuration should be removed or uncommented as needed)
+    # MAIL_SERVER = 'smtp.mailtrap.io'
+    # MAIL_PORT = 2525
+    # MAIL_USERNAME = 'f1877e4bd680b6'
+    # MAIL_PASSWORD = 'c02f3ebaa0fa41'
+    # MAIL_USE_TLS = True
+    # MAIL_USE_SSL = False
 
-
-    MAIL_SERVER = 'your_server'
+    MAIL_SERVER = 'server228.campusspeicher.de'
     MAIL_PORT = 465
-    MAIL_USERNAME = 'your_email'
-    MAIL_PASSWORD = 'your_password'
+    MAIL_USERNAME = 'rat@searchstudies.org'
+    MAIL_PASSWORD = 'SearchHH1234'
     MAIL_USE_TLS = False  # Use TLS for email connection (False here)
     MAIL_USE_SSL = True   # Use SSL for email connection (True here)
 

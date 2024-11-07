@@ -28,7 +28,7 @@
 
             <h4 class="mb-0">{{ form.name[0] }}</h4>
             {# Display the study name from the form #}
-            <p class="text-muted mb-4">{{ form.id }} {{ form.description[0] }}</p>
+            <p class="text-muted mb-4">{{ form.description[0] }}</p>
             {# Display the study ID and description from the form, with muted text #}
 
             <div class="col mb-4">
@@ -72,9 +72,21 @@
                   {# Loop through and display each search engine with a badge #}
                   {% endfor %}
                 </div>
+                {# Create a nested row for layout #}
+                {% if classifiers_ %}
+                <div class="col-12 pl-0 mb-4">
+                  {# Define a column that spans the full width #}
+                  <div class="summary-desc">Classifiers</div>
+                  {# Label for the classifiers #}
+                  {% for e in classifiers_ %}
+                  <span class="badge bg-secondary mr-2">{{ e.name }}</span>
+                  {# Loop through and display each classifier with a badge #}
+                  {% endfor %}
+                </div>
+                {% endif %}
                 <div class="col-12 pl-0">
                   {# Define a column that spans the full width #}
-                  <div class="summary-desc">Search Queries (Showing 5 out of {{ queries_ | length }})</div>
+                  <div class="summary-desc">Search Queries (A maximum of 5 search queries are displayed)</div>
                   {# Label for the search queries with a note on how many are shown #}
                   <p>
                     {% for q in queries_[:5] %}
@@ -83,8 +95,20 @@
                     {% endfor %}
                   </p>
                 </div>
-              </div>
-            </div>
+
+                {% if ranges_.items() %}
+                <div class="col-12 pl-0"></div>
+                  {# Define a column that spans the full width #}
+                  <div class="summary-desc">Result Ranges</div>
+                  {# Label for the result ranges #}
+                  <p>
+                    {% for key, value in ranges_.items() %}
+                    <span class="badge bg-secondary mr-2"> {{ value['start'] }} - {{ value['end'] }} </span>
+                    {# Loop through and display the result ranges #}
+                    {% endfor %}
+                  </p>
+                  {% endif %}
+                </div>                
             <form action="{{ url_for('create_new_study') }}" method="POST" enctype="multipart/form-data">
               {# Start a form for submitting the study details #}
               {{ confirm.data(value=form) }}

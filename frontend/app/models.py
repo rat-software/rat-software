@@ -97,6 +97,7 @@ classifier_study = db.Table('classifier_study',
                          db.Column('study', db.ForeignKey('study.id')), extend_existing=True,
                          )
 
+
 class Answer(db.Model):
     """Model for storing answers given by participants to questions."""
     __tablename__ = 'answer'
@@ -400,8 +401,12 @@ class Query(db.Model):
     limit = db.Column(db.Integer)
     created_at = db.Column(db.DateTime)
 
+
+
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
     study = db.relationship('Study', back_populates='queries', lazy='select')
+
+
 
     monitoring_id = db.Column('monitoring', db.Integer,
                               db.ForeignKey('monitoring.id'))
@@ -415,6 +420,11 @@ class Query(db.Model):
 
     loggers = db.relationship(
         'Logger', secondary=logger_query, back_populates='queries', lazy='select')
+    
+
+    
+
+
 
 
 class Question(db.Model):
@@ -475,6 +485,13 @@ class QuestionType(db.Model):
     questions = db.relationship(
         'Question', back_populates='questiontype', lazy='select')
 
+class RangeStudy(db.Model):
+    __tablename__ = 'range_study'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    study = db.Column(db.Integer, db.ForeignKey('study.id'))
+    range_start = db.Column(db.Integer)
+    range_end = db.Column(db.Integer)
 
 class Reporting(db.Model):
     __tablename__ = 'reporting'
@@ -611,8 +628,7 @@ class Scraper(db.Model):
         'Reporting', back_populates='scraper', lazy='select')
     loggers = db.relationship(
         'Logger', secondary=logger_scraper, back_populates='scrapers', lazy='select')
-
-
+    
 class SearchEngine(db.Model):
     """Model for storing search engines used in studies."""
     __tablename__ = 'searchengine'
@@ -817,3 +833,6 @@ class User(db.Model, UserMixin):
                             back_populates='users', lazy='select')
     studies = db.relationship(
         'Study', secondary=study_user, back_populates='users', lazy='select')
+
+
+

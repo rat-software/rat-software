@@ -20,7 +20,9 @@ def questions(id):
     """
     study = Study.query.get_or_404(id)
     page = request.args.get('page', 1, type=int)
-    pagination = db.session.query(Question).filter(Question.study_id == study.id).paginate(page, per_page=10)
+    pagination = db.session.query(Question).filter(Question.study_id == study.id).paginate(page=page, per_page=10)
+
+    
 
     return render_template("questions/questions.html",
                            study=study,
