@@ -12,8 +12,9 @@ sys.path.append(currentdir + "/libs/")
 # Import everything from the 'indicators' module
 from indicators import *
 
-def main(classifier_id, db, helper, job_server):
+def main(classifier_id, db, helper, job_server, study_id):
     print("seo rule based")
+    print(study_id)
     """
     Main function for the classifier, which processes and classifies web results.
 
@@ -280,5 +281,7 @@ def main(classifier_id, db, helper, job_server):
                     db.update_classification_result(classification_result, result_id, classifier_id)
 
     # Retrieve results for the given classifier_id and classify them
-    results = db.get_results(classifier_id)
+    results = db.get_results(classifier_id, study_id)
+    print(classifier_id)
+    print(len(results))
     classify_results(results)
