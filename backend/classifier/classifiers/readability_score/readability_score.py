@@ -50,8 +50,9 @@ sys.path.append(currentdir + "/libs/")
 # Import everything from the 'indicators' module
 from textanalyzer import *
 
-def main(classifier_id, db, helper, job_server):
-    print("readability_score")
+def main(classifier_id, db, helper, job_server, study_id):
+    print("readibility_score")
+    print(study_id)
     """
     Main function responsible for classifying results using a specified classifier.
 
@@ -209,7 +210,9 @@ def main(classifier_id, db, helper, job_server):
                 db.update_classification_result(classification_result, result_id, classifier_id)
 
     # Retrieve results to be classified from the database using the classifier ID
-    results = db.get_results(classifier_id)
+    results = db.get_results(classifier_id, study_id)
+    print(classifier_id)
+    print(len(results))
     
     # Process and classify the retrieved results
     classify_results(results)
