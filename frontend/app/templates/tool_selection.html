@@ -1,0 +1,38 @@
+{% extends "master.html" %}
+{# Extend the base master template #}
+
+{% block title %}Tool Selector{% endblock %}
+{# Set the title of the page to "Tool Selector" #}
+{% block head %}{{ super() }}{% endblock %}
+{# Include any additional content from the master template's head block #}
+
+{% block content %}
+{# Start defining the content block for this page #}
+
+<h1 class="text-center">RAT</h1>
+{# Screen reader-only heading for accessibility #}
+
+<div class="row pt-3 m-5 align-items-top justify-content-center" style="min-height: 400px">
+  {# Create a row with padding, margin, top alignment, and center alignment #}
+   <!-- Tool 1 Button -->
+   <div class="col-10 col-md-8 mb-4">
+    <a href="/home" class="btn btn-light w-100 p-4" style="border: 2px solid #1a1a1a;">
+      <div class="text-center">
+        <img src="{{ url_for('static', filename='img/rat_logo_blau.png') }}" alt="RAT Logo" class="img-fluid" style="max-height: 200px;">
+      </div>
+    </a>
+  </div>
+
+  <!-- Tool 2 Button -->
+  <div class="col-10 col-md-8 mb-4">
+    <a href="/home" class="btn btn-light w-100 p-4" style="border: 2px solid #1a1a1a;">
+      <div class="text-center">
+        <h2>Query Sampler</h2>
+      </div>
+    </a>
+  
+  </div>
+
+</div>
+{% endblock %}
+{# End the content block #}

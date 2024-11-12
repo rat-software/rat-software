@@ -31,6 +31,12 @@ def features():
     nav = 'static'
     return render_template('features.html', nav=nav)
 
+@app.route('/tool_selection')
+def tool_selection():
+
+    nav = 'static'
+    return render_template('tool_selection.html', nav=nav)
+
 @app.route('/about')
 def about():
     """
