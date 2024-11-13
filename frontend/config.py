@@ -13,7 +13,7 @@ class Config(object):
     """
     
     # Database configuration
-    SQLALCHEMY_DATABASE_URI = 'postgresql://your_db_connection'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://rat:***REMOVED***@REMOVED-HOST/rat3'
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True  # Ensures connections are valid before use
     }
@@ -23,12 +23,12 @@ class Config(object):
     DEBUG = True  # Set to True for debugging; should be False in production
 
     # Secret key for securing sessions and cookies
-    SECRET_KEY = 'your_secret_key'
+    SECRET_KEY = '***REMOVED***'
 
     # Security settings
     SECURITY_PASSWORD_SALT = os.environ.get(
         'SECURITY_PASSWORD_SALT',
-        'your_salt'
+        '105214450030549024746975179922129984153'
     )  # Salt for hashing passwords, can be overridden by environment variable
 
     REMEMBER_COOKIE_SAMESITE = 'strict'  # Controls cross-site cookie behavior
@@ -43,7 +43,7 @@ class Config(object):
     SECURITY_LOGIN_USER_TEMPLATE = '/security/login_user.html'  # Template for login
 
     # Views to redirect to after specific security actions
-    SECURITY_POST_LOGIN_VIEW = '/'
+    SECURITY_POST_LOGIN_VIEW = '/tool_selection'
     SECURITY_POST_LOGOUT_VIEW = '/home'
     SECURITY_POST_REGISTER_VIEW = '/login_redirect/'
 
@@ -62,10 +62,10 @@ class Config(object):
 
 
 
-    MAIL_SERVER = 'your_server'
+    MAIL_SERVER = 'server228.campusspeicher.de'
     MAIL_PORT = 465
-    MAIL_USERNAME = 'your_email'
-    MAIL_PASSWORD = 'your_password'
+    MAIL_USERNAME = 'rat@searchstudies.org'
+    MAIL_PASSWORD = '***REMOVED***'
     MAIL_USE_TLS = False  # Use TLS for email connection (False here)
     MAIL_USE_SSL = True   # Use SSL for email connection (True here)
 
