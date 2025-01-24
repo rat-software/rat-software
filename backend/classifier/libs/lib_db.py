@@ -45,6 +45,7 @@ class DB:
                     self.conn.close()
 
         return ConnectionManager(self.db_cnf)
+    
 
     def get_classifiers(self):
         """
@@ -122,7 +123,7 @@ class DB:
                       AND result.study = classifier_study.study
                       AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result WHERE classifier_result.classifier = %s)
                 ORDER BY result.created_at, result.id
-                LIMIT 10 
+                LIMIT 2
             """, (classifier_id, study_id, classifier_id))
             conn.commit()
             results = cur.fetchall()
@@ -412,10 +413,10 @@ class DB:
                 FROM result, source, result_source 
                 WHERE result_source.result = result.id AND result_source.source = source.id 
                       AND (source.progress = 1 OR source.progress = -1)
-                      AND result.id = 50585
+                      AND result.id = 63
                       
                 ORDER BY result.created_at, result.id 
-                LIMIT 10
+                LIMIT 20
             """)
             conn.commit()
             results = cur.fetchall()
