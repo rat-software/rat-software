@@ -1,68 +1,93 @@
 {% extends "master.html" %}
+{# Extend the base master template #}
 
 {% block title %}Study{% endblock %}
+{# Set the page title to "Study" #}
+
 {% block head %}{{ super() }}{% endblock %}
+{# Include additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
+
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row">
+  {# Create a row for layout #}
   <div class="pb-4">
-    <a class="text-dark" href="{{ url_for('dashboard') }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard</a>
+    {# Padding at the bottom of the first column #}
+    <a class="text-dark" href="{{ url_for('dashboard') }}">
+      <i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard
+    </a>
   </div>
   <div class="col pb-4">
+    {# Define a column with padding at the bottom #}
     <div class="card">
+      {# Create a card for displaying study information #}
       <div class="card-body">
+        {# Card body containing the main content #}
 
         <div class="hstack">
+          {# Horizontal stack for the section header #}
           <div class="crd-header">Search Results Collection</div>
         </div>
 
         <div class="py-2">
+          {# Padding at the top and bottom of the content #}
           {% if study.status == 0 %}
-            Status: Open.
+          Status: Open.
           {% elif study.status == -1 %}
-            Status: Oops. Something went wrong. Please contact us.
+          Status: Oops. Something went wrong. Please contact us.
           {% elif study.status == 1 %}
-            Status: Collection running.
+          Status: Collection running.
           {% elif study.status == 2 %}
-            Status: Collection finished.
+          Status: Collection finished.
           {% elif study.status == 3 %}
-            {% if study.answers | length == 0 %}
-              Status: Collection finished.
-            {% else %}
-              Status: Assessments finished.
-            {% endif %}
-          {% elif study.status == 4 %}
-            Status: Archived.
+          {% if study.answers | length == 0 %}
+          Status: Collection finished.
+          {% else %}
+          Status: Assessments finished.
           {% endif %}
+          {% elif study.status == 4 %}
+          Status: Archived.
+          {% endif %}
+          {# Display the current status of the study based on its status code #}
 
           {% if study.results | length == 0 %}
-            {% if study.status != -1 %}
-              No results yet.
-            {% endif %}
+          {% if study.status != -1 %}
+          No results yet.
+          {% endif %}
           {% else %}
           {{ results }} Results collected.
           {% endif %}
+          {# Display the number of results collected or a message indicating no results yet #}
         </div>
 
+        <!-- Pre-Test button (commented out) -->
         <!--<a href="{{ url_for('run_pretest', id=study.id) }}" class="btn btn-sm btn-primary float-end"><i class="fa-solid fa-play"></i> Pre-Test</a>-->
+
         {% if study.status == 0 %}
-        <!-- Button trigger modal -->
-        <button type="button" class="btn btn-sm btn-outline-primary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy">
+        <!-- Button to start the study, triggers a modal -->
+        <button type="button" class="btn btn-sm btn-outline-primary float-end me-2" data-bs-toggle="modal"
+          data-bs-target="#startStudy">
           <i class="fa-solid fa-forward-step"></i> Start
         </button>
         {% elif study.status == 3 %}
-        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#closeStudy">
+        <!-- Button to archive the study, triggers a modal -->
+        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal"
+          data-bs-target="#closeStudy">
           <i class="fa-regular fa-circle-stop"></i> Archive
         </button>
         {% else %}
-        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy" disabled>
+        <!-- Disabled button indicating the study has started -->
+        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal"
+          data-bs-target="#startStudy" disabled>
           <i class="fa-solid fa-forward-step"></i> Started
         </button>
         {% endif %}
 
-        <!-- Modal -->
+        <!-- Modal for starting the study -->
         <div class="modal fade" id="startStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -71,17 +96,22 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <p>Once you start the result collection <b class="text-danger">you won't be able to edit your search queries and selected search engines</b>.</p>
-                <p>Do you want to start the collection of results anyway and loose the ability to edit your study settings?</p>
+                <p>Once you start the result collection <b class="text-danger">you won't be able to edit your search
+                    queries and selected search engines</b>.</p>
+                <p>Do you want to start the collection of results anyway and lose the ability to edit your study
+                  settings?</p>
               </div>
               <div class="modal-footer">
-                <button class="btn btn-sm btn-danger" data-bs-dismiss="modal" aria-label="Close">No, I want to edit my study</button>
-                <a href="{{ url_for('run_study', id=study.id) }}" class="btn btn-sm btn-success float-end">Yes, I am ready to start</a>
+                <button class="btn btn-sm btn-danger" data-bs-dismiss="modal" aria-label="Close">No, I want to edit my
+                  study</button>
+                <a href="{{ url_for('run_study', id=study.id) }}" class="btn btn-sm btn-success float-end">Yes, I am
+                  ready to start</a>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Modal for closing the study -->
         <div class="modal fade" id="closeStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -90,11 +120,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <p>Once you close the study <b class="text-danger">you won't be able to add more participants to assess your results</b>.</p>
+                <p>Once you close the study <b class="text-danger">you won't be able to add more participants to assess
+                    your results</b>.</p>
                 <p>Do you want to close the study anyway and archive the results of your study?</p>
               </div>
               <div class="modal-footer">
-                <a href="{{ url_for('close_study', id=study.id) }}" class="btn btn-sm btn-danger float-end">Yes, I am ready to close</a>
+                <a href="{{ url_for('close_study', id=study.id) }}" class="btn btn-sm btn-danger float-end">Yes, I am
+                  ready to close</a>
               </div>
             </div>
           </div>
@@ -103,14 +135,23 @@
       </div>
     </div>
   </div>
-  <div class="col">
+  {% if answers != -1 %}
+  <div class="col pb-4">
+    {# Define another column with padding at the bottom #}
     <div class="card">
       <div class="card-body">
+        {# Card body containing the content #}
 
         <div class="hstack">
+          {# Horizontal stack for the section header #}
           <div class="crd-header">Search Tasks & Questions</div>
         </div>
+
+        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Create questions for the collection of ratings on the collected search results."><i class="fa-solid fa-circle-question"></i></a></span>
+
         <div class="py-2">
+          
+          {# Padding at the top and bottom of the content #}
           {% if study.questions | length == 0 %}
           No questions yet. <a href="{{ url_for('new_question', id=study.id) }}">Create one!</a>
           {% elif study.questions | length == 1 %}
@@ -118,8 +159,11 @@
           {% else %}
           {{ study.questions | length }} Questions
           {% endif %}
+          {# Display the number of questions or a prompt to create one if none exist #}
+    
         </div>
 
+        <!-- Add Question button -->
         <!--<div class="dropdown float-end">
           <a class="btn btn-outline-primary btn-sm dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fa-solid fa-plus"></i> Add...
@@ -130,25 +174,32 @@
             <li><a class="dropdown-item" href="{{ url_for('new_question', id=study.id) }}">Question</a></li>
           </ul>
         </div>-->
-        <a href="{{ url_for('new_question', id=study.id) }}" class="btn btn-outline-primary btn-sm float-end"><i class="fa-solid fa-plus"></i> Add Question</a>
-
+        <a href="{{ url_for('new_question', id=study.id) }}" class="btn btn-outline-primary btn-sm float-end"><i
+            class="fa-solid fa-plus"></i> Add Question</a>
 
         {% if study.questions | length != 0 %}
-        <a href="{{ url_for('questions', id=study.id) }}" class="btn btn-outline-secondary btn-sm float-end me-2"><i class="fa-solid fa-eye"></i> View</a>
+        <a href="{{ url_for('questions', id=study.id) }}" class="btn btn-outline-secondary btn-sm float-end me-2"><i
+            class="fa-solid fa-eye"></i> View</a>
         {% endif %}
-
+        {# Display "View" button if there are questions #}
       </div>
     </div>
   </div>
+  
   {% if ((study.results | length) > 0) and (study.status >= 2 ) %}
-  <div class="col">
+  {# Only display if there are results and study status is 2 or greater #}
+  <div class="col pb-4">
     <div class="card">
       <div class="card-body">
         <div class="hstack">
+          {# Horizontal stack for the section header #}
           <div class="crd-header">Participants</div>
         </div>
 
+        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Manage study participants here. Create links to invite participants to answer the defined questions about the search results."><i class="fa-solid fa-circle-question"></i></a></span>
+
         <div class="py-2">
+          {# Padding at the top and bottom of the content #}
           {% if study.participants | length == 0 %}
           No participants yet. <a href="" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
             Invite one
@@ -156,14 +207,16 @@
           {% else %}
           Number of registered participants: {{ study.participants | length }}
           {% endif %}
+          {# Display the number of participants or a prompt to invite one if none exist #}
         </div>
 
-        <!-- Button trigger modal -->
-        <button type="button" class="btn btn-outline-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
-          <i class="fa-solid fa-user-plus"></i> Get initivation link
+        <!-- Button to get the invitation link, triggers a modal -->
+        <button type="button" class="btn btn-outline-primary btn-sm float-end" data-bs-toggle="modal"
+          data-bs-target="#inviteURLmodal">
+          <i class="fa-solid fa-user-plus"></i> Get invitation link
         </button>
 
-        <!-- Modal -->
+        <!-- Modal for inviting participants -->
         <div class="modal fade" id="inviteURLmodal" tabindex="-1" aria-labelledby="inviteURLLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -175,7 +228,8 @@
                 <p>Use this URL to invite participants to join your study:</p>
 
                 <div class="input-group mb-3">
-                  <input type="text" id="inviteURL" class="form-control" aria-describedby="inviteBTN" value="{{ base }}join/{{ study.id }}" disabled />
+                  <input type="text" id="inviteURL" class="form-control" aria-describedby="inviteBTN"
+                    value="{{ base }}join/{{ study.id }}" disabled />
                   <!--<button class="btn btn-outline-secondary" type="button" id="inviteBTN" onclick="copyURL(inviteURL, inviteBTN)">
                     <i class="fa-solid fa-clipboard"></i> Copy
                   </button>-->
@@ -190,9 +244,11 @@
           <i class="fa-solid fa-eye"></i> View
         </a>
         {% endif %}
+        {# Display "View" button if there are participants #}
       </div>
     </div>
   </div>
+  {% endif %}
   {% endif %}
 </div>
 
@@ -208,25 +264,23 @@
               </div>
 
               <div class="dropdown text-end col">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false">
                   <i class="fa-solid fa-gear"></i> Settings
                 </button>
                 <ul class="dropdown-menu">
                   {% if study.status == 0 %}
-                  <li><a class="dropdown-item" href="{{ url_for('edit_study', id=study.id) }}"><i class="fa-solid fa-pen"></i> Edit Study</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('edit_study', id=study.id) }}"><i
+                        class="fa-solid fa-pen"></i> Edit Study</a></li>
                   {% endif %}
                   <!--<li><a class="dropdown-item" href="#"><i class="fa-solid fa-lock"></i> Manage Access</a></li>-->
-                  <li><a class="dropdown-item text-danger" href="{{ url_for('delete_study', id=study.id) }}"><i class="fa-solid fa-trash-can"></i> Delete Study</a></li>
+                  <li><a class="dropdown-item text-danger" href="{{ url_for('delete_study', id=study.id) }}"><i
+                        class="fa-solid fa-trash-can"></i> Delete Study</a></li>
                 </ul>
               </div>
             </div>
 
             <h4 class="mb-0 py-2">{{ study.name }}</h4>
-            <p class="text-muted">
-              {% for user in study.users %}
-                <span class="pe-2">{{ user.username }}</span>
-              {% endfor %}
-            </p>
             <p class="text-muted mb-4">{{ study.description }}</p>
 
             <div class="col mb-4">
@@ -263,9 +317,10 @@
                 <div class="col-12 pl-0">
                   <div class="summary-desc">
                     Search Queries
-                    {% if study.queries | length > 5 %}
+                     {% if study.queries | length > 5 %}
                     (Showing 5 out of {{ study.queries | length }}.
-                    <a href="{{ url_for('queries', id=study.id) }}">See all <i class="fa-solid fa-arrow-up-right-from-square"></i></a>)
+                    <a href="{{ url_for('queries', id=study.id) }}">See all <i
+                        class="fa-solid fa-arrow-up-right-from-square"></i></a>)
                     {% endif %}
                   </div>
                   <p>
@@ -273,6 +328,8 @@
                     <span class="badge rounded-pill bg-primary mr-2">{{ q.query }}</span>
                     {% endfor %}
                   </p>
+                </div>
+
                 </div>
               </div>
             </div>
@@ -289,10 +346,12 @@
     <div class="card">
       <div class="card-body">
         <div class="hstack">
+          {# Horizontal stack for the section header #}
           <div class="crd-header">Analysis</div>
         </div>
         <div class="py-2">Find general study statistics and additional data about SEO analysis and source overlap.</div>
-        <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i class="fa-solid fa-chart-simple"></i> View Analysis</a>
+        <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i
+            class="fa-solid fa-chart-simple"></i> View Analysis</a>
       </div>
     </div>
   </div>
@@ -301,12 +360,16 @@
     <div class="card">
       <div class="card-body">
         <div class="hstack">
+          {# Horizontal stack for the section header #}
           <div class="crd-header">Export</div>
         </div>
         <div class="py-2">Download results as Excel Tables for further use and research data management.</div>
-        <a href="{{ url_for('export', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i class="fa-solid fa-table-list"></i> Download Results</a>
+        <a href="{{ url_for('export', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i
+            class="fa-solid fa-table-list"></i> Download Results</a>
       </div>
     </div>
   </div>
 </div>
+
 {% endblock %}
+{# End the content block #}

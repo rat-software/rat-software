@@ -1,4 +1,9 @@
 from scrapers.requirements import *
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+import time
+import random
 
 def run(query, limit, scraping, headless):
     """
@@ -8,150 +13,190 @@ def run(query, limit, scraping, headless):
         query (str): The search query.
         limit (int): The maximum number of search results to retrieve.
         scraping: The Scraping object.
+        headless (int): Flag indicating whether to run the scraper in headless mode.
 
     Returns:
         list: List of search results.
-    """    
+    """
     try:
-        #Definition of args for scraping the search engine
-        search_url = "https://www.ecosia.org/" #URL of search engine
-        search_box = "q" #Class name of search box
-        captcha = "g-recaptcha" #Source code hint for CAPTCHA
-        results_number = 0 #initialize results_number
-        page = 0 #initialize SERP page
-        search_results = [] #initialize search_results list
-        limit+=10
+        # URL and selectors for the search engine
+        search_url = "https://www.ecosia.org/"
+        search_box = "q"
+        captcha = "g-recaptcha"
 
-
-
-        #Definition of custom functions
-
-        #Function to scrape search results
+        # Initialize variables
+        results_number = 0
+        page = -1
+        search_results = []
+        
+        # Custom function to scrape search results
         def get_search_results(driver, page):
+            """
+            Retrieve search results from the current page.
 
-            get_search_results = []
+            Args:
+                driver: Selenium WebDriver instance.
+                page (int): Current SERP page.
 
+            Returns:
+                list: List of search results from the current page.
+            """
+            temp_search_results = []
+
+            # Get page source and encode it
             source = driver.page_source
-
             serp_code = scraping.encode_code(source)
-
             serp_bin = scraping.take_screenshot(driver)
 
+            # Parse the page source with BeautifulSoup
             soup = BeautifulSoup(source, features="lxml")
 
+            # Extract search results
             for result in soup.find_all("div", class_=["result__body"]):
-                url_list = []
+                result_title = "N/A"
+                result_description = "N/A"
+                result_url = "N/A"
 
-                for url in result.find_all("a"):
-                    url = url.attrs['href']
-                if "bing.com/aclick?" in url:
+                try:
+                    title_elem = result.find("div", class_=["result__title"])
+                    if title_elem:
+                        result_title = title_elem.text.strip()
+                except:
                     pass
 
-                else:
-                    search_result = []
-                    result_title = ""
-                    result_description = ""
-                    result_url = ""
-                    try:
-                        for title in result.find("div", class_=["result__title"]):
-                            result_title+=title.text.strip()
-                    except:
-                        result_title = "N/A"
+                try:
+                    description_elem = result.find("div", class_=["result__description"])
+                    if description_elem:
+                        result_description = description_elem.text.strip()
+                except:
+                    pass
 
-                    try:
-                        for description in result.find("div", class_=["result__description"]):
-                            result_description+=description.text.strip()
-                    except:
-                        result_description = "N/A"
+                try:
+                    url_elem = result.find("a")
+                    if url_elem:
+                        url = url_elem.attrs['href']
+                        if "bing." in url:
+                            url = scraping.get_real_url(url)
+                        result_url = url
+                except:
+                    pass
 
-                    try:
-                        for url in result.find_all("a"):
-                            url = url.attrs['href']
-                            if "bing." in url:
-                                url = scraping.get_real_url(url)
-                            url_list.append(url)
-                            result_url = url_list[0]
-                    except:
-                        result_url = "N/A"
+                if result_url != "N/A":
+                    temp_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
 
-                    get_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
+            return temp_search_results
 
-            return get_search_results
-
-        #Function to check if search engine shows CAPTCHA code
+        # Custom function to check if CAPTCHA is present
         def check_captcha(driver):
+            """
+            Check if CAPTCHA is present on the page.
+
+            Args:
+                driver: Selenium WebDriver instance.
+
+            Returns:
+                bool: True if CAPTCHA is present, False otherwise.
+            """
             source = driver.page_source
-            if captcha in source:
-                return True
-            else:
-                return False
+            return captcha in source
+        
+        def remove_duplicates(search_results):
+            """
+            Removes duplicate search results based on the URL.
 
-        #initialize Selenium
-        #https://github.com/seleniumbase/SeleniumBase/blob/master/seleniumbase/plugins/driver_manager.py For all options
-        #https://seleniumbase.io/help_docs/locale_codes/
+            Args:
+                search_results (list): List of search results to deduplicate.
 
+            Returns:
+                list: List of search results with duplicates removed.
+            """
+            seen_urls = set()
+            unique_results = []
+
+            # Append only unique results
+            for result in search_results:
+                url = result[2]
+                if url not in seen_urls:
+                    seen_urls.add(url)
+                    unique_results.append(result)
+
+            return unique_results        
+
+        # Initialize Selenium driver
         driver = Driver(
-                browser="chrome",
-                wire=True,
-                uc=True,
-                headless2=headless,
-                incognito=False,
-                agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                do_not_track=True,
-                undetectable=True,
-                extension_dir=ext_path,
-                locale_code="en",
-                #mobile=True,
-                )
-
+            browser="chrome",
+            wire=True,
+            uc=True,
+            headless2=headless,
+            incognito=False,
+            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            do_not_track=True,
+            undetectable=True,
+            extension_dir=ext_path,
+            locale_code="en"
+        )
 
         driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
-        random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
-        time.sleep(random_sleep)
+        time.sleep(random.randint(2, 5))
 
-        #Start scraping if no CAPTCHA
-    
-
+        # Start scraping if no CAPTCHA
         if not check_captcha(driver):
-
             search = driver.find_element(By.NAME, search_box)
             search.send_keys(query)
             search.send_keys(Keys.RETURN)
-
-            random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
-            time.sleep(random_sleep)                    
+            time.sleep(random.randint(2, 5))
 
             search_results = get_search_results(driver, page)
             results_number = len(search_results)
-
             continue_scraping = True
 
-            #Click on next SERP pages as long the toal number of results is lower the limit
-            while (results_number < limit) and continue_scraping:
+            # Loop through pages until limit is reached or CAPTCHA appears
+            while results_number < limit and continue_scraping:
                 if not check_captcha(driver):
-                    random_sleep = random.randint(2, 5)
-                    time.sleep(random_sleep)
-                    page+=1
+                    time.sleep(random.randint(2, 5))
+                    page += 1
                     try:
                         next_page_url = f"https://www.ecosia.org/search?method=index&q={query}&p={page}"
                         print(next_page_url)
+                        driver.quit()
+
+                        # Initialize Selenium driver
+                        driver = Driver(
+                            browser="chrome",
+                            wire=True,
+                            uc=True,
+                            headless2=headless,
+                            incognito=False,
+                            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                            do_not_track=True,
+                            undetectable=True,
+                            extension_dir=ext_path,
+                            locale_code="eb"
+                        )                        
+                        
                         driver.get(next_page_url)
-                        search_results+= get_search_results(driver, page)
-                        results_number = len(search_results)
+                        extract_search_results = get_search_results(driver, page)
+
+                        print(f"Results extracted: {len(extract_search_results)}")
+
+                        if extract_search_results:
+                            print("Appending results.")
+                            search_results += extract_search_results
+                            search_results = remove_duplicates(search_results)
+                            results_number = len(search_results)
+                        else:
+                            continue_scraping = False
                     except Exception as e:
-                        print(str(e))
+                        print(f"Failed to get next page: {e}")
                         continue_scraping = False
-
-
                 else:
                     continue_scraping = False
                     search_results = -1
 
             driver.quit()
-                    
             return search_results
         else:
             search_results = -1
@@ -159,10 +204,9 @@ def run(query, limit, scraping, headless):
             return search_results
 
     except Exception as e:
-        print(str(e))
+        print(f"Exception occurred: {e}")
         try:
             driver.quit()
         except:
             pass
-        search_results = -1
-        return search_results
+        return -1

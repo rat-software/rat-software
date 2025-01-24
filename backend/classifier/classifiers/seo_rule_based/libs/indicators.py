@@ -5,18 +5,26 @@ import json
 import time
 import os
 import inspect
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
+from seleniumbase import Driver
 from bs4 import BeautifulSoup
-
-options = Options()
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
-options.add_argument('--headless=new')
+from lxml import html
 
 def create_webdriver():
-    return webdriver.Chrome(options=options)
+
+    driver = Driver(
+            browser="chrome",
+            wire=True,
+            uc=True,
+            headless2=True,
+            incognito=False,
+            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            do_not_track=True,
+            undetectable=True,
+            locale_code="de",
+            no_sandbox=True,
+            #mobile=True,
+            )
+    return driver
 
 def read_config_file(filename):
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -44,11 +52,20 @@ def save_robot_txt(main):
         driver.get(url)
         time.sleep(1)
         code = driver.page_source
+        driver.quit()
 
     except:
         code = False
+        try:
+            driver.quit()
+        except Exception as e:
+            print(str(e))
 
-    driver.quit()
+    try:
+        driver.quit()
+    except Exception as e:
+        print(str(e))
+        
 
     return code
 
@@ -81,10 +98,19 @@ def calculate_loading_time(url):
         frontendPerformance_calc = domComplete - responseStart
         loadingTime = EventEnd - navigationStart
         loading_time = loadingTime / 1000
+        driver.quit()
     except:
         loading_time = -1
+        try:
+            driver.quit()
+        except Exception as e:
+            print(str(e))
 
-    driver.quit()
+    try:
+        driver.quit()
+    except Exception as e:
+        print(str(e))
+    
 
     return loading_time
 
@@ -196,11 +222,13 @@ def get_plugins():
     plugins_json = array["text-match"]
     plugins = []
 
+    
+
     for get_plugin in plugins_json:
         name = get_plugin
         source = plugins_json[name]["source"]
-        source = os.path.join(parentdir, source)
-        with open(source, 'r') as csvfile:
+        source_dir = parentdir+source
+        with open(source_dir, 'r') as csvfile:
             csv_result = csv.reader(csvfile, delimiter=',', quotechar='"')
             source = list(csv_result)
         plugin = {
@@ -210,6 +238,9 @@ def get_plugins():
         plugins.append(plugin)
 
     return plugins
+
+
+
 
 def get_sources():
     """
@@ -230,8 +261,8 @@ def get_sources():
     for get_source in sources_json:
         name = get_source
         source = sources_json[name]["source"]
-        source = os.path.join(parentdir, source)
-        with open(source, 'r') as csvfile:
+        source_dir = parentdir+source
+        with open(source_dir, 'r') as csvfile:
             csv_result = csv.reader(csvfile, delimiter=',', quotechar='"')
             source = list(csv_result)
         load_url = {
@@ -241,6 +272,7 @@ def get_sources():
         sources.append(load_url)
 
     return sources
+
 
 
 def identify_url_length(url):

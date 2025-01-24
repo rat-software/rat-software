@@ -4,19 +4,23 @@
 
 <head>
   {% block head %}
-  <!-- Required meta tags -->
+  <!-- Required meta tags for character set and responsive design -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Favicon for the website -->
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 
-  <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous"
-    referrerpolicy="no-referrer" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+    integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-  <!-- jsDelivr :: Sortable :: Latest (https://www.jsdelivr.com/package/npm/sortablejs) -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <!-- Bootstrap CSS for responsive design and styling -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
+  <!-- Custom CSS files for additional styling -->
   <!--<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}">-->
   <!--<<link rel="stylesheet" href="{{ url_for('static', filename='colors.css') }}">-->
   <link rel="stylesheet" href="{{ url_for('static', filename='custom_bootstrap.css') }}">
@@ -29,32 +33,39 @@
 </head>
 
 {% if nav == 'static' %}
+
 <body class="bg-blue d-flex flex-column min-vh-100">
   <div class="img-layer">
+    <!-- Logo image displayed in static navigation mode -->
     <img src="{{ url_for('static', filename='img/rat_icon_schwarz.png') }}">
   </div>
-{% else %}
-<body>
-{% endif %}
+  {% else %}
+
+  <body>
+    {% endif %}
     {% if nav == 'static' %}
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-white">
       <div class="container">
+        <!-- Brand logo and link to home -->
         <a class="navbar-brand" href="{{ url_for('home') }}">
-          <img src="{{ url_for('static', filename='img/rat_logo_schwarz.png') }}" height="80px" class="d-inline-block align-center" alt="RAT Logo">
+          <img src="{{ url_for('static', filename='img/rat_logo_schwarz.png') }}" height="80px"
+            class="d-inline-block align-center" alt="RAT Logo">
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle nav">
+        <!-- Navbar toggle button for mobile view -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
+          aria-expanded="false" aria-label="Toggle nav">
           <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
+        <!-- Navbar links -->
         <div class="collapse navbar-collapse" id="nav">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-            {{ nav_link('home', 'Home', 'fa-solid fa-house') }}
-            {{ nav_link('about', 'About', 'fa-solid fa-circle-info') }}
-            {{ nav_link('features', 'Features', 'fa-solid fa-puzzle-piece') }}
-            {{ nav_link('contact', 'Contact', 'fa-solid fa-comment') }}
+
 
             {% if current_user.is_authenticated %}
+            <!-- Dropdown menu for authenticated users -->
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
                 <i class="me-2 fa-regular fa-user"></i> {{ current_user.email }}
               </a>
               <ul class="dropdown-menu">
@@ -69,8 +80,8 @@
               </ul>
             </li>
             {% else %}
-            {{ nav_link('security.login', 'Log In', 'fa-solid fa-arrow-right-to-bracket') }}
-            {{ nav_link('security.register', 'Register', 'fa-solid fa-user-plus') }}
+            <!-- Links for users who are not authenticated -->
+
             {% endif %}
           </ul>
         </div>
@@ -79,12 +90,18 @@
     {% else %}
     <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
+        <!-- Brand logo and link to dashboard -->
         <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-          <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" width="48" class="d-inline-block align-top" alt="RAT Logo">
+          <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" width="48"
+            class="d-inline-block align-top" alt="RAT Logo">
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle nav">
+        {% if current_user.is_authenticated %}
+        <!-- Navbar toggle button for mobile view -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
+          aria-expanded="false" aria-label="Toggle nav">
           <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
+        <!-- Navbar links -->
         <div class="collapse navbar-collapse" id="nav">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             {{ nav_link('dashboard', 'Dashboard', 'fa-regular fa-map') }}
@@ -93,13 +110,13 @@
           </ul>
           <ul class="navbar-nav ms-auto">
             {{ nav_link('home', 'Home', 'fa-solid fa-house') }}
-            {{ nav_link('about', 'About', 'fa-solid fa-circle-info') }}
-            {{ nav_link('features', 'Features', 'fa-solid fa-puzzle-piece') }}
             {{ nav_link('contact', 'Contact', 'fa-solid fa-comment') }}
 
-            {% if current_user.is_authenticated %}
+            
+            <!-- Dropdown menu for authenticated users -->
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
                 <i class="me-2 fa-regular fa-user"></i> {{ current_user.email }}
               </a>
               <ul class="dropdown-menu">
@@ -109,16 +126,6 @@
               </ul>
             </li>
             {% else %}
-            <li class="nav-item ms-3">
-              <a class="nav-link" href="{{ url_for('security.login') }}">
-                <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Log in
-              </a>
-            </li>
-            <li class="nav-item ms-3">
-              <a class="nav-link" href="{{ url_for('security.register') }}">
-                <i class="fa-solid fa-user-plus me-2"></i> Register
-              </a>
-            </li>
             {% endif %}
           </ul>
         </div>
@@ -127,6 +134,7 @@
     {% endif %}
 
     <div class="container">
+      <!-- Display flashed messages (e.g., notifications) -->
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
       {% for category, message in messages %}
@@ -138,38 +146,47 @@
       {% endif %}
       {% endwith %}
 
+      <!-- Loading spinner shown when content is loading -->
       <div id="loading" class="d-none">
         <i class="fas fa-spinner fa-pulse"></i>
       </div>
 
+      <!-- Main content block -->
       <div id="main">{% block content %}{% endblock %}</div>
     </div>
 
     {% if nav == 'static' %}
     <div class="container-fluid text-small bg-primary mt-auto">
       <footer class="d-flex flex-wrap justify-content-between align-items-center py-3">
+        <!-- Footer content with copyright and funding information -->
         <p class="col-md-8 d-flex align-items-center text-white justify-content-start mb-3 mb-md-0 me-md-auto">
-          <span>Copyright © 2023 Result Assessment Tool</span>
-          <span class="px-4">Developed by <a href="https://searchstudies.org/" class="text-white" target="_blank">Search Studies</a> (HAW Hamburg)</span>
-          <span>Funded by <a href="https://gepris.dfg.de/gepris/projekt/460676551" class="text-white" target="_blank">the German Research Foundation (DFG)</a></span>
+          <span>Copyright © 2024 Result Assessment Tool</span>
+          <span class="px-4">Developed by <a href="https://searchstudies.org/" class="text-white" target="_blank">Search
+              Studies</a> (HAW Hamburg)</span>
+          <span>Funded by <a href="https://gepris.dfg.de/gepris/projekt/460676551" class="text-white"
+              target="_blank">the German Research Foundation (DFG)</a></span>
         </p>
 
         <ul class="nav col-md-4 justify-content-end">
-          <li class="nav-item"><a href="#" class="nav-link px-2 text-white">Privacy</a></li>
-          <li class="nav-item"><a href="#" class="nav-link px-2 text-white">Imprint</a></li>
+          <li class="nav-item"><a href="https://searchstudies.org/privacy/" class="nav-link px-2 text-white" target="_blank">Privacy</a></li>
+          <li class="nav-item"><a href="https://searchstudies.org/imprint/" class="nav-link px-2 text-white" target="_blank">Legal</a></li>
         </ul>
       </footer>
     </div>
     {% endif %}
 
+    <!-- Scripts -->
     <script src="{{ url_for('static', filename='jquery-3.6.0.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-    <!-- Optional JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+      crossorigin="anonymous"></script>
+    <!-- Optional JavaScript for additional functionality -->
     <script type="text/javascript">
+      // Initialize tooltips
       const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
       const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 
-      // loading spinner
+      // Functions for handling loading state
       function loading() {
         $("#loading").removeClass("d-none");
         $("#main").addClass("d-none");
@@ -181,28 +198,19 @@
       }
 
       // FORM NEW QUESTIONS
-      // add options
+      // Add new options to the form dynamically
       function addOptions() {
-        // get number of current options as id for next
         let new_id = ($("input[id^='options-'][id$='value']").length);
-
-        // create new ids for input fields
         let ov = 'options-' + new_id.toString() + '-value';
         let ol = 'options-' + new_id.toString() + '-label';
-
-        // create label and input fields
         let ov_ = '<label class="form-label" for="' + ov + '">Value</label><input class="form-control" id="' + ov + '" name="' + ov + '" type="text" value="">';
         let ol_ = '<label class="form-label" for="' + ol + '">Label</label><input class="form-control" id="' + ol + '" name="' + ol + '" type="text" value="">';
-
-        // add wrapper around input fields
         let new_option = '<div class="row"><div class="mb-3 col-3">' + ov_ + '</div><div class="mb-3 col-9">' + ol_ + '</div></div>';
-
-        // add new options to view
         $("#options").append(new_option);
       };
 
       // FORM NEW QUESTIONS
-      // remove options
+      // Remove the last option from the form
       function removeOptions() {
         if ($("#options .row").length > 2) {
           $("#options .row").last().remove();
@@ -212,10 +220,12 @@
       };
 
       // CHANGE TEXT OF ELEMENT
+      // Update the inner HTML of an element
       function changeText(id, text) {
         id.innerHTML = text;
       }
 
+      // Copy text to clipboard
       function copy(text) {
         var input = document.createElement('input');
         input.setAttribute('value', text);
@@ -227,31 +237,30 @@
       }
 
       // CLICK TO COPY TO CLIPBOARD
+      // Handle URL copy to clipboard and visual feedback
       function copyURL(text_id, own_id) {
         console.log(text_id.value);
-
         let url = text_id.value
-        //navigator.clipboard.writeText(url);
         console.log(url);
         copy(url);
-
         changeText(own_id, '<i class="fa-solid fa-clipboard-check"></i> Copied');
         setTimeout(changeText, 2000, own_id, '<i class="fa-solid fa-clipboard"></i> Copy');
       }
 
-
+      // Show a specific tab
       function showTab(id) {
         $('#' + id).tab('show');
       }
 
+      // Show all queries by toggling visibility
       function showAllQueries() {
         $("#50-queries").addClass("d-none");
         $("50-queries-button").addClass("d-none");
-
         $("#all-queries").removeClass("d-none");
       }
 
-      $(document).on('shown.bs.tab', 'a[data-bs-toggle="tab"]', function(e) {
+      // Update stepper progress based on active tab
+      $(document).on('shown.bs.tab', 'a[data-bs-toggle="tab"]', function (e) {
         let key = $(".show.active")[0]["id"].split('-')[1];
         let dict = {};
         dict[1] = 0;
@@ -261,7 +270,7 @@
         console.log(key);
         $("#stepper").attr("aria-valuenow", dict[key]).css("width", dict[key] + "%");
 
-        $(".step-number").each(function(k, v) {
+        $(".step-number").each(function (k, v) {
           let c = key - 1
           let id = k + 1
           if (k > c) {
@@ -277,30 +286,24 @@
         });
       });
 
-      $(document).ready(function() {
-
+      $(document).ready(function () {
         $("#scale_start").text($("#scale_number").attr("start_text"));
         $("#scale_stop").text($("#scale_number").attr("stop_text"));
 
         // SCROLL TO TOP BUTTON
-        // Der Button wird mit JavaScript erzeugt und vor dem Ende des body eingebunden.
+        // Create and handle scroll-to-top button
         var back_to_top_button = ['<a href="#top" class="btn btn-outline-primary back-to-top"><i class="fa-solid fa-arrow-up me-2"></i> Back to Top</a>'].join("");
         $("body").append(back_to_top_button)
-
-        // Der Button wird ausgeblendet
         $(".back-to-top").hide();
-
-        // Funktion für das Scroll-Verhalten
-        $(function() {
-          $(window).scroll(function() {
-            if ($(this).scrollTop() > 200) { // Wenn 100 Pixel gescrolled wurde
+        $(function () {
+          $(window).scroll(function () {
+            if ($(this).scrollTop() > 200) {
               $('.back-to-top').fadeIn();
             } else {
               $('.back-to-top').fadeOut();
             }
           });
-
-          $('.back-to-top').click(function() { // Klick auf den Button
+          $('.back-to-top').click(function () {
             $('body,html').animate({
               scrollTop: 0
             }, 800);
@@ -308,66 +311,44 @@
           });
         });
 
-        // force refresh if cached
-        //window.onpageshow = function(e) {
-        //  if (e.persisted) {
-        //    window.location.reload();
-        //  }
-        //};
-
-        //resetLoading();
-        //$('a').on('click', function() {
-        //  loading();
-        //})
-
         // FORM: NEW STUDY
-        // add styling to checkboxes
+        // Add styling to checkboxes
         $("input[type=checkbox]").addClass("form-check-input");
 
         // FORM NEW QUESTIONS
-        // dynamically show options
-        $("#q_type").change(function() {
+        // Dynamically show options based on selected question type
+        $("#q_type").change(function () {
           let id = $('#q_type').val();
           console.log(id);
-
           let texts = ["short_text", "long_text"];
           let ranges = ["scale_number"];
           let options = ["true_false", "likert_scale", "multiple_choice"];
-
           if (options.includes(id)) {
-
             $("#range-wrapper").addClass("visually-hidden");
             $("#options-wrapper").removeClass("visually-hidden");
             console.log($('#options-wrapper'));
-
           } else if (texts.includes(id)) {
-
             $("#range-wrapper").addClass("visually-hidden");
             $("#options-wrapper").addClass("visually-hidden");
-
           } else if (ranges.includes(id)) {
-
             $("#range-wrapper").removeClass("visually-hidden");
             $("#options-wrapper").addClass("visually-hidden");
-
           } else {
-
             console.log("none");
-
           };
         });
 
-        $("#scale_number").change(function() {
+        $("#scale_number").change(function () {
           let id = $("#scale_number").val();
           console.log(id);
         });
 
+        // Show toast messages
         $('.toast').toast('show')
-
       });
 
-
-      $(".alert").delay(2000).slideUp(200, function() {
+      // Automatically close alerts after 2 seconds
+      $(".alert").delay(2000).slideUp(200, function () {
         $(this).alert('close');
       });
     </script>

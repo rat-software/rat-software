@@ -1,57 +1,84 @@
 {% extends "master.html" %}
+{# Inherit from the base master template #}
 
 {% block title %}Register{% endblock %}
+{# Set the title of the page to "Register" #}
+
 {% block head %}{{ super() }}{% endblock %}
+{# Include any additional head content from the base template #}
 
 {% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors %}
+{# Import macros for rendering form fields with error handling and displaying form errors #}
 
 {% block content %}
+{# Define the content block for the page #}
 
 {% include "security/_messages.html" %}
+{# Include any messages, such as alerts or notifications, from the "security/_messages.html" file #}
+
 <div class="card col-md-6 offset-md-3">
+  {# Create a card element centered on the page with a width of 6 columns #}
   <div class="card-body">
     <h4 class="crd-header">Register</h4>
-      <form action="{{ url_for_security('register') }}" method="POST" name="register_user_form">
+    {# Display the heading for the registration form #}
+
+    <form action="{{ url_for_security('register') }}" method="POST" name="register_user_form">
+      {# Create a form that posts data to the register URL with the name "register_user_form" #}
       {{ register_user_form.hidden_tag() }}
+      {# Render hidden form fields (e.g., CSRF token) #}
 
       <div class="mb-3">
         {{ render_form_errors(register_user_form) }}
+        {# Display form errors, if any, at the top of the form #}
       </div>
 
       <div class="mb-3">
         Already have an account?
+        {# Inform the user about the option to log in if they already have an account #}
         <a href="{{url_for('security.login')}}" class="btn btn-primary btn-sm ms-2">
           <i class="fa-solid fa-arrow-right-to-bracket me-2"></i>
           Log in
         </a>
-      </div>
-
-      <div class="mb-3">
-        {{ render_field_with_errors(register_user_form.username, class_="form-control") }}
-      </div>
-
-      <div class="mb-3">
-        {{ render_field_with_errors(register_user_form.affiliation, class_="form-control") }}
+        {# Provide a link to the login page with a button to log in #}
       </div>
 
       <div class="mb-3">
         {{ render_field_with_errors(register_user_form.email, class_="form-control") }}
+        {# Render the email input field with error handling #}
       </div>
 
       <div class="mb-3">
         {{ render_field_with_errors(register_user_form.password, class_="form-control") }}
+        {# Render the password input field with error handling #}
       </div>
 
       {% if register_user_form.password_confirm %}
+      {# Check if the password confirmation field exists #}
       <div class="mb-3">
         {{ render_field_with_errors(register_user_form.password_confirm, class_="form-control") }}
+        {# Render the password confirmation input field with error handling #}
       </div>
       {% endif %}
 
       <div class="mb-3">
         {{ register_user_form.submit(class="btn btn-outline-primary me-2") | safe }}
+        {# Render the submit button for the form #}
       </div>
     </form>
+
   </div>
 </div>
+
+<div class="col-md-6 offset-md-3">
+  {# Create a column centered on the page with a width of 6 columns #}
+  <p class="info">
+    <br />
+    <h3 class="fw-semibold mb-4">Thank you for your interest in the RAT.</h3> 
+    You can now proceed with registering for access to the tool. We will reach out to you shortly to discuss your
+    requirements and activate your account.
+    {# Provide a thank you message and information about the next steps in the registration process #}
+  </p>
+</div>
+
 {% endblock %}
+{# End the content block #}

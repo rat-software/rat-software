@@ -1,58 +1,75 @@
 # Classifier
-The classifier can be used to configure classifiers for the sources. It is a flexible application where you can define your own classifiers using the database.
 
-## Setting up the application
+The Classifier application allows you to configure and use classifiers for various data sources. It is a flexible tool that enables you to define and manage custom classifiers using a database.
 
-- Modify **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
+## Setting Up the Application
 
-## Setting up the classifier
+1. **Configure Database Connection:**
+   - Edit the configuration file located at **/backend/config/config_db.ini** to connect the application to the RAT database.
 
-To set up classifiers, you need to use and store information in the rat database. The classifier_db_lib provides functions to read search results and their contents for classification purposes.
+## Configuring the Classifier
 
-Here is an overview of the tables used for classifiers:
+To set up classifiers, use the RAT database to store and manage classification data. The `classifier_db_lib` provides functions to read and classify search results and their contents.
 
-- **result**: The result table stores the scrapped and imported urls. The tool reads all the information of a stored result to provide the data to the classifier.
-- **source**: The source table stores the content of the search results or imported URLs. It provides the information as html source code and also as an image.
-- **classifier_indicator**: Table to store the indicators for a classifier.
-- **classifier_result**: Table to store the result of a classification for a search result or an imported URL.
+### Database Tables Overview
 
-## Manually add a classifier:
-- Add a folder with the name of your classifier
-- Add a Python file as a module for your classifier
-- Open the classifier table in your PostgreSQL database and add the classifier name (internal classifier name) and a display name for the Flask frontend. It is important that the name of the folder, the Python file and the name in the database match, as relative paths are used to initialize the classifier
+- **result**: Stores scraped and imported URLs. The tool retrieves information from this table to feed into the classifier.
+- **source**: Contains the content of search results or imported URLs, including HTML source code and screenshots.
+- **classifier_indicator**: Stores indicators used by the classifier.
+- **classifier_result**: Stores the results of classifications for search results or imported URLs.
 
-## Setting up the classifier module
+## Adding a New Classifier
 
-- Use the **/classifiers/classifier_template/classifier_template.py** file as a template to add your own classifiers.
-- Look for the block that starts with: '''Define your indicators and classification rules here'''.
-- Customize the simple example to fit your needs.
-- You can work with the following data for your classifier:
+1. **Create Classifier Files:**
+   - Create a folder named after your classifier in the folder **/classifiers/**.
+   - Add a Python file named after your classifier within this folder to serve as your classifier module.
+
+2. **Update Database:**
+   - Open the `classifier` table in your PostgreSQL database.
+   - Add an entry for your classifier, including an internal name and a display name for the Flask frontend. Ensure that the folder name, Python file name, and database name match, as relative paths are used for initialization.
+
+## Setting Up the Classifier Module
+
+1. **Use the Template:**
+   - Use **/classifiers/classifier_template/classifier_template.py** as a template for your classifier.
+
+2. **Customize the Classifier:**
+   - Locate the section marked: `'''Define your indicators and classification rules here'''`.
+   - Modify the example provided to suit your needs.
+   - For an example of a custom classifier function, please refer to **/classifiers/classifier_template/example_classify_result_function.py**.
+
+3. **Available Data:**
+   Your classifier can use the following data:
+   ```
+   - id = ID of the search result
+   - url = URL of the search result
+   - main = Main URL of the search result
+   - position = Position in the search list
+   - searchengine = Name of the search engine
+   - title = Title of the search result
+   - description = Description of the search result
+   - ip = IP address associated with the search result
+   - code = Source code of the search result
+   - bin = Screenshot of the search result
+   - final_url = Redirected URL of the search result
+   ``` 
+
+4. **Available Jupyter Notebooks**
+   - To test your new classifier function, use the Jupyter Notebook template found at [/templates/new_classifier_function.ipynb](https://github.com/rat-software/rat-software/blob/main/templates/new_classifier_function.ipynb).
+   - To add a new classifier to the database, refer to the Jupyter Notebook located at [/templates/add_classifier_to_database.ipynb](https://github.com/rat-software/rat-software/blob/main/templates/add_classifier_to_database.ipynb).
+
+## Starting and Stopping the Classifier
+
+- **To Start the Application:**
+```bash
+nohup python classifier_controller_start.py
 ```
-- id = id of the search result
-- url = url of the search result
-- main = main url of the search result
-- position = position on the search list
-- searchengine = name of the search engine
-- title = title of the search engine
-- description = description on the search engine
-- ip = ip of the search result
-- code = source code of the search result
-- bin = screenshot of the search result
-- final_url = redirected url of the search result
-```
 
-## Start the classifier
-
-The application is based on the Python background process Sheduler, as scraping web pages is time and performance consuming.
-
-- To start the application
-```
-nohup python classifier_controller_start >classifier.out &
-```
-
-- To stop the application
-```
+- **To Stop the Application:**
+```bash
 python classifier_controller_stop.py
 ```
 
-- Alternatively, you can simply configure cronjobs to run classifier.py
+- **Alternative Method:**
+You can configure cron jobs to run `classifier.py` and `classifier_reset.py` at scheduled intervals.
+

@@ -10,6 +10,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException #used to interrupt loding of websites and needed as workaround to download files with selenium
 from selenium.webdriver.common.action_chains import ActionChains #used to simulate pressing of a key
 
+from selenium.webdriver.support.ui import Select
+
+
 import uuid #used to generate random file names
 
 import time #used to do timeout breaks
@@ -29,15 +32,17 @@ import re
 
 import os
 import inspect
+import string
+
+from fake_useragent import UserAgent
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 
-ext_path = parentdir+"\i_care_about_cookies_unpacked"
+ext_path = parentdir+"/i_care_about_cookies_unpacked"
 
 from seleniumbase import Driver
-
 
 
 

@@ -1,44 +1,44 @@
 {% extends "master.html" %}
 
 {% block title %}Home{% endblock %}
+{# Define the title of the page as "Home" #}
 {% block head %}{{ super() }}{% endblock %}
+{# Include any additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row pt-3 my-5 align-items-top justify-content-center" style="min-height: 400px">
+  {# Create a row with padding and margin, aligning items at the top and centering content horizontally #}
+
   <div class="col-5 pt-5 mb-5">
+    {# Define a column with padding and margin for the left side content #}
     <h3 class="fw-semibold mb-4">Streamline your search engine research.</h3>
+    {# Main heading for the section #}
     <p class="lead mb-4">
+      {# Paragraph providing a brief overview of the Result Assessment Tool (RAT) #}
       With the <em>Result Assessment Tool (RAT)</em> you can easily collect results from different search engines,
       let participants evaluate the results and analyse your findings.
     </p>
-    <a href="{{url_for('security.login')}}" class="btn btn-primary rounded-pill">Launch Demo</a>
-    <a href="{{url_for('about')}}" class="ms-2 btn btn-outline-secondary rounded-pill">Learn More</a>
-    <button type="button" class="ms-2 btn btn-outline-secondary rounded-pill" data-bs-toggle="modal" data-bs-target="#video">
-      <i class="fa-solid fa-play"></i><span class="hover-text ps-1">Watch Screencast</span>
-    </button>
+    <a href="{{url_for('security.login')}}" class="btn btn-primary rounded-pill">Login</a>
+    {# Button linking to the login page #}
+    <a href="{{url_for('security.register')}}" class="btn btn-primary rounded-pill">Register</a>
+    {# Button linking to the registration page #}
+    <a href="https://searchstudies.org/rat-software/" class="btn btn-primary rounded-pill"
+      target="_blank">Learn more</a>
+    {# Button linking to an external page with more information about RAT, opening in a new tab #}
+
   </div>
+
   <div class="col-4 offset-md-1 pt-2">
+    {# Define a column with offset and padding for the right side content #}
     <img src="{{ url_for('static', filename='img/rat_intro.png')}}" alt="" class="w-100 pt-5">
+    {# Image related to the RAT, with full width and top padding #}
   </div>
+
 </div>
 
-
-<!-- Modal -->
-<div class="modal fade" id="video" tabindex="-1" aria-labelledby="videoLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title crd-header" id="exampleModalLabel">RAT Demo Screencast</h3>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <video width="100%" controls>
-          <source src="{{ url_for('static', filename='video/RAT-Demo.mp4') }}" type="video/mp4">
-        </video>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
+{# End the content block #}

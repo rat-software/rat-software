@@ -1,27 +1,41 @@
 {% extends "master.html" %}
 
 {% block title %}Dashboard{% endblock %}
+{# Set the title of the page to "Dashboard" #}
 {% block head %}{{ super() }}{% endblock %}
+{# Include any additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row mb-4">
+  {# Create a row with margin at the bottom #}
   <div class="col-8 offset-2">
+    {# Define a column with width 8 and centered using offset #}
     <div class="card">
+      {# Create a card component #}
       <div class="card-body">
+        {# Card body containing the main content #}
         <div class="hstack">
+          {# Horizontal stack layout #}
           <div class="crd-header">User</div>
+          {# Card header for the user section #}
         </div>
         <div class="py-2">
+          {# Add vertical padding #}
           <table class="table table-sm table-borderless">
+            {# Create a table with small size and borderless style #}
             <tr>
               <td class="w-25">Name:</td>
               <td>{% if user.username %}{{ user.username }}{% else %}-{% endif %}</td>
+              {# Display the user's username or a dash if not available #}
             </tr>
             <tr>
               <td>E-Mail:</td>
               <td>{{ user.email }}</td>
+              {# Display the user's email #}
             </tr>
           </table>
         </div>
@@ -31,38 +45,67 @@
 </div>
 
 <div class="row">
+  {# Create a row for the studies section #}
   <div class="col-8 offset-2">
+    {# Define a column with width 8 and centered using offset #}
     <div class="card">
+      {# Create a card component #}
       <div class="card-body">
+        {# Card body containing the main content #}
         <div class="hstack">
+          {# Horizontal stack layout #}
           <div class="crd-header">Studies</div>
+          {# Card header for the studies section #}
         </div>
         <div class="py-2">
+          {# Add vertical padding #}
           {% if user.studies %}
+          {# Check if the user has studies #}
           {% for s in user.studies %}
+          {# Loop through each study #}
           <div class="row align-items-center py-2">
+            {# Create a row with alignment and padding #}
             <div class="col-md-10">
+              {# Define a column for the study name #}
               <a class="text-dark" href="{{ url_for('study', id=s.id) }}">{{ s.name }}</a>
+              {# Link to the study page #}
             </div>
             <div class="col-md-2">
+              {# Define a column for action buttons #}
               <div class="btn-group" role="group" aria-label="Basic example">
-                <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="View">
+                {# Create a button group with accessible label #}
+                <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-secondary"
+                  data-bs-toggle="tooltip" data-bs-title="View">
                   <i class="fa-solid fa-eye"></i>
-                </a>{% if s.status == 0 %}
-                <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="Edit">
+                  {# Button to view the study with a tooltip #}
+                </a>
+                {% if s.status == 0 %}
+                {# Check if the study is in a status that allows editing #}
+                <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary"
+                  data-bs-toggle="tooltip" data-bs-title="Edit">
                   <i class="fa-solid fa-pen"></i>
-                </a>{% endif %}
-                <a href="{{ url_for('delete_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="Delete">
+                  {# Button to edit the study with a tooltip #}
+                </a>
+                {% endif %}
+                <a href="{{ url_for('delete_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary"
+                  data-bs-toggle="tooltip" data-bs-title="Delete">
                   <i class="fa-solid fa-trash"></i>
+                  {# Button to delete the study with a tooltip #}
                 </a>
               </div>
             </div>
           </div>
           {% endfor %}
           {% else %}
+          {# If the user has no studies #}
           <div class="row align-items-center py-2">
+            {# Create a row with alignment and padding #}
             <div class="col-md-12">
-              <a href="{{ url_for('new_study') }}"><i class="fa-solid fa-angles-right me-1"></i> Create a new study!</a>
+              {# Define a column for the new study link #}
+              <a href="{{ url_for('new_study') }}">
+                <i class="fa-solid fa-angles-right me-1"></i> Create a new study!
+              </a>
+              {# Link to create a new study #}
             </div>
           </div>
           {% endif %}
@@ -71,4 +114,6 @@
     </div>
   </div>
 </div>
+
 {% endblock %}
+{# End the content block #}

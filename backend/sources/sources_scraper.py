@@ -18,17 +18,24 @@ import inspect
 from libs.lib_helper import *
 
 class SourcesScraper:
-    """Sources Scraper"""
-    get_sources: list
-    """The sources to scrape"""
-    job_server: str
-    """Path to the config_file of the sources scraper"""
-    db: object
-    """DB Object"""
-    logger: object
-    """Logger Object"""
-    sources: object
-    """Sources Object"""
+    """
+    A class to scrape and process source URLs from a database.
+
+    Attributes:
+        get_sources (list): List of sources to be scraped, including their IDs and URLs.
+        job_server (str): Path to the configuration file of the sources scraper.
+        db (object): Database object for querying and updating source information.
+        logger (object): Logger object for logging operations and errors.
+        sources (object): Sources object for handling source-related operations.
+
+    Methods:
+        __init__(get_sources: list, job_server: str, db: object, logger: object, sources: object):
+            Initializes the SourcesScraper object with the provided parameters.
+        __del__():
+            Destructor for the SourcesScraper object.
+        scrape():
+            Scrapes the source code and screenshots of URLs, updating the database with the results.
+    """    
 
     def __init__(self, get_sources: list, job_server: str, db: object, logger: object, sources: object):
         self.get_sources = get_sources
@@ -45,11 +52,18 @@ class SourcesScraper:
     def scrape(self):
 
         """
-        Scrape the source_code and take a screenshot of the URLs. The method also includes a local function <b>scrape_url(sources_url)</b> to use the threading event for scraping.
-        \nThe function works as follows:
-        \n1. Loop through all unscraped sources
-        \n2. Exectue several functions to check for duplicated and running jobs
-        \n3. Try to get and store the source code and screenshots of the URL and write the results to the database
+        Scrapes URLs and updates the database with source code and screenshots.
+
+        This method performs the following steps:
+        1. Initializes a threading event for managing scrape results.
+        2. Iterates over the list of sources to be scraped.
+        3. Checks if the source has already been processed.
+        4. Handles duplicate sources by updating their records if necessary.
+        5. Initiates the scraping process using a separate thread.
+        6. Waits for the scraping results, processes them, and updates the database.
+        7. Logs errors and status updates throughout the process.
+
+        The method utilizes threading to perform concurrent scraping operations and ensures that the results are processed and updated in the database.
         """
 
         #initialize an event based dictionary for the scraping results
@@ -83,6 +97,8 @@ class SourcesScraper:
                     source_id_check = db.get_source_check(url) # Check if source is already scraped by URL
 
                     if source_id_check:
+                        print("duplicate")
+                        print(source_id_check)
 
                         log = str(source_id_check)+"_"+str(result_id)+"\t"+url+"\tupdate result"
 
@@ -120,6 +136,7 @@ class SourcesScraper:
                                 source_id = source_id[0]
                                 counter = 1
                             created_at = datetime.now() # Get current timestamp.
+                            print("new")
                             print(source_id)
                             db.update_result_source(result_id, source_id, 2, counter, created_at, job_server)
                         else:
@@ -175,9 +192,21 @@ class SourcesScraper:
                                 except Exception as e:
                                     logger.write_to_log("Updating source table failed \t \t \t"+str(e))
 
-                                log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
+                                    log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
 
-                                logger.write_to_log(log)
+                                    logger.write_to_log(log)
+
+                                    print(str(e))
+                                    error_code = "Updating source table failed: "+str(e) # Store the error code in database
+                                    error = "error"
+                                    progress = -1
+                                    status_code = -1
+                                    log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
+                                    logger.write_to_log(log)
+                                    db.update_source(source_id, error, error, progress, error, error_code, status_code, created_at, content_dict) # Update source in database with error codes
+                                    created_at = datetime.now() # Get current timestamp.
+                                    db.update_result_source(result_id, source_id, progress, counter, created_at, job_server) # Update source in database
+
 
                             # Store information about failure when the function raises an error
                             except Exception as e:
@@ -194,12 +223,13 @@ class SourcesScraper:
                                 logger.write_to_log(log)
                                 db.update_source(source_id, error, error, progress, error, error_code, status_code, created_at, content_dict) # Update source in database with error codes
                                 created_at = datetime.now() # Get current timestamp.
-                                db.update_result_source(result_id, source_id, progress, counter, created_at)
+                                db.update_result_source(result_id, source_id, progress, counter, created_at, job_server) # Update source in database
+
 
 
                 except Exception as e:
                     print(str(e))
-                    error_code = "Source Controller scraping failed: "+str(e) # Store the error code in database
+                    error_code = "Process failed Source Controller scraping failed: "+str(e) # Store the error code in database
                     error = "error"
                     progress = -1
                     status_code = -1

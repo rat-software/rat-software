@@ -1,245 +1,217 @@
 """
-This template describes the steps required to add a custom scraper for the RAT software. First of all, it is assumed that these are search services that provide search forms. However, it is also possible to add other search systems. The procedure would have to be adapted accordingly. Selenium is used as the basis for scraping.
+This template provides a framework for creating a custom scraper for the RAT software. This scraper is designed to work with search services that offer search forms. For other types of search systems, modifications to this template may be necessary. Selenium is utilized as the primary tool for web scraping.
 
-A scraper generally consists of the following functions:
-- run(query, limit, scraping): Main function for all scrapers with the following parameters: query = search query, limit = maximum number of results to be retrieved, scraping = scraping object with functions for scraping the search engines
-- get_search_results(driver, page): Sub-function for retrieving the search results with the following parameters:
-driver = Selenium driver; web browser for scraping; page = SERP page
-- check_captcha(driver): Helper function to check whether there is a block on search services. The function is called to indicate that scraping has been cancelled. If the check is false, scraping is continued.
+The scraper should be capable of returning the following fields:
+- `result_title`: The title of the search result snippet.
+- `result_description`: The description in the snippet of the result.
+- `result_url`: The URL of the search result.
+- `serp_code`: The HTML source code of the search result page, useful for further analysis.
+- `serp_bin`: A screenshot of the search result page, if needed for additional analysis.
+- `page`: The page number of search results, useful for paginated results or scrolling-based systems.
 
-All standard variables and functions for scraping a search engine are described below. However, it is also possible to change everything here according to the search engine to be scraped.
+A typical scraper consists of the following functions:
+- `run(query, limit, scraping, headless)`: The main function to execute the scraper with the given parameters.
+- `get_search_results(driver, page)`: A helper function to retrieve search results from the given page.
+- `check_captcha(driver)`: A helper function to check for CAPTCHA or similar blocks and handle them appropriately.
 
-Link to the documentation on finding elements on a webpage using Selenium: https://selenium-python.readthedocs.io/locating-elements.html
+The variables and functionality described here can be adapted according to the specific search engine being scraped.
 
-Adding your scraper to production mode in the software requires additional steps:
-
-1. create a custom Python file for your scraper and add the following line: from scrapers.requirements import *
-2. copy the entire main function and paste it into your scraper file
-3. add your new scraper to the database in the table 'searchengine', add the name and file name for the scraper and select one of the following result types
-of the following result types: 
-id	name	                    display	
-1	Organic Results	            organic	
-2	Snippets	                snippet	
-3	Universal Search Results	universal	
-4	Advertisements	            ad	
-5	News	                    news
+The search engine in this template is Ecosia. Change the parameters according to the search engine you want to scrape.
 """
 
-#required libs for web scraping
-
 from scrapers.requirements import *
-
-#main function to run a scraper
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+import time
+import random
 
 def run(query, limit, scraping, headless):
     """
-    Run the template new scraper.
+    Run the scraper.
 
     Args:
         query (str): The search query.
         limit (int): The maximum number of search results to retrieve.
         scraping: The Scraping object.
-        headless (int): Flag indicating whether to run the scraper in headless mode.
+        headless (bool): If True, runs the browser in headless mode (without GUI).
 
     Returns:
         list: List of search results.
-    """    
+    """
     try:
-        #Definition of args for scraping the search engine
-        search_url = "https://www.google.de" #URL of search engine, e. g. www.google.de
-        search_box = "q" #Class name of search box; input field for searches
-        captcha = "g-recaptcha" #Source code hint for CAPTCHA; some search engines use CAPTCHAS to block too many automatic requests
-        next_page = "//a[@aria-label='{}']" #CSS to find click on next SERP; for search engines that use a navigation on SERPS to continue browsing more search results
-        results_number = 0 #initialize results_number; normally starts at 0
-        page = 1 #initialize SERP page; normally starts at 1
-        search_results = [] #initialize search_results list
+        # URL and selectors for the search engine
+        search_url = "https://www.ecosia.org/" #URL for the search engine
+        search_box = "q" #Selector for the search box
+        captcha = "g-recaptcha" #Selector for CAPTCHA in the page source
 
-        #Definition of custom functions
+        # Initialize variables
+        results_number = 0 #Initialize number of search results
+        page = -1 #Initialize SERP page number
+        search_results = [] #Initialize list of search results
         
-        def search_pagination(source):
-            soup = BeautifulSoup(source, features="lxml")
-            if soup.find("span", class_=["SJajHc NVbCr"]):
-                return True
-            else:
-                return False
-            
-        #Function to scrape search results
+        # Custom function to scrape search results
         def get_search_results(driver, page):
+            """
+            Retrieve search results from the current page.
 
-            get_search_results = []
+            Args:
+                driver: Selenium WebDriver instance.
+                page (int): Current SERP page.
 
+            Returns:
+                list: List of search results from the current page.
+            """
+            temp_search_results = []
+
+            # Get page source and encode it
             source = driver.page_source
-
             serp_code = scraping.encode_code(source)
-
             serp_bin = scraping.take_screenshot(driver)
 
+            # Parse the page source with BeautifulSoup
             soup = BeautifulSoup(source, features="lxml")
-            
-            #addtional steps to extract undesired elements from the Search Engine Result Page (SERP)
 
-            for s in soup.find_all("div", class_="d4rhi"):
-                s.extract()
+            # Extract search results using CSS selectors
+            for result in soup.find_all("div", class_=["result__body"]):
+                result_title = "N/A" #Initialize result title
+                result_description = "N/A" #Initialize result description
+                result_url = "N/A" #Initialize result URL
 
-            for s in soup.find_all("div", class_="Wt5Tfe"):
-                s.extract()
-
-            for s in soup.find_all("div", class_="UDZeY fAgajc OTFaAf"):
-                s.extract()
-                
-            #find the list with the search results by extracting the div container
-
-            for result in soup.find_all("div", class_=["tF2Cxc"]):
-                url_list = []
-                search_result = []
-                result_title = ""
-                result_description = ""
-                result_url = ""
-                
-                #find result title of a search result by header class
                 try:
-                    for title in result.find("h3", class_=["LC20lb MBeuO DKV0Md"]):
-                        result_title+=title.text.strip()
+                    title_elem = result.find("div", class_=["result__title"])
+                    if title_elem:
+                        result_title = title_elem.text.strip()
                 except:
-                    result_title = "N/A"
-                    
-                
-                #find description of a search result by div container
-                try:                  
-                    for description in result.find("div", class_=re.compile("VwiC3b", re.I)):
-                       
-                        result_description+=description.text.strip()
-                except:
-                    result_description = "N/A"
-                    
-                #find url of a search result by href
+                    pass
+
                 try:
-                    for url in result.find_all("a"):
-                        url = url.attrs['href']
-                        url_list.append(url)
-                        result_url = url_list[0]
+                    description_elem = result.find("div", class_=["result__description"])
+                    if description_elem:
+                        result_description = description_elem.text.strip()
                 except:
-                    result_url = "N/A"
-                
-                #add search results to list
-                get_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
+                    pass
 
-            return get_search_results
+                try:
+                    url_elem = result.find("a")
+                    if url_elem:
+                        url = url_elem.attrs['href']
+                        if "bing." in url:
+                            url = scraping.get_real_url(url)
+                        result_url = url
+                except:
+                    pass
 
-        #Function to check if search engine shows CAPTCHA code
+                if result_url != "N/A":
+                    temp_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
+
+            return temp_search_results
+
+        # Custom function to check if CAPTCHA is present
         def check_captcha(driver):
+            """
+            Check if CAPTCHA is present on the page.
+
+            Args:
+                driver: Selenium WebDriver instance.
+
+            Returns:
+                bool: True if CAPTCHA is present, False otherwise.
+            """
             source = driver.page_source
-            if captcha in source:
-                return True
-            else:
-                return False
+            return captcha in source
+        
+        def remove_duplicates(search_results):
+            """
+            Removes duplicate search results based on the URL.
 
-        chrome_extension = scraping.get_chrome_extension() #Get Path for I don't care about cookies extension
+            Args:
+                search_results (list): List of search results to deduplicate.
 
-        #initialize Selenium
-        options = Options()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument("--start-maximized")
-        if headless == 1:
-            options.add_argument('--headless=new')
-        options.add_argument("--lang=de")
-        options.add_experimental_option("detach", True)
-        options.add_extension(chrome_extension)
-        driver = webdriver.Chrome(options=options)
+            Returns:
+                list: List of search results with duplicates removed.
+            """
+            seen_urls = set()
+            unique_results = []
+
+            # Append only unique results
+            for result in search_results:
+                url = result[2]
+                if url not in seen_urls:
+                    seen_urls.add(url)
+                    unique_results.append(result)
+
+            return unique_results        
+
+        # Initialize Selenium driver
+        driver = Driver(
+            browser="chrome",
+            wire=True,
+            uc=True,
+            headless2=headless,
+            incognito=False,
+            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            do_not_track=True,
+            undetectable=True,
+            extension_dir=ext_path,
+            locale_code="de"
+        )
+
+        driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
-        driver.maximize_window()
-        random_sleep = random.randint(2, 5)
-        time.sleep(random_sleep)
+        time.sleep(random.randint(2, 5))
 
-    
-        #Start scraping if no CAPTCHA
+        # Start scraping if no CAPTCHA
         if not check_captcha(driver):
-
-            search = driver.find_element(By.NAME, search_box)
-            search.send_keys(query)
-            search.send_keys(Keys.RETURN)
-
-            random_sleep = random.randint(2, 5)
-            time.sleep(random_sleep)
+            search = driver.find_element(By.NAME, search_box) #Find search box
+            search.send_keys(query) #Enter search query
+            search.send_keys(Keys.RETURN) #Submit search
+            time.sleep(random.randint(2, 5)) #Wait for Results
 
             search_results = get_search_results(driver, page)
-
             results_number = len(search_results)
+            continue_scraping = True #Initialize scraping
 
-            continue_scraping = True
+            # Loop through pages until limit is reached or CAPTCHA appears
+            while results_number < limit and continue_scraping:
+                if not check_captcha(driver):
+                    time.sleep(random.randint(2, 5))
+                    page += 1
+                    try:
+                        next_page_url = f"https://www.ecosia.org/search?method=index&q={query}&p={page}" #Next page URL
+                        print(next_page_url)
+                        driver.get(next_page_url)
+                        extract_search_results = get_search_results(driver, page)
+                        print(f"Results extracted: {len(extract_search_results)}")
 
-            """
-            Custom block to click on the next SERP page:
-            
-            Google offers two different ways to get more results on a SERP.  Either by clicking on a button for "more results" or by the classic scrolling on the SERP to subsequent pages. This customized block first checks which type of pagination is offered. 
-            Subsequent search results are then scraped as long as the total number of search results is less than the defined limit.
-            """
-
-            check_pagination = search_pagination(source = driver.page_source)
-
-            if check_pagination:
-                #Click on next SERP pages as long the toal number of results is lower the limit
-                while (results_number < limit) and continue_scraping:
-                    if not check_captcha(driver):
-                        random_sleep = random.randint(2, 5)
-                        time.sleep(random_sleep)
-                        page+=1
-                        page_label = "Page "+str(page)
-                        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                        try:
-                            next = driver.find_element(By.XPATH, next_page.format(page_label))
-                            next.click()
-                            search_results+= get_search_results(driver, page)
+                        if extract_search_results:
+                            print("Appending results.")
+                            search_results += extract_search_results
+                            search_results = remove_duplicates(search_results)
                             results_number = len(search_results)
-                        except:
+                        else:
                             continue_scraping = False
-                    else:
+                            search_results = -1
+                    except Exception as e:
+                        print(f"Failed to get next page: {e}")
                         continue_scraping = False
-                        search_results = -1
+                else:
+                    continue_scraping = False
+                    search_results = -1
 
-                if headless == 1:
-                    driver.quit()
-
-                return search_results
-
-            else:
-                SCROLL_PAUSE_TIME = 1
-
-                while (results_number < limit) and continue_scraping:
-
-                    if not check_captcha(driver):
-                        try:
-                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                            time.sleep(SCROLL_PAUSE_TIME)
-                            driver.execute_script("return document.body.scrollHeight") + 400
-                            page+=1
-                            search_results+= get_search_results(driver, page)
-                            results_number = len(search_results)
-                        except:
-                            continue_scraping = False
-                    else:
-                        continue_scraping = False
-                        search_results = -1
-
-                if headless == 1:
-                    driver.quit()
-                    
-                return search_results
-
-
+            driver.quit()
+            return search_results
         else:
             search_results = -1
-            if headless == 1:
-                driver.quit()
+            driver.quit()
+            return search_results
 
     except Exception as e:
-        print(str(e))
+        print(f"Exception occurred: {e}")
         try:
             driver.quit()
         except:
             pass
-        search_results = -1
-        return search_results
+        return -1

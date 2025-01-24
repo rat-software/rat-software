@@ -4,47 +4,69 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
   <div class="col">
+    <!-- Study name -->
     <h3>{{ m.name }}</h3>
+
+    <!-- Study description -->
     <p class="small">Description: {{ m.description }}</p>
+
+    <!-- Creation date of the study, if available -->
     {% if m.created_at %}
-      <p class="small">Created at: {{ m.created_at.strftime('%d.%m.%Y') }}</p>
+    <p class="small">Created at: {{ m.created_at.strftime('%d.%m.%Y') }}</p>
     {% endif %}
 
+    <!-- Section heading for search engines -->
     <p class="lead mt-3">Search Engines</p>
+
+    <!-- List of search engines associated with the study -->
     {% for c in m.countries %}
-      <span class="badge bg-secondary m-1">{{ c.searchengine.name }} {{ c.code}}</span>
+    <span class="badge bg-secondary m-1">{{ c.searchengine.name }} {{ c.code}}</span>
     {% endfor %}
 
+    <!-- Section heading for queries -->
     <p class="lead mt-3">Queries</p>
+
+    <!-- List of queries associated with the study -->
     {% for q in m.queries %}
-      <span class="badge bg-secondary m-1">{{ q.query }}</span>
+    <span class="badge bg-secondary m-1">{{ q.query }}</span>
     {% endfor %}
 
+    <!-- Section heading for scheduling information -->
     <p class="lead mt-3">Scheduled</p>
+
+    <!-- Interval frequency and mode of the study -->
     {{ interval_frequency }} per {{ interval_mode }}
 
+    <!-- Next collection dates for the study -->
     <p>Next collection dates:</p>
     {% for n in next %}
-        {{ n.strftime('%d.%m.%Y %H:%M:%S') }}<br/>
+    {{ n.strftime('%d.%m.%Y %H:%M:%S') }}<br />
     {% endfor %}
 
+    <!-- Section heading for results -->
     <p class="lead mt-3">Results</p>
+
+    <!-- Total count of results -->
     {{ m.results | count }}
 
+    <!-- Table displaying results -->
     <table class="table table-hover">
       <thead>
-        <th>Position</th>
-        <th>Title</th>
-        <th>Description</th>
-        <th>Query</th>
-        <th>Date</th>
-        <th>Serp</th>
+        <!-- Table headers -->
+        <th>Position</th> <!-- Position of the result -->
+        <th>Title</th> <!-- Title of the result -->
+        <th>Description</th> <!-- Description of the result -->
+        <th>Query</th> <!-- Associated query -->
+        <th>Date</th> <!-- Date of the result -->
+        <th>Serp</th> <!-- SERP identifier -->
       </thead>
       <tbody>
+        <!-- Loop through each result and display its details -->
         {% for r in m.results %}
         <tr>
           <td>{{ r.position }}</td>
@@ -58,12 +80,15 @@
       </tbody>
     </table>
 
+    <!-- Section heading for SERP images -->
     <div class="lead mt-3">
-      {% for s in serp%}
-        <embed width="45%" src="data:image/png;base64,{{ s.img.decode('ascii') }}" />
+      {% for s in serp %}
+      <!-- Display SERP images as embedded base64 images -->
+      <embed width="45%" src="data:image/png;base64,{{ s.img.decode('ascii') }}" />
       {% endfor %}
     </div>
 
+    <!-- Button to delete the monitoring -->
     <p class="lead mt-3">
       <a href="{{ url_for('delete_monitoring', id=m.id) }}" class="btn btn-danger">Delete Monitoring</a>
     </p>

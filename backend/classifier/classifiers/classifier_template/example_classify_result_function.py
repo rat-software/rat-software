@@ -23,65 +23,68 @@ Add the name of your classifier (same name as the folder and Python file) and a 
 '''
 
 def classify_result(data):
+
     """
-    Main function for your classifier.
+    Classify a webpage based on input data and return the classification result.
 
     Args:
-        data (dict): The data for the classifier.
+        data: Dictionary containing 'url', 'main', 'code', and 'query' keys with corresponding values.
 
     Returns:
-        None
+        str: Classification result indicating whether the webpage is about RAT or not.
     """
 
+    # Extract data from the input dictionary
     url = data["url"]
     main = data["main"]
     code = data["code"].lower().split()
     query = data["query"].lower()
 
-    indicators = {}
+    # Generate indicators in a single operation
+    indicators = {
+        "query_counter": code.count(query),
+        "url_counter": url.count(query),
+        "main_counter": main.count(query)
+    }
 
-    # generate indicators. indicators should be stored dictionaries with a key with the name of the indicator and the value to store them in the database.
-
-    query_counter = code.count(query)
-    indicators = {"query_counter": query_counter}
-
-    url_counter = url.count(query)
-    indicators = {"url_counter": url_counter}
-
-    main_counter = main.count(query)
-    indicators = {"main_counter": main_counter}
-
-    # classify the results
-
-    classification_result = ""
-
-    if query_counter > 5 and (url_counter > 0 or main_counter > 0):
-        classification_result = "Webpage is about RAT"
+    # Classify the results based on indicators
+    if indicators["query_counter"] > 5 and (indicators["url_counter"] > 0 or indicators["main_counter"] > 0):
+        return "Webpage is about RAT"
     else:
-        classification_result = "Webpage is not about RAT"
+        return "Webpage is not about RAT"
 
-    print(classification_result)
+# Function to read file content
+def read_file_content(filename):
+    """
+    Read and return the content of a file.
 
-# Create the data for the classifier
+    Args:
+        filename: The path to the file to read.
 
-data = {
-    "url": "https://searchstudies.org/research/rat/",
-    "main": "https://searchstudies.org/",
-    "query": "rat",
-}
+    Returns:
+        str: Content of the file as a string.
+    """
 
-with open("example_for_classifier_01.html", encoding='utf-8', errors='ignore') as f:
-    data["code"] = f.read()
+    with open(filename, encoding='utf-8', errors='ignore') as f:
+        return f.read()
 
-classify_result(data)
+# Example usage
+if __name__ == "__main__":
+    data_examples = [
+        {
+            "url": "https://searchstudies.org/research/rat/",
+            "main": "https://searchstudies.org/",
+            "query": "rat",
+            "code": read_file_content("example_for_classifier_01.html")
+        },
+        {
+            "url": "https://www.haw-hamburg.de",
+            "main": "https://www.haw-hamburg.de",
+            "query": "rat",
+            "code": read_file_content("example_for_classifier_02.html")
+        }
+    ]
 
-data = {
-    "url": "https://www.haw-hamburg.de",
-    "main": "https://www.haw-hamburg.de",
-    "query": "rat",
-}
-
-with open("example_for_classifier_02.html", encoding='utf-8', errors='ignore') as f:
-    data["code"] = f.read()
-
-classify_result(data)
+    for data in data_examples:
+        result = classify_result(data)
+        print(result)

@@ -1,51 +1,74 @@
 {% extends "master.html" %}
+{# Inherit from the base master template #}
 
 {% block title %}Log In{% endblock %}
+{# Set the title of the page to "Log In" #}
+
 {% block head %}{{ super() }}{% endblock %}
+{# Include any additional head content from the base template #}
 
 {% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors %}
+{# Import macros for rendering form fields with error handling and displaying form errors #}
 
 {% block content %}
+{# Define the content block for the page #}
 
 {% include "security/_messages.html" %}
+{# Include any messages, such as alerts or notifications, from the "security/_messages.html" file #}
+
 <div class="card col-md-6 offset-md-3">
+  {# Create a card element centered on the page with a width of 6 columns #}
   <div class="card-body">
     <h4 class="crd-header">Log In</h4>
+    {# Display the heading for the login form #}
+
     <form action="{{ url_for_security('login') }}" method="POST" name="login_user_form">
+      {# Create a form that posts data to the login URL with the name "login_user_form" #}
       {{ login_user_form.hidden_tag() }}
+      {# Render hidden form fields (e.g., CSRF token) #}
 
       <div class="mb-3">
         {{ render_form_errors(login_user_form) }}
+        {# Display form errors, if any, at the top of the form #}
       </div>
 
       <div class="mb-3">
         Don't have an account, yet?
+        {# Inform the user about the option to register if they don’t have an account #}
         <a href="{{url_for('security.register')}}" class="btn btn-primary btn-sm ms-2">
           <i class="fa-solid fa-user-plus me-2"></i>
           Register
         </a>
+        {# Provide a link to the registration page with a button to register #}
       </div>
 
       <div class="mb-3">
         {{ render_field_with_errors(login_user_form.email, class_="form-control") }}
+        {# Render the email input field with error handling #}
       </div>
 
       <div class="mb-3">
         {{ render_field_with_errors(login_user_form.password, class_="form-control") }}
+        {# Render the password input field with error handling #}
       </div>
 
       <div class="mb-3">
         {{ render_field_with_errors(login_user_form.remember, class_="form-check-input") }}
+        {# Render the "Remember Me" checkbox field with error handling #}
       </div>
 
       <div class="mb-3">
         {{ render_field(login_user_form.next, class_="form-control") }}
+        {# Render the hidden field for redirecting after login #}
       </div>
 
       <div class="mb-3">
         {{ login_user_form.submit(class="btn btn-outline-primary me-2") | safe }}
+        {# Render the submit button for the form #}
       </div>
     </form>
   </div>
 </div>
+
 {% endblock %}
+{# End the content block #}

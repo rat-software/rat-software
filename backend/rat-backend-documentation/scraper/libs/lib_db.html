@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.1">
+<title>backend.scraper.libs.lib_db API documentation</title>
+<meta name="description" content="Database class for interacting with the database …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>backend.scraper.libs.lib_db</code></h1>
+</header>
+<section id="section-intro">
+<p>Database class for interacting with the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_cnf</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionary containing the database configuration.</dd>
+</dl>
+<h2 id="methods">Methods</h2>
+<p><strong>init</strong>: Initialize the DB object.
+<strong>del</strong>: Destructor for the DB object.
+connect_to_db: Connect to the database using psycopg2.
+get_scraper_jobs: Get scraper jobs from the database.
+update_scraper_job: Update the progress of a scraper job in the database.
+insert_result: Insert a result into the database.
+insert_serp: Insert a SERP (Search Engine Results Page) into the database.
+check_progress: Check if a result is already declared as a scraping job.
+check_scraper_progress: Check if a scraper job is already in progress.
+check_duplicate_result: Check if a result with the same URL, main, study, and scraper ID already exists.
+reset: Reset the progress of scraper jobs in the database.
+get_searchengines: Get the list of search engines from the database.
+update_searchengine_test: Update the test field of a search engine in the database.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="backend.scraper.libs.lib_db.DB"><code class="flex name class">
+<span>class <span class="ident">DB</span></span>
+<span>(</span><span>db_cnf: dict)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialize the DB object.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_cnf</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionary containing the database configuration.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DB:
+    def __init__(self, db_cnf: dict):
+        &#34;&#34;&#34;
+        Initialize the DB object.
+
+        Args:
+            db_cnf (dict): Dictionary containing the database configuration.
+        &#34;&#34;&#34;        
+        self.db_cnf = db_cnf
+
+    def __del__(self):
+        &#34;&#34;&#34;
+        Destructor for the DB object.
+        &#34;&#34;&#34;        
+        print(&#39;DB Controller object destroyed&#39;)
+
+    def connect_to_db(self):
+        &#34;&#34;&#34;
+        Connect to the database using psycopg2
+        &#34;&#34;&#34;
+        conn =  psycopg2.connect(**self.db_cnf)
+        return conn
+
+    def get_scraper_jobs(self):
+        &#34;&#34;&#34;
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(&#34;SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter &lt; 11 ORDER BY scraper.id ASC  LIMIT 2&#34;)
+        conn.commit()
+        scraper_jobs = cur.fetchall()
+        conn.close()
+        return scraper_jobs
+    
+    def get_all_open_scraper_jobs(self):
+        &#34;&#34;&#34;
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(&#34;SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter &lt; 11 ORDER BY scraper.id ASC&#34;)
+        conn.commit()
+        scraper_jobs = cur.fetchall()
+        conn.close()
+        return scraper_jobs    
+    
+    def get_scraper_jobs_searchengine(self, searchengine):
+        &#34;&#34;&#34;
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(&#34;SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter &lt; 11 AND scraper.searchengine = %s ORDER BY scraper.id ASC&#34;, (searchengine,))
+        conn.commit()
+        scraper_jobs = cur.fetchall()
+        conn.close()
+        return scraper_jobs    
+    
+    def get_scraper_jobs_filter_searchengine(self, searchengine):
+        &#34;&#34;&#34;
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(&#34;SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter &lt; 11 AND scraper.searchengine != %s ORDER BY scraper.id ASC  LIMIT 2&#34;, (searchengine,))
+        conn.commit()
+        scraper_jobs = cur.fetchall()
+        conn.close()
+        return scraper_jobs     
+    
+    
+    def get_scraper_job(self, job_id):
+        &#34;&#34;&#34;
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(&#34;SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND scraper.id = %s ORDER BY scraper.id ASC  LIMIT 2&#34;, (job_id,))
+        conn.commit()
+        scraper_jobs = cur.fetchall()
+        conn.close()
+        return scraper_jobs    
+
+    def get_failed_scraper_jobs(self):
+        &#34;&#34;&#34;
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(&#34;SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = -1 and counter &lt; 11&#34;)
+        conn.commit()
+        failed_scraper_jobs = cur.fetchall()
+        conn.close()
+        return failed_scraper_jobs
+    
+    def get_failed_scraper_jobs_server(self, job_server):
+        &#34;&#34;&#34;
+        Get scraper jobs from the database.
+
+        Returns:
+            list: List of scraper jobs.
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(&#34;SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = -1 and counter &lt; 11 and scraper.job_server = %s&#34;, (job_server,))
+        conn.commit()
+        failed_scraper_jobs = cur.fetchall()
+        conn.close()
+        return failed_scraper_jobs    
+
+    def update_scraper_job(self, progress, counter, error_code, job_server, scraper_id, created_at):
+        &#34;&#34;&#34;
+        Update the progress of a scraper job in the database.
+
+        Args:
+            progress (int): Progress value.
+            counter (int): Counter value.
+            error_code (str): Error code.
+            job_server (str): Job server.
+            scraper_id (int): Scraper ID.
+
+        Returns:
+            None
+        &#34;&#34;&#34;        
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;Update scraper SET progress=%s, counter=%s, error_code=%s, job_server=%s, created_at=%s WHERE id = %s&#34;, (progress, counter, error_code, job_server, created_at, scraper_id))
+        conn.commit()
+        conn.close()
+
+    def insert_result(self, title, description, url, position, created_at, main, ip, study, scraper, query, serp):
+        &#34;&#34;&#34;
+        Insert a result into the database.
+
+        Args:
+            title (str): Title of the result.
+            description (str): Description of the result.
+            url (str): URL of the result.
+            position (int): Position of the result.
+            created_at (datetime): Creation timestamp of the result.
+            main (bool): Flag indicating if it&#39;s a main result.
+            ip (str): IP address of the result.
+            study (int): Study ID.
+            scraper (int): Scraper ID.
+            query (int): Query ID.
+            serp (int): SERP ID.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        #result: id     title   description     url     position        created_at      main    ip      origin  imported        study   scraper old_id  resulttype      monitoring      serp    query   final_url
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;INSERT INTO result (title, description, url, position, created_at, main, ip, study, scraper, query, serp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);&#34;, (title, description, url, position, created_at, main, ip, study, scraper, query, serp))
+        conn.commit()
+        conn.close()
+
+    def insert_serp(self, scraper, page, code, img, created_at, query):
+        &#34;&#34;&#34;
+        Insert a SERP (Search Engine Results Page) into the database.
+
+        Args:
+            scraper (int): Scraper ID.
+            page (int): Page number.
+            code (str): Code of the SERP.
+            img (str): Image of the SERP.
+            created_at (datetime): Creation timestamp of the SERP.
+            query (int): Query ID.
+
+        Returns:
+            int: ID of the inserted SERP.
+        &#34;&#34;&#34;
+        #serp id        scraper page    code    img     progress        created_at      old_id  monitoring      query
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;SELECT id from serp where scraper = %s and page = %s and query = %s&#34;,(scraper, page, query,))
+        conn.commit()
+        serp = cur.fetchone()
+
+        if not serp:
+            cur.execute(&#34;INSERT INTO serp (scraper, page, code, img, created_at, query) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;&#34;, (scraper, page, code, img, created_at, query))
+            conn.commit()
+            serp = cur.fetchone()
+
+        conn.close()
+        return serp
+
+    def check_progress(self, study, query_id):
+        &#34;&#34;&#34;
+        Check if a result is already declared as a scraping job.
+
+        Args:
+            study (int): Study ID.
+            query_id (int): Query ID.
+
+        Returns:
+            bool: True if the progress is 2, False otherwise.
+        &#34;&#34;&#34;
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;SELECT scraper.id FROM scraper WHERE study = %s AND query = %s AND progress = 2&#34;, (study, query_id))
+        conn.commit()
+        check_progress = cur.fetchall()
+        conn.close()
+        if check_progress:
+            return True
+        else:
+            return False
+
+    def check_scraper_progress(self, scraper_id):
+        &#34;&#34;&#34;
+        Check if a scraper job is already in progress.
+
+        Args:
+            scraper_id (int): Scraper ID.
+
+        Returns:
+            bool: True if the progress is 2, False otherwise.
+        &#34;&#34;&#34;
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;SELECT scraper.id FROM scraper WHERE id = %s AND progress = 2&#34;, (scraper_id,))
+        conn.commit()
+        check_progress = cur.fetchall()
+        conn.close()
+        if check_progress:
+            return True
+        else:
+            return False
+
+
+    def check_duplicate_result(self, url, main, study, scraper_id, position):
+        &#34;&#34;&#34;
+        Check if a result with the same URL, main, study, and scraper ID already exists.
+
+        Args:
+            url (str): URL of the result.
+            main (bool): Flag indicating if it&#39;s a main result.
+            study (int): Study ID.
+            scraper_id (int): Scraper ID.
+
+        Returns:
+            bool: True if a duplicate result exists, False otherwise.
+        &#34;&#34;&#34;
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;SELECT id FROM result WHERE url = %s AND main = %s AND study = %s AND scraper = %s AND position = %s&#34;, (url, main, study, scraper_id, position))
+        conn.commit()
+        check_progress = cur.fetchall()
+        conn.close()
+        if check_progress:
+            return True
+        else:
+            return False
+
+    def reset(self, job_server):
+        &#34;&#34;&#34;
+        Reset the progress of scraper jobs in the database.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;Update scraper SET progress=0 WHERE (progress = -1 OR progress = 2) and counter &lt; 11 and created_at &lt; NOW() - INTERVAL &#39;30 minutes&#39; and job_server = %s&#34;, (job_server,))
+        conn.commit()
+        conn.close()
+        
+    def get_searchengines(self):
+        &#34;&#34;&#34;
+        Get the list of search engines from the database.
+
+        Returns:
+            list: List of search engines.
+        &#34;&#34;&#34;
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;SELECT * from searchengine ORDER BY id ASC&#34;)
+        conn.commit()
+        searchengines = cur.fetchall()
+        conn.close()   
+        return searchengines
+
+    def get_failed_searchengines(self):
+        &#34;&#34;&#34;
+        Get the list of search engines from the database.
+
+        Returns:
+            list: List of search engines.
+        &#34;&#34;&#34;
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;SELECT * from searchengine WHERE test = -1 ORDER BY id ASC&#34;)
+        conn.commit()
+        searchengines = cur.fetchall()
+        conn.close()   
+        return searchengines
+    
+    def update_searchengine_test(self, se_id, test):     
+        &#34;&#34;&#34;
+        Update the test field of a search engine in the database.
+
+        Args:
+            se_id (int): Search engine ID.
+            test (str): Test value.
+
+        Returns:
+            None
+        &#34;&#34;&#34;
+        conn = DB.connect_to_db(self)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(&#34;Update searchengine SET test=%s WHERE id = %s&#34;, (test, se_id))
+        conn.commit()
+        conn.close()</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="backend.scraper.libs.lib_db.DB.check_duplicate_result"><code class="name flex">
+<span>def <span class="ident">check_duplicate_result</span></span>(<span>self, url, main, study, scraper_id, position)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check if a result with the same URL, main, study, and scraper ID already exists.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>URL of the result.</dd>
+<dt><strong><code>main</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Flag indicating if it's a main result.</dd>
+<dt><strong><code>study</code></strong> :&ensp;<code>int</code></dt>
+<dd>Study ID.</dd>
+<dt><strong><code>scraper_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>Scraper ID.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if a duplicate result exists, False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.check_progress"><code class="name flex">
+<span>def <span class="ident">check_progress</span></span>(<span>self, study, query_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check if a result is already declared as a scraping job.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>study</code></strong> :&ensp;<code>int</code></dt>
+<dd>Study ID.</dd>
+<dt><strong><code>query_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>Query ID.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the progress is 2, False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.check_scraper_progress"><code class="name flex">
+<span>def <span class="ident">check_scraper_progress</span></span>(<span>self, scraper_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check if a scraper job is already in progress.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>scraper_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>Scraper ID.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the progress is 2, False otherwise.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.connect_to_db"><code class="name flex">
+<span>def <span class="ident">connect_to_db</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Connect to the database using psycopg2</p></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_all_open_scraper_jobs"><code class="name flex">
+<span>def <span class="ident">get_all_open_scraper_jobs</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get scraper jobs from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of scraper jobs.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_failed_scraper_jobs"><code class="name flex">
+<span>def <span class="ident">get_failed_scraper_jobs</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get scraper jobs from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of scraper jobs.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_failed_scraper_jobs_server"><code class="name flex">
+<span>def <span class="ident">get_failed_scraper_jobs_server</span></span>(<span>self, job_server)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get scraper jobs from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of scraper jobs.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_failed_searchengines"><code class="name flex">
+<span>def <span class="ident">get_failed_searchengines</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the list of search engines from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of search engines.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_scraper_job"><code class="name flex">
+<span>def <span class="ident">get_scraper_job</span></span>(<span>self, job_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get scraper jobs from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of scraper jobs.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_scraper_jobs"><code class="name flex">
+<span>def <span class="ident">get_scraper_jobs</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get scraper jobs from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of scraper jobs.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_scraper_jobs_filter_searchengine"><code class="name flex">
+<span>def <span class="ident">get_scraper_jobs_filter_searchengine</span></span>(<span>self, searchengine)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get scraper jobs from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of scraper jobs.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_scraper_jobs_searchengine"><code class="name flex">
+<span>def <span class="ident">get_scraper_jobs_searchengine</span></span>(<span>self, searchengine)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get scraper jobs from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of scraper jobs.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.get_searchengines"><code class="name flex">
+<span>def <span class="ident">get_searchengines</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the list of search engines from the database.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of search engines.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.insert_result"><code class="name flex">
+<span>def <span class="ident">insert_result</span></span>(<span>self, title, description, url, position, created_at, main, ip, study, scraper, query, serp)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Insert a result into the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>title</code></strong> :&ensp;<code>str</code></dt>
+<dd>Title of the result.</dd>
+<dt><strong><code>description</code></strong> :&ensp;<code>str</code></dt>
+<dd>Description of the result.</dd>
+<dt><strong><code>url</code></strong> :&ensp;<code>str</code></dt>
+<dd>URL of the result.</dd>
+<dt><strong><code>position</code></strong> :&ensp;<code>int</code></dt>
+<dd>Position of the result.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Creation timestamp of the result.</dd>
+<dt><strong><code>main</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Flag indicating if it's a main result.</dd>
+<dt><strong><code>ip</code></strong> :&ensp;<code>str</code></dt>
+<dd>IP address of the result.</dd>
+<dt><strong><code>study</code></strong> :&ensp;<code>int</code></dt>
+<dd>Study ID.</dd>
+<dt><strong><code>scraper</code></strong> :&ensp;<code>int</code></dt>
+<dd>Scraper ID.</dd>
+<dt><strong><code>query</code></strong> :&ensp;<code>int</code></dt>
+<dd>Query ID.</dd>
+<dt><strong><code>serp</code></strong> :&ensp;<code>int</code></dt>
+<dd>SERP ID.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.insert_serp"><code class="name flex">
+<span>def <span class="ident">insert_serp</span></span>(<span>self, scraper, page, code, img, created_at, query)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Insert a SERP (Search Engine Results Page) into the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>scraper</code></strong> :&ensp;<code>int</code></dt>
+<dd>Scraper ID.</dd>
+<dt><strong><code>page</code></strong> :&ensp;<code>int</code></dt>
+<dd>Page number.</dd>
+<dt><strong><code>code</code></strong> :&ensp;<code>str</code></dt>
+<dd>Code of the SERP.</dd>
+<dt><strong><code>img</code></strong> :&ensp;<code>str</code></dt>
+<dd>Image of the SERP.</dd>
+<dt><strong><code>created_at</code></strong> :&ensp;<code>datetime</code></dt>
+<dd>Creation timestamp of the SERP.</dd>
+<dt><strong><code>query</code></strong> :&ensp;<code>int</code></dt>
+<dd>Query ID.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>ID of the inserted SERP.</dd>
+</dl></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.reset"><code class="name flex">
+<span>def <span class="ident">reset</span></span>(<span>self, job_server)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reset the progress of scraper jobs in the database.</p>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.update_scraper_job"><code class="name flex">
+<span>def <span class="ident">update_scraper_job</span></span>(<span>self, progress, counter, error_code, job_server, scraper_id, created_at)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Update the progress of a scraper job in the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>progress</code></strong> :&ensp;<code>int</code></dt>
+<dd>Progress value.</dd>
+<dt><strong><code>counter</code></strong> :&ensp;<code>int</code></dt>
+<dd>Counter value.</dd>
+<dt><strong><code>error_code</code></strong> :&ensp;<code>str</code></dt>
+<dd>Error code.</dd>
+<dt><strong><code>job_server</code></strong> :&ensp;<code>str</code></dt>
+<dd>Job server.</dd>
+<dt><strong><code>scraper_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>Scraper ID.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+<dt id="backend.scraper.libs.lib_db.DB.update_searchengine_test"><code class="name flex">
+<span>def <span class="ident">update_searchengine_test</span></span>(<span>self, se_id, test)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Update the test field of a search engine in the database.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>se_id</code></strong> :&ensp;<code>int</code></dt>
+<dd>Search engine ID.</dd>
+<dt><strong><code>test</code></strong> :&ensp;<code>str</code></dt>
+<dd>Test value.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="backend.scraper.libs" href="index.html">backend.scraper.libs</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="backend.scraper.libs.lib_db.DB" href="#backend.scraper.libs.lib_db.DB">DB</a></code></h4>
+<ul class="">
+<li><code><a title="backend.scraper.libs.lib_db.DB.check_duplicate_result" href="#backend.scraper.libs.lib_db.DB.check_duplicate_result">check_duplicate_result</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.check_progress" href="#backend.scraper.libs.lib_db.DB.check_progress">check_progress</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.check_scraper_progress" href="#backend.scraper.libs.lib_db.DB.check_scraper_progress">check_scraper_progress</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.connect_to_db" href="#backend.scraper.libs.lib_db.DB.connect_to_db">connect_to_db</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_all_open_scraper_jobs" href="#backend.scraper.libs.lib_db.DB.get_all_open_scraper_jobs">get_all_open_scraper_jobs</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_failed_scraper_jobs" href="#backend.scraper.libs.lib_db.DB.get_failed_scraper_jobs">get_failed_scraper_jobs</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_failed_scraper_jobs_server" href="#backend.scraper.libs.lib_db.DB.get_failed_scraper_jobs_server">get_failed_scraper_jobs_server</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_failed_searchengines" href="#backend.scraper.libs.lib_db.DB.get_failed_searchengines">get_failed_searchengines</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_scraper_job" href="#backend.scraper.libs.lib_db.DB.get_scraper_job">get_scraper_job</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_scraper_jobs" href="#backend.scraper.libs.lib_db.DB.get_scraper_jobs">get_scraper_jobs</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_scraper_jobs_filter_searchengine" href="#backend.scraper.libs.lib_db.DB.get_scraper_jobs_filter_searchengine">get_scraper_jobs_filter_searchengine</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_scraper_jobs_searchengine" href="#backend.scraper.libs.lib_db.DB.get_scraper_jobs_searchengine">get_scraper_jobs_searchengine</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.get_searchengines" href="#backend.scraper.libs.lib_db.DB.get_searchengines">get_searchengines</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.insert_result" href="#backend.scraper.libs.lib_db.DB.insert_result">insert_result</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.insert_serp" href="#backend.scraper.libs.lib_db.DB.insert_serp">insert_serp</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.reset" href="#backend.scraper.libs.lib_db.DB.reset">reset</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.update_scraper_job" href="#backend.scraper.libs.lib_db.DB.update_scraper_job">update_scraper_job</a></code></li>
+<li><code><a title="backend.scraper.libs.lib_db.DB.update_searchengine_test" href="#backend.scraper.libs.lib_db.DB.update_searchengine_test">update_searchengine_test</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,62 +1,87 @@
 # Scraper
-The scraper application is a software to collect search results from any information retrieval or search engine. 
 
-## Set up the app
+The Scraper application is designed to collect search results from various information retrieval systems or search engines.
 
-- Modify **/backend/config/config_db.ini/config_db.ini** to connect the app to the rat database
+## Setting Up Scrapers
 
-## Set up scrapers
+- The Scraper application provides a framework for scraping search results from different sources. To add new scrapers, follow the provided template, as adding a new scraper can be complex.
 
-- The scraper application is a framework to scrape search results from any information retrieval system. Adding new scrapers is a complex task, so the application offers a template to add desired scrapers.
-- The following requirements must be met to add new scrapers to the software:
-- Adding the scraper to the table **searchengine**
-  
-| name | module | resulttype | country |
-|--------------------|--------------------------|---------------------------------|------------------------------|
-| search engine name<br/>(e.g. Google) | python file with scraper<br/>(e. g. google.py) | foreign key to resulttype table<br/>(e. g. 1 = organic results) | foreign key to country table<br/>(e. g. 1 = Germany) |
+- **Requirements for Adding New Scrapers:**
+  - Register the new scraper in the `searchengine` table.
 
-- Define a scraper by using the template **/backend/scrapers/scraper/template_new_scraper.py**. The template explains how to add a new scraper.
-- Optionally download the zip file for **/templates/new_scraper.ipynb** to test your scraping approaches before you add it to the software.
+  | Name                  | Module                           | Result Type                | Country                 |
+  |-----------------------|----------------------------------|----------------------------|-------------------------|
+  | Search Engine Name    | Python file with scraper (e.g., `your_scraper.py`) | Foreign key to `resulttype` table (e.g., 1 = organic results) | Foreign key to `country` table (e.g., 1 = Germany) |
 
-## Customisation of language and location is a challenge for scrapers. We are currently working on adapting the browser language in Selenium and using URL parameters from search engines. 
+- Define your scraper using the template located at **/backend/scrapers/scraper/template_new_scraper.py**. The template provides guidance on how to implement a new scraper.
+- Save your new scraper with the desired filename at **/scraper/scrapers/your_scraper.py**.
 
-With Google, the local location can be specified by combining the language parameter (hl), the global location parameter (gl) and the uule parameter:
+## Customizing Language and Location
+
+Customizing language and location for scrapers can be challenging. We are working on adapting the browser language in Selenium and using URL parameters to set the location for search engines.
+
+For Google, you can specify the local location using parameters such as `hl` (language), `gl` (global location), and `uule` (URL encoded location). Example URL:
 https://www.google.com/search?q=biden&hl=en&gl=US&uule=w+CAIQICImV2VzdCBOZXcgWW9yayxOZXcgSmVyc2V5LFVuaXRlZCBTdGF0ZXM%3D
 
-More information at:
-- https://valentin.app/uule.html
-- https://padavvan.github.io/
+More information on URL parameters:
+- [Google UULE Parameter](https://valentin.app/uule.html)
+- [Google URL Parameters Overview](https://padavvan.github.io/)
 
-Various parameters are also available at Bing (cc=Location, setLang=Language): https://www.bing.com/cc=us&setLang=en
+For Bing, use the parameters `cc` (location) and `setLang` (language). Example URL:
+https://www.bing.com/cc=us&setLang=en
 
-More info about the parameters in Bing:
-https://github.com/MicrosoftDocs/bing-docs/blob/main/bing-docs/bing-news-search/reference/query-parameters.md#setlang
+More information on Bing parameters:
+- [Bing Query Parameters](https://github.com/MicrosoftDocs/bing-docs/blob/main/bing-docs/bing-news-search/reference/query-parameters.md#setlang)
 
 
-## Running the application
+## Configuring the Selenium Driver
+
+Update the language parameter of your Selenium Driver instance. Every scraper should include the following driver configuration:
+
+```python
+driver = Driver(
+    browser="chrome",
+    wire=True,
+    uc=True,
+    headless2=headless,
+    incognito=False,
+    agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    do_not_track=True,
+    undetectable=True,
+    extension_dir=ext_path,
+    locale_code="de"  # Language code for the Driver Instance
+)
+```
+
+## Available Jupyter Notebooks
+We also offer a Jupyter Notebook for setting up and testing a new scraper directly, available at [/templates/new_scraper.ipynb](https://github.com/rat-software/rat-software/blob/main/templates/new_scraper.ipynb).
+
+## Running the Application
 
 The application is based on the Python background process Sheduler, as scraping web pages is time and performance consuming.
 
-- To start the application
+- To Start the Application:
 ```
 nohup python scraper_controller_start.py
 ```
 
-- To stop the application
+- To Stop the Application
 ```
 python scraper_controller_stop.py
 ```
 
-- Alternatively, you can simply configure cronjobs that run **scraper_start.py** and **scraper_reset.py**.
+- Alternative Method:
+- Configure cron jobs to run `scraper_start.py` and `scraper_reset.py`.
 
-## Test script for scraper
-- **scraper_check.py**: run the scraper check script to test if the scrapers still work in your application.
+## Test Scripts for Scrapers
+- `scraper_check.py`: Run this script to test if the scrapers are functioning correctly in your application.
+- `test_scraper.py` Use this script to test individual scrapers, including any newly added ones.
 
-- To run a regular test of scrapers
+- To Run a Regular Test of Scrapers:
 ```
 nohup python scraper_controller_start_check.py
 ```
-- To stop the application
+- To Stop the Test Script:
 ```
 python scraper_controller_stop_check.py
 ```

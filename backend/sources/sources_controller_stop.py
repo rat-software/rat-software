@@ -1,8 +1,20 @@
 """
-Controller to start the Sources Scraper
+Controller to start and manage the Sources Scraper.
+
+This script is responsible for managing the lifecycle of the Sources Scraper, including stopping processes and resetting the database. It interacts with processes and web browsers to terminate them gracefully and performs necessary cleanup actions.
+
+Dependencies:
+    - threading
+    - subprocess
+    - psutil
+    - time
+    - os
+    - sys
+    - inspect
+    - Custom libraries: lib_logger, lib_helper, lib_db
 """
 
-#load required libs
+# Import required libraries
 import threading
 from subprocess import call
 import psutil
@@ -11,106 +23,113 @@ import os
 import sys
 import inspect
 
-#load custom libs
+# Import custom libraries
 from libs.lib_logger import *
 from libs.lib_helper import *
 from libs.lib_db import *
 
 class SourcesController:
+    """
+    A controller class for managing the Sources Scraper processes.
 
-    """SourcesController"""
-    args: list
-    """The class has no args for the start function.
-    \nThe args for the stop function are:
-    \n<b>args[0]:list</b> = name of browser process (chrome, chromium, firefox)
-    \n<b>db:object</b> = Database object
+    Attributes:
+        args (list): Arguments for the `stop` method.
+        - args[0] (list): List of browser process names to be terminated.
+        - db (object): Database object for interacting with the database.
+
+    Methods:
+        __init__(): Initializes the SourcesController object.
+        __del__(): Destructor for the SourcesController object.
+        stop(args: list): Stops specified processes and resets the database.
     """
 
     def __init__(self):
-        self = self
+        """
+        Initializes the SourcesController object.
+        """
+        # Initialization logic (if any) should be added here
+        pass
 
     def __del__(self):
-        """Destroy the sources controller"""
+        """
+        Destructor for the SourcesController object.
+
+        Prints a message when the SourcesController object is destroyed.
+        """
         print('Sources Controller object destroyed')
 
-    def stop(self, args:list):
-        """Method to stop the controller:
-        \nThe method uses the psutil library to indentify specific scripts and browser instances.
-        \n<b>It is recommended not to use the software on servers running other Python scripts or instances of web browsers.</b>
+    def stop(self, args):
+
+        """
+        Stops the scraper processes and resets the database.
+
+        This method identifies and terminates Python processes and specific browser instances.
+        It also performs a cleanup operation to reset the database entries.
+
+        Args:
+            args (list): A list where:
+                - args[0] (list): List of browser process names (e.g., "chrome", "chromium").
+                - db (object): Database object for resetting the database.
+
+        Raises:
+            ValueError: If the database object is not provided in `args`.
         """
 
-        #Identify the python processes and web browser instances
-        for proc in psutil.process_iter(attrs=['pid', 'name']):
+        # List of processes related to the scraper to be killed
+        processes_to_kill = ["job_sources.py", "sources_scraper.py", "sources_reset.py", "job_reset_sources.py", "sources_controller_start.py"]
+        kill_browser = False
 
-            if ("python" in proc.info['name']):
-
-                try:
-                    if ("python.exe" in proc.info['name']):
-
-                        proc.kill()
-                except:
-                    pass
-
-                try:
-                    if ("job_sources.py" in proc.info['name']) or ("job_sources.py" in proc.cmdline()):
-                        proc.kill()
-                except:
-                    pass
-
-                try:
-                    if ("sources_scraper.py" in proc.info['name']) or ("sources_scraper.py" in proc.cmdline()):
-                        proc.kill()
-                except:
-                    pass
-
-                try:
-                    if ("sources_reset.py" in proc.info['name']) or ("sources_reset.py" in proc.cmdline()):
-                        proc.kill()
-                except:
-                    pass
-
-                try:
-                    if ("job_reset_sources.py" in proc.info['name']) or ("job_reset.py" in proc.cmdline()):
-                        proc.kill()
-                except:
-                    pass
-
+        # Iterate over all running processes
+        for proc in psutil.process_iter(attrs=['pid', 'name', 'cmdline']):
             try:
-                for browser in args[0]:
+                if "python" in proc.info['name']:
+                    # Check if the process name or command line matches any in the kill list
+                    if proc.info['cmdline']:
+                        if any(name in proc.info['name'] or name in proc.info['cmdline'] for name in processes_to_kill):
+                            proc.kill()  # Kill the process
+                            kill_browser = True
 
-                    if (browser in proc.info['name']) or (browser in proc.cmdline()):
+                # Kill browser processes specified in the arguments
+                if kill_browser:
+                    for browser in args[0]:
+                        if browser in proc.info['name'] or browser in proc.info['cmdline']:
+                            proc.kill()
 
-                        proc.kill()
-            except:
+            except Exception as e:
                 pass
 
-        #Use some artifical break before calling the functions to reset the entries in the database.
+           
+            # Wait for processes to terminate before resetting the database
         time.sleep(60)
-        db.reset()
+
+        # Reset the database
+        
+        db.reset(job_server)
+
     
 
 if __name__ == "__main__":
-    """Main call for the Sources Controller"""
+    """
+    Main execution point for the SourcesController script.
+
+    Creates a SourcesController instance, loads necessary configuration files,
+    and calls the stop method to terminate processes and reset the database.
+    """
+    # Initialize the SourcesController
     sources_controller = SourcesController()
 
+     # Determine the directory containing the job scripts
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
-    if os.path.exists(currentdir + '/jobs/job_sources.py' ):
-        workingdir = currentdir
-
-    elif os.path.exists(parentdir + '/jobs/job_sources.py' ):
-        workingdir = parentdir
-
-
-
-    #Load all necessary config files to connect to the database and load the parameters for the sources scraper
-
-    path_db_cnf = workingdir+"/config/config_db.ini"
-    path_sources_cnf = workingdir+"/config/config_sources.ini"
-
+    # Load configuration files
+    path_db_cnf = os.path.join(parentdir, "config", "config_db.ini")
     helper = Helper()
+    db_cnf = helper.file_to_dict(path_db_cnf)
+    path_sources_cnf = os.path.join(parentdir, "config", "config_sources.ini")
 
+    # Initialize Helper and Database objects
+    helper = Helper()
     db_cnf = helper.file_to_dict(path_db_cnf)
     sources_cnf = helper.file_to_dict(path_sources_cnf)
 
@@ -119,8 +138,10 @@ if __name__ == "__main__":
 
     db = DB(db_cnf, job_server, refresh_time)
 
-    sources_controller.stop([["chromium", "chrome"], db])
+    # Stop scraper processes and reset the database
+    sources_controller.stop([["chromium", "chrome", "--headless=new", "uc_driver"], db, job_server])
 
+    # Cleanup
     del helper
     del db
     del sources_controller

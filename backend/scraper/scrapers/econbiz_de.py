@@ -1,28 +1,10 @@
-"""
-This template describes the steps necessary to add a custom scraper for the RAT software. First of all, it is assumed that these are search services that provide search forms. However, it is also possible to add other search systems. For this, the procedure would have to be adapted accordingly. Selenium is used as the basis for scraping.
-
-For scraping search results it is necessary to develop the name of the search service to be scraped as well as a scraper Python file for it. In this file appropriate functions must be defined, which are identical for all search engines. However, the contents can also be designed very individually. It is important that at the end search results with the following contents are returned, whereby fields can be filled also empty or with placeholders:
-
-- result_title: title in the snippet of a result
-- result_description: description in the snippet of a result
-- result_url: url of the search result
-- serp_code: html source of the search result page, if it is used for other analyses
-- serp_bin: screenshot of the search result page, if it is needed for other analyses
-- page: most search engines offer the possibility to browse the result pages. This variable is needed to scroll further. However, for search services where new search results are added by scrolling, it must be adjusted accordingly.
-
-Overall, a scraper usually consists of the following functions:
-- run(query, limit, scraping): main function for all scrapers with the following parameters: query = search query, limit = maximum number of results to query, scraping = scraping object with functions to scrape the search engines
-- get_search_results(driver, page): subfunction to retrieve the search results with the following parameters:
-driver = selenium driver; webbrowser for scraping; page = SERP page
-- check_captcha(driver): Helper function to check if there is a lockout of the search services. The function is called to indicate that scraping has been aborted. If checking it is False, the scraping will continue.
-
-The following will describe all standard variables and functionality to scrape a search engine. But again, it is also possible to change it all accordingly to the search engine to be scraped.
-"""
-
 from scrapers.requirements import *
-
-
-
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+import time
+import random
 
 def run(query, limit, scraping, headless):
     """
@@ -36,149 +18,135 @@ def run(query, limit, scraping, headless):
 
     Returns:
         list: List of search results.
-    """    
+    """
     try:
-        #Definition of args for scraping the search engine
-        search_url = "https://www.econbiz.de/" #URL of search engine, e. g. www.google.de
-        search_box = "lookfor" #Class name of search box; input field for searches
-        captcha = "g-recaptcha" #Source code hint for CAPTCHA; some search engines use CAPTCHAS to block too many automatic requests
-        next_page = "//span[@class='icon-inline econ-right']" #CSS to find click on next SERP; for search engines that use a navigation on SERPS to continue browsing more search results
-        results_number = 0 #initialize results_number; normally starts at 0
-        page = 1 #initialize SERP page; normally starts at 1
-        search_results = [] #initialize search_results list
+        # URL and selectors for the search engine
+        search_url = "https://www.econbiz.de/"
+        search_box = "lookfor"
+        captcha = "g-recaptcha"
+        next_page = "//span[@class='icon-inline econ-right']"
 
-        #Definition of custom functions
+        # Initialize variables
+        results_number = 0
+        page = 1
+        search_results = []
 
-        #Function to scrape search results
-         #Function to scrape search results
+        # Define custom functions for scraping
+
         def get_search_results(driver, page):
-            
-            counter = 0  #adjusts the number of results in list
+            """
+            Retrieve search results from the current page.
 
-            get_search_results = [] #temporary list to store search results
+            Args:
+                driver: Selenium WebDriver instance.
+                page (int): Current SERP page.
 
-            source = driver.page_source #storing the source code of a search engine result page
+            Returns:
+                list: List of search results from the current page.
+            """
+            counter = 0
+            temp_search_results = []
 
-            serp_code = scraping.encode_code(source) #use the function from the lib scraping to encode the source code to base64; preparing it to be stored in database
+            # Get page source and encode it
+            source = driver.page_source
+            serp_code = scraping.encode_code(source)
+            serp_bin = scraping.take_screenshot(driver)
 
-            serp_bin = scraping.take_screenshot(driver) #use the function to take a screenshot, encoding it to base64, to store it in database
+            # Parse the page source with BeautifulSoup
+            soup = BeautifulSoup(source, features="lxml")
 
-            soup = BeautifulSoup(source, features="lxml") #use BeautifulSoup to read the source code of search engine result page and prepare it to read the tree to extract the search results
-
-            #Procedure to read out the search results with title, description and URL. There are several ways to extract such information. In this example we will use functions from BeautifulSoup to read out content of Div containers. Other approaches could be using Selenium or XPATH. Choosing the best way always depends on the search engine.
-            
-            #first find each block with one result
-            
-            for result in soup.find_all("div", class_=["col-sm-10 col-xs-9 result-content"]):  
-                
-                url_list = []
-
+            # Extract search results
+            for result in soup.find_all("div", class_=["col-sm-10 col-xs-9 result-content"]):
+                result_title = "N/A"
                 result_description = "N/A"
                 result_url = "N/A"
-                search_result = []
-                result_title = ""
-                result_description = ""
-                
-                #try to extract the title based on a css class for the link title
-                try:
-                    for title in result.find_all("span", property= ["schema:headline"]):
-                        result_title=title.text.strip()
-                        
-                except:
-                    result_title = "N/A"
 
                 try:
-                    #try to extract the result description by css class and change the content of the description, if necessary:
-
-                    for description in result.find_all("div", class_=["list-metadata", "snippets"]):
-                        result_description += " " + description.text.strip() 
-                        result_description = " ".join(result_description.split())
-            
-                except Exception as e:
-                    result_description = "N/A"
-                    
-                #try to extract the urls of the seaech results and change the url if the search engines works with relative hyperlinks
-                try:
-                    for url in result.find_all("a", class_=["title print-no-url"]):
-                        url = url.attrs['href']
-                        #url.replace("Persistenter Link:", " ")
-                        url_list.append(f"https://www.econbiz.de{url}")
-                        result_url = url_list[0]
+                    # Extract the title
+                    title_elem = result.find("span", property="schema:headline")
+                    if title_elem:
+                        result_title = title_elem.text.strip()
                 except:
-                    result_url = "N/A"
-                    
+                    pass
+
+                try:
+                    # Extract the description
+                    description_elem = result.find("div", class_=["list-metadata", "snippets"])
+                    if description_elem:
+                        result_description = " ".join(description_elem.text.strip().split())
+                except:
+                    pass
+
+                try:
+                    # Extract the URL
+                    url_elem = result.find("a", class_=["title print-no-url"])
+                    if url_elem:
+                        result_url = f"https://www.econbiz.de{url_elem.attrs['href']}"
+                except:
+                    pass
+
                 if counter < limit:
-                    get_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page]) #call function to read search results and append the results to the list
+                    temp_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
                     counter += 1
-                    
-            return get_search_results
-        #Function to check if search engine shows CAPTCHA code
+
+            return temp_search_results
+
         def check_captcha(driver):
+            """
+            Check if CAPTCHA is present on the page.
+
+            Args:
+                driver: Selenium WebDriver instance.
+
+            Returns:
+                bool: True if CAPTCHA is present, False otherwise.
+            """
             source = driver.page_source
-            if captcha in source:
-                return True
-            else:
-                return False
+            return captcha in source
 
-        #initialize Selenium
-        #https://github.com/seleniumbase/SeleniumBase/blob/master/seleniumbase/plugins/driver_manager.py For all options
-        #https://seleniumbase.io/help_docs/locale_codes/
-
+        # Initialize Selenium driver
         driver = Driver(
-                browser="chrome",
-                wire=True,
-                uc=True,
-                headless2=headless,
-                incognito=False,
-                agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                do_not_track=True,
-                undetectable=True,
-                extension_dir=ext_path,
-                locale_code="de",
-                #mobile=True,
-                )
-        
+            browser="chrome",
+            wire=True,
+            uc=True,
+            headless2=headless,
+            incognito=False,
+            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            do_not_track=True,
+            undetectable=True,
+            extension_dir=ext_path,
+            locale_code="de"
+        )
+
         driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
-        random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
-        time.sleep(random_sleep)
-        
+        time.sleep(random.randint(2, 5))
 
-
-        #Start scraping if no CAPTCHA; not necessary if search engine doesn't use mechanism to block automatic requests
+        # Start scraping if no CAPTCHA
         if not check_captcha(driver):
-
-
-            #commands to trigger a search; some search engines just use URL GET-pararmeters which could be passed too
             search = driver.find_element(By.NAME, search_box)
             search.send_keys(query)
             search.send_keys(Keys.RETURN)
-
-            random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
-            time.sleep(random_sleep)                    
+            time.sleep(random.randint(2, 5))
 
             search_results = get_search_results(driver, page)
             results_number = len(search_results)
+            continue_scraping = True
 
-            continue_scraping = True #check value to stop the scraping loop if CAPTCHAS occur
-
-            #Click on next SERP pages as long the toal number of results is lower the limit; can be replaced in some cases by using the GET-parameters of the search engines url
-            while (results_number < limit) and continue_scraping:
+            # Click on next SERP pages until limit is reached or CAPTCHA appears
+            while results_number < (limit + 10) and continue_scraping:
                 if not check_captcha(driver):
-                    random_sleep = random.randint(2, 5)
-                    time.sleep(random_sleep)
-                    page+=1 #incremental increase for clicks on the next serp
-                    #page_label = "Seite "+str(page) #label to click on serp to continue browing search results
-                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);") #scroll down to load the whole search engine result page
-                    #try to click on next search engine result page
+                    time.sleep(random.randint(2, 5))
+                    page += 1
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                     try:
-                        next = driver.find_element(By.XPATH, next_page)
-                        next.click()
-                        search_results+= get_search_results(driver, page)
+                        next_button = driver.find_element(By.XPATH, next_page)
+                        next_button.click()
+                        search_results += get_search_results(driver, page)
                         results_number = len(search_results)
-                    except Exception as e: #stop scraping if no page label could be found
+                    except:
                         continue_scraping = False
                 else:
                     continue_scraping = False
@@ -186,8 +154,6 @@ def run(query, limit, scraping, headless):
 
             driver.quit()
             return search_results
-
-
         else:
             search_results = -1
             driver.quit()
@@ -199,5 +165,4 @@ def run(query, limit, scraping, headless):
             driver.quit()
         except:
             pass
-        search_results = -1
-        return search_results
+        return -1

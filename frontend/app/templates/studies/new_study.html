@@ -23,7 +23,9 @@
 
 <div class="row">
   <div class="col-8 offset-2">
+     <!-- Navigation pills for tabbed interface -->
     <ul class="nav nav-pills mb-3" id="create-stepper" role="tablist" onchange="progress()">
+      <!-- Step 1: Study Details -->
       <li class="nav-item col-3">
         <a class="nav-link text-muted active" id="study-stepper-1" data-bs-toggle="tab" data-bs-target="#tab-1" type="button" role="tab" aria-controls="tab-1" aria-selected="true">
           <table class="row">
@@ -32,6 +34,7 @@
           </table>
         </a>
       </li>
+      <!-- Step 2: Search Engines -->
       <li class="nav-item col-3">
         <a class="nav-link" id="study-stepper-2" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab" aria-controls="tab-2" aria-selected="false">
           <table class="row">
@@ -40,6 +43,7 @@
           </table>
         </a>
       </li>
+      <!-- Step 3: Search Queries -->
       <li class="nav-item col-3">
         <a class="nav-link" id="study-stepper-3" data-bs-toggle="tab" data-bs-target="#tab-3" type="button" role="tab" aria-controls="tab-3" aria-selected="false">
           <table class="row">
@@ -48,6 +52,7 @@
           </table>
         </a>
       </li>
+      <!-- Step 4: Result Options -->
       <li class="nav-item col-3">
         <a class="nav-link" id="study-stepper-4" data-bs-toggle="tab" data-bs-target="#tab-4" type="button" role="tab" aria-controls="tab-4" aria-selected="false">
           <table class="row">
@@ -57,37 +62,107 @@
         </a>
       </li>
     </ul>
+    <!-- Progress bar for the stepper -->
     <div class="progress progress-fixed" style="height: 3px;">
       <div id="stepper" class="progress-bar bg-secondary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
     </div>
   </div>
   <div class="col-12">
+    <!-- Form to create or update a study -->
     <form action="{{ url_for('confirm_new_study') }}" method="POST" enctype="multipart/form-data">
     <div class="tab-content">
+      <!-- Tab Pane 1: Study Details -->
       <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="study-stepper-1">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Study Details</h2>
               <div class="card-body">
+                <!-- Study ID field -->
                 <div class="mb-3">{{ form.id }}</div>
-                <div class="mb-3">{{ render_create_study_fields(form.name, "#name", "form-control") }}</div>
-                <div class="mb-3">{{ render_create_study_fields(form.description, "#description", "form-control") }}</div>
-                <div class="mb-3 d-none">{{ render_create_study_fields(form.type, "#type", "form-select") }}</div>
+                <!-- Study name field -->
+                <div class="mb-3">
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Enter the title of your study. Choose a concise name that accurately reflects the focus of your research."><i class="fa-solid fa-circle-question"></i></a></span>
+                  {{ render_create_study_fields(form.name, "#name", "form-control") }}
+                </div>
+                <!-- Description field -->
+                <div class="mb-3">
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Provide a brief description of your study. May include the main objectives and any relevant details that clarify the scope and purpose."><i class="fa-solid fa-circle-question"></i></a></span>
+                  {{ render_create_study_fields(form.description, "#description", "form-control") }}
+                </div>
+                <!-- Study type field -->
+                <div class="mb-3">
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Select the type of study you wish to conduct, depending on the focus of your research."><i class="fa-solid fa-circle-question"></i></a></span>
+                  {{ render_create_study_fields(form.type, "#type", "form-select") }}
+                </div>
+
+                <!-- Collapsible Classifier Section -->
+                <div class="mb-3">
+                  <div class="form-group">
+                    <label class="form-label">Classifier 
+                      <i class="fa-solid fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#collapseClassifier"></i>
+                    </label>
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="(optional) Choose from available classifiers to analyze search results."><i class="fa-solid fa-circle-question"></i></a></span>
+                    <div id="collapseClassifier" class="collapse">
+                      {{ render_create_study_fields(form.classifiers, "#classifiers", "") }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Button to go to the next tab -->
                 <div onclick="showTab('study-stepper-2')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Tab Pane 2: Search Engines -->
       <div class="tab-pane fade" id="tab-2" role="tabpanel" aria-labelledby="study-stepper-2">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Search Engines</h2>
               <div class="card-body">
-                <div class="mb-3">{{ render_create_study_fields(form.search_engines, "#search_engines", "") }}</div>
+                <div class="row">
+                  <!-- Provider Filter Dropdown -->
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Filter by Provider</label>
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Choose one or multiple desired Search Engine provider"><i class="fa-solid fa-circle-question"></i></a></span>
+                    <select id="providerFilter" class="form-select" multiple>
+                      <option value="Google">Google</option>
+                      <option value="Bing">Bing</option>
+                      <option value="DuckDuckGo">DuckDuckGo</option>
+                      <option value="Ecosia">Ecosia</option>
+                      <option value="Katalogplus">Katalogplus</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Location Filter Dropdown -->
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Filter by Location</label>
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Choose one or multiple desired locations"><i class="fa-solid fa-circle-question"></i></a></span>
+                    <select id="locationFilter" class="form-select" multiple>
+                      <option value="FR">FR</option>
+                      <option value="IT">IT</option>
+                      <option value="NL">NL</option>
+                      <option value="PL">PL</option>
+                      <option value="US">US</option>
+                      <option value="DE">DE</option>
+                      <option value="SE">SE</option>
+                    </select>
+                  </div>
+                </div>
 
+                <div onclick="resetFilter()" class="btn btn-primary" style="margin-top: 5px; margin-bottom: 5px;">Reset Filters<i class="fa-solid"></i></div>
+
+
+                <!-- Search Engines field -->
+                <div id="searchEnginesList" class="mb-3">
+                  {{ render_create_study_fields(form.search_engines, "#search_engines", "") }}
+                </div>
+
+                <!-- Buttons to go to the previous or next tab -->
                 <div onclick="showTab('study-stepper-1')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
                 <div onclick="showTab('study-stepper-3')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
@@ -95,28 +170,31 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab Pane 3: Search Queries -->
       <div class="tab-pane fade" id="tab-3" role="tabpanel" aria-labelledby="study-stepper-3">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Search Queries</h2>
               <div class="card-body">
-                <div class="mb-3">
-                  {{ form.task.label(class_="form-label") }}
-                  <span class="float-end help"><a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="Search Tasks" data-content="If you have more than one search task, add the first one and its corresponding queries here. You can add the others later on."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ form.task(class_="form-control") }}
-                </div>
+                <!-- Task field -->
+                <div class="mb-3">{{ render_create_study_fields(form.task, "#task", "form-control") }}</div>
+                <!-- Queries field -->
                 <div class="mb-3">
                   {{ form.queries.label(class_="form-label") }}
-                  <span class="float-end help"><a href="#"><i class="fa-solid fa-circle-question"></i></a></span>
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="This is additional info about queries"><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.queries(class_="form-control") }}
                 </div>
                 <div class="divider"><span class="border"></span><span class="text">OR</span></div>
+                <!-- Query list upload field -->
                 <div class="mb-3">
                   {{ form.query_list.label(class_="form-label") }}
-                  <span class="float-end help"><a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="Search Tasks" data-content="If you have more than one search task, add the first one and its corresponding queries here. You can add the others later on."><i class="fa-solid fa-circle-question"></i></a></span>
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Add the list of queries here "><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.query_list(class_="form-control") }}
                 </div>
+
+                <!-- Buttons to go to the previous or next tab -->
                 <div onclick="showTab('study-stepper-2')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
                 <div onclick="showTab('study-stepper-4')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
@@ -124,23 +202,49 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab Pane 4: Result Options (now includes Range) -->
       <div class="tab-pane fade" id="tab-4" role="tabpanel" aria-labelledby="study-stepper-4">
         <div class="row justify-content-center">
           <div class="col-xl-8">
             <div class="card">
               <h2 class="card-header crd-header">Result Options</h2>
               <div class="card-body">
-                <div class="mb-3 d-none">
+                <!-- Result type selection field -->
+                <div class="mb-3">
                   {{ form.result_type.label(class_="form-label") }}
-                  <span class="float-end help"><a href="#"><i class="fa-solid fa-circle-question"></i></a></span>
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="To define the type of desired results"><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.result_type(class_="form-select") }}
                 </div>
-                <div class="mb-3">
+                 <!-- Result count field to set number of results to collect -->
+                <div class="mb-3" id="result_count">
                   {{ form.result_count.label(class_="form-label") }}
-                  <span class="float-end help"><a href="#"><i class="fa-solid fa-circle-question"></i></a></span>
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of results to be collected"><i class="fa-solid fa-circle-question"></i></a></span>
                   {{ form.result_count(class_="form-control") }}
                 </div>
-                <div onclick="showTab('study-stepper-3')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
+
+                <!-- Collapsible Result Range Section -->
+                <div class="mb-3">
+                  <label class="form-label">Result Range
+                    <i class="fa-solid fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#collapseResultRange"></i>
+                  </label>
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="(optional) Add intervals for ranges to capture the desired search results (e.g. [1 - 10], [91 - 100])"><i class="fa-solid fa-circle-question"></i></a></span>
+
+                  <div id="collapseResultRange" class="collapse">
+                    
+                    <div class="mb-3">
+                      <!-- Container for dynamically added range fields -->
+                      <div id="ranges"></div>
+                      <!-- Button to add more range fields -->
+                      <button type="button" class="btn btn-secondary mt-5" onclick="addRange()">Add Range</button>
+                    </div>
+                  </div>
+                </div>
+
+
+                <!-- Buttons to go to the previous tab -->
+                <div onclick="showTab('study-stepper-3')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div> 
+                <!-- Button to submit study, as this is the last page now -->
                 <button type="submit" class="btn btn-primary float-end mt-5">
                   {% if title == "Create Study" %}
                   Create Study <i class="fa-solid fa-check"></i>
@@ -148,19 +252,173 @@
                   Update Study <i class="fa-solid fa-check"></i>
                   {% endif %}
                 </button>
+                
               </div>
             </div>
           </div>
         </div>
       </div>
+
     </div>
     </form>
   </div>
 </div>
+
+<!-- Include jQuery here, before the closing body tag -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+  // Function to dynamically add new range fields
+  function addRange() {
+    const rangesDiv = document.getElementById('ranges');
+    const rangeCount = rangesDiv.childElementCount;
+
+    const newRangeHtml = `
+      <div class="mb-3 row" id="range-row-${rangeCount}">
+        <div class="col">
+          <label for="ranges-${rangeCount}-start_range" class="form-label">Start Value</label>
+          <input class="form-control" id="ranges-${rangeCount}-start_range" name="ranges-${rangeCount}-start_range" type="number" min="1">
+        </div>
+        <div class="col">
+          <label for="ranges-${rangeCount}-end_range" class="form-label">End Value</label>
+          <input class="form-control" id="ranges-${rangeCount}-end_range" name="ranges-${rangeCount}-end_range" type="number" min="1">
+        </div>
+        <div class="col-auto align-self-end">
+          <button type="button" class="btn btn-danger" onclick="removeRange(${rangeCount})">Remove</button>
+        </div>
+        <div class="col-12 text-danger" id="error-${rangeCount}"></div>
+      </div>
+    `;
+
+    rangesDiv.insertAdjacentHTML('beforeend', newRangeHtml);
+
+  }
+
+  // Function to remove a specific range row
+  function removeRange(index) {
+    const rangeRow = document.getElementById(`range-row-${index}`);
+    if (rangeRow) {
+      rangeRow.remove();
+    }
+  }
+
+
+
+  // Filter search engines based on provider and location
+  $(document).change(function () {
+    // Filter search engines based on provider and location
+    $('#providerFilter, #locationFilter').change(function () {
+      console.log("Filter change detected");
+
+      const selectedProviders = $('#providerFilter').val() || [];
+      const selectedLocations = $('#locationFilter').val() || [];
+
+      console.log("Selected Providers:", selectedProviders);
+      console.log("Selected Locations:", selectedLocations);
+
+      $('#searchEnginesList input[type="checkbox"]').each(function (index) {
+        const label = $(this).next('label').text();
+        console.log(`Checkbox ${index} label:`, label);
+
+        const providerMatch = selectedProviders.length === 0 || selectedProviders.some(provider => label.includes(provider));
+        const locationMatch = selectedLocations.length === 0 || selectedLocations.some(location => label.includes(location));
+
+        console.log(`Checkbox ${index} matches provider:`, providerMatch);
+        console.log(`Checkbox ${index} matches location:`, locationMatch);
+
+        if (providerMatch && locationMatch) {
+          console.log(`Showing checkbox ${index}`);
+          $(this).closest('li').show(); // Show matching checkboxes
+        } else {
+          console.log(`Hiding checkbox ${index}`);
+          $(this).closest('li').hide(); // Hide non-matching checkboxes
+        }
+      });
+    });
+
+  });
+
+
+  // jQuery code to validate the range fields
+  $(document).change(function () {
+
+    // Function to validate all ranges
+    $('input[id^="ranges-"]').each(function (index, element) {
+      const startValue = parseInt($(`#ranges-${index}-start_range`).val());
+      const endValue = parseInt($(`#ranges-${index}-end_range`).val());
+      const errorDivId = `#error-${index}`;
+
+      // If there is no specific error div for this index, create it.
+      if (!$(errorDivId).length) {
+        const rangeDiv = document.getElementById('ranges');
+        rangeDiv.insertAdjacentHTML('beforeend', `<div id="error-${index}" class="error"></div>`);
+      }
+
+      const errorDiv = $(errorDivId);
+
+      if (isNaN(startValue) && isNaN(endValue)) {
+        console.log('Not a Number!');
+      }
+      else {
+        if (endValue <= startValue) {
+          errorDiv.text('End value must be greater than start value.').show();
+        } else {
+          errorDiv.text('').hide(); // Clear the error message if the values are valid
+        }
+      }
+    });
+  });
+
+
+  function resetFilter() {
+    const providerFilter = document.getElementById('providerFilter');
+    const locationFilter = document.getElementById('locationFilter');
+    const search_enginesLi = $("#search_engines li");
+    
+    // Deselect all options
+    for (let i = 0; i < providerFilter.options.length; i++) {
+      providerFilter.options[i].selected = false;
+    }
+
+    // Deselect all options
+    for (let i = 0; i < locationFilter.options.length; i++) {
+      locationFilter.options[i].selected = false;
+    }
+
+    // Show all search engines
+    for (let i = 0; i < search_enginesLi.length; i++) {
+      $('li').show();
+    }
+
+
+  }
+
+
+
+
+    
+    $(document).ready(function() {
+    // When the div is shown (class 'show' is added)
+    $('#collapseResultRange').on('shown.bs.collapse', function () {
+        if ($(this).hasClass("show")) {
+          $('#result_count').hide();
+        }
+    });
+
+    // When the div is hidden (class 'show' is removed)
+    $('#collapseResultRange').on('hidden.bs.collapse', function () {
+      $('#result_count').show();
+    });
+});
+
+
+
+
+
+</script>
+
+
+
+
+
 {% endblock %}
-
-
-<!--
-<div class="divider"><span class="border"></span><span class="text">OR</span></div>
-<div class="mb-3">{{ render_create_study_fields(form.imported_data, "#imported_data", "form-control") }}</div>
--->

@@ -8,7 +8,6 @@ Methods:
     decode_code: Decode base64-encoded code.
     decode_picture: Decode base64-encoded picture.
     get_result_meta: Get metadata for a given URL.
-    get_chrome_extension: Get the path to the Chrome extension.
     take_screenshot: Take a screenshot of the browser window.
     get_real_url: Get the real URL after any redirects.
 
@@ -128,20 +127,6 @@ class Scraping:
 
         return meta
 
-    def get_chrome_extension(self):
-        """
-        Get the path to the Chrome extension.
-
-        Returns:
-            str: Path to the Chrome extension.
-        """        
-        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        parentdir = os.path.dirname(currentdir)
-        if os.name == "nt":
-            extension_path = parentdir+'\\..\\crx\I-don-t-care-about-cookies.crx'
-        else:
-            extension_path = parentdir+'//..//crx/I-don-t-care-about-cookies.crx'
-        return extension_path
 
 
     def take_screenshot(self, driver):
@@ -179,45 +164,9 @@ class Scraping:
         time.sleep(2)
 
         driver.maximize_window() #maximize browser window for screenshot
-        
-        try:
-            driver.execute_script("window.scrollTo(0,1)")
-        except Exception as e:
-            print(str(e))
-            pass
+        driver.save_screenshot(screenshot_file)
 
-        #try to get the whole browser window
-        try: 
-            required_width = driver.execute_script('return document.body.parentNode.scrollWidth')
-            required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
-            
-            print(required_height)
-            
-            scroll = "window.scrollTo(0,{})".format(required_height)
-            
-            driver.execute_script(scroll)
-
-            required_height+= 50
-            
-            driver.execute_script("window.scrollTo(0,1)")
-            
-            driver.set_window_size(required_width, required_height)
-            
-            driver.maximize_window()
-            
-            driver.save_screenshot(screenshot_file) #take screenshot
-            
-        except Exception as e:
-            print(str(e)) #next try to get the body of the page
-
-            try: 
-                body_screenshot = driver.find_element(By.TAG_NAME, "body")
-                body_screenshot.screenshot(screenshot_file)
-            except Exception as e:
-                print(str(e)) #if all fails take screenshot of the browser view
-                driver.save_screenshot(screenshot_file) #take screenshot
-
-        #open screenshot and save as base64
+        # #open screenshot and save as base64
         screenshot = encode_file_base64(self, screenshot_file)
 
         os.remove(screenshot_file)

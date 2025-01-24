@@ -1,63 +1,122 @@
 {% extends "master.html" %}
+{# Extend the base master template #}
 
 {% block title %}Study{% endblock %}
+{# Set the title of the page to "Study" #}
 {% block head %}{{ super() }}{% endblock %}
+{# Include any additional content from the master template's head block #}
 
 {% block content %}
+{# Start defining the content block for this page #}
 <h1 class="sr-only">RAT</h1>
+{# Screen reader-only heading for accessibility #}
 
 <div class="row">
+  {# Create a row for layout #}
   <div class="col-12">
+    {# Define a column that spans the full width #}
     <div class="row justify-content-center">
+      {# Create a row that is centered horizontally #}
       <div class="col-xl-8">
+        {# Define a column that spans 8 of the 12 grid columns on extra-large screens #}
         <div class="card">
+          {# Create a card component for containing the content #}
           <div class="card-body">
+            {# Add padding and content inside the card #}
             <h5 class="border-bottom text-center pb-3 mb-3">Please confirm your details</h5>
+            {# Heading for the confirmation section with bottom border and centered text #}
 
             <h4 class="mb-0">{{ form.name[0] }}</h4>
-            <p class="text-muted mb-4">{{ form.id }} {{ form.description[0] }}</p>
+            {# Display the study name from the form #}
+            <p class="text-muted mb-4">{{ form.description[0] }}</p>
+            {# Display the study ID and description from the form, with muted text #}
 
             <div class="col mb-4">
+              {# Create a column with margin-bottom #}
               <div class="row">
+                {# Create a nested row for layout #}
                 <div class="col-4 pl-0">
+                  {# Define a column that spans 4 of the 12 grid columns #}
                   <div class="summary-desc">Study Type</div>
+                  {# Label for the study type #}
                   {{ type_.name }}
-
+                  {# Display the name of the study type #}
                 </div>
                 <div class="col-4 border-start">
+                  {# Define a column with a left border #}
                   <div class="summary-desc">Result Type</div>
+                  {# Label for the result type #}
                   {{ result_type_.name }}
-
+                  {# Display the name of the result type #}
                 </div>
                 <div class="col-4 border-start">
+                  {# Define a column with a left border #}
                   <div class="summary-desc">Result Count</div>
+                  {# Label for the result count #}
                   {{ form.result_count[0] }}
+                  {# Display the result count from the form #}
                 </div>
               </div>
             </div>
 
             <div class="col mb-3 border-bottom pb-3">
+              {# Create a column with margin-bottom and bottom border #}
               <div class="row">
+                {# Create a nested row for layout #}
                 <div class="col-12 pl-0 mb-4">
+                  {# Define a column that spans the full width #}
                   <div class="summary-desc">Search Engines</div>
+                  {# Label for the search engines #}
                   {% for e in engines_ %}
-                    <span class="badge bg-secondary mr-2">{{ e.name }}</span>
+                  <span class="badge bg-secondary mr-2">{{ e.name }}</span>
+                  {# Loop through and display each search engine with a badge #}
                   {% endfor %}
                 </div>
-                <div class="col-12 pl-0">
-                  <div class="summary-desc">Search Queries (Showing 5 out of {{ queries_ | length }})</div>
-                  <p>
-                  {% for q in queries_[:5] %}
-                    <span class="badge bg-secondary mr-2">{{ q.query }}</span>
+                {# Create a nested row for layout #}
+                {% if classifiers_ %}
+                <div class="col-12 pl-0 mb-4">
+                  {# Define a column that spans the full width #}
+                  <div class="summary-desc">Classifiers</div>
+                  {# Label for the classifiers #}
+                  {% for e in classifiers_ %}
+                  <span class="badge bg-secondary mr-2">{{ e.name }}</span>
+                  {# Loop through and display each classifier with a badge #}
                   {% endfor %}
+                </div>
+                {% endif %}
+                <div class="col-12 pl-0">
+                  {# Define a column that spans the full width #}
+                  <div class="summary-desc">Search Queries (A maximum of 5 search queries are displayed)</div>
+                  {# Label for the search queries with a note on how many are shown #}
+                  <p>
+                    {% for q in queries_[:5] %}
+                    <span class="badge bg-secondary mr-2">{{ q.query }}</span>
+                    {# Loop through and display the first 5 search queries with a badge #}
+                    {% endfor %}
                   </p>
                 </div>
-              </div>
-            </div>
+
+                {% if ranges_.items() %}
+                <div class="col-12 pl-0"></div>
+                  {# Define a column that spans the full width #}
+                  <div class="summary-desc">Result Ranges</div>
+                  {# Label for the result ranges #}
+                  <p>
+                    {% for key, value in ranges_.items() %}
+                    <span class="badge bg-secondary mr-2"> {{ value['start'] }} - {{ value['end'] }} </span>
+                    {# Loop through and display the result ranges #}
+                    {% endfor %}
+                  </p>
+                  {% endif %}
+                </div>                
             <form action="{{ url_for('create_new_study') }}" method="POST" enctype="multipart/form-data">
+              {# Start a form for submitting the study details #}
               {{ confirm.data(value=form) }}
+              {# Render any additional confirmation data #}
               <a href="{{ url_for('new_study')}}" class="btn btn-outline-secondary">Cancel</a>
+              {# Cancel button to go back to the new study page #}
               {{ confirm.submit(class_="btn btn-primary float-end") }}
+              {# Submit button with primary styling and right alignment #}
             </form>
           </div>
         </div>
@@ -66,3 +125,4 @@
   </div>
 </div>
 {% endblock %}
+{# End the content block #}

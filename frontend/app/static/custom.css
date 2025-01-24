@@ -303,3 +303,7 @@ img {
   right: 20px;
   z-index: 100;
 }
+
+.info {
+  font-size: 110%;
+}

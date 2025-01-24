@@ -1,10 +1,13 @@
 **/scrapers2implement
 **/__pycache__/
+**/__downloades_files__/
+**/downloades_files/
 **/tmp/*.png
 *.txt
 **/.pytest_cache
+**/.ipynb_checkpoints
 *.log
+**.DS_Store
 !empty.txt
-!todo.txt
-!info.txt
-!requirements.txt
+backend/classifier/2implement/affiliate_link_classifier.zip
+backend/classifier/2implement/schlafsaecke.zip

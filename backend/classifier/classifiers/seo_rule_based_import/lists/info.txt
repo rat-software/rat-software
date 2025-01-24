@@ -1,0 +1,17 @@
+This folder contains all lists with manual entries.
+
+ads.csv = list with services for ads
+caching.csv = list with caching plugins
+content.csv = list with plugins to enhance content on webpages
+micro.csv = list with micro data formats
+plugins.csv = list with seo plugins
+social.csv = list with social media tools and plugins
+
+source ads.csv = list with domains showing ads
+souce company.csv = list with business websites
+source known = list with seo agency customers
+source news = list with news services
+source not optimized = list with not seo optimized websites
+source search engine = list with services provided by search engines
+source shop = list with online shops
+soutce top = list with top results in terms of their domain count in our dataset

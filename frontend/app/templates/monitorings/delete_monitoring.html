@@ -4,15 +4,25 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
   <div class="col">
+    <!-- Heading for the delete confirmation page -->
     <h3>Delete Monitoring</h3>
+
+    <!-- Form to confirm deletion of the monitoring -->
     <form method="POST" class="card p-4 shadow-sm">
+      <!-- Confirmation message asking if the user is sure about deleting the monitoring -->
       <div class="mb-3">Are you sure you want to delete {{ monitoring.name }}?</div>
+
+      <!-- Buttons for canceling or confirming the deletion -->
       <div class="mb-3">
+        <!-- Cancel button to return to the previous page or cancel the action -->
         {{ form.cancel(class_="btn btn-secondary") }}
+
+        <!-- Submit button to confirm the deletion action -->
         {{ form.submit(class_="btn btn-danger") }}
       </div>
     </form>

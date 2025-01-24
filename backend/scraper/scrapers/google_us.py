@@ -1,200 +1,317 @@
 from scrapers.requirements import *
 
+import csv
+import os
+import inspect
+from pathlib import Path
+import random
+import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from seleniumbase import Driver
+from bs4 import BeautifulSoup
+import re
+from fake_useragent import UserAgent
+
+
 def run(query, limit, scraping, headless):
     """
-    Run the Google SV scraper.
+    Scrapes Google search results based on the provided query.
 
     Args:
-        query (str): The search query.
+        query (str): The search query to use.
         limit (int): The maximum number of search results to retrieve.
-        scraping: The Scraping object.
+        scraping (Scraping): An instance of the Scraping class used for encoding and taking screenshots.
+        headless (bool): If True, run the browser in headless mode (without GUI).
 
     Returns:
-        list: List of search results.
-    """    
+        list: A list of search results, where each result is a list containing the title, description, URL, 
+              and metadata (encoded page source and screenshot binary). Returns -1 if CAPTCHA is detected 
+              or if an error occurs during scraping.
+    """
     try:
-        #Definition of args for scraping the search engine
-        search_url = "https://www.google.com/webhp?hl=en&gl=US&uule=w+CAIQICImV2VzdCBOZXcgWW9yayxOZXcgSmVyc2V5LFVuaXRlZCBTdGF0ZXM%3D" #URL of search engine
-        search_box = "q" #Class name of search box
-        captcha = "g-recaptcha" #Source code hint for CAPTCHA
-        next_page = "//a[@aria-label='{}']" #CSS to find click on next SERP
-        results_number = 0 #initialize results_number
-        page = 1 #initialize SERP page
-        search_results = [] #initialize search_results list
 
-        #Definition of custom functions
+        # Initialize the list for proxies
+        proxies = []
 
+        # Get the directory path to locate the proxy file
+        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        
+        # Load proxies from a CSV file
+        with open(os.path.join(currentdir, 'proxies', 'UK.csv')) as csvfile:
+            csv_reader = csv.reader(csvfile, delimiter=',')
+            for row in csv_reader:
+                proxies.append(row)
+
+        # Shuffle the proxies and select one
+        random.shuffle(proxies)
+        proxy = proxies[0][0] if proxies else None
+
+        # Define constants for scraping
+        search_url = "https://www.google.com/webhp?hl=en&gl=US&uule=w+CAIQICImV2VzdCBOZXcgWW9yayxOZXcgSmVyc2V5LFVuaXRlZCBTdGF0ZXM%3D"  # URL for Google search
+        search_box = "q"  # Name attribute of the search input box
+        captcha = "g-recaptcha"  # Indicator for CAPTCHA presence
+        next_page_xpath = "//a[@aria-label='{}']"  # XPath template for the "next" button
+        next_scroll_xpath = "//span[@class='RVQdVd']"  # XPath for scrolling additional search results
+        results_number = 0  # Initialize count of search results
+        page = 1  # Initialize page number
+        search_results = []  # Initialize list to store search results
+        get_search_url = "https://www.google.com/search?q="  # Base URL for search results
+        
+        # Function to determine if pagination is available on the search results page
         def search_pagination(source):
+            """
+            Checks if pagination is available on the search results page.
+
+            Args:
+                source (str): The HTML source of the search results page.
+
+            Returns:
+                bool: True if pagination is available, False otherwise.
+            """
             soup = BeautifulSoup(source, features="lxml")
-            if soup.find("span", class_=["SJajHc NVbCr"]):
-                return True
-            else:
-                return False
+            return bool(soup.find("span", class_=["SJajHc", "NVbCr"]))
 
-        #Function to scrape search results
+        # Function to scrape search results from the current page
         def get_search_results(driver, page):
+            """
+            Extracts search results from the current page.
 
-            get_search_results = []
+            Args:
+                driver (Driver): The Selenium WebDriver instance.
+                page (int): The current page number.
 
+            Returns:
+                list: A list of search results, each containing the title, description, URL, and metadata.
+            """
+            results = []
             source = driver.page_source
 
+            # Encode the page source and take a screenshot
             serp_code = scraping.encode_code(source)
-
             serp_bin = scraping.take_screenshot(driver)
-
             soup = BeautifulSoup(source, features="lxml")
 
-            #addtional steps to extract undesired elements from the Search Engine Result Page (SERP)
+            # Remove undesired elements from the page
+            undesired_classes = ["d4rhi", "Wt5Tfe", "UDZeY fAgajc OTFaAf"]
+            for cls in undesired_classes:
+                for element in soup.find_all("div", class_=cls):
+                    element.extract()
 
-            for s in soup.find_all("div", class_="d4rhi"):
-                s.extract()
-
-            for s in soup.find_all("div", class_="Wt5Tfe"):
-                s.extract()
-
-            for s in soup.find_all("div", class_="UDZeY fAgajc OTFaAf"):
-                s.extract()
-
-            #find the list with the search results by extracting the div container
-
-            for result in soup.find_all("div", class_=["tF2Cxc"]):
-                url_list = []
-                search_result = []
+            # Extract search results
+            for result in soup.find_all("div", class_=["tF2Cxc", "dURPMd"]):
                 result_title = ""
                 result_description = ""
                 result_url = ""
+
+                # Extract the title
                 try:
-                    for title in result.find("h3", class_=["LC20lb MBeuO DKV0Md"]):
-                        result_title+=title.text.strip()
-                except:
+                    title_element = result.find("h3", class_=["LC20lb", "MBeuO", "DKV0Md"])
+                    if title_element:
+                        result_title = title_element.text.strip()
+                except Exception:
                     result_title = "N/A"
 
-                try:                  
-                    for description in result.find("div", class_=re.compile("VwiC3b", re.I)):
-                       
-                        result_description+=description.text.strip()
-                except:
+                # Extract the description
+                try:
+                    description_element = result.find("div", class_=re.compile("VwiC3b", re.I))
+                    if description_element:
+                        result_description = description_element.text.strip()
+                except Exception:
                     result_description = "N/A"
 
+                # Extract the URL
                 try:
-                    for url in result.find_all("a"):
-                        url = url.attrs['href']
+                    url_elements = result.find_all("a")
+                    if url_elements:
+                        url = url_elements[0].attrs.get('href', "N/A")
                         if "bing." in url:
                             url = scraping.get_real_url(url)
-                        url_list.append(url)
-                        result_url = url_list[0]
-                except:
+                        result_url = url
+                except Exception:
                     result_url = "N/A"
 
-                get_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
+                # Add the result if URL is valid
+                if result_url != "N/A" and "http" in result_url:
+                    results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
 
-            return get_search_results
+            return results
 
-        #Function to check if search engine shows CAPTCHA code
+        # Function to check if CAPTCHA is present on the page
         def check_captcha(driver):
-            source = driver.page_source
-            if captcha in source:
-                return True
-            else:
-                return False
+            """
+            Checks if a CAPTCHA is present on the page.
 
-        #initialize Selenium
-        #https://github.com/seleniumbase/SeleniumBase/blob/master/seleniumbase/plugins/driver_manager.py For all options
-        #https://seleniumbase.io/help_docs/locale_codes/
+            Args:
+                driver (Driver): The Selenium WebDriver instance.
+
+            Returns:
+                bool: True if CAPTCHA is present, False otherwise.
+            """
+            source = driver.page_source
+            return captcha in source
+
+        # Function to remove duplicate search results based on the URL
+        def remove_duplicates(search_results):
+            """
+            Removes duplicate search results based on the URL.
+
+            Args:
+                search_results (list): List of search results to deduplicate.
+
+            Returns:
+                list: List of search results with duplicates removed.
+            """
+            seen_urls = set()
+            unique_results = []
+
+            for result in search_results:
+                url = result[2]
+                if url not in seen_urls:
+                    seen_urls.add(url)
+                    unique_results.append(result)
+
+            return unique_results
+
+        # Initialize Selenium WebDriver
+
+        ua = UserAgent(platforms='pc', browsers='chrome')
+
+        # Get a random browser user-agent string
+        user_agent = ua.random
+        print(user_agent)
 
         driver = Driver(
-                browser="chrome",
-                wire=True,
-                uc=True,
-                headless2=headless,
-                incognito=False,
-                agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                do_not_track=True,
-                undetectable=True,
-                extension_dir=ext_path,
-                locale_code="en_us",
-                #mobile=True,
-                )
-        
-        driver.maximize_window()
+            browser="chrome",
+            wire=True,
+            uc=True,
+            headless2=headless,  # Run in headless mode if specified
+            incognito=False,
+            agent=user_agent,
+            do_not_track=True,
+            undetectable=True,
+            extension_dir=ext_path,
+            locale_code="en-US",  # Set locale to US English
+            no_sandbox=True
+        )
+
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
         driver.get(search_url)
-        random_sleep = random.randint(2, 5) #random timer trying to prevent quick automatic blocking
-        time.sleep(random_sleep)
-    
-        #Start scraping if no CAPTCHA
+        time.sleep(random.randint(1, 2))  # Random sleep to avoid quick automatic blocking
+
+        # Start scraping if no CAPTCHA is detected
         if not check_captcha(driver):
+            search_box_element = driver.find_element(By.NAME, search_box)
+            search_box_element.send_keys(query)
+            search_box_element.send_keys(Keys.RETURN)
+            time.sleep(random.randint(1, 2))  # Random sleep to avoid detection
 
-            search = driver.find_element(By.NAME, search_box)
-            search.send_keys(query)
-            search.send_keys(Keys.RETURN)
-
-            random_sleep = random.randint(2, 5)
-            time.sleep(random_sleep)
-
+            # Get initial search results and remove duplicates
             search_results = get_search_results(driver, page)
-
+            search_results = remove_duplicates(search_results)
             results_number = len(search_results)
 
-            continue_scraping = True
+            print(f"Initial number of search results for '{query}': {results_number}")
 
-            check_pagination = search_pagination(source = driver.page_source)
-
-            if check_pagination:
-                #Click on next SERP pages as long the toal number of results is lower the limit
-                while (results_number < limit) and continue_scraping:
-                    if not check_captcha(driver):
-                        random_sleep = random.randint(2, 5)
-                        time.sleep(random_sleep)
-                        page+=1
-                        page_label = f"Page {page}"
-                        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                        try:
-                            next = driver.find_element(By.XPATH, next_page.format(page_label))
-                            next.click()
-                            search_results+= get_search_results(driver, page)
-                            results_number = len(search_results)
-                        except:
-                            continue_scraping = False
-                    else:
-                        continue_scraping = False
-                        search_results = -1
-
+            # If no results were found, retry with a new proxy
+            if results_number == 0 and proxy:
+                print("No results found with the current proxy. Switching proxy.")
                 driver.quit()
+                time.sleep(random.randint(1, 2))  # Random sleep before reinitializing
+                # Reinitialize the driver with a new proxy
+                driver = Driver(
+                    browser="chrome",
+                    wire=True,
+                    uc=True,
+                    headless2=headless,  # Run in headless mode if specified
+                    incognito=False,
+                    agent=user_agent,
+                    do_not_track=True,
+                    undetectable=True,
+                    extension_dir=ext_path,
+                    locale_code="en-US",  # Set locale to US English
+                    no_sandbox=True,
+                    proxy=proxy
+                )
 
-                return search_results
+            # Continue scraping if the number of results is less than the limit
+            if results_number < limit:
+                continue_scraping = True
+                pagination_available = search_pagination(source=driver.page_source)
+
+                if pagination_available:
+                    print("Pagination found.")
+                    # Click on the "next" button to navigate through search result pages
+                    while results_number <= limit and page <= (limit / 10) and continue_scraping:
+                        if not check_captcha(driver):
+                            time.sleep(random.randint(1, 2))  # Random sleep to avoid detection
+                            page += 1
+                            page_label = f"Page {page}"
+                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                            try:
+                                next_button = driver.find_element(By.XPATH, next_page_xpath.format(page_label))
+                                next_button.click()
+                                search_results += get_search_results(driver, page)
+                                search_results = remove_duplicates(search_results)
+                                results_number = len(search_results)
+                            except Exception:
+                                continue_scraping = False
+                        else:
+                            continue_scraping = False
+                            search_results = -1
+
+                    driver.quit()
+                    return search_results
+
+                else:
+                    print("No pagination found.")
+                    start = 0
+                    query = query.lower().replace(" ", "+")
+                    search_results = []
+                    results_number = 0
+
+                    # Scrape results by updating the URL with different start parameters
+                    while results_number <= limit and start <= limit and continue_scraping:
+                        if not check_captcha(driver):
+                            try:
+                                edit_search_url = f"{get_search_url}{query}&start={start}"
+                                print(edit_search_url)
+                                driver.get(edit_search_url)
+                                time.sleep(random.randint(1, 2))  # Random sleep to avoid detection
+                                page += 1
+                                start += 10
+                                extract_search_results = get_search_results(driver, page)
+
+                                if extract_search_results:
+                                    print("Appending results.")
+                                    search_results += extract_search_results
+                                    search_results = remove_duplicates(search_results)
+                                    results_number = len(search_results)
+                                else:
+                                    continue_scraping = False
+
+                            except Exception as e:
+                                print(f"Error occurred: {e}")
+                                search_results = -1
+                                continue_scraping = False
+                        else:
+                            continue_scraping = False
+                            search_results = -1
+
+                    driver.quit()
+                    return search_results
 
             else:
-                SCROLL_PAUSE_TIME = 1
-
-                while (results_number < limit) and continue_scraping:
-
-                    if not check_captcha(driver):
-                        try:
-                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                            time.sleep(SCROLL_PAUSE_TIME)
-                            driver.execute_script("return document.body.scrollHeight") + 400
-                            page+=1
-                            search_results+= get_search_results(driver, page)
-                            results_number = len(search_results)
-                        except:
-                            continue_scraping = False
-                    else:
-                        continue_scraping = False
-                        search_results = -1
-
                 driver.quit()
-                    
                 return search_results
-
 
         else:
             search_results = -1
             driver.quit()
 
     except Exception as e:
-        print(str(e))
+        print(f"Exception occurred: {e}")
         try:
             driver.quit()
         except:

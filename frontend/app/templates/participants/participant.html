@@ -4,29 +4,38 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
+<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
+<!-- Container for participant details -->
 <div class="row mb-4">
   <div class="col-8 offset-2">
     <div class="card">
       <div class="card-body">
+        <!-- Header for participant details section -->
         <div class="hstack">
           <div class="crd-header">Participant</div>
         </div>
+
+        <!-- Table displaying participant information -->
         <div class="py-2 font-monospace">
           <table class="table table-sm">
             <tr>
+              <!-- Display participant icon and name -->
               <td width="5%"><i class="fas fa-user"></i></td>
               <td width="15%" class="text-left">Name</td>
               <td>{{ participant.name }}</td>
             </tr>
             <tr>
+              <!-- Display participant icon and code -->
               <td><i class="fas fa-key"></i></td>
               <td>Code</td>
               <td>{{ participant.password }}</td>
             </tr>
           </table>
         </div>
+
+        <!-- Form to download participant details -->
         <form method="post">
           <button type="submit" name="download" value="1" class="btn btn-sm btn-outline-primary float-end">
             <i class="fa-solid fa-download"></i> Save Details
@@ -36,34 +45,49 @@
     </div>
   </div>
 </div>
+
+<!-- Container for studies associated with the participant -->
 <div class="row">
   <div class="col-8 offset-2">
     <div class="card">
       <div class="card-body">
+        <!-- Header for studies section -->
         <div class="hstack">
           <div class="crd-header">Studies</div>
         </div>
+
+        <!-- Loop through and display each study associated with the participant -->
         <div class="py-2">
           {% for i in info %}
           <div class="row align-items-center">
+            <!-- Display study number -->
             <div class="col-2"><b>#{{ i[0] }}</b></div>
+
             {% if i[1] > 0 %}
+            <!-- Display progress bar if there are evaluations -->
             <div class="col-8">
-              <div class="progress" style="height: 25px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="{{ i[1]-i[2] }} out of {{ i[1] }}">
-                <div class="progress-bar" role="progressbar" style="width: {{(i[1]-i[2])/i[1]*100}}%;" aria-valuenow="{{ i[1]-i[2] }}" aria-valuemin="0" aria-valuemax="{{ i[4] }}">{{ i[1]-i[2] }} out of {{ i[1] }}</div>
+              <div class="progress" style="height: 25px;" data-bs-toggle="tooltip" data-bs-placement="top"
+                data-bs-title="{{ i[1]-i[2] }} out of {{ i[1] }}">
+                <div class="progress-bar" role="progressbar" style="width: {{(i[1]-i[2])/i[1]*100}}%;"
+                  aria-valuenow="{{ i[1]-i[2] }}" aria-valuemin="0" aria-valuemax="{{ i[4] }}">{{ i[1]-i[2] }} out of {{
+                  i[1] }}</div>
               </div>
             </div>
+
+            <!-- Display button to start evaluation if there are open evaluations -->
             {% if i[2] > 0 %}
             <div class="col-2">
-              <a href="{{ url_for('assessment', participant_id=participant.id, study_id=i[0])}}" class="float-end btn-outline-primary btn btn-sm">
+              <a href="{{ url_for('assessment', participant_id=participant.id, study_id=i[0])}}"
+                class="float-end btn-outline-primary btn btn-sm">
                 Start <i class="fa-solid fa-arrow-right"></i>
               </a>
             </div>
             {% endif %}
             {% else %}
-              <div class="col-10">
-                Currenly, there are no results to evaluate. Please come back later.
-              </div>
+            <!-- Message if there are no evaluations available -->
+            <div class="col-10">
+              Currently, there are no results to evaluate. Please come back later.
+            </div>
             {% endif %}
           </div>
           {% endfor %}
