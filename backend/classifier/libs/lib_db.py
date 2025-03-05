@@ -45,6 +45,7 @@ class DB:
                     self.conn.close()
 
         return ConnectionManager(self.db_cnf)
+    
 
     def get_classifiers(self):
         """
@@ -55,7 +56,7 @@ class DB:
         """
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("SELECT classifier.id, classifier.name FROM classifier")
+            cur.execute("SELECT classifier.id, classifier.name, classifier_study.study FROM classifier, classifier_study where classifier.id = classifier_study.classifier")
             conn.commit()
             classifiers = cur.fetchall()
         return classifiers
@@ -100,7 +101,7 @@ class DB:
                 result['query'] = query['query'] if query else "N/A"
         return results
 
-    def get_results(self, classifier_id):     
+    def get_results(self, classifier_id, study_id):     
         """
         Get the results for a given classifier ID.
 
@@ -115,15 +116,15 @@ class DB:
             cur.execute("""
                 SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
                        result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, 
-                       result_source.source 
-                FROM result, source, result_source
-                WHERE result_source.result = result.id AND result_source.source = source.id 
+                       result_source.source, classifier_study.classifier
+                FROM result, source, result_source, classifier_study
+                WHERE result_source.result = result.id AND result_source.source = source.id AND classifier_study.classifier = %s AND result.study = %s
                       AND (source.progress = 1 OR source.progress = -1) 
-                      AND result.study = 91
-                      AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result where classifier_result.classifier = %s)
-                ORDER BY result.created_at, result.id 
-                LIMIT 10
-            """, (classifier_id,))
+                      AND result.study = classifier_study.study
+                      AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result WHERE classifier_result.classifier = %s)
+                ORDER BY result.created_at, result.id
+                LIMIT 2
+            """, (classifier_id, study_id, classifier_id))
             conn.commit()
             results = cur.fetchall()
         results = self.get_search_engines(results)
@@ -412,10 +413,10 @@ class DB:
                 FROM result, source, result_source 
                 WHERE result_source.result = result.id AND result_source.source = source.id 
                       AND (source.progress = 1 OR source.progress = -1)
-                      AND result.id = 50585
+                      AND result.id = 63
                       
                 ORDER BY result.created_at, result.id 
-                LIMIT 10
+                LIMIT 20
             """)
             conn.commit()
             results = cur.fetchall()

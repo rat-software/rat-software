@@ -41,10 +41,12 @@ class Classifier:
         """
         # Iterate over each classifier in the list
         for c in classifiers:
+            print(c)
+    
             # Dynamically import the classifier module based on the classifier name
             module = importlib.import_module(f"classifiers.{c['name']}.{c['name']}")
             # Call the main function of the imported module with classifier ID, db, and helper as arguments
-            module.main(c['id'], db, helper, job_server)
+            module.main(c['id'], db, helper, job_server, c['study'])
             #db.deleteClassifierDuplicates()
 
 
@@ -80,7 +82,7 @@ def main():
             # Load the JSON content into a dictionary
         data = json.load(f)
     
-    job_server = data['job_server']    
+    job_server = data['job_server']
     
     # Retrieve the list of classifiers from the database
     classifiers = db.get_classifiers()

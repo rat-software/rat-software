@@ -60,7 +60,13 @@ class Config(object):
         'error'
     )
 
-
+    # Email server configuration (commented out configuration should be removed or uncommented as needed)
+    # MAIL_SERVER = 'smtp.mailtrap.io'
+    # MAIL_PORT = 2525
+    # MAIL_USERNAME = 'f1877e4bd680b6'
+    # MAIL_PASSWORD = '***REMOVED***'
+    # MAIL_USE_TLS = True
+    # MAIL_USE_SSL = False
 
     MAIL_SERVER = 'server228.campusspeicher.de'
     MAIL_PORT = 465
