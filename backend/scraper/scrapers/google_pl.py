@@ -33,7 +33,11 @@ def run(query, limit, scraping, headless):
         page = 1  # Initialize page number
         search_results = []  # List to store search results
         get_search_url = "https://www.google.pl/search?q="  # Base URL for search results
+
+        limit = limit+10
         
+        limit = limit+10
+        print(f"Limit set to: {limit}")
         # Define helper functions
 
         def search_pagination(source):
@@ -96,13 +100,11 @@ def run(query, limit, scraping, headless):
                 except Exception:
                     result_description = "N/A"
 
-                # Extract the URL
+                # Extract URL
                 try:
-                    url_elements = result.find_all("a")
-                    if url_elements:
-                        url = url_elements[0].attrs.get('href', "N/A")
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
+                    urls = result.find_all("a")
+                    if urls:
+                        url = urls[0].attrs.get('href', "N/A")
                         result_url = url
                 except Exception:
                     result_url = "N/A"

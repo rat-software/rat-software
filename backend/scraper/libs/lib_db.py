@@ -62,7 +62,7 @@ class DB:
         """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 and scraper.study > 17 ORDER BY scraper.id ASC  LIMIT 2")
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module, searchengine.country FROM scraper, searchengine, query, searchengine_study, country WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 ORDER BY scraper.id ASC  LIMIT 2")
         conn.commit()
         scraper_jobs = cur.fetchall()
         conn.close()
@@ -77,7 +77,7 @@ class DB:
         """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 and scraper.study > 17 ORDER BY scraper.id ASC")
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module, searchengine.country FROM scraper, searchengine, query, searchengine_study, country WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 ORDER BY scraper.id ASC")
         conn.commit()
         scraper_jobs = cur.fetchall()
         conn.close()
@@ -92,7 +92,7 @@ class DB:
         """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 AND scraper.searchengine = %s and scraper.study > 17 ORDER BY scraper.id ASC", (searchengine,))
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module, searchengine.country FROM scraper, searchengine, query, searchengine_study, country WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 AND scraper.searchengine = %s ORDER BY scraper.id ASC", (searchengine,))
         conn.commit()
         scraper_jobs = cur.fetchall()
         conn.close()
@@ -107,7 +107,7 @@ class DB:
         """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 and scraper.study > 17 AND scraper.searchengine != %s ORDER BY scraper.id ASC  LIMIT 2", (searchengine,))
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module, searchengine.country FROM scraper, searchengine, query, searchengine_study, country WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = 0 and counter < 11 AND scraper.searchengine != %s ORDER BY scraper.id ASC  LIMIT 2", (searchengine,))
         conn.commit()
         scraper_jobs = cur.fetchall()
         conn.close()
@@ -123,7 +123,7 @@ class DB:
         """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND scraper.id = %s and scraper.study > 12 ORDER BY scraper.id ASC  LIMIT 2", (job_id,))
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module, searchengine.country FROM scraper, searchengine, query, searchengine_study, country WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND scraper.id = %s ORDER BY scraper.id ASC  LIMIT 2", (job_id,))
         conn.commit()
         scraper_jobs = cur.fetchall()
         conn.close()
@@ -138,7 +138,7 @@ class DB:
         """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = -1 and counter < 11 and scraper.study > 12")
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module, searchengine.country FROM scraper, searchengine, query, searchengine_study, country WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = -1 and counter < 11")
         conn.commit()
         failed_scraper_jobs = cur.fetchall()
         conn.close()
@@ -153,7 +153,7 @@ class DB:
         """        
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module FROM scraper, searchengine, query, searchengine_study WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = -1 and counter < 11 and scraper.job_server = %s", (job_server,))
+        cur.execute("SELECT DISTINCT scraper.id AS scraper_id, scraper.searchengine, scraper.study, scraper.counter, scraper.query AS query_id, scraper.limit, query.query, searchengine.module,searchengine.country FROM scraper, searchengine, query, searchengine_study, country WHERE scraper.searchengine = searchengine.id AND query.id = scraper.query AND searchengine_study.searchengine = searchengine.id AND progress = -1 and counter < 11 and scraper.job_server = %s", (job_server,))
         conn.commit()
         failed_scraper_jobs = cur.fetchall()
         conn.close()
@@ -179,7 +179,7 @@ class DB:
         conn.commit()
         conn.close()
 
-    def insert_result(self, title, description, url, position, created_at, main, ip, study, scraper, query, serp):
+    def insert_result(self, title, description, url, position, created_at, main, ip, study, scraper, query, serp, country):
         """
         Insert a result into the database.
 
@@ -202,7 +202,7 @@ class DB:
         #result: id	title	description	url	position	created_at	main	ip	origin	imported	study	scraper	old_id	resulttype	monitoring	serp	query	final_url
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("INSERT INTO result (title, description, url, position, created_at, main, ip, study, scraper, query, serp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", (title, description, url, position, created_at, main, ip, study, scraper, query, serp))
+        cur.execute("INSERT INTO result (title, description, url, position, created_at, main, ip, study, scraper, query, serp, country) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", (title, description, url, position, created_at, main, ip, study, scraper, query, serp, country))
         conn.commit()
         conn.close()
 

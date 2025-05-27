@@ -32,7 +32,10 @@ def run(query, limit, scraping, headless):
         page = 1  # Initial page number
         search_results = []  # List to store search results
         get_search_url = "https://www.google.nl/search?q="  # Base URL for search results
-        
+
+        limit = limit+10
+        print(f"Limit set to: {limit}")
+            
         def search_pagination(source):
             """
             Checks if pagination is available on the search results page.
@@ -98,8 +101,6 @@ def run(query, limit, scraping, headless):
                     urls = result.find_all("a")
                     if urls:
                         url = urls[0].attrs.get('href', "N/A")
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
                         result_url = url
                 except Exception:
                     result_url = "N/A"

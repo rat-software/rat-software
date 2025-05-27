@@ -82,28 +82,17 @@ class Sources:
         print('Sources object destroyed')
 
     def _cleanup_driver(self, driver):
+        """
+        Helper method to clean up selenium driver instances
+        """
         if driver:
             try:
-                # Force disconnect from DevTools vor dem Schließen
-                try:
-                    if hasattr(driver, 'execute_cdp_cmd'):
-                        driver.execute_cdp_cmd('Network.disable', {})
-                        driver.execute_cdp_cmd('Page.disable', {})
-                except:
-                    pass
-                
-                # Versuche alle Sessions zu beenden
-                try:
-                    driver.execute_script('window.onbeforeunload = null;')
-                except:
-                    pass
-                    
                 driver.close()
-            except:
+            except Exception:
                 pass
             try:
                 driver.quit()
-            except:
+            except Exception:
                 pass
 
     def encode_code(self, code):
@@ -1125,16 +1114,7 @@ class Sources:
                                 print(f"Error killing process {child.pid}: {e}")
                     except Exception as e:
                         print(f"Error handling child processes: {e}")
-
-                    # Hier füge den neuen Code ein, um sicherzustellen, dass alle Chrome-Prozesse beendet werden
-                    try:
-                        if platform.system() != 'Windows':
-                            print("Killing any remaining Chrome processes")
-                            os.system("pkill -f 'chrome' || true")  # || true verhindert Fehlschlag bei fehlenden Prozessen
-                            os.system("pkill -f 'chromedriver' || true")
-                    except Exception as e:
-                        print(f"Error killing Chrome processes: {e}")                        
-                        
+                    
                     # Set the cancellation event
                     cancel_event.set()
                     return
@@ -1438,7 +1418,7 @@ class Sources:
                 else:
                     # Use CDP-based header detection with its own timeout
                     header_start = time.time()
-                    MAX_HEADER_TIME = min(60, timeout * 0.30)  # 15% of total or 20s max
+                    MAX_HEADER_TIME = min(60, timeout * 0.15)  # 15% of total or 20s max
                     
                     def get_headers():
                         if cancel_event.is_set():

@@ -116,6 +116,9 @@ class Scraper:
             query_id = scraper_job['query_id']
             module = scraper_job['module'].replace('.py', '')
             mod_folder = f"scrapers.{module}"
+            country = scraper_job['country']
+
+            print(country)
 
             # Get result ranges from the database
 
@@ -141,7 +144,12 @@ class Scraper:
                     scraper_module = importlib.import_module(mod_folder)
                     scraping_results = scraper_module.run(query, limit, scraping, True)
                     
-                    if scraping_results and scraping_results !=-1:
+                    if scraping_results == 0:  # Neue Bedingung für "keine Ergebnisse gefunden" Nachricht
+                        progress = 1  # Erfolgreicher Abschluss
+                        error_code = 0
+                        print("No results found message detected - marking as completed")
+                        db.update_scraper_job(progress, counter, error_code, job_server, scraper_id, scraper_job_created_at)
+                    elif scraping_results and scraping_results != -1:
                         progress = 1  # Indicates successful completion
                         error_code = 0 # Reset error code
 
@@ -157,21 +165,18 @@ class Scraper:
                             code = scraping_result[3]
                             img = scraping_result[4]
                             page = scraping_result[5]                            
-                            meta = scraping.get_result_meta(url)
-                            ip = meta['ip']
-                            main = meta['main']
-                            created_at = datetime.now()
                             
                             if position <= limit:
                                 if ranges:
                                     if position in ranges:
                                         if not db.check_duplicate_result(url, main, study, scraper_id, position):
                                             serp = db.insert_serp(scraper_id, page, code, img, created_at, query_id)
-                                            db.insert_result(title, description, url, position, created_at, main, ip, study, scraper_id, query_id, serp[0])
+                                            db.insert_result(title, description, url, position, created_at, main, ip, study, scraper_id, query_id, serp[0], country)
                                 else:
                                     if not db.check_duplicate_result(url, main, study, scraper_id, position):
                                         serp = db.insert_serp(scraper_id, page, code, img, created_at, query_id)
-                                        db.insert_result(title, description, url, position, created_at, main, ip, study, scraper_id, query_id, serp[0])                                   
+                                        print(position, title, description, url)
+                                        db.insert_result(title, description, url, position, created_at, main, ip, study, scraper_id, query_id, serp[0], country)                                   
                             
                         print("Success:"+str(error_code))
                         
@@ -224,7 +229,6 @@ if __name__ == "__main__":
     # Fetch scraper jobs from the database
     scraper_jobs = db.get_scraper_jobs()
 
-
     # Fetch failed scraper jobs from the job server
     failed_scraper_jobs = db.get_failed_scraper_jobs_server(job_server)
 
@@ -232,7 +236,6 @@ if __name__ == "__main__":
     cleaned_scraper_jobs = []
 
     scraper = Scraper()
-
 
     i = 0
     failed_se = {}
@@ -259,9 +262,7 @@ if __name__ == "__main__":
 
     #Limit the number of scraper jobs to a manageable number
     if len(scraper_jobs) > 2:
-        scraper_jobs = scraper_jobs[:2]
-
-
+        scraper_jobs = scraper_jobs[:1]
 
     if scraper_jobs:
         scraper.scrape(scraper_jobs, db, Scraping(), job_server)

@@ -54,7 +54,9 @@ def run(query, limit, scraping, headless):
         search_results = []  # List to store search results
         get_search_url = "https://www.google.de/search?q="
         language = "&hl=de&gl=DE"  # URL parameters for language and location
-        #limit = limit+10
+        no_results_message = '<div class="card-section"><p aria-level="3" role="heading" style="padding-top:.33em">Es wurden keine mit deiner Suchanfrage'
+
+        limit = limit+10
         print(f"Limit set to: {limit}")
 
         def search_pagination(source):
@@ -102,7 +104,6 @@ def run(query, limit, scraping, headless):
                 result_title = ""
                 result_description = ""
                 result_url = ""
-
                 # Extract title
                 try:
                     title = result.find("h3", class_=["LC20lb", "MBeuO", "DKV0Md"])
@@ -119,21 +120,23 @@ def run(query, limit, scraping, headless):
                 except Exception:
                     result_description = "N/A"
 
+
                 # Extract URL
                 try:
                     urls = result.find_all("a")
                     if urls:
                         url = urls[0].attrs.get('href', "N/A")
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
-                        url_list.append(url)
-                        result_url = url_list[0]
-                except Exception:
+                        result_url = url
+                except Exception as e:
+                    print(str(e))
                     result_url = "N/A"
 
+                print(result_url)
+
                 # Append result if URL is valid
-                if result_url != "N/A" and "http" in result_url:
+                if result_url != "N/A" and result_url.startswith(("http://", "https://")):
                     results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
+            
 
             return results
 
@@ -214,26 +217,33 @@ def run(query, limit, scraping, headless):
             results_number = len(search_results)
             print(f"Initial search results count for '{query}': {results_number}")
 
-            # If no results were found, retry with a new proxy
-            if results_number == 0 and proxy:
-                print("No results found with the current proxy. Switching proxy.")
-                driver.quit()
-                time.sleep(random.randint(1, 2))  # Random sleep before reinitializing
-                # Reinitialize the driver with a new proxy
-                driver = Driver(
-                    browser="chrome",
-                    wire=True,
-                    uc=True,
-                    headless2=headless,
-                    incognito=False,
-                    agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                    do_not_track=True,
-                    undetectable=True,
-                    extension_dir=ext_path,
-                    locale_code="de",
-                    no_sandbox=True,
-                    proxy=proxy
-                )
+            # If no results were found, check for no results message or retry with new proxy
+            if results_number == 0:
+                if no_results_message in driver.page_source:
+                    print("No results found message detected")
+                    driver.quit()
+                    search_results = 0
+                    return search_results
+                
+                elif proxy:
+                    print("No results found with the current proxy. Switching proxy.")
+                    driver.quit()
+                    time.sleep(random.randint(1, 2))  # Random sleep before reinitializing
+                    # Reinitialize the driver with a new proxy
+                    driver = Driver(
+                        browser="chrome",
+                        wire=True,
+                        uc=True,
+                        headless2=headless,
+                        incognito=False,
+                        agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                        do_not_track=True,
+                        undetectable=True,
+                        extension_dir=ext_path,
+                        locale_code="de",
+                        no_sandbox=True,
+                        proxy=proxy
+                    )
 
             # Continue scraping if results are fewer than the limit
             if results_number < limit:

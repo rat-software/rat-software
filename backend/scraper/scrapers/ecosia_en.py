@@ -71,12 +71,10 @@ def run(query, limit, scraping, headless):
                 except:
                     pass
 
-                try:
-                    url_elem = result.find("a")
+                try: #result-link
+                    url_elem = result.find('a', class_='result__link')
                     if url_elem:
                         url = url_elem.attrs['href']
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
                         result_url = url
                 except:
                     pass

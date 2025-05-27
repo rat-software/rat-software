@@ -173,7 +173,7 @@ class Scraping:
 
         return screenshot #return base64 code of image
 
-    def get_real_url(url, driver):
+    def get_real_url(self, url, driver):
         """
         Get the real URL after any redirects.
 
@@ -188,7 +188,6 @@ class Scraping:
             driver.get(url)
             time.sleep(4)
             current_url = driver.current_url #read real url (redirected url)
-            driver.quit()
             return current_url
         except Exception as e:
             print(str(e))
