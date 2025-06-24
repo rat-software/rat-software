@@ -3,7 +3,8 @@ from wtforms import StringField, SubmitField, SelectField, TextAreaField,\
                     BooleanField, SelectMultipleField, widgets, FieldList,\
                     FormField, RadioField, IntegerField, DecimalField,\
                     IntegerRangeField, PasswordField, EmailField,\
-                    validators, HiddenField
+                    validators, HiddenField, DateField, TimeField
+from wtforms.validators import Optional
 from flask_wtf.file import FileField
 
 
@@ -20,12 +21,13 @@ class RangeForm(FlaskForm):
 class StudyForm(FlaskForm):
     id = HiddenField("Study ID", default=0)
     name = StringField("Study name", [validators.InputRequired("Input required.")])
-    description = TextAreaField("Description")
+    description = TextAreaField("Description [optional]")
     type = SelectField("Study type", coerce=int)
     imported = BooleanField("Import own search results", default=False)
     imported_data = FileField("Add own search results (csv)")
     search_engines = MultiCheckboxField("Select search engines", coerce=int)
-    classifiers = MultiCheckboxField("Select classifiers", coerce=int)
+    classifiers = MultiCheckboxField("Classifiers", coerce=int)
+    show_urls = BooleanField("", default=False)
     # result_type = SelectField("Select result types", choices=[(1, "Organic Results"),
     #                                                            (2, "Snippets"),
     #                                                            (3, "Universal Search Results"),
@@ -36,6 +38,24 @@ class StudyForm(FlaskForm):
     task = StringField("Search Task (use *** as a placeholder for the query)", default="In the following, you see the results for the query ***. Please assess the results using the questions below.")
     result_count = IntegerField("Number of results to collect", default=10, validators=[validators.NumberRange(min=1, max=200, message="The number of results can be between 1 and 200.")])
     ranges = FieldList(FormField(RangeForm), min_entries=1, max_entries=100, label="Result Ranges")
+    # Scraping Schedule
+    start_date = DateField("Start Date", format='%Y-%m-%d', validators=[Optional()])
+    end_date = DateField("End Date", format='%Y-%m-%d', validators=[Optional()])
+    start_time = TimeField("Start Time", format='%H:%M', validators=[Optional()])
+    end_time = TimeField("End Time", format='%H:%M', validators=[Optional()])
+    repeat_frequency = SelectField(
+        "Repeat",
+        choices=[("none", "Does not repeat"), ("daily", "Daily"), ("weekly", "Weekly"), ("monthly", "Monthly"), ("custom", "Custom")]
+    )
+    all_day = BooleanField("All day", default=False) #toggle button
+    # Custom recurrence options
+    repeat_interval = IntegerField("Repeat every", validators=[Optional()], default=1)
+    repeat_unit = SelectField("Repeat unit", choices=[("day", "day(s)"), ("week", "week(s)"), ("month", "month(s)")], validators=[Optional()])
+    occurrences = IntegerField("Occurrences", validators=[validators.NumberRange(min=1)])
+    #Result Options
+    url_filter_include = TextAreaField("URLs you want to inlcude in your results set (use new line for each URL) [optional]", validators=[Optional()], render_kw={"placeholder": "e.g. google.com"})
+    url_filter_exclude = TextAreaField("URLs you want to exclude from your results set (use new line for each URL) [optional]", validators=[Optional()], render_kw={"placeholder": "e.g. google.com"})    
+    url_list = FileField("List of URLs (csv,xlsx)")
     submit = SubmitField("Create study")
 
 

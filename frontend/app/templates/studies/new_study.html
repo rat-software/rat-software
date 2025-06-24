@@ -71,51 +71,87 @@
     <!-- Form to create or update a study -->
     <form action="{{ url_for('confirm_new_study') }}" method="POST" enctype="multipart/form-data">
     <div class="tab-content">
-      <!-- Tab Pane 1: Study Details -->
-      <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="study-stepper-1">
-        <div class="row justify-content-center">
-          <div class="col-xl-8">
-            <div class="card">
-              <h2 class="card-header crd-header">Study Details</h2>
-              <div class="card-body">
-                <!-- Study ID field -->
-                <div class="mb-3">{{ form.id }}</div>
-                <!-- Study name field -->
-                <div class="mb-3">
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Enter the title of your study. Choose a concise name that accurately reflects the focus of your research."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ render_create_study_fields(form.name, "#name", "form-control") }}
-                </div>
-                <!-- Description field -->
-                <div class="mb-3">
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Provide a brief description of your study. May include the main objectives and any relevant details that clarify the scope and purpose."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ render_create_study_fields(form.description, "#description", "form-control") }}
-                </div>
-                <!-- Study type field -->
-                <div class="mb-3">
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Select the type of study you wish to conduct, depending on the focus of your research."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ render_create_study_fields(form.type, "#type", "form-select") }}
-                </div>
-
-                <!-- Collapsible Classifier Section -->
-                <div class="mb-3">
-                  <div class="form-group">
-                    <label class="form-label">Classifier 
-                      <i class="fa-solid fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#collapseClassifier"></i>
-                    </label>
-                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="(optional) Choose from available classifiers to analyze search results."><i class="fa-solid fa-circle-question"></i></a></span>
-                    <div id="collapseClassifier" class="collapse">
-                      {{ render_create_study_fields(form.classifiers, "#classifiers", "") }}
+        <!-- Tab Pane 1: Study Details -->
+        <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="study-stepper-1">
+          <div class="row justify-content-center">
+            <div class="col-xl-8">
+              <div class="card">
+                <h2 class="card-header crd-header">Study Details</h2>
+                <div class="card-body">
+                  <!-- Study ID field -->
+                  <div class="mb-3">{{ form.id }}</div>
+                  <!-- Study name field -->
+                  <div class="mb-3">
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Enter the title of your study. Choose a concise name that accurately reflects the focus of your research."><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    {{ render_create_study_fields(form.name, "#name", "form-control") }}
+                  </div>
+                  <!-- Description field -->
+                  <div class="mb-3">
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Provide a brief description of your study. May include the main objectives and any relevant details that clarify the scope and purpose."><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    {{ render_create_study_fields(form.description, "#description", "form-control") }}
+                  </div>
+                  <!-- Study type field -->
+                  <div class="mb-3">
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Select the type of study you wish to conduct, depending on the focus of your research."><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    {{ render_create_study_fields(form.type, "#type", "form-select") }}
+                  </div>
+        
+                  <label class="form-label"
+                    style="width: 100%; border-top: 1px solid rgba(0, 0, 0, .125); padding-top: 10px; margin-top: 10px">Study
+                    Options</label>
+        
+                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                      title="When activated the Assessment Interface will show the URL of the result to assess."><i
+                        class="fa-solid fa-circle-question"></i></a></span>
+        
+        
+                  <div class="mb-3">
+        
+        
+        
+        
+                    {{ render_create_study_fields(form.show_urls, "form-select") }} Show URLs in Assessment Interface [optional]
+        
+        
+        
+                  </div>
+        
+        
+                  <label class="form-label"
+                    style="width: 100%; border-top: 1px solid rgba(0, 0, 0, .125); margin-top: 10px"></label>
+        
+                  <!-- Collapsible Classifier Section -->
+                  <div class="mb-3">
+                    <div class="form-group">
+                      <label class="form-label">Selet Classifier [optional]
+                        <i class="fa-solid fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#collapseClassifier"></i>
+                      </label>
+                      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="(optional) Choose from available classifiers to analyze search results."><i
+                            class="fa-solid fa-circle-question"></i></a></span>
+                      <div id="collapseClassifier" class="collapse">
+                        {{ render_create_study_fields(form.classifiers, "#classifiers", "") }}
+                      </div>
                     </div>
                   </div>
+        
+        
                 </div>
-
-                <!-- Button to go to the next tab -->
-                <div onclick="showTab('study-stepper-2')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
+        
+              <!-- Button to go to the next tab -->
+              <div onclick="showTab('study-stepper-2')" class="btn btn-primary float-end mt-5">Next <i
+                  class="fa-solid fa-angles-right"></i></div>
             </div>
           </div>
+        
         </div>
-      </div>
 
       <!-- Tab Pane 2: Search Engines -->
       <div class="tab-pane fade" id="tab-2" role="tabpanel" aria-labelledby="study-stepper-2">
@@ -135,6 +171,11 @@
                       <option value="DuckDuckGo">DuckDuckGo</option>
                       <option value="Ecosia">Ecosia</option>
                       <option value="Katalogplus">Katalogplus</option>
+                      <option value="Brave">Brave</option> 
+                      <option value="Dogpile">Dogpile</option> 
+                      <option value="Econbiz">Econbiz</option> 
+                      <option value="Lycos">Lycos</option> 
+                      <option value="Mojeek">Mojeek</option>
                     </select>
                   </div>
                   

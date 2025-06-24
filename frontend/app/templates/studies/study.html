@@ -302,6 +302,13 @@
               </div>
             </div>
 
+            <div class="col mb-4">
+              <div class="summary-desc">Show URLs in Assessment Interface: <span class="badge bg-secondary mr-2">{{ study.show_urls }}</span></div>
+              
+            </div>
+            
+
+
             <div class="col">
               <div class="row">
                 <div class="col-12 pl-0 mb-4">
@@ -310,10 +317,13 @@
                   <span class="badge rounded-pill bg-primary mr-2">{{ e.name }}</span>
                   {% endfor %}
                 </div>
+                {%if study.task %}
                 <div class="col-12 pl-0 mb-4">
                   <div class="summary-desc">Search Task</div>
                   {{ study.task }}
                 </div>
+                {% endif %}
+
                 <div class="col-12 pl-0">
                   <div class="summary-desc">
                     Search Queries

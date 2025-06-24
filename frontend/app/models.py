@@ -17,40 +17,7 @@ language_study = db.Table('language_study',
                               'study.id'), primary_key=True), extend_existing=True,
                           )
 
-logger_query = db.Table('logger_query',
-                        db.Column('logger', db.ForeignKey(
-                            'logger.id'), primary_key=True),
-                        db.Column('query', db.ForeignKey(
-                            'query.id'), primary_key=True), extend_existing=True,
-                        )
 
-logger_result = db.Table('logger_result',
-                         db.Column('logger', db.ForeignKey(
-                             'logger.id'), primary_key=True),
-                         db.Column('result', db.ForeignKey(
-                             'result.id'), primary_key=True), extend_existing=True,
-                         )
-
-logger_scraper = db.Table('logger_scraper',
-                          db.Column('logger', db.ForeignKey(
-                              'logger.id'), primary_key=True),
-                          db.Column('scraper', db.ForeignKey(
-                              'scraper.id'), primary_key=True), extend_existing=True,
-                          )
-
-logger_searchengine = db.Table('logger_searchengine',
-                               db.Column('logger', db.ForeignKey(
-                                   'logger.id'), primary_key=True),
-                               db.Column('searchengine', db.ForeignKey(
-                                   'searchengine.id'), primary_key=True), extend_existing=True,
-                               )
-
-logger_serp = db.Table('logger_serp',
-                       db.Column('logger', db.ForeignKey(
-                           'logger.id'), primary_key=True),
-                       db.Column('serp', db.ForeignKey(
-                           'serp.id'), primary_key=True), extend_existing=True,
-                       )
 
 participant_study = db.Table('participant_study',
                              db.Column('participant', db.ForeignKey(
@@ -264,22 +231,19 @@ class Group(db.Model):
         'Participant', back_populates='group', lazy='select')
 
 
-class Incentive(db.Model):
-    """Model for storing incentives given to participants."""
-    __tablename__ = 'incentive'
+class StudyURLFilter(db.Model):
+    __tablename__ = 'study_url_filter'
     __table_args__ = {'extend_existing': True}
-
-
     id = db.Column(db.Integer, primary_key=True)
-
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
     study = db.relationship(
-        'Study', back_populates='incentives', lazy='select')
+        'Study', back_populates='study_url_filters', lazy='select'   
+    )
 
-    participant_id = db.Column(
-        'participant', db.Integer, db.ForeignKey('participant.id'))
-    participant = db.relationship(
-        'Participant', back_populates='incentives', lazy='select')
+    url = db.Column(db.String)
+    include = db.Column(db.Boolean)
+    exclude = db.Column(db.Boolean)
+
 
 
 class Language(db.Model):
@@ -297,28 +261,7 @@ class Language(db.Model):
         'Study', secondary=language_study, back_populates='languages', lazy='select')
 
 
-class Logger(db.Model):
-    """Model for storing loggers that manage various tasks and interactions."""
-    __tablename__ = 'logger'
-    __table_args__ = {'extend_existing': True}
 
-
-    id = db.Column(db.Integer, primary_key=True)
-    clicked = db.Column(db.Boolean)
-    limit = db.Column(db.String)
-
-    tasks = db.relationship('Task', back_populates='logger', lazy='select')
-
-    queries = db.relationship(
-        'Query', secondary=logger_query, back_populates='loggers', lazy='select')
-    results = db.relationship(
-        'Result', secondary=logger_result, back_populates='loggers', lazy='select')
-    scrapers = db.relationship(
-        'Scraper', secondary=logger_scraper, back_populates='loggers', lazy='select')
-    searchengines = db.relationship(
-        'SearchEngine', secondary=logger_searchengine, back_populates='loggers', lazy='select')
-    serps = db.relationship('Serp', secondary=logger_serp,
-                            back_populates='loggers', lazy='select')
 
 
 class Monitoring(db.Model):
@@ -383,8 +326,7 @@ class Participant(db.Model):
 
     answers = db.relationship(
         'Answer', back_populates='participant', lazy='select')
-    incentives = db.relationship(
-        'Incentive', back_populates='participant', lazy='select')
+
     studies = db.relationship(
         'Study', secondary=participant_study, back_populates='participants', lazy='select')
 
@@ -418,10 +360,7 @@ class Query(db.Model):
     #serps = db.relationship('Serp', back_populates='query', lazy='select')
     results = db.relationship('Result', back_populates='query_', lazy='select')
 
-    loggers = db.relationship(
-        'Logger', secondary=logger_query, back_populates='queries', lazy='select')
     
-
     
 
 
@@ -556,8 +495,7 @@ class Result(db.Model):
     answers = db.relationship('Answer', back_populates='result', lazy='select')
     contents = db.relationship(
         'Content', back_populates='result', lazy='select')
-    loggers = db.relationship(
-        'Logger', secondary=logger_result, back_populates='results', lazy='select')
+
     questions = db.relationship(
         'Question', secondary=question_result, back_populates='results', lazy='select')
 
@@ -626,8 +564,7 @@ class Scraper(db.Model):
     serps = db.relationship('Serp', back_populates='scraper', lazy='select')
     reportings = db.relationship(
         'Reporting', back_populates='scraper', lazy='select')
-    loggers = db.relationship(
-        'Logger', secondary=logger_scraper, back_populates='scrapers', lazy='select')
+
     
 class SearchEngine(db.Model):
     """Model for storing search engines used in studies."""
@@ -644,8 +581,7 @@ class SearchEngine(db.Model):
         'Scraper', back_populates='searchengine', lazy='select')
     countries = db.relationship(
         'Country', back_populates='searchengine', lazy='select')
-    loggers = db.relationship('Logger', secondary=logger_searchengine,
-                              back_populates='searchengines', lazy='select')
+
     studies = db.relationship(
         'Study', secondary=searchengine_study, back_populates='searchengines', lazy='select')
 
@@ -666,8 +602,7 @@ class Serp(db.Model):
     scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
     scraper = db.relationship('Scraper', back_populates='serps', lazy='select')
 
-    loggers = db.relationship(
-        'Logger', secondary=logger_serp, back_populates='serps', lazy='select')
+
 
     monitoring_id = db.Column('monitoring', db.Integer,
                               db.ForeignKey('monitoring.id'))
@@ -733,7 +668,9 @@ class Study(db.Model):
     updated_at = db.Column(db.DateTime)
     result_count = db.Column(db.Integer)
     status = db.Column(db.Integer)
+    show_urls = db.Column(db.Boolean)
     task = db.Column(db.String)
+
 
     studytype_id = db.Column('studytype', db.Integer,
                              db.ForeignKey('studytype.id'))
@@ -748,8 +685,7 @@ class Study(db.Model):
     answers = db.relationship('Answer', back_populates='study', lazy='select')
     experiments = db.relationship(
         'Experiment', back_populates='study', lazy='select')
-    incentives = db.relationship(
-        'Incentive', back_populates='study', lazy='select')
+
     statistics = db.relationship(
         'Statistic', back_populates='study', lazy='select')
     queries = db.relationship('Query', back_populates='study', lazy='select')
@@ -768,6 +704,9 @@ class Study(db.Model):
         'Participant', secondary=participant_study, back_populates='studies', lazy='select')
     classifier = db.relationship(
         'Classifier', secondary=classifier_study, back_populates='studies', lazy='select')
+    study_url_filters = db.relationship(
+        'StudyURLFilter', back_populates='study', lazy='select')
+
 
 
 class StudyType(db.Model):
@@ -791,8 +730,7 @@ class Task(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    logger_id = db.Column('logger', db.Integer, db.ForeignKey('logger.id'))
-    logger = db.relationship('Logger', back_populates='tasks', lazy='select')
+
 
 
 class User(db.Model, UserMixin):

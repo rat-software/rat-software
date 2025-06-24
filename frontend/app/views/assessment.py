@@ -66,6 +66,11 @@ def assessment(participant_id, study_id):
     participant = Participant.query.get(participant_id)
     study = Study.query.get(study_id)
 
+    if study.show_urls:
+        show_urls = True
+    else:
+        show_urls = False
+
     # Set up query to filter open assessments based on participant and study
     query = db.session.query(Answer).filter(Answer.source_status_code == 200,
                                             Answer.participant == participant,
@@ -146,4 +151,5 @@ def assessment(participant_id, study_id):
                            answer=answer,
                            all=all_answers,
                            closed=closed_answers,
-                           pct=pct)
+                           pct=pct,
+                           show_urls=show_urls)

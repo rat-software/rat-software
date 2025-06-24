@@ -51,6 +51,20 @@
   </div>
 
   <div class="col-9">
+
+    {% if show_urls %}
+    
+    <div class="card mb-4 shadow-sm d-flex flex-row align-items-center gap-2" style="padding: 7px;">
+      <span style="font-weight: bold;">URL:</span>
+      <span>
+        <a href="{{ answer.result.url }}" target="_blank" class="hover-underline">
+          {{ answer.result.url }}
+        </a>
+      </span>
+    </div>
+    
+    {% endif %}
+
     <!-- Display the source content based on its type -->
     {% if "html" in answer.result.sources[0].content_type %}
     <!-- Embed image if the content type is HTML -->

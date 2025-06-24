@@ -66,6 +66,20 @@ def export(id):
             path = current_directory + str(id) + filename
             df.to_excel(path)
 
+            return send_file(path, as_attachment=True, download_name=filename)
+
+        elif "Search Results" in label:
+            query = db.session.execute(text("SELECT result.id, searchengine.name, result.title, result.description, result.url, result.main, result.position, result.ip, result.created_at FROM result JOIN scraper ON result.scraper = scraper.id JOIN searchengine ON scraper.searchengine = searchengine.id WHERE result.study = :id_study ORDER BY result.scraper, result.position"), {'id_study': str(id)}).all()
+            
+            labels = ['Id Result', 'Searchengine', 'Title', 'Description', 'URL', 'Main', 'Position', 'IP', 'Created At']
+            df = pd.DataFrame.from_records(query, columns=labels)
+            df = df.drop_duplicates()
+
+            filename = "%s_%s_%s.xlsx" % (id, label, datetime.now().strftime('%Y_%m_%d'))
+            current_directory = os.getcwd()
+            path = current_directory + str(id) + filename
+            df.to_excel(path)
+
             return send_file(path, as_attachment=True, download_name=filename)            
 
             

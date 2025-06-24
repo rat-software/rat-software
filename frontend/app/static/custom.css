@@ -307,3 +307,12 @@ img {
 .info {
   font-size: 110%;
 }
+
+.hover-underline {
+  text-decoration: none;
+}
+
+/* Den Unterstrich NUR beim Hovern hinzufügen */
+.hover-underline:hover {
+  text-decoration: underline;
+}

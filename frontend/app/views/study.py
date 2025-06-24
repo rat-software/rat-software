@@ -261,6 +261,11 @@ def confirm_new_study():
 
         form["queries"] = queries_
 
+        if "show_urls" in form:
+            show_urls = form["show_urls"][0]
+        else:
+            show_urls = False
+
         return render_template('studies/confirm_new_study.html',
                                form=form,
                                confirm=confirm,
@@ -272,7 +277,8 @@ def confirm_new_study():
                                query_filename=query_filename,
                                query_ls=query_ls,
                                engine_ls=engine_ls, 
-                               ranges_ = ranges_dict
+                               ranges_ = ranges_dict,
+                               show_urls = show_urls
                                )
 
 @app.route('/study/new/create/', methods=['GET', 'POST'])
@@ -287,12 +293,10 @@ def create_new_study():
     data = dict(request.form)
     data = data["data"].replace("'", '"')
     dt = json.loads(data)
-    id = int(dt['id'][0])  
+    id = int(dt['id'][0])
+    print(data)
 
     if id == 0:
-
-
-
 
         # Create a new study
         new_queries = []
@@ -365,6 +369,11 @@ def create_new_study():
         study.task = dt["task"][0]
         study.created_at = datetime.now()
 
+        if dt["show_urls"]:
+            study.show_urls = True
+        else:
+            study.show_urls = False
+
         if classifier != 0:
             study.classifier.extend(classifiers)
 
@@ -398,7 +407,7 @@ def create_new_study():
                         range_end = end)
 
                 db.session.add(newRangeStudy)   
-                db.session.commit()                       
+                db.session.commit()                      
         
         flash('Your study has been created.', 'success')
         return redirect(url_for('study', id=study.id))
@@ -448,6 +457,7 @@ def create_new_study():
                 study.searchengines.remove(se)
 
         new_type = StudyType.query.get_or_404(int(dt["type"][0]))
+        
         new_result_type = ResultType.query.get_or_404(int(dt["result_type"][0]))
 
         # Update study entry
@@ -460,6 +470,12 @@ def create_new_study():
         study.imported = False
         study.result_count = int(dt["result_count"][0])
         study.updated_at = datetime.now()
+
+        try:
+            if dt["show_urls"]:
+                study.show_urls = True
+        except:
+            study.show_urls = False
 
         db.session.commit()
 
@@ -515,9 +531,6 @@ def edit_study(id):
     study = Study.query.get_or_404(id)
     form = StudyForm()
     title = "Edit Study"
-
-
-
     # Gets study types from database to populate form selection
     form.type.choices = [(str(s.id), s.name) for s in StudyType.query.all()]
 
@@ -528,20 +541,24 @@ def edit_study(id):
     form.classifiers.choices = [(str(s.id), s.display_name) for s in Classifier.query.all()]
 
 
+
              
     # Populate form fields with data from the existing study
     form.id.data = study.id
     form.name.data = study.name
     form.task.data = study.task
     form.description.data = study.description
-    form.type.choices = [(str(s.id), s.name) for s in StudyType.query.filter(StudyType.id <= 2)]
+    form.type.choices = [(str(s.id), s.name) for s in StudyType.query.all()]
     form.type.data = study.studytype.id
     form.search_engines.choices = [(str(s.id), s.name) for s in SearchEngine.query.filter(SearchEngine.id <= 2)]
     form.search_engines.data = [s.id for s in study.searchengines]
     form.queries.data = '\n'.join([q.query for q in study.queries])
+    form.result_type.choices = [(str(s.id), s.name) for s in ResultType.query.all()]
     form.result_type.data = study.resulttype.id
     form.result_count.data = study.result_count
+    form.show_urls.data = study.show_urls
 
+    
     return render_template('studies/new_study.html', form=form, study=study, title=title)
 
 @app.route('/study/<id>/close')
