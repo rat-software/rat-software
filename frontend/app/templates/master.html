@@ -4,65 +4,45 @@
 
 <head>
   {% block head %}
-  <!-- Required meta tags for character set and responsive design -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-  <!-- Favicon for the website -->
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 
-  <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
     integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-  <!-- Bootstrap CSS for responsive design and styling -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
-  <!-- Custom CSS files for additional styling -->
-  <!--<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}">-->
-  <!--<<link rel="stylesheet" href="{{ url_for('static', filename='colors.css') }}">-->
   <link rel="stylesheet" href="{{ url_for('static', filename='custom_bootstrap.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
 
   <title>{% block title %}{% endblock %} - RAT</title>
 
-  {% block scripts %}{% endblock %}
+
   {% endblock %}
 </head>
 
-{% if nav == 'static' %}
-
-<body class="bg-blue d-flex flex-column min-vh-100">
-  <div class="img-layer">
-    <!-- Logo image displayed in static navigation mode -->
-    <img src="{{ url_for('static', filename='img/rat_icon_schwarz.png') }}">
-  </div>
-  {% else %}
-
-  <body>
+<body class="d-flex flex-column min-vh-100 {% if nav == 'static' %}bg-blue{% endif %}">
+    {% if nav == 'static' %}
+    <div class="img-layer">
+        <img src="{{ url_for('static', filename='img/rat_icon_schwarz.png') }}">
+    </div>
     {% endif %}
+
     {% if nav == 'static' %}
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-white">
       <div class="container">
-        <!-- Brand logo and link to home -->
         <a class="navbar-brand" href="{{ url_for('home') }}">
           <img src="{{ url_for('static', filename='img/rat_logo_schwarz.png') }}" height="80px"
             class="d-inline-block align-center" alt="RAT Logo">
         </a>
-        <!-- Navbar toggle button for mobile view -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
-          aria-expanded="false" aria-label="Toggle nav">
-          <i class="fa-solid fa-ellipsis-vertical"></i>
-        </button>
-        <!-- Navbar links -->
+
         <div class="collapse navbar-collapse" id="nav">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-
-
             {% if current_user.is_authenticated %}
-            <!-- Dropdown menu for authenticated users -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
@@ -80,8 +60,6 @@
               </ul>
             </li>
             {% else %}
-            <!-- Links for users who are not authenticated -->
-
             {% endif %}
           </ul>
         </div>
@@ -90,30 +68,25 @@
     {% else %}
     <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
-        <!-- Brand logo and link to dashboard -->
         <a class="navbar-brand" href="{{ url_for('dashboard') }}">
           <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" width="48"
             class="d-inline-block align-top" alt="RAT Logo">
         </a>
         {% if current_user.is_authenticated %}
-        <!-- Navbar toggle button for mobile view -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
           aria-expanded="false" aria-label="Toggle nav">
           <i class="fa-solid fa-ellipsis-vertical"></i>
         </button>
-        <!-- Navbar links -->
         <div class="collapse navbar-collapse" id="nav">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             {{ nav_link('dashboard', 'Dashboard', 'fa-regular fa-map') }}
-            <!--{{ nav_link('studies', 'Studies', 'far fa-clipboard') }}-->
-            {{ nav_link('new_study', 'New Study', 'fa-regular fa-square-plus') }}
+            {{ nav_link('new_study', 'New RAT Study', 'fa-regular fa-square-plus') }}
+            {{ nav_link('new_qs_study_wizard', 'New Query Sampler Study', 'fa-regular fa-square-plus') }}
           </ul>
           <ul class="navbar-nav ms-auto">
             {{ nav_link('home', 'Home', 'fa-solid fa-house') }}
             {{ nav_link('contact', 'Contact', 'fa-solid fa-comment') }}
-
             
-            <!-- Dropdown menu for authenticated users -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
@@ -133,8 +106,10 @@
     </nav>
     {% endif %}
 
+    <main class="py-4 flex-grow-1">
+
     <div class="container">
-      <!-- Display flashed messages (e.g., notifications) -->
+
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
       {% for category, message in messages %}
@@ -146,25 +121,27 @@
       {% endif %}
       {% endwith %}
 
-      <!-- Loading spinner shown when content is loading -->
       <div id="loading" class="d-none">
         <i class="fas fa-spinner fa-pulse"></i>
       </div>
 
-      <!-- Main content block -->
       <div id="main">{% block content %}{% endblock %}</div>
     </div>
+    </main>
 
-    {% if nav == 'static' %}
     <div class="container-fluid text-small bg-primary mt-auto">
       <footer class="d-flex flex-wrap justify-content-between align-items-center py-3">
-        <!-- Footer content with copyright and funding information -->
         <p class="col-md-8 d-flex align-items-center text-white justify-content-start mb-3 mb-md-0 me-md-auto">
-          <span>Copyright © 2024 Result Assessment Tool</span>
-          <span class="px-4">Developed by <a href="https://searchstudies.org/" class="text-white" target="_blank">Search
+          <span>Copyright © 2025 Result Assessment Tool</span>
+          <span class="px-4"><a href="https://searchstudies.org/" class="text-white" target="_blank">Developed by Search
               Studies</a> (HAW Hamburg)</span>
-          <span>Funded by <a href="https://gepris.dfg.de/gepris/projekt/460676551" class="text-white"
-              target="_blank">the German Research Foundation (DFG)</a></span>
+          <span><a href="https://gepris.dfg.de/gepris/projekt/557366357" class="text-white"
+              target="_blank">Funded by the German Research Foundation (DFG)</a></span>
+          <span class="px-4"><a href="{{ url_for('roadmap') }}" class="text-white" target="_blank">Roadmap</a></span>
+      
+          <span><a href="https://github.com/rat-software" class="text-white"
+              target="_blank">GitHub</a></span>
+
         </p>
 
         <ul class="nav col-md-4 justify-content-end">
@@ -173,14 +150,11 @@
         </ul>
       </footer>
     </div>
-    {% endif %}
-
-    <!-- Scripts -->
+    
     <script src="{{ url_for('static', filename='jquery-3.6.0.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
       crossorigin="anonymous"></script>
-    <!-- Optional JavaScript for additional functionality -->
     <script type="text/javascript">
       // Initialize tooltips
       const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
@@ -296,13 +270,41 @@
         $("body").append(back_to_top_button)
         $(".back-to-top").hide();
         $(function () {
+          // --- Bestehende Scroll-Funktion ---
           $(window).scroll(function () {
+            // 1. Button ein-/ausblenden (wie bisher)
             if ($(this).scrollTop() > 200) {
               $('.back-to-top').fadeIn();
             } else {
               $('.back-to-top').fadeOut();
             }
+
+            // --- NEUE LOGIK: Überlappung mit dem Footer verhindern ---
+            const footer = $('footer');
+            const button = $('.back-to-top');
+
+            if (footer.length && button.length) {
+              // Die Position, an der der Footer beginnt
+              const footerTop = footer.offset().top;
+              // Die Position des unteren Bildschirmrands
+              const windowBottom = $(window).scrollTop() + $(window).height();
+              
+              // Berechnen, wie weit der Bildschirm den Footer bereits überlappt
+              const overlap = windowBottom - footerTop;
+
+              // Wenn eine Überlappung stattfindet (overlap > 0),
+              // verschiebe den Button um genau diesen Wert nach oben.
+              if (overlap > 0) {
+                // Der neue 'bottom'-Wert ist die Überlappung + der ursprüngliche Abstand von 20px
+                button.css('bottom', overlap + 20 + 'px');
+              } else {
+                // Wenn keine Überlappung, setze den Button auf seine Standardposition zurück
+                button.css('bottom', '20px');
+              }
+            }
           });
+
+          // --- Bestehender Klick-Handler (bleibt unverändert) ---
           $('.back-to-top').click(function () {
             $('body,html').animate({
               scrollTop: 0
@@ -352,6 +354,11 @@
         $(this).alert('close');
       });
     </script>
+
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+    {% block scripts %}{% endblock %} 
+
   </body>
 
 </html>

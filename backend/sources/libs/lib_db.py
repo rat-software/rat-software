@@ -86,7 +86,7 @@ class DB:
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT result_source.id, result_source.source, result_source.result  FROM result_source where (result_source.progress = 2 or result_source.progress = -1)  and result_source.counter < 11 and result_source.job_server = %s and result_source.created_at < now() - interval '30 minutes'",(job_server,))
+        cur.execute("SELECT result_source.id, result_source.source, result_source.result  FROM result_source where (result_source.progress = 2 or result_source.progress = -1)  and result_source.counter < 3 and result_source.job_server = %s and result_source.created_at < now() - interval '10 minutes'",(job_server,))
         conn.commit()
         sources_pending = cur.fetchall()
         conn.close()
@@ -94,11 +94,11 @@ class DB:
 
     def update_sources_failed(self, job_server):
         """
-        Get all finally failed sources (progress = 2 and counter > 10)
+        Get all finally failed sources (progress = 2 and counter > 3)
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT result_source.source  FROM result_source where (result_source.progress = 2)  and result_source.counter > 10 and result_source.job_server = %s",(job_server,))
+        cur.execute("SELECT result_source.source  FROM result_source where (result_source.progress = 2 or result_source.progress = -1 or result_source.progress = 0)  and result_source.counter > 3 and result_source.job_server = %s",(job_server,))
         conn.commit()
         sources_failed = cur.fetchall()
         conn.close()
@@ -115,13 +115,13 @@ class DB:
             conn.commit()                   
             conn.close()
 
-    def get_source_check(self, url):
+    def get_source_check(self, url, country):
         """
         Read a scraped source by URL
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT id, created_at from source where progress = 1 and url=%s ORDER by created_at DESC",(url,))
+        cur.execute("SELECT id, created_at from source where progress = 1 and url=%s and country=%s ORDER by created_at DESC",(url, country))
         conn.commit()
         sc = cur.fetchone()
         conn.close()
@@ -176,13 +176,13 @@ class DB:
         conn.close()
         return rc
 
-    def insert_source(self, url, progress, created_at, job_server):
+    def insert_source(self, url, progress, created_at, job_server, country):
         """
         Insert a new source to the database
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("INSERT INTO source (url, progress, created_at, job_server) VALUES (%s, %s, %s, %s)  RETURNING id;", (url, progress, created_at, job_server))
+        cur.execute("INSERT INTO source (url, progress, created_at, job_server, country) VALUES (%s, %s, %s, %s, %s)  RETURNING id;", (url, progress, created_at, job_server, country))
         conn.commit()
         lastrowid = cur.fetchone()
         conn.close()
@@ -255,6 +255,7 @@ class DB:
         conn.commit()
         conn.close()
 
+
     def update_result_source_result(self, result_id, progress, counter, created_at):
         """
         Update result_source table when scraping job is done
@@ -304,7 +305,9 @@ class DB:
         sources_pending = DB.get_sources_pending(self, job_server)
         for sources_pending in sources_pending:
             source_id = sources_pending[0]
-            DB.delete_source_pending(self, source_id)
+            progress = 0
+            created_at = datetime.now()
+            DB.delete_source_pending(self, source_id, progress, created_at)
             DB.reset_result_source(self, source_id)
 
     def get_result_source(self, result_id):
@@ -337,10 +340,17 @@ class DB:
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-        #sql = "SELECT result.id, result.url FROM result LEFT JOIN result_source ON result_source.result = result.id WHERE (result_source.source is NULL AND NOT EXISTS (SELECT result from result_source WHERE result = result.id) OR result_source.progress = 0 and result_source.counter < 11)  LIMIT 5"
-        sql = "SELECT result.id, result.url, study.studytype FROM result JOIN study on result.study = study.id LEFT JOIN result_source ON result_source.result = result.id WHERE (result_source.source is NULL AND NOT EXISTS (SELECT result from result_source WHERE result = result.id) OR result_source.progress = 0 and result_source.counter < 11) AND study.studytype !=6 LIMIT 5"
-        #sql = "SELECT result.id, result.url, study.studytype FROM result JOIN study on result.study = study.id LEFT JOIN result_source ON result_source.result = result.id WHERE (result_source.source is NULL AND NOT EXISTS (SELECT result from result_source WHERE result = result.id) OR result_source.progress = 0 and result_source.counter < 11) AND study.studytype !=6 and study.id > 181"
+        sql = """
+            SELECT r.id, r.url, c.name AS country_name, c.code, s.studytype 
+            FROM result r 
+            JOIN study s ON r.study = s.id 
+            LEFT JOIN country c ON r.country = c.id 
+            LEFT JOIN result_source rs ON rs.result = r.id 
+            WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3)) 
+            AND s.studytype != 6 
+            ORDER BY r.id ASC 
+            LIMIT 5;
+        """
         cur.execute(sql)
         conn.commit()
         sources = cur.fetchall()
@@ -352,6 +362,8 @@ class DB:
             progress = 2
             result_id = s[0]
             result_url = s[1]
+            result_country = s[2]
+            country_code = s[3]
 
             if DB.get_result_source(self, result_id):
                 counter = DB.get_source_counter_result(self, result_id)
@@ -362,7 +374,7 @@ class DB:
                 created_at = datetime.now()
                 DB.insert_result_source(self, result_id, progress, created_at, job_server)
 
-            sources_list.append([result_id, result_url])
+            sources_list.append([result_id, result_url, result_country, country_code])
 
 
         return sources_list

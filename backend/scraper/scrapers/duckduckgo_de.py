@@ -49,17 +49,17 @@ def run(query, limit, scraping, headless):
 
             for result in soup.find_all("li", class_="wLL07_0Xnd1QZpzpfR4W"):
                 try:
-                    result_title = result.find("span", class_="EKtkFWMYpwzMKOYr0GYm LQVY1Jpkk8nyJ6HBWKAk").text.strip()
+                    result_title = result.find("a", attrs={"data-testid": "result-title-a"}).text.strip()
                 except:
                     result_title = "N/A"
 
                 try:
-                    result_description = " ".join([desc.text.strip() for desc in result.find_all("div", class_="E2eLOJr8HctVnDOTM8fs")])
+                    result_description = result.find("div", attrs={"data-result": "snippet"}).text.strip()
                 except:
                     result_description = "N/A"
 
                 try:
-                    result_url = result.find("a", class_="Rn_JXVtoPVAFyGkcaXyK")['href']
+                    result_url = result.find("a", attrs={"data-testid": "result-extras-url-link"})['href']
                 except:
                     result_url = "N/A"
 
@@ -108,20 +108,22 @@ def run(query, limit, scraping, headless):
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="de",
+            locale_code="de-DE",
         )
 
         driver.maximize_window()
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
 
-        # Set DuckDuckGo to German
+         # Set DuckDuckGo region and language via settings
         driver.get("https://duckduckgo.com/settings/")
         try:
-            dropdown = Select(driver.find_element(By.CLASS_NAME, "frm__select__input.js-set-input"))
-            dropdown.select_by_value('de-de')
+            region_dropdown = Select(driver.find_element(By.ID, "setting_kl"))
+            region_dropdown.select_by_value("de-de")
+            language_dropdown = Select(driver.find_element(By.ID, "setting_kad"))
+            language_dropdown.select_by_value("de_DE")
         except Exception as e:
-            print(f"Language setting failed: {e}")
+            print(str(e))
 
         driver.get(search_url)
         time.sleep(random.randint(1, 2))

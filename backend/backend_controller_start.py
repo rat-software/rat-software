@@ -27,7 +27,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 sources_controller = os.path.join(currentdir, "sources", "sources_controller_start.py")
 scraper_controller = os.path.join(currentdir, "scraper", "scraper_controller_start.py")
 classifier_controller = os.path.join(currentdir, "classifier", "classifier_controller_start.py")
-chrome_controller = os.path.join(currentdir, "chrome_controller", "chrome_controller_start.py")
+query_sampler_controller = os.path.join(currentdir, "query_sampler", "query_sampler_controller_start.py")
 
 def source():
     """
@@ -56,13 +56,14 @@ def classifier():
     """
     os.system("python " + classifier_controller)
 
-def chrome():
+def query_sampler():
     """
-    Function to start the Chrome Controller process.
+    Function to start the Query Sampler Controller process.
 
-    Uses the subprocess.call() function to execute the chrome_controller_start.py script.
+    Uses the subprocess.call() function to execute the query_sampler_controller_start.py script.
     """
-    os.system("python " + classifier_controller)
+    os.system("python " + query_sampler_controller)
+
 
 if __name__ == "__main__":
     """
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     process3 = threading.Thread(target=classifier, name="ClassifierControllerThread")
     process3.start()
 
-    process4 = threading.Thread(target=chrome, name="ChromeControllerThread")
+    process4 = threading.Thread(target=query_sampler, name="QuerySamplerControllerThread")
     process4.start()
 
     # Optional: Join threads to ensure main thread waits for their completion
@@ -89,3 +90,5 @@ if __name__ == "__main__":
     process2.join()
     process3.join()
     process4.join()
+
+

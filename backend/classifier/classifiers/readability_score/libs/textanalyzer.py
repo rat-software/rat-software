@@ -1,61 +1,52 @@
 '''
 This classifier enables the user to input a webpage html to calculate its readability based on different scores.
-It is able to differentiate between English, German and Arabic pages.
+It is able to differentiate between English and German pages.
 '''
 
-
-#Main functions 
-
-from langdetect import detect
+from langdetect import detect, LangDetectException
 import textstat
-
 from bs4 import BeautifulSoup
-
-
 
 class TextAnalyzer:
     def __init__(self) -> None:
         pass  
 
     def analyzeEn(self, main_text):
-        textstat.set_lang("en")
-
-        # Calculate readability scores
-        flesch_reading_ease = textstat.flesch_reading_ease(main_text)
-        flesch_kincaid_grade = textstat.flesch_kincaid_grade(main_text)
-        standard_deviation = textstat.text_standard(main_text, float_output=False)
-
-        # Calculate reading time
-        reading_time = round(textstat.reading_time(main_text, ms_per_char=14.69) / 60, 1)
-
-        return {"Language": "English", "Reading Ease":flesch_reading_ease, "Grade":flesch_kincaid_grade, "Standard Deviation":standard_deviation, "Reading Time":reading_time}
+        """Calculates and returns only the Flesch Reading Ease for English text."""
+        textstat.set_lang("en_US")
+        return textstat.flesch_reading_ease(main_text)
         
     def analyzeDe(self, main_text):
-        textstat.set_lang("de")
+        """Calculates and returns only the Flesch Reading Ease for German text."""
+        textstat.set_lang("de_DE")
+        return textstat.flesch_reading_ease(main_text)
+
+    def analyze(self, html_code):
+        """
+        Analyzes HTML code, extracts text, detects the language, and returns the 
+        Flesch Reading Ease score directly.
         
-        # Calculate readability scores
-        flesch_reading_ease = textstat.flesch_reading_ease(main_text)
-        wiener_sachtextformel_grade = textstat.wiener_sachtextformel(main_text, 1)
-        standard_deviation = textstat.text_standard(main_text, float_output=False)
+        Returns:
+            float: The readability score.
+            str: A status message if analysis is not possible.
+        """
+        soup = BeautifulSoup(html_code, features="lxml")
+        # Remove script and style elements
+        for script_or_style in soup(["script", "style"]):
+            script_or_style.decompose()
+        main_text = soup.get_text(separator=' ', strip=True)
 
-        # Calculate reading time
-        reading_time = round(textstat.reading_time(main_text, ms_per_char=14.69) / 60, 1)
-
-        return {"Language": "Deutsch", "Reading Ease":flesch_reading_ease, "Grade":wiener_sachtextformel_grade, "Standard Deviation":standard_deviation, "Reading Time":reading_time}
-
-
+        # Check for a minimum word count to ensure meaningful analysis
+        if len(main_text.split()) < 100:
+            return "error"
         
-        
-    def analyze(self, main_text):
-        soup = BeautifulSoup(main_text, features="lxml")
-        main_text = soup.get_text()
-        lang = detect(main_text)
-        if lang == "en":
-            indicators = self.analyzeEn(main_text)
-        elif lang == "de":
-            indicators = self.analyzeDe(main_text)
-
-        else:
-            indicators = "No language detected"
-
-        return indicators
+        try:
+            lang = detect(main_text)
+            if lang == "en":
+                return self.analyzeEn(main_text)
+            elif lang == "de":
+                return self.analyzeDe(main_text)
+            else:
+                return f"Language '{lang}' not supported"
+        except LangDetectException:
+            return "Language could not be detected"

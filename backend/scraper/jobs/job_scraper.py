@@ -11,7 +11,7 @@ import inspect
 
 
 job_defaults = {
-    'max_instances': 2
+    'max_instances': 1
 }
 
 def job():

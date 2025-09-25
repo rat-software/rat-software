@@ -4,36 +4,75 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
-<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
   <div class="col-md-6 offset-md-3">
-    <!-- Link to navigate back to the study page -->
     <div class="pb-4">
       <a class="text-dark" href="{{ url_for('study', id=id) }}">
         <i class="fa-solid fa-angle-left me-2"></i> Back to Study
       </a>
     </div>
 
-    <!-- Card container for the export results functionality -->
     <div class="card">
-      <h2 class="card-header crd-header">Export Results</h2>
+      <h2 class="card-header crd-header">Export Full Report</h2>
       <div class="card-body">
 
-        <!-- Form to handle exporting results -->
-        <form method="POST">
-          <!-- Form field for selecting tables to export -->
-          <div class="mb-3">
-            {{ form.tables.label(class_="form-label") }}
-            {{ form.tables() }}
-          </div>
+        <div class="mb-4">
+            <h5>Data included in this report:</h5>
+            <p class="text-muted small">The final report includes the following analysis summaries and raw data, each on a separate sheet.</p>
+            
+            <h6 class="mt-3 text-secondary">ANALYSIS</h6>
+            <ul class="list-group">
+                {% if available_data.result_stats %}
+                    <li class="list-group-item">Result Stats</li>
+                {% endif %}
+                {% if available_data.evaluation_stats %}
+                    <li class="list-group-item">Evaluation Stats</li>
+                {% endif %}
+                {% if available_data.answer_stats %}
+                    <li class="list-group-item">Answer Stats</li>
+                {% endif %}
+                {% if available_data.classifier_stats %}
+                    <li class="list-group-item">Classifier Stats</li>
+                {% endif %}
+                {% if available_data.top_domains_standard %}
+                    <li class="list-group-item">All Domains (Standard)</li>
+                {% endif %}
+                {% if available_data.top_domains_ai %}
+                    <li class="list-group-item">All Domains (AI Sources)</li>
+                {% endif %}
+            </ul>
 
-          <!-- Submit button to export results -->
-          <div class="mb-3">
-            {{ form.submit(class_="btn btn-primary") }}
+            <h6 class="mt-3 text-secondary">RAW DATA</h6>
+            <ul class="list-group">
+                {% if available_data.assessments %}
+                    <li class="list-group-item">Assessments</li>
+                {% endif %}
+                {% if available_data.search_results %}
+                    <li class="list-group-item">Search Results</li>
+                {% endif %}
+                {% if available_data.ai_results %}
+                    <li class="list-group-item">AI Overview Results</li>
+                {% endif %}
+                {% if available_data.ai_sources %}
+                    <li class="list-group-item">AI Overview Sources</li>
+                {% endif %}
+                {% if available_data.chatbot_results %}
+                    <li class="list-group-item">Chatbot Results</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <form method="POST" action="{{ url_for('export', id=id) }}">
+          {{ form.hidden_tag() }}
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-download me-2"></i>Download Full Report
+            </button>
           </div>
         </form>
+
       </div>
     </div>
   </div>

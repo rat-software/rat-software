@@ -53,32 +53,22 @@
       </div>
 
       {% if register_user_form.password_confirm %}
-      {# Check if the password confirmation field exists #}
       <div class="mb-3">
         {{ render_field_with_errors(register_user_form.password_confirm, class_="form-control") }}
-        {# Render the password confirmation input field with error handling #}
       </div>
       {% endif %}
-
+      
+      <div class="mb-3">
+        {{ render_field_with_errors(register_user_form.recaptcha) }}
+      </div>
+      
       <div class="mb-3">
         {{ register_user_form.submit(class="btn btn-outline-primary me-2") | safe }}
-        {# Render the submit button for the form #}
       </div>
-    </form>
-
-  </div>
-</div>
-
-<div class="col-md-6 offset-md-3">
-  {# Create a column centered on the page with a width of 6 columns #}
-  <p class="info">
-    <br />
-    <h3 class="fw-semibold mb-4">Thank you for your interest in the RAT.</h3> 
-    You can now proceed with registering for access to the tool. We will reach out to you shortly to discuss your
-    requirements and activate your account.
-    {# Provide a thank you message and information about the next steps in the registration process #}
-  </p>
-</div>
+      </form>
+      
+      </div>
+      </div>
 
 {% endblock %}
 {# End the content block #}

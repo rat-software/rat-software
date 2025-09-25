@@ -85,7 +85,7 @@ class SourcesController:
             Executes the job_reset_sources.py script to reset failed jobs.
             """
             job = 'python ' + os.path.join(workingdir, "jobs", 'job_reset_sources.py')
-            os.system(job)              
+            os.system(job)                        
 
         # Start threads for the defined job functions
         process1 = threading.Thread(target=source)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         workingdir = parentdir
     else:
         raise FileNotFoundError("Job script 'job_sources.py' not found in expected directories.")
-
+    
     # Start the SourcesController with the identified working directory
     sources_controller.start(workingdir)
     del sources_controller

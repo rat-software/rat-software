@@ -17,40 +17,7 @@ language_study = db.Table('language_study',
                               'study.id'), primary_key=True), extend_existing=True,
                           )
 
-logger_query = db.Table('logger_query',
-                        db.Column('logger', db.ForeignKey(
-                            'logger.id'), primary_key=True),
-                        db.Column('query', db.ForeignKey(
-                            'query.id'), primary_key=True), extend_existing=True,
-                        )
 
-logger_result = db.Table('logger_result',
-                         db.Column('logger', db.ForeignKey(
-                             'logger.id'), primary_key=True),
-                         db.Column('result', db.ForeignKey(
-                             'result.id'), primary_key=True), extend_existing=True,
-                         )
-
-logger_scraper = db.Table('logger_scraper',
-                          db.Column('logger', db.ForeignKey(
-                              'logger.id'), primary_key=True),
-                          db.Column('scraper', db.ForeignKey(
-                              'scraper.id'), primary_key=True), extend_existing=True,
-                          )
-
-logger_searchengine = db.Table('logger_searchengine',
-                               db.Column('logger', db.ForeignKey(
-                                   'logger.id'), primary_key=True),
-                               db.Column('searchengine', db.ForeignKey(
-                                   'searchengine.id'), primary_key=True), extend_existing=True,
-                               )
-
-logger_serp = db.Table('logger_serp',
-                       db.Column('logger', db.ForeignKey(
-                           'logger.id'), primary_key=True),
-                       db.Column('serp', db.ForeignKey(
-                           'serp.id'), primary_key=True), extend_existing=True,
-                       )
 
 participant_study = db.Table('participant_study',
                              db.Column('participant', db.ForeignKey(
@@ -87,15 +54,89 @@ user_role = db.Table('user_role',
                          'role.id'), primary_key=True), extend_existing=True,
                      )
 
-result_source = db.Table('result_source',
-                         db.Column('result', db.ForeignKey('result.id')),
-                         db.Column('source', db.ForeignKey('source.id')), extend_existing=True,
-                         )
+
 
 classifier_study = db.Table('classifier_study',
                          db.Column('classifier', db.ForeignKey('classifier.id')),
                          db.Column('study', db.ForeignKey('study.id')), extend_existing=True,
                          )
+
+qs_study_user = db.Table('qs_study_user',
+    db.Column('qs_study', db.Integer, db.ForeignKey('qs_study.id'), primary_key=True),
+    db.Column('user', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    extend_existing=True
+)
+
+
+class ResultSource(db.Model):
+    __tablename__ = 'result_source'
+    # Wichtig: Die Spaltennamen 'result' und 'source' entsprechen deiner Datenbank
+    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'), primary_key=True)
+    source_id = db.Column('source', db.Integer, db.ForeignKey('source.id'), primary_key=True)
+    
+    # Hier sind die Spalten, die du für deine Logik brauchst:
+    progress = db.Column(db.Integer, default=0, nullable=False)
+    counter = db.Column(db.Integer, default=0, nullable=False)
+
+    # Beziehung zum Source-Modell
+    source = db.relationship("Source")
+
+class Qs_Geotarget(db.Model):
+    __tablename__ = 'qs_geotarget'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    canonical_name = db.Column(db.String)
+    country_code = db.Column(db.String)
+    target_type = db.Column(db.String)
+    criterion_id = db.Column(db.Integer)
+
+class Qs_Keyword(db.Model):
+    __tablename__ = 'qs_keyword'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    qs_study_id = db.Column(db.Integer)
+    qs_geotarget_criterion_id = db.Column(db.Integer)
+    qs_language_code_criterion_id = db.Column(db.Integer)
+    keyword = db.Column(db.String)
+    created_at = db.Column(db.DateTime)
+    status = db.Column(db.Integer)
+
+class Qs_Keyword_Idea(db.Model):
+    __tablename__ = 'qs_keyword_idea'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    qs_study_id = db.Column(db.Integer)
+    qs_keyword_id = db.Column(db.Integer)
+    keyword_idea = db.Column(db.String)
+    avg_monthly_searches = db.Column(db.Integer)
+    competition = db.Column(db.String)
+    created_at = db.Column(db.DateTime)
+
+class Qs_Language_Code(db.Model):
+    __tablename__ = 'qs_language_code'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    criterion_id = db.Column(db.Integer)
+
+class Qs_Study(db.Model):
+    __tablename__ = 'qs_study'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    created_at = db.Column(db.DateTime)
+    status = db.Column(db.Integer)
+    users = db.relationship('User', secondary=qs_study_user, back_populates='qs_studies', lazy='select')
+    description = db.Column(db.String, nullable=True)  # <-- DIESE ZEILE HINZUFÜGEN
+
+
+
 
 
 class Answer(db.Model):
@@ -109,6 +150,7 @@ class Answer(db.Model):
     status = db.Column(db.Integer)
     created_at = db.Column(db.DateTime)
     source_status_code = db.Column(db.Integer)
+    resulttype = db.Column(db.Integer)
 
     participant_id = db.Column(
         'participant', db.Integer, db.ForeignKey('participant.id'))
@@ -120,11 +162,23 @@ class Answer(db.Model):
     question = db.relationship(
         'Question', back_populates='answers', lazy='select')
 
-    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'))
+
+    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'), nullable=True)
     result = db.relationship('Result', back_populates='answers', lazy='select')
 
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    result_ai_id = db.Column('result_ai', db.Integer, db.ForeignKey('result_ai.id'), nullable=True)
+    result_ai = db.relationship('ResultAi', back_populates='answers', lazy='select')
+
+    result_chatbot_id = db.Column('result_chatbot', db.Integer, db.ForeignKey('result_chatbot.id'), nullable=True)
+    result_chatbot = db.relationship('ResultChatbot', back_populates='answers', lazy='select')
+
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='answers', lazy='select')
+
+    __table_args__ = (
+        db.Index('idx_answer_lookup', 'participant', 'study', 'status'),
+        {'extend_existing': True}
+    )
 
 
 class ClassifierResult(db.Model):
@@ -145,6 +199,7 @@ class ClassifierResult(db.Model):
     result = db.relationship("Result", back_populates="classifier")
 
 
+
 class Classifier(db.Model):
     """Model for storing classifiers used in studies."""
     __tablename__ = 'classifier'
@@ -154,6 +209,7 @@ class Classifier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('name', db.String)
     display_name = db.Column('display_name', db.String)
+    display = db.Column(db.Boolean)
 
     indicators = db.relationship(
         'ClassifierIndicator', back_populates='classifier', uselist=False, lazy='select')
@@ -176,7 +232,8 @@ class ClassifierIndicator(db.Model):
     value = db.Column('value', db.String)
     created_at = db.Column(db.DateTime)
 
-    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'))
+    # KORRIGIERT: Expliziter Spaltenname 'result' und Best Practices
+    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id', ondelete='CASCADE'), index=True)
     result = db.relationship(
         'Result', back_populates='indicators', lazy='select')
 
@@ -194,7 +251,8 @@ class Content(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     value = db.Column(db.String)
 
-    result_id = db.Column(db.Integer, db.ForeignKey('result.id'))
+    # KORRIGIERT: Expliziter Spaltenname 'result'
+    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id', ondelete='CASCADE'), index=True)
     result = db.relationship(
         'Result', back_populates='contents', lazy='select')
 
@@ -221,6 +279,19 @@ class Country(db.Model):
     monitorings = db.relationship(
         'Monitoring', secondary=country_monitoring, back_populates='countries', lazy='select')
 
+class Provider(db.Model):
+    """Model for storing providers involved in various studies."""
+    __tablename__ = 'provider'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+
+    searchengine_id = db.Column(
+        'searchengine', db.Integer, db.ForeignKey('searchengine.id'))
+    searchengine = db.relationship(
+        'SearchEngine', back_populates='providers', lazy='select')
+
 
 class Evaluation(db.Model):
     """Model for storing evaluations of sources."""
@@ -245,7 +316,7 @@ class Experiment(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship(
         'Study', back_populates='experiments', lazy='select')
 
@@ -264,22 +335,19 @@ class Group(db.Model):
         'Participant', back_populates='group', lazy='select')
 
 
-class Incentive(db.Model):
-    """Model for storing incentives given to participants."""
-    __tablename__ = 'incentive'
+class StudyURLFilter(db.Model):
+    __tablename__ = 'study_url_filter'
     __table_args__ = {'extend_existing': True}
-
-
     id = db.Column(db.Integer, primary_key=True)
-
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship(
-        'Study', back_populates='incentives', lazy='select')
+        'Study', back_populates='study_url_filters', lazy='select'   
+    )
 
-    participant_id = db.Column(
-        'participant', db.Integer, db.ForeignKey('participant.id'))
-    participant = db.relationship(
-        'Participant', back_populates='incentives', lazy='select')
+    url = db.Column(db.String)
+    include = db.Column(db.Boolean)
+    exclude = db.Column(db.Boolean)
+
 
 
 class Language(db.Model):
@@ -297,28 +365,7 @@ class Language(db.Model):
         'Study', secondary=language_study, back_populates='languages', lazy='select')
 
 
-class Logger(db.Model):
-    """Model for storing loggers that manage various tasks and interactions."""
-    __tablename__ = 'logger'
-    __table_args__ = {'extend_existing': True}
 
-
-    id = db.Column(db.Integer, primary_key=True)
-    clicked = db.Column(db.Boolean)
-    limit = db.Column(db.String)
-
-    tasks = db.relationship('Task', back_populates='logger', lazy='select')
-
-    queries = db.relationship(
-        'Query', secondary=logger_query, back_populates='loggers', lazy='select')
-    results = db.relationship(
-        'Result', secondary=logger_result, back_populates='loggers', lazy='select')
-    scrapers = db.relationship(
-        'Scraper', secondary=logger_scraper, back_populates='loggers', lazy='select')
-    searchengines = db.relationship(
-        'SearchEngine', secondary=logger_searchengine, back_populates='loggers', lazy='select')
-    serps = db.relationship('Serp', secondary=logger_serp,
-                            back_populates='loggers', lazy='select')
 
 
 class Monitoring(db.Model):
@@ -383,8 +430,7 @@ class Participant(db.Model):
 
     answers = db.relationship(
         'Answer', back_populates='participant', lazy='select')
-    incentives = db.relationship(
-        'Incentive', back_populates='participant', lazy='select')
+
     studies = db.relationship(
         'Study', secondary=participant_study, back_populates='participants', lazy='select')
 
@@ -403,7 +449,7 @@ class Query(db.Model):
 
 
 
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='queries', lazy='select')
 
 
@@ -418,10 +464,7 @@ class Query(db.Model):
     #serps = db.relationship('Serp', back_populates='query', lazy='select')
     results = db.relationship('Result', back_populates='query_', lazy='select')
 
-    loggers = db.relationship(
-        'Logger', secondary=logger_query, back_populates='queries', lazy='select')
     
-
     
 
 
@@ -439,7 +482,7 @@ class Question(db.Model):
     position = db.Column(db.Integer)
     interval = db.Column(db.Integer)
 
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='questions', lazy='select')
 
     questiontype_id = db.Column(
@@ -489,7 +532,7 @@ class RangeStudy(db.Model):
     __tablename__ = 'range_study'
     __table_args__ = {'extend_existing': True}
     id = db.Column(db.Integer, primary_key=True)
-    study = db.Column(db.Integer, db.ForeignKey('study.id'))
+    study = db.Column(db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     range_start = db.Column(db.Integer)
     range_end = db.Column(db.Integer)
 
@@ -528,9 +571,15 @@ class Result(db.Model):
     ip = db.Column(db.String)
     origin = db.Column(db.String)
     imported = db.Column(db.Boolean)
+    normalized_url = db.Column(db.String, index=True, nullable=True)
+
+    assignment_count = db.Column(db.Integer, default=0, nullable=True)
 
     indicators = db.relationship(
-        'ClassifierIndicator', back_populates='result', uselist=False, lazy='select')
+        'ClassifierIndicator', back_populates='result', lazy='select', cascade="all, delete-orphan")
+    
+    contents = db.relationship(
+            'Content', back_populates='result', lazy='select', cascade="all, delete-orphan")
 
     classifier = db.relationship(
         'ClassifierResult', back_populates='result', lazy='select')
@@ -540,7 +589,7 @@ class Result(db.Model):
     monitoring = db.relationship(
         'Monitoring', back_populates='results', lazy='select')
 
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='results', lazy='select')
 
     scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
@@ -556,13 +605,16 @@ class Result(db.Model):
     answers = db.relationship('Answer', back_populates='result', lazy='select')
     contents = db.relationship(
         'Content', back_populates='result', lazy='select')
-    loggers = db.relationship(
-        'Logger', secondary=logger_result, back_populates='results', lazy='select')
+
     questions = db.relationship(
         'Question', secondary=question_result, back_populates='results', lazy='select')
 
-    sources = db.relationship(
-        'Source', secondary=result_source, back_populates='results', lazy='select')
+    from sqlalchemy.ext.associationproxy import association_proxy
+
+    # Ersetze die alte "sources"-Zeile hiermit:
+    source_associations = db.relationship("ResultSource", backref="result", cascade="all, delete-orphan")
+    sources = association_proxy('source_associations', 'source')
+
 
 
 class ResultType(db.Model):
@@ -573,11 +625,19 @@ class ResultType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     display = db.Column(db.String)
+    filter = db.Column(db.Boolean)
+    selection = db.Column(db.Boolean)
 
     monitorings = db.relationship(
         'Monitoring', back_populates='resulttype', lazy='select')
-    studies = db.relationship(
-        'Study', back_populates='resulttype', lazy='select')
+    
+class StudyResulttype(db.Model):
+    __tablename__ = 'study_resulttype'
+    __table_args__ = {'extend_existing': True}    
+
+    id = db.Column(db.Integer, primary_key=True)
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    resulttype_id = db.Column('resulttype', db.Integer, db.ForeignKey('resulttype.id'))
 
 
 class Role(db.Model, RoleMixin):
@@ -609,6 +669,7 @@ class Scraper(db.Model):
     error_code = db.Column(db.Integer)
     created_at = db.Column(db.DateTime)
     type = db.Column(db.Integer)
+    resulttype = db.Column(db.Integer)
 
     query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
     query_ = db.relationship('Query', back_populates='scrapers', lazy='select')
@@ -618,7 +679,7 @@ class Scraper(db.Model):
     searchengine = db.relationship(
         'SearchEngine', back_populates='scrapers', lazy='select')
 
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='scrapers', lazy='select')
 
     results = db.relationship(
@@ -626,8 +687,7 @@ class Scraper(db.Model):
     serps = db.relationship('Serp', back_populates='scraper', lazy='select')
     reportings = db.relationship(
         'Reporting', back_populates='scraper', lazy='select')
-    loggers = db.relationship(
-        'Logger', secondary=logger_scraper, back_populates='scrapers', lazy='select')
+
     
 class SearchEngine(db.Model):
     """Model for storing search engines used in studies."""
@@ -639,13 +699,18 @@ class SearchEngine(db.Model):
     name = db.Column(db.String)
     module = db.Column(db.String)
     test = db.Column(db.Integer)
+    resulttype = db.Column(db.Integer)
+    country = db.Column(db.Integer)
+    provider = db.Column(db.Integer)
 
     scrapers = db.relationship(
         'Scraper', back_populates='searchengine', lazy='select')
     countries = db.relationship(
         'Country', back_populates='searchengine', lazy='select')
-    loggers = db.relationship('Logger', secondary=logger_searchengine,
-                              back_populates='searchengines', lazy='select')
+    
+    providers = db.relationship(
+        'Provider', back_populates='searchengine', lazy='select')
+
     studies = db.relationship(
         'Study', secondary=searchengine_study, back_populates='searchengines', lazy='select')
 
@@ -666,8 +731,7 @@ class Serp(db.Model):
     scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
     scraper = db.relationship('Scraper', back_populates='serps', lazy='select')
 
-    loggers = db.relationship(
-        'Logger', secondary=logger_serp, back_populates='serps', lazy='select')
+
 
     monitoring_id = db.Column('monitoring', db.Integer,
                               db.ForeignKey('monitoring.id'))
@@ -697,8 +761,7 @@ class Source(db.Model):
     #final_url = db.Column(db.String)
     created_at = db.Column(db.DateTime)
 
-    results = db.relationship(
-        'Result', secondary=result_source, back_populates='sources', lazy='select')
+
 
     evaluation = db.relationship(
         'Evaluation', back_populates='source', uselist=False, lazy='select')
@@ -714,7 +777,7 @@ class Statistic(db.Model):
     name = db.Column(db.String)
     value = db.Column(db.String)
 
-    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id'))
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship(
         'Study', back_populates='statistics', lazy='select')
 
@@ -733,35 +796,56 @@ class Study(db.Model):
     updated_at = db.Column(db.DateTime)
     result_count = db.Column(db.Integer)
     status = db.Column(db.Integer)
+    show_urls = db.Column(db.Boolean)
+    show_ai_sources = db.Column(db.Boolean)
     task = db.Column(db.String)
+
+    limit_per_participant = db.Column(db.Boolean, default=False, nullable=False)
+    max_results_per_participant = db.Column(db.Integer, nullable=True)
+
+    skippable = db.Column(db.Boolean, default=True, nullable=False)
+
+    completion_text = db.Column(db.Text, nullable=True)
+
+    result_types = db.Column(db.String)
 
     studytype_id = db.Column('studytype', db.Integer,
                              db.ForeignKey('studytype.id'))
     studytype = db.relationship(
         'StudyType', back_populates='studies', lazy='select')
 
-    resulttype_id = db.Column('resulttype', db.Integer,
-                              db.ForeignKey('resulttype.id'))
-    resulttype = db.relationship(
-        'ResultType', back_populates='studies', lazy='select')
+    assessment_result_types = db.relationship(
+        'ResultType', 
+        secondary='study_resulttype', 
+        lazy='subquery',
+        backref=db.backref('studies', lazy=True)
+    )
 
-    answers = db.relationship('Answer', back_populates='study', lazy='select')
+    answers = db.relationship('Answer', back_populates='study', lazy='select', cascade="all, delete-orphan")
     experiments = db.relationship(
-        'Experiment', back_populates='study', lazy='select')
-    incentives = db.relationship(
-        'Incentive', back_populates='study', lazy='select')
+        'Experiment', back_populates='study', lazy='select', cascade="all, delete-orphan")
+
     statistics = db.relationship(
-        'Statistic', back_populates='study', lazy='select')
-    queries = db.relationship('Query', back_populates='study', lazy='select')
+        'Statistic', back_populates='study', lazy='select', cascade="all, delete-orphan")
+    queries = db.relationship('Query', back_populates='study', lazy='select', cascade="all, delete-orphan")
     questions = db.relationship(
-        'Question', back_populates='study', lazy='select')
-    results = db.relationship('Result', back_populates='study', lazy='select')
+        'Question', back_populates='study', lazy='select', cascade="all, delete-orphan")
+    results = db.relationship('Result', back_populates='study', lazy='select', cascade="all, delete-orphan")
     scrapers = db.relationship(
-        'Scraper', back_populates='study', lazy='select')
+        'Scraper', back_populates='study', lazy='select', cascade="all, delete-orphan")
+    study_url_filters = db.relationship(
+        'StudyURLFilter', back_populates='study', lazy='select', cascade="all, delete-orphan")
+    
     languages = db.relationship(
         'Language', secondary=language_study, back_populates='studies', lazy='select')
+    
     searchengines = db.relationship(
-        'SearchEngine', secondary=searchengine_study, back_populates='studies', lazy='select')
+        'SearchEngine', 
+        secondary=searchengine_study, 
+        back_populates='studies',  # This should point to the 'studies' attribute on SearchEngine
+        lazy='select'
+    )
+
     users = db.relationship('User', secondary=study_user,
                             back_populates='studies', lazy='select')
     participants = db.relationship(
@@ -778,6 +862,7 @@ class StudyType(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    description = db.Column(db.String)
 
     studies = db.relationship(
         'Study', back_populates='studytype', lazy='select')
@@ -791,8 +876,7 @@ class Task(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    logger_id = db.Column('logger', db.Integer, db.ForeignKey('logger.id'))
-    logger = db.relationship('Logger', back_populates='tasks', lazy='select')
+
 
 
 class User(db.Model, UserMixin):
@@ -833,6 +917,95 @@ class User(db.Model, UserMixin):
                             back_populates='users', lazy='select')
     studies = db.relationship(
         'Study', secondary=study_user, back_populates='users', lazy='select')
+    
+    qs_studies = db.relationship('Qs_Study', secondary=qs_study_user, back_populates='users', lazy='select')
 
 
 
+
+class ResultAi(db.Model):
+    """Model for storing AI-generated answers."""
+    __tablename__ = 'result_ai'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    answer = db.Column(db.Text)
+    answer_html = db.Column(db.Text)
+    created_at = db.Column(db.DateTime)
+    assignment_count = db.Column(db.Integer)
+
+    scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
+    scraper = db.relationship('Scraper', backref=db.backref('result_ais', lazy=True))
+
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
+    study = db.relationship('Study', backref=db.backref('result_ais', lazy=True, cascade="all, delete-orphan"))
+
+    query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
+    query = db.relationship('Query', backref=db.backref('result_ais', lazy=True))
+
+    sources = db.relationship('ResultAiSource', back_populates='result_ai', lazy='select')
+
+    answers = db.relationship('Answer', back_populates='result_ai', lazy='select')
+
+
+
+class ResultAiSource(db.Model):
+    """Model for storing the sources of AI-generated answers."""
+    __tablename__ = 'result_ai_source'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    url = db.Column(db.Text)
+    created_at = db.Column(db.DateTime)
+    error_code = db.Column(db.String)
+    job_server = db.Column(db.String)
+    title = db.Column(db.Text)
+    description = db.Column(db.Text)
+    position = db.Column(db.Integer)
+    main = db.Column(db.Text)
+    final_url = db.Column(db.Text)
+    ip = db.Column(db.String)
+    normalized_url = db.Column(db.Text)
+    progress = db.Column(db.Integer)
+    counter = db.Column(db.Integer)
+
+    result_ai_id = db.Column('result_ai', db.Integer, db.ForeignKey('result_ai.id'))
+    result_ai = db.relationship('ResultAi', back_populates='sources')
+
+    source_id = db.Column('source', db.Integer, db.ForeignKey('source.id'))
+    source = db.relationship('Source', backref=db.backref('result_ai_sources', lazy=True))
+
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
+    study = db.relationship('Study', backref=db.backref('result_ai_sources', lazy=True, cascade="all, delete-orphan"))
+
+    scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
+    scraper = db.relationship('Scraper', backref=db.backref('result_ai_sources', lazy=True))
+
+    query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
+    query = db.relationship('Query', backref=db.backref('result_ai_sources', lazy='select'))
+
+    country_id = db.Column('country', db.Integer, db.ForeignKey('country.id'))
+    country = db.relationship('Country', backref=db.backref('result_ai_sources', lazy=True))
+
+
+class ResultChatbot(db.Model):
+    """Model for storing AI-generated answers from Chatbots."""
+    __tablename__ = 'result_chatbot'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    answer = db.Column(db.Text)
+    answer_html = db.Column(db.Text)
+    created_at = db.Column(db.DateTime)
+    assignment_count = db.Column(db.Integer)
+
+    scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
+    scraper = db.relationship('Scraper', backref=db.backref('result_chatbots', lazy=True))
+
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
+    study = db.relationship('Study', backref=db.backref('result_chatbots', lazy=True, cascade="all, delete-orphan"))
+
+    query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
+    query = db.relationship('Query', backref=db.backref('result_chatbots', lazy=True))
+
+    answers = db.relationship('Answer', back_populates='result_chatbot', lazy='select')

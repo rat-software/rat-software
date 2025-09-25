@@ -1,0 +1,33 @@
+{# templates/query_sampler/delete_qs_study_confirm.html #}
+{% extends "master.html" %}
+
+{% block title %}Confirm Deletion{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-danger">
+            <h3 class="card-header bg-danger text-white">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirm Deletion
+            </h3>
+            <div class="card-body">
+                <p class="fs-5">
+                    Are you sure you want to permanently delete the study: <strong>"{{ study.name }}"</strong>?
+                </p>
+                <div class="alert alert-danger" role="alert">
+                    <strong>Warning:</strong> This action cannot be undone. All associated data, including seed keywords and thousands of generated keyword ideas, will be permanently erased.
+                </div>
+
+                <form method="POST" action="{{ url_for('delete_qs_study', id=study.id) }}" class="mt-4">
+                    <a href="{{ url_for('qs_studies') }}" class="btn btn-secondary">
+                        <i class="fa-solid fa-ban me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-danger float-end">
+                        <i class="fa-solid fa-trash-can me-2"></i>Yes, Delete this Study
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

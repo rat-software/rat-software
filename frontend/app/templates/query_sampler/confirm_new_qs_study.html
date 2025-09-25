@@ -1,0 +1,60 @@
+{# templates/query_sampler/confirm_new_qs_study.html #}
+{% extends "master.html" %}
+
+{% block title %}Confirm Study{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="border-bottom text-center pb-3 mb-4">Please confirm your details</h5>
+        
+        {# KORREKTUR: Direkter Zugriff auf die Dictionary-Werte ohne Index [0] #}
+        <h4 class="mb-0">{{ form.name }}</h4>
+        <p class="text-muted mb-4">{{ form.description }}</p>
+
+        <div class="row pt-3 border-top">
+          <div class="col-md-6 mb-4">
+            <div class="summary-desc">Selected Country</div>
+            {% if geotarget %}
+            <span class="badge bg-secondary mr-2">{{ geotarget.name }}</span>
+            {% else %}
+            <span class="text-danger">No country selected.</span>
+            {% endif %}
+          </div>
+
+          <div class="col-md-6 mb-4 border-start">
+            <div class="summary-desc">Selected Language</div>
+            {% if language %}
+            <span class="badge bg-secondary mr-2">{{ language.name }}</span>
+            {% else %}
+            <span class="text-danger">No language selected.</span>
+            {% endif %}
+          </div>
+          
+          <div class="col-12 mb-4">
+            <div class="summary-desc">Seed Keywords</div>
+            <p class="mb-0">
+              {% for keyword in seed_keywords %}
+              <span class="badge bg-secondary mr-2">{{ keyword }}</span>
+              {% endfor %}
+            </p>
+          </div>
+        </div>
+        
+        <div class="mt-4 pt-4 border-top">
+            <form action="{{ url_for('create_new_qs_study') }}" method="POST">
+              {# Die `form`-Variable ist jetzt ein Dictionary und wird korrekt übergeben #}
+              {{ confirm.data(value=form) }}
+              <a href="{{ url_for('new_qs_study_wizard')}}" class="btn btn-outline-secondary">Cancel</a>
+              {{ confirm.submit(class_="btn btn-primary float-end") }}
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

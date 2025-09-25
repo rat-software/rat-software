@@ -47,7 +47,7 @@ if __name__ == '__main__':
     logger = Logger()
     logger.write_to_log("Source\t reset\t \t ")
     scheduler = BackgroundScheduler(job_defaults=job_defaults, timezone='Europe/Berlin')
-    scheduler.add_job(job, 'interval', hours=1, next_run_time=datetime.now())
+    scheduler.add_job(job, 'interval', minutes=10, next_run_time=datetime.now())
     scheduler.start()
 
     del logger

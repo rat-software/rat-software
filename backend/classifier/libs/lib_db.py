@@ -45,6 +45,7 @@ class DB:
                     self.conn.close()
 
         return ConnectionManager(self.db_cnf)
+    
 
     def get_classifiers(self):
         """
@@ -99,33 +100,42 @@ class DB:
                 query = cur.fetchone()
                 result['query'] = query['query'] if query else "N/A"
         return results
+    
 
-    def get_results(self, classifier_id, study_id):     
+
+    def get_results(self, classifier_id, study_id):
         """
-        Get the results for a given classifier ID.
+        Get the results for a given classifier ID and study ID.
+        Only includes sources with progress=1 or (progress=-1 AND counter>=11).
 
         Args:
             classifier_id (int): ID of the classifier.
+            study_id (int): ID of the study.
 
         Returns:
-            list: List of results for the given classifier ID.
+            list: List of results for the given classifier ID and study ID.
         """
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
             cur.execute("""
-                SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
-                       result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, 
-                       result_source.source, classifier_study.classifier
-                FROM result, source, result_source, classifier_study
-                WHERE result_source.result = result.id AND result_source.source = source.id AND classifier_study.classifier = %s AND result.study = %s
-                      AND (source.progress = 1 OR source.progress = -1) 
-                      AND result.study = classifier_study.study
-                      AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result WHERE classifier_result.classifier = %s)
-                ORDER BY result.created_at, result.id
-                LIMIT 10 
+                SELECT r.id, r.url, r.main, r.position, r.title, r.description, r.ip, 
+                    r.final_url, s.code, s.bin, s.content_type, s.error_code, s.status_code, 
+                    rs.source, cs.classifier
+                FROM result r
+                JOIN result_source rs ON rs.result = r.id
+                JOIN source s ON rs.source = s.id 
+                    AND (s.progress = 1 OR (s.progress = -1 AND rs.counter >= 11))
+                JOIN classifier_study cs ON r.study = cs.study AND cs.classifier = %s
+                WHERE r.study = %s
+                    AND NOT EXISTS (
+                        SELECT 1 FROM classifier_result cr 
+                        WHERE cr.result = r.id AND cr.classifier = %s
+                    )
+                ORDER BY r.created_at, r.id
+                LIMIT 5
             """, (classifier_id, study_id, classifier_id))
-            conn.commit()
             results = cur.fetchall()
+            
         results = self.get_search_engines(results)
         results = self.get_queries(results)
         return results
@@ -141,19 +151,31 @@ class DB:
             classifier_id (int): ID of the classifier.
             value (str): Value of the classification.
             result (int): ID of the result.
+            job_server (str): Name of the job server.
 
         Returns:
-            None
+            bool: True wenn Insert erfolgreich, False wenn bereits existiert
         """
         try:
             created_at = datetime.now()
             with self.connect_to_db() as conn:
                 cur = conn.cursor(cursor_factory=DictCursor)
-                cur.execute("INSERT INTO classifier_result (classifier, value, result, created_at, job_server) VALUES (%s, %s, %s, %s, %s);", 
-                            (classifier_id, value, result, created_at, job_server))
+                cur.execute("""
+                    INSERT INTO classifier_result 
+                        (classifier, value, result, created_at, job_server) 
+                    VALUES (%s, %s, %s, %s, %s) 
+                    ON CONFLICT (classifier, result) DO NOTHING 
+                    RETURNING id""", 
+                    (classifier_id, value, result, created_at, job_server))
+                
+                # Wenn ein Record zurückgegeben wurde, war das Insert erfolgreich
+                result = cur.fetchone()
                 conn.commit()
+                return result is not None
+                
         except Exception as e:
             print(f"Error inserting classification result: {e}")
+            return False
 
     def insert_indicator(self, indicator, value, classifier_id, result, job_server):
         """
@@ -412,10 +434,10 @@ class DB:
                 FROM result, source, result_source 
                 WHERE result_source.result = result.id AND result_source.source = source.id 
                       AND (source.progress = 1 OR source.progress = -1)
-                      AND result.id = 50585
+                      AND result.id = 489564
                       
                 ORDER BY result.created_at, result.id 
-                LIMIT 10
+                LIMIT 20
             """)
             conn.commit()
             results = cur.fetchall()

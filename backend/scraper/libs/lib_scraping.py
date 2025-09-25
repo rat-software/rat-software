@@ -30,6 +30,9 @@ import uuid #used to generate random file names
 
 import time
 
+import base64
+from urllib.parse import urlparse, parse_qs
+
 class Scraping:
 
     def __init__(self):
@@ -173,7 +176,7 @@ class Scraping:
 
         return screenshot #return base64 code of image
 
-    def get_real_url(url, driver):
+    def get_real_url(self, url, driver):
         """
         Get the real URL after any redirects.
 
@@ -188,8 +191,55 @@ class Scraping:
             driver.get(url)
             time.sleep(4)
             current_url = driver.current_url #read real url (redirected url)
-            driver.quit()
             return current_url
         except Exception as e:
             print(str(e))
             pass
+        
+    def decode_bing_url(self, url):
+        """
+        Extrahiert die Ziel-URL direkt aus dem 'u'-Parameter einer Bing-URL
+        durch Base64-Dekodierung. Dies ist die beste Methode, wenn Redirects
+        über JavaScript gesteuert werden.
+
+        Args:
+            url (str): Die ursprüngliche Bing-Redirect-URL.
+
+        Returns:
+            str: Die dekodierte Ziel-URL oder die Original-URL bei einem Fehler.
+        """
+        try:
+            # Zerlegt die URL in ihre Bestandteile
+            parsed_url = urlparse(url)
+            # Extrahiert die Query-Parameter in ein Dictionary
+            query_params = parse_qs(parsed_url.query)
+            
+            # Holt den Wert des 'u'-Parameters
+            encoded_url_list = query_params.get('u')
+            
+            if not encoded_url_list:
+                # Falls der 'u'-Parameter nicht existiert, Original-URL zurückgeben
+                return url
+                
+            encoded_url = encoded_url_list[0]
+            
+            # Bing stellt oft ein 'a1' voran, das wir entfernen
+            if encoded_url.startswith('a1'):
+                base64_string = encoded_url[2:]
+                
+                # Base64-Strings benötigen eine bestimmte Länge (Vielfaches von 4).
+                # Wir fügen Füllzeichen hinzu, um Fehler zu vermeiden.
+                padding = len(base64_string) % 4
+                if padding:
+                    base64_string += '=' * (4 - padding)
+                
+                # Dekodieren des Strings
+                decoded_bytes = base64.urlsafe_b64decode(base64_string)
+                return decoded_bytes.decode('utf-8')
+            else:
+                # Falls das Format unerwartet ist, Original-URL zurückgeben
+                return url
+                
+        except Exception as e:
+            print(f"Fehler beim Dekodieren der URL {url}: {e}")
+            return url # Bei jedem anderen Fehler die Original-URL zurückgeben

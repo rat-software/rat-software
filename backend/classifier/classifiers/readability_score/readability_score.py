@@ -78,8 +78,6 @@ def main(classifier_id, db, helper, job_server, study_id):
         if len_duplicates > 1:
             print("duplicate")
 
-        
-           
             result_ids = db.get_results_result_source(source_id)
             
             # Retrieve existing classifier results and indicators
@@ -93,7 +91,6 @@ def main(classifier_id, db, helper, job_server, study_id):
                     result_indicators = db.get_indicators(result_id)
                     break
             
-
             for result_id in result_ids:
                 result_id = result_id[0]
                 if insert_classification:
@@ -111,14 +108,11 @@ def main(classifier_id, db, helper, job_server, study_id):
                             if not db.check_indicator_result(classifier_id, result_id, indicator, value):
                                 db.insert_indicator(indicator, value, classifier_id, result_id, job_server)
               
-
-
             if insert_classification:
                 return True
             else:
                 return False
       
-            
         else:
             return False
 
@@ -132,22 +126,8 @@ def main(classifier_id, db, helper, job_server, study_id):
         Returns:
             None
         """
-        def write_indicators_to_db(indicators, result):
-            
-            """
-            Write indicators to the database for a specific result.
-
-            Args:
-                indicators (dict): Dictionary of indicators to write.
-                result (dict): The result to associate the indicators with.
-
-            Returns:
-                None
-            """
-            for key, value in indicators.items():
-                insert_result = str(value)
-                # Insert indicator into the database
-                db.insert_indicator(key, insert_result, classifier_id, result, job_server)
+        # Diese innere Funktion wird nicht mehr benötigt, da wir nur einen Indikator haben.
+        # def write_indicators_to_db(indicators, result): ...
 
         # Mark all results as "in process"
         for result in results:
@@ -157,56 +137,50 @@ def main(classifier_id, db, helper, job_server, study_id):
                 print("in process")
                 db.insert_classification_result(classifier_id, "in process", result_id, job_server)
 
-        
-
         for result in results:
             data = {k: v for k, v in result.items()}
-            source_id = data["source"]
             result_id = data["id"]
+            print(result_id)
             
+            if db.check_classification_result_not_in_process(classifier_id, result_id):
+                print("already processed by another instance")
+                continue # Skip if already processed by another instance
 
-            # Start your custom code here for calculating indicators and classifying a result
+            code = helper.decode_code(data["code"])
+            error_code = data["error_code"]
+            status_code = data["status_code"]
 
-            # Check for duplicates before proceeding
+            # print(status_code)
+            # print(error_code)
+            # print(code)
 
-            if not db.check_classification_result_not_in_process(classifier_id, result_id):
-                classification_result = 'error'
-                indicators = {}
 
+            try:
+                if status_code == 200 and not error_code and code:
+                    tx = TextAnalyzer()
+                    # Die 'analyze'-Methode gibt nun einen einzelnen Wert zurück (Score oder String)
+                    analysis_output = tx.analyze(code)
+
+                    # Prüfen, ob das Ergebnis ein numerischer Score ist
+                    if isinstance(analysis_output, (int, float)):
+                        # 1. Den einzelnen Indikator direkt in die Datenbank schreiben
+                        score_value = f"{analysis_output:.2f}"
+                        db.insert_indicator("Reading Ease", score_value, classifier_id, result_id, job_server)
+                        
+                        # 2. Das Klassifikationsergebnis aus dem Score erstellen
+                        classification_result = score_value
+                    else:
+                        # Wenn es ein String ist (z.B. "Not enough content..."), diesen als Ergebnis nutzen
+                        # In diesem Fall werden keine Indikatoren geschrieben
+                        classification_result = analysis_output
+                else:
+                    classification_result = 'error'
+                
                 db.update_classification_result(classification_result, result_id, classifier_id)
 
-                code = helper.decode_code(data["code"])
-                error_code = data["error_code"]
-                status_code = data["status_code"]
-
-                
-                try:
-                    if status_code == 200 and not error_code:
-                        tx = TextAnalyzer()
-                        indicators = tx.analyze(code)
-
-                        # Write calculated indicators to the database
-                        write_indicators_to_db(indicators, result_id)
-
-                        if indicators["Reading Ease"] >= 70 and indicators["Grade"] <= 6:
-                            classification_result = 'Very High Readability'
-
-                        elif indicators["Reading Ease"] >= 70 and indicators["Grade"] <= 12:
-                            classification_result = 'High Readability'
-
-                        elif indicators["Reading Ease"] >= 30 and indicators["Grade"] <= 69 and indicators["Grade"] <= 12 and indicators["Grade"] >= 6:
-                            classification_result = 'Medium Readability'
-
-                        else:
-                            classification_result = 'Low Readability'
-                    else:
-                        classification_result = 'error'
-                    
-                    db.update_classification_result(classification_result, result_id, classifier_id)
-
-                except Exception as e:
-                    pass
-                # Update the classification result in the database
+            except Exception as e:
+                print(f"Error classifying result {result_id}: {e}")
+                classification_result = 'classifier_error'
                 db.update_classification_result(classification_result, result_id, classifier_id)
 
     # Retrieve results to be classified from the database using the classifier ID

@@ -4,36 +4,56 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
-<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
-<div class="row">
-  <div class="col-12 mb-4">
-    <!-- Main heading for the assessments page -->
-    <h3>Assessments</h3>
+<div class="row justify-content-center mt-4">
+  <div class="col-12 text-center mb-4">
+    <h3>Assessments for Study: {{ study.name }}</h3>
+    <p class="lead">Welcome, {{ participant.name }}!</p>
   </div>
-  <div class="col-4">
+  <div class="col-md-6 col-lg-5">
     <div class="card shadow-sm">
-      <!-- Card header for the progress section -->
       <h6 class="card-header">Your Progress</h6>
       <div class="card-body">
-        <!-- Display user's progress with a percentage -->
-        <div class="text-center lead mb-2">{{ answers_closed }} out of {{ answers_all }}</div>
+        <div class="text-center lead mb-2">
+            <strong>{{ answers_closed }}</strong> out of <strong>{{ answers_all }}</strong> assessments completed
+        </div>
         <div class="progress" style="height: 40px;">
-          <!-- Progress bar showing completion percentage -->
           <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;"
-            aria-valuenow="{{answers_closed}}" aria-valuemin="0" aria-valuemax="{{answers_all}}">{{pct}}%</div>
+            aria-valuenow="{{answers_closed}}" aria-valuemin="0" aria-valuemax="{{answers_all}}">
+            <b>{{pct}}%</b>
+          </div>
         </div>
       </div>
-      <ul class="list-group list-group-flush">
-        <!-- Button to start the assessment, linking to the appropriate page -->
-        <li class="small list-group-item list-group-item-light">
-          <a href="{{ url_for('assessment', participant_id=participant.id, study_id=study.id) }}"
-            class="btn btn-primary btn-sm">
-            Start <i class="fas fa-share-square"></i>
-          </a>
-        </li>
-      </ul>
+      
+      {% if answers_closed == answers_all and answers_all > 0 %}
+      <div class="card-footer text-center bg-light">
+        <h5 class="text-success mb-2"><i class="fas fa-check-circle me-2"></i>Assessment Complete!</h5>
+        <p class="mb-0">Thank you for your participation.</p>
+        
+        {# --- NEUER, OPTIONALER BLOCK --- #}
+        {% if study.completion_text %}
+        <hr>
+        <div class="text-start">
+            {{ study.completion_text | safe }}
+        </div>
+        {% endif %}
+        {# --- ENDE DES NEUEN BLOCKS --- #}
+        
+      </div>
+      {% else %}
+      <div class="card-footer text-center">
+        <a href="{{ url_for('assessment', participant_id=participant.id, study_id=study.id) }}"
+           class="btn btn-primary btn-lg">
+           {% if answers_closed > 0 %}
+             Continue Assessment
+           {% else %}
+             Start Assessment
+           {% endif %}
+           <i class="fas fa-arrow-right ms-2"></i>
+        </a>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

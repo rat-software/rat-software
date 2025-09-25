@@ -76,14 +76,21 @@ class ScraperController:
         kill_browser = False
 
         # Iterate over all running processes
+        # Iterate over all running processes
         for proc in psutil.process_iter(attrs=['pid', 'name', 'cmdline']):
+            
             try:
                 if "python" in proc.info['name']:
+                    
                     # Check if the process name or command line matches any in the kill list
                     if proc.info['cmdline']:
-                        if any(name in proc.info['name'] or name in proc.info['cmdline'] for name in processes_to_kill):
-                            proc.kill()  # Kill the process
-                            kill_browser = True
+                        print(proc.info['cmdline'])
+                        for pk in processes_to_kill:
+                            
+                            if pk in proc.info['cmdline'][1]:
+                                print(pk)
+                                proc.kill()  # Kill the process
+                                kill_browser = True
 
                 # Kill browser processes specified in the arguments
                 if kill_browser:
@@ -95,7 +102,7 @@ class ScraperController:
                 pass
             
         # Wait for 60 seconds before resetting the database
-        time.sleep(60)
+        #time.sleep(60)
         db.reset(job_server)  # Call the reset method on the database object
 
 if __name__ == "__main__":
