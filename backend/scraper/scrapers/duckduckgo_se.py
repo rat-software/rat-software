@@ -49,24 +49,22 @@ def run(query, limit, scraping, headless):
 
             for result in soup.find_all("li", class_="wLL07_0Xnd1QZpzpfR4W"):
                 try:
-                    result_title = result.find("span", class_="EKtkFWMYpwzMKOYr0GYm LQVY1Jpkk8nyJ6HBWKAk").text.strip()
+                    result_title = result.find("a", attrs={"data-testid": "result-title-a"}).text.strip()
                 except:
                     result_title = "N/A"
 
                 try:
-                    result_description = " ".join(result.find("div", class_="E2eLOJr8HctVnDOTM8fs").text.strip().split())
-                    result_description = result_description.replace(result_title, " ")
+                    result_description = result.find("div", attrs={"data-result": "snippet"}).text.strip()
                 except:
                     result_description = "N/A"
 
                 try:
-                    result_url = result.find("a", class_="Rn_JXVtoPVAFyGkcaXyK")['href']
+                    result_url = result.find("a", attrs={"data-testid": "result-extras-url-link"})['href']
                 except:
                     result_url = "N/A"
 
                 if result_url != "N/A" and "http" in result_url:
                     results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
-
             return results
 
         def check_captcha(driver):
@@ -113,7 +111,7 @@ def run(query, limit, scraping, headless):
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="sv",
+            locale_code="sv-SE",
         )
 
         driver.maximize_window()
@@ -123,8 +121,10 @@ def run(query, limit, scraping, headless):
         # Set DuckDuckGo to Swedish locale
         driver.get("https://duckduckgo.com/settings/")
         try:
-            dropdown = Select(driver.find_element(By.CLASS_NAME, "frm__select__input.js-set-input"))
-            dropdown.select_by_value('se-sv')
+            region_dropdown = Select(driver.find_element(By.ID, "setting_kl"))
+            region_dropdown.select_by_value("se-sv")
+            language_dropdown = Select(driver.find_element(By.ID, "setting_kad"))
+            language_dropdown.select_by_value("sv_SE")
         except Exception as e:
             print(str(e))
 

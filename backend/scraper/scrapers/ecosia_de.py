@@ -1,3 +1,9 @@
+# Erforderliche zusätzliche Importe
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+
+# Deine bestehenden Importe
 from scrapers.requirements import *
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -5,208 +11,172 @@ from bs4 import BeautifulSoup
 import time
 import random
 
+# Helferfunktion, um die Region auf der Ergebnisseite (SERP) zu setzen
+def set_region_on_serp(driver, wait): 
+    """
+    Sucht den Regionen-Umschalter auf der Suchergebnisseite (SERP) und stellt ihn auf 'United States'.
+    """
+    region_code = "de-de"        
+    region_label = "Deutschland"
+    try:
+        print("INFO: Suche den 'Search region:' Button auf der Ergebnisseite...")
+        
+        # 1. Finde und klicke den Button, der das Dropdown-Menü öffnet, anhand seines Textes.
+        region_button_selector = (By.XPATH, "//button[.//span[contains(text(), 'Suchgebiet:')]]")
+        region_button = wait.until(EC.element_to_be_clickable(region_button_selector))
+        driver.execute_script("arguments[0].click();", region_button)
+        print("INFO: Regionen-Dropdown wurde geöffnet.")
+        
+        # 2. Finde und klicke die "United States"-Option in der nun sichtbaren Liste.
+        #    Wir verwenden die exakte 'data-test-id' aus deinem HTML-Fund.
+        us_option_selector = (By.CSS_SELECTOR, f"li[data-test-id='search-regions-region-{region_code}']")
+        us_option = wait.until(EC.element_to_be_clickable(us_option_selector))
+        
+        print(f"INFO: Regionsoption '{region_label}' gefunden. Klicke...")
+        us_option.click()
+        
+        print(f"SUCCESS: Region '{region_label}' wurde ausgewählt.")
+        
+        # 3. LANGE PAUSE ZUM BEOBACHTEN
+        print("INFO: Starte 5-sekündige Pause zum Beobachten...")
+        time.sleep(5)
+        print("INFO: Pause beendet.")
+        
+        return True
+        
+    except Exception as e:
+        print(f"WARNUNG: Region konnte auf dieser Seite nicht geändert werden. Mache mit der Standardsuche weiter. Fehler: {e}")
+        return False
+
+
 def run(query, limit, scraping, headless):
     """
-    Run the Ecosia DE scraper.
-
-    Args:
-        query (str): The search query.
-        limit (int): The maximum number of search results to retrieve.
-        scraping: The Scraping object.
-        headless (int): Flag indicating whether to run the scraper in headless mode.
-
-    Returns:
-        list: List of search results.
+    Führt den Ecosia EN Scraper aus.
     """
+    driver = None
     try:
-        # URL and selectors for the search engine
-        search_url = "https://www.ecosia.org/"
-        search_box = "q"
+        # ======================================================================
+        # 1. TREIBER INITIALISIEREN
+        # ======================================================================
+        driver = Driver(
+            browser="chrome", wire=True, uc=True, headless2=headless, incognito=False,
+            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            do_not_track=True, undetectable=True, locale_code="de-DE"
+        )
+        wait = WebDriverWait(driver, 15)
+        driver.maximize_window()
+        driver.get("https://www.ecosia.org/")
+
+        # Cookie-Banner behandeln
+        try:
+            accept_button = wait.until(EC.element_to_be_clickable((By.ID, "didomi-notice-agree-button")))
+            driver.execute_script("arguments[0].click();", accept_button)
+        except Exception:
+            print("INFO: Cookie-Banner nicht gefunden.")
+
+        # ======================================================================
+        # 2. INTERNE FUNKTIONEN (DEIN BESTEHENDER CODE)
+        # ======================================================================
         captcha = "g-recaptcha"
+        search_box_name = "q"
 
-        # Initialize variables
-        results_number = 0
-        page = -1
-        search_results = []
-        
-        # Custom function to scrape search results
         def get_search_results(driver, page):
-            """
-            Retrieve search results from the current page.
-
-            Args:
-                driver: Selenium WebDriver instance.
-                page (int): Current SERP page.
-
-            Returns:
-                list: List of search results from the current page.
-            """
             temp_search_results = []
-
-            # Get page source and encode it
             source = driver.page_source
             serp_code = scraping.encode_code(source)
             serp_bin = scraping.take_screenshot(driver)
-
-            # Parse the page source with BeautifulSoup
-            soup = BeautifulSoup(source, features="lxml")
-
-            # Extract search results
-            for result in soup.find_all("div", class_=["result__body"]):
-                result_title = "N/A"
-                result_description = "N/A"
-                result_url = "N/A"
-
+            soup = BeautifulSoup(source, "lxml")
+            for result in soup.select('div.result--web, article.card-web, div.result__body'):
+                result_title, result_description, result_url = "N/A", "N/A", "N/A"
                 try:
-                    title_elem = result.find("div", class_=["result__title"])
-                    if title_elem:
-                        result_title = title_elem.text.strip()
-                except:
-                    pass
-
+                    title_elem = result.select_one('a.result-title, h2 a, div.result__title')
+                    if title_elem: result_title = title_elem.get_text(strip=True)
+                except: pass
                 try:
-                    description_elem = result.find("div", class_=["result__description"])
-                    if description_elem:
-                        result_description = description_elem.text.strip()
-                except:
-                    pass
-
+                    desc_elem = result.select_one('p.result-snippet, div.result-snippet, div.result__description')
+                    if desc_elem: result_description = desc_elem.get_text(strip=True)
+                except: pass
                 try:
-                    url_elem = result.find("a")
-                    if url_elem:
-                        url = url_elem.attrs['href']
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
-                        result_url = url
-                except:
-                    pass
-
+                    url_elem = result.select_one('a.result-title, a.result-url, h2 a, a.result__link')
+                    if url_elem: result_url = url_elem.get('href')
+                except: pass
                 if result_url != "N/A":
                     temp_search_results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
-
             return temp_search_results
 
-        # Custom function to check if CAPTCHA is present
         def check_captcha(driver):
-            """
-            Check if CAPTCHA is present on the page.
+            return captcha in driver.page_source
 
-            Args:
-                driver: Selenium WebDriver instance.
-
-            Returns:
-                bool: True if CAPTCHA is present, False otherwise.
-            """
-            source = driver.page_source
-            return captcha in source
-        
         def remove_duplicates(search_results):
-            """
-            Removes duplicate search results based on the URL.
-
-            Args:
-                search_results (list): List of search results to deduplicate.
-
-            Returns:
-                list: List of search results with duplicates removed.
-            """
             seen_urls = set()
             unique_results = []
-
-            # Append only unique results
             for result in search_results:
                 url = result[2]
                 if url not in seen_urls:
                     seen_urls.add(url)
                     unique_results.append(result)
+            return unique_results
 
-            return unique_results        
+        # ======================================================================
+        # 3. SUCHE STARTEN UND DATEN SAMMELN
+        # ======================================================================
+        search_results = []
+        page = 0
+        
+        print(f"Führe die Suche nach '{query}' aus...")
+        search_box_element = wait.until(EC.element_to_be_clickable((By.NAME, search_box_name)))
+        search_box_element.clear()
+        search_box_element.send_keys(query)
+        search_box_element.send_keys(Keys.RETURN)
+        
+        wait.until(EC.presence_of_element_located((By.ID, "main")))
 
-        # Initialize Selenium driver
-        driver = Driver(
-            browser="chrome",
-            wire=True,
-            uc=True,
-            headless2=headless,
-            incognito=False,
-            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-            do_not_track=True,
-            undetectable=True,
-            extension_dir=ext_path,
-            locale_code="de"
-        )
+        # ERSTER AUFRUF der Regionen-Funktion
+        set_region_on_serp(driver, wait)
+        
+        if check_captcha(driver):
+            print("FEHLER: Captcha gefunden. Breche ab.")
+            return -1
+        
+        search_results.extend(get_search_results(driver, page))
 
-        driver.maximize_window()
-        driver.set_page_load_timeout(20)
-        driver.implicitly_wait(30)
-        driver.get(search_url)
-        time.sleep(random.randint(2, 5))
+        # Paginierungsschleife
+        while len(search_results) < limit:
+            page += 1
+            print(f"Navigiere zu Ergebnisseite {page}...")
+            
+            try:
+                next_page_url = f"https://www.ecosia.org/search?q={query}&p={page}"
+                driver.get(next_page_url)
+                
+                # WIEDERHOLTER AUFRUF der Regionen-Funktion auf jeder neuen Seite
+                set_region_on_serp(driver, wait)
 
-        # Start scraping if no CAPTCHA
-        if not check_captcha(driver):
-            search = driver.find_element(By.NAME, search_box)
-            search.send_keys(query)
-            search.send_keys(Keys.RETURN)
-            time.sleep(random.randint(2, 5))
+                if check_captcha(driver):
+                    print("FEHLER: Captcha auf Folgeseite gefunden. Beende das Scraping.")
+                    break
 
-            search_results = get_search_results(driver, page)
-            results_number = len(search_results)
-            continue_scraping = True
+                new_results = get_search_results(driver, page)
+                if not new_results:
+                    print("INFO: Keine weiteren Ergebnisse gefunden.")
+                    break
+                
+                search_results.extend(new_results)
+                search_results = remove_duplicates(search_results)
+                print(f"INFO: Bisher {len(search_results)} einzigartige Ergebnisse gesammelt.")
 
-            # Loop through pages until limit is reached or CAPTCHA appears
-            while results_number < limit and continue_scraping:
-                if not check_captcha(driver):
-                    time.sleep(random.randint(2, 5))
-                    page += 1
-                    try:
-                        next_page_url = f"https://www.ecosia.org/search?method=index&q={query}&p={page}"
-                        print(next_page_url)
-                        driver.quit()
+            except Exception as e:
+                print(f"FEHLER beim Laden der nächsten Seite: {e}")
+                break
 
-                        # Initialize Selenium driver
-                        driver = Driver(
-                            browser="chrome",
-                            wire=True,
-                            uc=True,
-                            headless2=headless,
-                            incognito=False,
-                            agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                            do_not_track=True,
-                            undetectable=True,
-                            extension_dir=ext_path,
-                            locale_code="de"
-                        )                        
-                        
-                        driver.get(next_page_url)
-                        extract_search_results = get_search_results(driver, page)
-
-                        print(f"Results extracted: {len(extract_search_results)}")
-
-                        if extract_search_results:
-                            print("Appending results.")
-                            search_results += extract_search_results
-                            search_results = remove_duplicates(search_results)
-                            results_number = len(search_results)
-                        else:
-                            continue_scraping = False
-                    except Exception as e:
-                        print(f"Failed to get next page: {e}")
-                        continue_scraping = False
-                else:
-                    continue_scraping = False
-                    search_results = -1
-
-            driver.quit()
-            return search_results
-        else:
-            search_results = -1
-            driver.quit()
-            return search_results
+        print(f"INFO: Scraping beendet. {len(search_results)} einzigartige Ergebnisse gefunden.")
+        return search_results[:limit]
 
     except Exception as e:
-        print(f"Exception occurred: {e}")
-        try:
-            driver.quit()
-        except:
-            pass
+        print(f"FEHLER im Hauptprozess: {e}")
         return -1
+
+    finally:
+        if driver:
+            print("INFO: Schließe den WebDriver.")
+            driver.quit()

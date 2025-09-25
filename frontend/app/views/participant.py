@@ -1,80 +1,118 @@
 from .. import app, db
-from app.models import Study, Participant, Answer, Result, Question
+from app.models import Study, Participant, Answer, Result, Question, ResultAi, ResultChatbot, ResultSource
 from ..forms import JoinForm, ParticipantLogInForm
 from flask import Blueprint, render_template, flash, redirect, url_for, request, send_file
 from datetime import datetime
 from flask_login import logout_user
 import random
 from io import BytesIO
-from sqlalchemy import func, update
 import sqlalchemy
-#bp = Blueprint('participant', __name__)
+from sqlalchemy import func, update, or_, and_, literal_column
+from urllib.parse import urlparse
+
+def clean_filter_string(url_filter: str) -> str:
+    try:
+        if '://' not in url_filter:
+            url_filter = 'http://' + url_filter
+        netloc = urlparse(url_filter).netloc.lower()
+        if netloc.startswith('www.'):
+            return netloc[4:]
+        return netloc
+    except:
+        return url_filter.lower()
 
 @app.route('/study/<id>/participants')
 def participants(id):
-    """
-    Displays a list of participants and their answer statuses for a specific study.
-
-    Args:
-        id (int): The ID of the study whose participants are to be displayed.
-
-    Returns:
-        Renders the participants page with a list of participants and their answer statistics.
-    """
-    study = Study.query.get(id)
+    study = Study.query.get_or_404(id)
     info = []
-    
-    # Gather statistics about each participant's answers for the specified study
+    questions_count = len(study.questions)
+
     for participant in study.participants:
-        query = db.session.query(Answer).filter(Answer.source_status_code == 200,
-                                                Answer.participant == participant,
-                                                Answer.study == study)
-        all = query.count()
-        open = query.filter(Answer.status == 0).count()
-        closed = query.filter(Answer.status == 1).count()
-        skipped = query.filter(Answer.status == 2).count()
+        query = db.session.query(Answer).filter(
+            Answer.participant == participant,
+            Answer.study == study
+        )
+        
+        all_count = (query.count() // questions_count) if questions_count > 0 else 0
+        open_count = (query.filter(Answer.status == 0).count() // questions_count) if questions_count > 0 else 0
+        closed_count = (query.filter(Answer.status == 1).count() // questions_count) if questions_count > 0 else 0
+        skipped_count = (query.filter(Answer.status == 2).count() // questions_count) if questions_count > 0 else 0
 
-        info.append([participant, all, open, closed, skipped])
+        info.append([participant, all_count, open_count, closed_count, skipped_count])
 
-    return render_template('participants/participants.html',
-                           study=study,
-                           info=info)
+    return render_template('participants/participants.html', study=study, info=info)
 
 
 @app.route('/participant/<id>', methods=["GET", "POST"])
 def participant(id):
-    """
-    Displays the participant's information and allows file download for the participant's resume.
-
-    Args:
-        id (int): The ID of the participant whose information is to be displayed.
-
-    Returns:
-        Renders the participant page with the participant's information and options to download a resume.
-    """
     logout_user()
-    participant = Participant.query.get(id)
+    participant = Participant.query.get_or_404(id)
     base = request.url_root
-
-    # Update source status code based on source table
-    db.session.execute(sqlalchemy.sql.text("update answer set source_status_code = source.status_code from source left join result_source on source.id = result_source.source where answer.result = result_source.result"))
+    db.session.execute(sqlalchemy.sql.text(
+        "UPDATE answer SET source_status_code = source.status_code "
+        "FROM source JOIN result_source ON source.id = result_source.source "
+        "WHERE answer.result = result_source.result AND answer.participant = :p_id"
+    ), {'p_id': participant.id})
     db.session.commit()
-
-    # Create a list to display studies and open assessments
     info = []
+    
     for study in participant.studies:
-        query = db.session.query(Answer).filter(Answer.source_status_code == 200,
-                                                Answer.participant == participant,
-                                                Answer.study == study)
-        all = query.count()
-        open = query.filter(Answer.status == 0).count()
-        closed = query.filter(Answer.status == 1).count()
-        skipped = query.filter(Answer.status == 2).count()
+        questions_count = len(study.questions)
+        if questions_count == 0:
+            info.append([study.id, 0, 0, 0, 0])
+            continue
 
+        # --- START: NEUE UND KORRIGIERTE ZÄHL-LOGIK ---
 
-        info.append([study.id, all, open, closed, skipped])
+        # 1. Zähle nur die "organischen" Ergebnisse, die eine gültige Quelle haben (progress = 1)
+        valid_open_organic_query = db.session.query(Answer.result_id).filter(
+            Answer.participant_id == participant.id,
+            Answer.study_id == study.id,
+            Answer.status == 0,
+            Answer.result_id.isnot(None)
+        ).join(Result).join(Result.source_associations).filter(
+            ResultSource.progress == 1
+        ).distinct()
+        
+        # Wende die gleichen URL-Filter an, die auch bei der Aufgabenauswahl gelten
+        include_filters = [f.url for f in study.study_url_filters if f.include and f.url]
+        if include_filters:
+            valid_open_organic_query = valid_open_organic_query.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
 
-    # Handle resume file download
+        exclude_filters = [f.url for f in study.study_url_filters if f.exclude and f.url]
+        if exclude_filters:
+            valid_open_organic_query = valid_open_organic_query.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
+            
+        open_organic_count = valid_open_organic_query.count()
+
+        # 2. Zähle offene AI- und Chatbot-Aufgaben
+        base_query = db.session.query(Answer).filter(
+            Answer.participant_id == participant.id,
+            Answer.study_id == study.id
+        )
+        
+        open_ai_count = base_query.filter(
+            Answer.status == 0, Answer.result_ai_id.isnot(None)
+        ).distinct(Answer.result_ai_id).count()
+        
+        open_chatbot_count = base_query.filter(
+            Answer.status == 0, Answer.result_chatbot_id.isnot(None)
+        ).distinct(Answer.result_chatbot_id).count()
+
+        # 3. Berechne die Gesamtzahl der offenen, bewertbaren Aufgaben
+        open_count = open_organic_count + open_ai_count + open_chatbot_count
+        
+        # 4. Berechne geschlossene und übersprungene Aufgaben
+        closed_count = (base_query.filter(Answer.status == 1).count() // questions_count)
+        skipped_count = (base_query.filter(Answer.status == 2).count() // questions_count)
+
+        # 5. Die Gesamtzahl ist die Summe aus den gültigen offenen, geschlossenen und übersprungenen
+        all_count = open_count + closed_count + skipped_count
+
+        # --- ENDE: NEUE LOGIK ---
+        
+        info.append([study.id, all_count, open_count, closed_count, skipped_count])
+
     if request.method == 'POST':
         if 'download' in request.form:
             buffer = BytesIO()
@@ -93,97 +131,125 @@ def participant(id):
 @app.route('/study/<study_id>/participant/new', methods=["GET", "POST"])
 @app.route('/join/<study_id>', methods=["GET", "POST"])
 def new_participant(study_id):
-    """
-    Handles the creation of a new participant or redirect to login for returning participants.
-
-    Args:
-        study_id (int): The ID of the study where the participant will be added.
-
-    Returns:
-        Renders the join page with a form for new or returning participants.
-    """
     logout_user()
     form = JoinForm()
-    if form.is_submitted():
-        # CREATE NEW PARTICIPANT
-        if form.new.data:
-            study = Study.query.get(study_id)
-            count = Participant.query.count()
-
-            max_ids = db.session.query(func.max(Participant.id)).scalar()
-            max_id = db.session.query(Participant).filter(Participant.id == max_ids).first()
-            if max_id:
-                u_name = max_id.id + 1
-            else:
-                u_name = 1
-
-            participant = Participant()
-            participant.name = 'user' + str(u_name)
-            participant.created_at = datetime.now()
-            participant.studies.append(study)
-            participant.password = random.randint(1000, 9999)
-
-            db.session.add(participant)
-            db.session.commit()
-
-            # Create answers for the new participant
-            for result in db.session.query(Result).filter(Result.study == study).all():
-                for question in db.session.query(Question).filter(Question.study == study).all():
-                    answer = Answer()
-                    answer.study = study
-                    answer.result = result
-                    answer.question = question
-                    answer.participant = participant
-                    answer.status = 0
-                    answer.created_at = datetime.now()
-
-                    db.session.add(answer)
-                db.session.commit()
-
-            return redirect(url_for('participant', id=participant.id))
-
-        # REDIRECT TO LOG IN FOR RETURNING PARTICIPANTS
-        if form.returning.data:
+    if not form.is_submitted() or not form.new.data:
+        if form.is_submitted() and form.returning.data:
             return redirect(url_for('returning_participant', study_id=study_id))
+        return render_template('participants/join.html', form=form)
 
-    return render_template('participants/join.html',
-                           form=form)
+    study = Study.query.get_or_404(study_id)
+    
+    max_id = db.session.query(func.max(Participant.id)).scalar() or 0
+    participant = Participant(
+        name='user' + str(max_id + 1),
+        created_at=datetime.now(),
+        password=random.randint(1000, 9999)
+    )
+    participant.studies.append(study)
+    db.session.add(participant)
+
+    # --- START: VOLLSTÄNDIGER KORRIGIERTER BLOCK ZUR AUFGABENZUWEISUNG ---
+
+    selected_result_type_names = [rt.name for rt in study.assessment_result_types]
+    tasks_pool = []
+    final_tasks = []
+
+    # 1. Sammle nur GÜLTIGE "Organic" Ergebnisse
+    if any('Organic' in name for name in selected_result_type_names):
+        # KORREKTUR: Füge .join() und .filter() hinzu, um nur Ergebnisse mit
+        # erfolgreichem Source-Download (progress == 1) zu berücksichtigen.
+        query_results = db.session.query(Result).join(
+            Result.source_associations
+        ).filter(
+            Result.study_id == study.id,
+            ResultSource.progress == 1  # <-- Dies ist die entscheidende Filterung
+        )
+        
+        include_filters = [f.url for f in study.study_url_filters if f.include and f.url]
+        if include_filters:
+            query_results = query_results.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
+
+        exclude_filters = [f.url for f in study.study_url_filters if f.exclude and f.url]
+        if exclude_filters:
+            query_results = query_results.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
+
+        tasks_pool.extend(query_results.all())
+
+    # 2. Sammle AI Ergebnisse (keine Änderung nötig)
+    if any('AI' in name for name in selected_result_type_names):
+        query_ai_results = db.session.query(ResultAi).filter(ResultAi.study_id == study.id)
+        tasks_pool.extend(query_ai_results.all())
+
+    # 3. Sammle Chatbot Ergebnisse (keine Änderung nötig)
+    if any('Chatbot' in name for name in selected_result_type_names):
+        query_chatbot_results = db.session.query(ResultChatbot).filter(ResultChatbot.study_id == study.id)
+        tasks_pool.extend(query_chatbot_results.all())
+        
+    # 4. Load Balancing mit der gefilterten Aufgabenliste
+    random.shuffle(tasks_pool)
+    tasks_pool.sort(key=lambda task: task.assignment_count if task.assignment_count is not None else 0)
+
+    # 5. Limit anwenden
+    if study.limit_per_participant and study.max_results_per_participant is not None:
+        final_tasks = tasks_pool[:study.max_results_per_participant]
+    else:
+        final_tasks = tasks_pool
+
+    # 6. Answer-Objekte für die finale, gültige Aufgabenliste erstellen
+    for task in final_tasks:
+        for question in study.questions:
+            answer = Answer(
+                study_id=study.id,
+                question_id=question.id,
+                participant_id=participant.id,
+                status=0,
+                created_at=datetime.now()
+            )
+            
+            if isinstance(task, Result):
+                answer.result = task
+                answer.resulttype = 1
+                if task.assignment_count is None: task.assignment_count = 0
+                task.assignment_count += 1
+            elif isinstance(task, ResultAi):
+                answer.result_ai = task
+                answer.resulttype = 2
+                if task.assignment_count is None: task.assignment_count = 0
+                task.assignment_count += 1
+            elif isinstance(task, ResultChatbot):
+                answer.result_chatbot = task
+                answer.resulttype = 4
+                if task.assignment_count is None: task.assignment_count = 0
+                task.assignment_count += 1
+            
+            db.session.add(answer)
+
+    # --- ENDE: VOLLSTÄNDIGER KORRIGIERTER BLOCK ---
+
+    db.session.commit()
+    return redirect(url_for('participant', id=participant.id))
 
 
 @app.route('/study/<study_id>/participant/returning', methods=["GET", "POST"])
 @app.route('/returning/<study_id>', methods=["GET", "POST"])
 def returning_participant(study_id):
-    """
-    Handles login for returning participants and redirects to the assessment page.
-
-    Args:
-        study_id (int): The ID of the study for which the participant is returning.
-
-    Returns:
-        Renders the returning participant login page or redirects to the assessment page if credentials are correct.
-    """
     logout_user()
     form = ParticipantLogInForm()
 
     if form.is_submitted():
-        check_user = db.session.query(
-            Participant.query.filter(
-                Participant.name == form.username.data).exists()).scalar()
+        participant = Participant.query.filter(Participant.name == form.username.data).first()
 
-        if check_user:
-            participant = Participant.query.filter(
-                Participant.name == form.username.data).first()
+        if participant and int(participant.password) == int(form.password.data):
+            study = Study.query.get(study_id)
+            if study not in participant.studies:
+                participant.studies.append(study)
+                db.session.commit()
 
-            if int(participant.password) == int(form.password.data):
-                study = Study.query.get(study_id)
-                if study not in participant.studies:
-                    participant.studies.append(study)
-                    db.session.commit()
-
-                flash('Welcome back, '+ participant.name, 'success')
-                return redirect(url_for('assessment', participant_id=participant.id, study_id=study.id))
-            else:
-                flash('Code is incorrect', 'danger')
+            flash('Welcome back, '+ participant.name, 'success')
+            return redirect(url_for('assessments', participant_id=participant.id, study_id=study.id))
+        elif participant:
+            flash('Code is incorrect', 'danger')
         else:
             flash('Username does not exist.', 'danger')
 
@@ -194,19 +260,9 @@ def returning_participant(study_id):
 @app.route('/participant/<id>/<code>/resume')
 @app.route('/resume/<id>/<code>')
 def resume(id, code):
-    """
-    Validates the participant's code and redirects accordingly.
-
-    Args:
-        id (int): The ID of the participant.
-        code (int): The code provided by the participant for validation.
-
-    Returns:
-        Redirects to the participant page if the code is correct, otherwise redirects to the home page.
-    """
     logout_user()
     participant = Participant.query.get(id)
-    if int(participant.password) == int(code):
+    if participant and int(participant.password) == int(code):
         flash('Welcome back!', 'success')
         return redirect(url_for('participant', id=id))
     else:
@@ -216,23 +272,15 @@ def resume(id, code):
 
 @app.route('/participant/<id>/delete', methods=["GET", "POST"])
 def delete_participant(id):
-    """
-    Deletes a participant from the system.
-
-    Args:
-        id (int): The ID of the participant to be deleted.
-
-    Returns:
-        Redirects to the dashboard page after the participant is deleted.
-    """
     logout_user()
     participant = Participant.query.get(id)
-
-    # Delete the participant
-    db.session.delete(participant)
-
-    # Commit the changes to the database
-    db.session.commit()
-
-    flash('Participant deleted', 'success')
+    
+    if participant:
+        Answer.query.filter_by(participant_id=id).delete()
+        db.session.delete(participant)
+        db.session.commit()
+        flash('Participant deleted', 'success')
+    else:
+        flash('Participant not found', 'danger')
+        
     return redirect(url_for('dashboard'))

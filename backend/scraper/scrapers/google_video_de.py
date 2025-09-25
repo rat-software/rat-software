@@ -70,7 +70,7 @@ def run(query, limit, scraping, headless):
             soup = BeautifulSoup(source, features="lxml")
 
             # Extract search results from the page
-            for result in soup.find_all("div", class_=["MjjYud"]):
+            for result in soup.find_all("div", class_=["MjjYud", "g PmEWq"]):
                 result_title = ""
                 result_description = ""
                 result_url = ""
@@ -93,8 +93,6 @@ def run(query, limit, scraping, headless):
                     url_element = result.find("a")
                     if url_element:
                         url = url_element.attrs.get('href', "N/A")
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
                         result_url = url
                 except Exception:
                     result_url = "N/A"
@@ -129,7 +127,7 @@ def run(query, limit, scraping, headless):
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="de",  # Set locale to German
+            locale_code="de-DE",  # Set locale to German
             no_sandbox=True
         )
 

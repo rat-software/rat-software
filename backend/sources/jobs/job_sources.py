@@ -48,7 +48,7 @@ if __name__ == '__main__':
     logger = Logger()
     logger.write_to_log("Source\t scraper\t started\t ")
     scheduler = BackgroundScheduler(job_defaults=job_defaults, timezone='Europe/Berlin')
-    scheduler.add_job(job, 'interval', seconds=10, next_run_time=datetime.now())
+    scheduler.add_job(job, 'interval', seconds=60, next_run_time=datetime.now())
     scheduler.start()
 
     del logger

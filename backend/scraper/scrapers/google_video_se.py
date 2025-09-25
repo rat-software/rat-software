@@ -26,11 +26,13 @@ def run(query, limit, scraping, headless):
     """
     try:
         # Define constants for scraping Google search results
-        search_url = "https://www.google.nl/search?hl=sv&gl=SE&tbm=vid&prmd=ivnbz&source=lnt&uule=ww+CAIQICIMU3dlZGVuLCBMdW5k"
+        search_url = "https://www.google.se/search?hl=sv&gl=SE&tbm=vid&prmd=ivnbz&source=lnt&uule=ww+CAIQICIMU3dlZGVuLCBMdW5k"
         captcha_marker = "g-recaptcha"  # Marker for CAPTCHA detection
         results_number = 0  # Initialize count of results retrieved
         page = 1  # Initialize SERP page number
         search_results = []  # List to store search results
+
+        print("Starting Google video search with Limit:", limit)
 
         # Function to determine if pagination is available on the search results page
         def search_pagination(source):
@@ -72,10 +74,12 @@ def run(query, limit, scraping, headless):
             serp_bin = scraping.take_screenshot(driver)
             soup = BeautifulSoup(source, features="lxml")
 
-            for result in soup.find_all("div", class_=["MjjYud"]):
+            for result in soup.find_all("div", class_=["PmEWq wHYlTd vt6azd Ww4FFb", "g PmEWq"]):
                 result_title = ""
                 result_description = ""
                 result_url = ""
+
+                
 
                 # Extract the title of the search result
                 try:
@@ -100,14 +104,14 @@ def run(query, limit, scraping, headless):
                     url_element = result.find("a")
                     if url_element:
                         url = url_element.attrs.get('href', "N/A")
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
                         result_url = url
                 except Exception as e:
                     print(f"Error extracting URL: {e}")
                     result_url = "N/A"
 
                 # Append the result if the URL is valid
+               
+
                 if result_url != "N/A" and "http" in result_url and "/search?" not in result_url:
                     results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
 
@@ -138,7 +142,7 @@ def run(query, limit, scraping, headless):
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="sv",  # Set locale to Swedish
+            locale_code="sv-SE",  # Set locale to Swedish
             no_sandbox=True
         )
 
@@ -161,17 +165,37 @@ def run(query, limit, scraping, headless):
             search_results = get_search_results(driver, page)
             results_number = len(search_results)
 
+            print(results_number)
+
+
             while results_number < limit:
                 if not check_captcha(driver):
                     try:
+                        # Check if we already have enough results
+                        if results_number >= limit:
+                            break
+                            
                         time.sleep(random.randint(2, 5))  # Random delay to reduce risk of detection
                         page += 1
                         start += 10
                         search_query = f"&q={query_formatted}&start={start}"
                         search_result_query = search_url + search_query
                         driver.get(search_result_query)
-                        search_results += get_search_results(driver, page)
-                        results_number = len(search_results)
+                        
+                        # Get new results from the current page
+                        new_results = get_search_results(driver, page)
+                        
+                        # Add new results, ensuring we don't exceed the limit
+                        for result in new_results:
+                            search_results.append(result)
+                            results_number += 1
+                            if results_number >= limit:
+                                break
+                                
+                        # If we've reached the limit, exit the loop
+                        if results_number >= limit:
+                            break
+                            
                     except Exception as e:
                         print(f"Error during scraping: {e}")
                         search_results = -1
@@ -180,6 +204,8 @@ def run(query, limit, scraping, headless):
                     print("CAPTCHA detected.")
                     search_results = -1
                     break
+
+
 
             try:
                 driver.quit()

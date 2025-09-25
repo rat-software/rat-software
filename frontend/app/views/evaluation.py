@@ -61,6 +61,7 @@ def evaluations():
                            s_pct=s_pct,
                            comments=comments)
 
+
 @app.route('/source/<id>/evaluation', methods=["GET", "POST"])
 def evaluation(id):
     """
@@ -84,15 +85,33 @@ def evaluation(id):
                        .first()
 
     # Sets the ID of the next unevaluated source if available
+    next_id = None
     if next:
         next_id = next.id
 
-    # Renders a PDF file as an image if the source's MIME type is PDF
+    # PDF-Handhabung verbessern
     pdf_file = None
+    pdf_url = None
     if "pdf" in source.mime_type:
-        pdf_file = id + ".pdf"
-        with open(pdf_file, "wb") as pdf:
-            pdf.write(base64.b64decode(source.bin))
+        # PDFs im statischen Ordner speichern für bessere Handhabung
+        static_dir = os.path.join(app.root_path, 'static', 'temp_pdfs')
+        
+        # Verzeichnis erstellen, falls es nicht existiert
+        if not os.path.exists(static_dir):
+            os.makedirs(static_dir)
+            
+        # Eindeutigen Dateinamen erstellen
+        pdf_filename = f"source_{id}_{hash(str(source.id))}.pdf"
+        pdf_file = os.path.join(static_dir, pdf_filename)
+        
+        # Nur speichern, wenn die Datei noch nicht existiert
+        if not os.path.exists(pdf_file):
+            with open(pdf_file, "wb") as pdf:
+                # Base64-dekodierten Binärinhalt in Datei schreiben
+                pdf.write(base64.b64decode(source.bin))
+        
+        # URL für den Template-Zugriff erstellen
+        pdf_url = url_for('static', filename=f'temp_pdfs/{pdf_filename}')
 
     if form.is_submitted():
         # Checks if the source has already been evaluated
@@ -125,4 +144,5 @@ def evaluation(id):
                            source=source,
                            evals=evals,
                            pdf_file=pdf_file,
+                           pdf_url=pdf_url,  # URL zum PDF für das Template
                            next_id=next_id)

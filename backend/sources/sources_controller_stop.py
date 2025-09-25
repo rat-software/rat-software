@@ -83,9 +83,16 @@ class SourcesController:
         for proc in psutil.process_iter(attrs=['pid', 'name', 'cmdline']):
             try:
                 if "python" in proc.info['name']:
+                    
                     # Check if the process name or command line matches any in the kill list
-                    if proc.info['cmdline']:
+                    
+                        for pk in processes_to_kill:
+                            if pk in proc.info['cmdline'][1]:
+                                print(proc.kill())
+                           
+                        
                         if any(name in proc.info['name'] or name in proc.info['cmdline'] for name in processes_to_kill):
+                            
                             proc.kill()  # Kill the process
                             kill_browser = True
 
@@ -100,11 +107,11 @@ class SourcesController:
 
            
             # Wait for processes to terminate before resetting the database
-        time.sleep(60)
+        #time.sleep(60)
 
         # Reset the database
         
-        db.reset(job_server)
+        #db.reset(job_server)
 
     
 

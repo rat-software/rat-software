@@ -7,8 +7,21 @@
 
 {% block content %}
 {# Start defining the content block for this page #}
-<h1 class="sr-only">RAT</h1>
-{# Screen reader-only heading for accessibility #}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="row">
+  <div class="col-md-12">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      <span>{{ message }}</span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endwith %}
 
 <div class="row pt-3 my-5 align-items-top justify-content-center" style="min-height: 400px">
   {# Create a row with padding and margin, aligning items at the top and centering content horizontally #}
@@ -26,10 +39,12 @@
     {# Button linking to the login page #}
     <a href="{{url_for('security.register')}}" class="btn btn-primary rounded-pill">Register</a>
     {# Button linking to the registration page #}
+    <a href="{{ url_for('static', filename='video/RAT-Demo.mp4')}}" class="btn btn-primary rounded-pill" target="_blank">Demo Video</a>
+    {# Button linking to an external page with more information about RAT, opening in a new tab #}
     <a href="https://searchstudies.org/rat-software/" class="btn btn-primary rounded-pill"
       target="_blank">Learn more</a>
     {# Button linking to an external page with more information about RAT, opening in a new tab #}
-
+    <a href="{{ url_for('contact')}}" class="btn btn-primary rounded-pill">Contact us</a>
   </div>
 
   <div class="col-4 offset-md-1 pt-2">

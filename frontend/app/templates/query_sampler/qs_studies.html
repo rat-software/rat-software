@@ -1,0 +1,84 @@
+{# templates/query_sampler/qs_studies.html #}
+{% extends "master.html" %}
+
+{% block title %}Query Sampler Studies{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-10 offset-1">
+    <div class="card shadow-sm">
+      <h2 class="card-header crd-header">Query Sampler Studies</h2>
+      <div class="card-body">
+        <a href="{{ url_for('new_qs_study_wizard') }}" class="btn btn-primary mb-3">
+          <i class="fa-solid fa-plus me-2"></i> Create New Study
+        </a>
+        <table class="table table-hover">
+          <thead>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Date</th>
+            <th class="text-end">Actions</th>
+          </thead>
+          <tbody>
+            {% for s in pagination.items %}
+            <tr>
+              <td>{{ s.id }}</td>
+              <td style="transform: rotate(0);">
+                <a href="{{ url_for('show_qs_study', id=s.id) }}" class="stretched-link text-dark">{{ s.name }}</a>
+              </td>
+              <td>{{ s.created_at.strftime('%d.%m.%Y') }}</td>
+              <td class="text-end">
+                <div class="btn-group" role="group">
+                  <a href="{{ url_for('show_qs_study', id=s.id) }}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="View">
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+                  {# Hier können später Edit/Delete-Buttons für QS Studien hinzugefügt werden #}
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted">No studies found. Start by creating one!</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        {# Füge hier deine Pagination-Logik ein, falls du eine hast. #}
+        {# Beispiel-Pagination, die du anpassen kannst: #}
+        {% if pagination.pages > 1 %}
+        <nav aria-label="Page navigation">
+          <ul class="pagination pagination-sm justify-content-center">
+            {% if pagination.has_prev %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('qs_studies', page=pagination.prev_num) }}">&laquo;</a></li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            {% endif %}
+
+            {% for page_num in pagination.iter_pages() %}
+              {% if page_num %}
+                {% if pagination.page == page_num %}
+                  <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                {% else %}
+                  <li class="page-item"><a class="page-link" href="{{ url_for('qs_studies', page=page_num) }}">{{ page_num }}</a></li>
+                {% endif %}
+              {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+              {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('qs_studies', page=pagination.next_num) }}">&raquo;</a></li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

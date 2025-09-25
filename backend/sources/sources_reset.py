@@ -63,7 +63,8 @@ class SourcesReset:
         Args:
             db (object): Database object used to interact with the sources and update their status.
         """
-        sources_pending = db.get_sources_pending(job_server)  # Retrieve all pending sources       
+        sources_pending = db.get_sources_pending(job_server)  # Retrieve all pending sources
+        print(sources_pending)       
 
         for s in sources_pending:
             result_source_id = s[0]

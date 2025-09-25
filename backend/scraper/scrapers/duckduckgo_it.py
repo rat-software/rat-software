@@ -50,31 +50,25 @@ def run(query, limit, scraping, headless):
             serp_bin = scraping.take_screenshot(driver)
             soup = BeautifulSoup(source, features="lxml")
 
-            for result in soup.find_all("li", class_=["wLL07_0Xnd1QZpzpfR4W"]):
-                result_title = "N/A"
-                result_description = "N/A"
-                result_url = "N/A"
+
+            for result in soup.find_all("li", class_="wLL07_0Xnd1QZpzpfR4W"):
+                try:
+                    result_title = result.find("a", attrs={"data-testid": "result-title-a"}).text.strip()
+                except:
+                    result_title = "N/A"
 
                 try:
-                    result_title = result.find("span", class_=["EKtkFWMYpwzMKOYr0GYm LQVY1Jpkk8nyJ6HBWKAk"]).text.strip()
+                    result_description = result.find("div", attrs={"data-result": "snippet"}).text.strip()
                 except:
-                    pass
+                    result_description = "N/A"
 
                 try:
-                    descriptions = result.find_all("div", class_=["E2eLOJr8HctVnDOTM8fs"])
-                    result_description = " ".join(desc.text.strip().replace(result_title, " ") for desc in descriptions)
+                    result_url = result.find("a", attrs={"data-testid": "result-extras-url-link"})['href']
                 except:
-                    pass
+                    result_url = "N/A"
 
-                try:
-                    result_url = result.find("a", class_=["Rn_JXVtoPVAFyGkcaXyK"]).attrs['href']
-                except:
-                    pass
-
-                if counter < limit + 2 and result_url != "N/A" and "http" in result_url:
+                if result_url != "N/A" and "http" in result_url:
                     results.append([result_title, result_description, result_url, serp_code, serp_bin, page])
-                    counter += 1
-
             return results
 
         def check_captcha(driver):
@@ -125,10 +119,13 @@ def run(query, limit, scraping, headless):
         driver.set_page_load_timeout(20)
         driver.implicitly_wait(30)
 
+        # Set DuckDuckGo region and language via settings
         driver.get("https://duckduckgo.com/settings/")
         try:
-            dropdown = Select(driver.find_element(By.CLASS_NAME, "frm__select__input.js-set-input"))
-            dropdown.select_by_value('it-it')
+            region_dropdown = Select(driver.find_element(By.ID, "setting_kl"))
+            region_dropdown.select_by_value("it-it")
+            language_dropdown = Select(driver.find_element(By.ID, "setting_kad"))
+            language_dropdown.select_by_value("it_IT")
         except Exception as e:
             print(str(e))
 

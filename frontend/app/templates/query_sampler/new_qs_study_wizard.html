@@ -1,0 +1,173 @@
+{# templates/query_sampler/new_qs_study_wizard.html #}
+{% extends "master.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block head %}
+  {{ super() }}
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  {# CSS-Fix für die Höhe der Dropdown-Liste #}
+  <style>
+    .ts-dropdown {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+{% endblock %}
+
+{% macro render_field(field, field_class, placeholder="") %}
+  {{ field.label(class_="form-label") }}
+  {{ field(class_=field_class, placeholder=placeholder) }}
+  {% if field.errors %}
+    <div class="invalid-feedback d-block">
+    {% for error in field.errors %}<span>{{ error }}</span>{% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="row">
+  <div class="col-8 offset-2">
+    <ul class="nav nav-pills mb-3" id="create-stepper" role="tablist">
+      <li class="nav-item col-4">
+        <a class="nav-link text-muted active" id="stepper-1" data-bs-toggle="tab" data-bs-target="#tab-1" type="button" role="tab">
+          <table class="row">
+            <td class="step-number rounded"><i class="fa-solid fa-1"></i></td>
+            <td class="step-text d-none d-lg-table-cell">Study Details</td>
+          </table>
+        </a>
+      </li>
+      <li class="nav-item col-4">
+        <a class="nav-link text-muted" id="stepper-2" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab">
+          <table class="row">
+            <td class="step-number rounded"><i class="fa-solid fa-2"></i></td>
+            <td class="step-text d-none d-lg-table-cell">Targeting</td>
+          </table>
+        </a>
+      </li>
+      <li class="nav-item col-4">
+        <a class="nav-link text-muted" id="stepper-3" data-bs-toggle="tab" data-bs-target="#tab-3" type="button" role="tab">
+          <table class="row">
+            <td class="step-number rounded"><i class="fa-solid fa-3"></i></td>
+            <td class="step-text d-none d-lg-table-cell">Keywords</td>
+          </table>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="col-12">
+    <form action="{{ url_for('new_qs_study_wizard') }}" method="POST">
+      {{ form.hidden_tag() }}
+      <div class="tab-content">
+        <!-- Step 1: Study Details -->
+        <div class="tab-pane fade show active" id="tab-1" role="tabpanel">
+          <div class="row justify-content-center"><div class="col-xl-8">
+            <div class="card"><h2 class="card-header crd-header">Study Details</h2><div class="card-body">
+              <div class="mb-3">{{ render_field(form.name, "form-control") }}</div>
+              <div class="mb-3">{{ render_field(form.description, "form-control") }}</div>
+              <div id="next-to-step-2" class="btn btn-primary float-end mt-3">Next <i class="fa-solid fa-angles-right"></i></div>
+            </div></div>
+          </div></div>
+        </div>
+
+        <!-- Step 2: Targeting -->
+        <div class="tab-pane fade" id="tab-2" role="tabpanel">
+          <div class="row justify-content-center"><div class="col-xl-8">
+            <div class="card"><h2 class="card-header crd-header">Targeting</h2><div class="card-body">
+              <div class="mb-3">{{ render_field(form.geotargets, "form-select", placeholder="Select a country...") }}</div>
+              <div class="mb-3">{{ render_field(form.languages, "form-select", placeholder="Select a language...") }}</div>
+              <div onclick="window.showTab('stepper-1')" class="btn btn-secondary mt-3"><i class="fa-solid fa-angles-left"></i> Back</div>
+              <div id="next-to-step-3" class="btn btn-primary float-end mt-3">Next <i class="fa-solid fa-angles-right"></i></div>
+            </div></div>
+          </div></div>
+        </div>
+
+        <!-- Step 3: Seed Keywords -->
+        <div class="tab-pane fade" id="tab-3" role="tabpanel">
+          <div class="row justify-content-center"><div class="col-xl-8">
+            <div class="card"><h2 class="card-header crd-header">Seed Keywords</h2><div class="card-body">
+              <div class="mb-3">{{ render_field(form.seed_keywords, "form-control") }}</div>
+              <div onclick="window.showTab('stepper-2')" class="btn btn-secondary mt-3"><i class="fa-solid fa-angles-left"></i> Back</div>
+              <button type="submit" id="submit-study-button" class="btn btn-primary float-end mt-3">Review Study <i class="fa-solid fa-check"></i></button>
+            </div></div>
+          </div></div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Hilfsfunktion zum Wechseln der Tabs
+  window.showTab = function(tabId) {
+    const tabEl = document.getElementById(tabId);
+    if (tabEl && !$(tabEl).hasClass('disabled')) {
+      new bootstrap.Tab(tabEl).show();
+    }
+  };
+
+  $(document).ready(function() {
+    // 1. TomSelect für Dropdowns initialisieren
+    // KORREKTUR: maxOptions: null hinzugefügt, um alle Einträge anzuzeigen
+    new TomSelect('#geotargets',{ create: false, sortField: { field: "text", direction: "asc" }, maxOptions: null });
+    new TomSelect('#languages',{ create: false, sortField: { field: "text", direction: "asc" }, maxOptions: null });
+
+    // 2. Alle Formular- und Navigationselemente holen
+    const nameInput = $('#name');
+    const geotargetsSelect = $('#geotargets');
+    const languagesSelect = $('#languages');
+    const keywordsTextarea = $('#seed_keywords');
+
+    const tabLinks = {
+        step2: $('#stepper-2'),
+        step3: $('#stepper-3')
+    };
+    const nextButtons = {
+        toStep2: $('#next-to-step-2'),
+        toStep3: $('#next-to-step-3'),
+        submit: $('#submit-study-button')
+    };
+
+    // 3. Validierungsfunktionen für jeden Schritt
+    function isStep1Valid() { return nameInput.val().trim() !== ''; }
+    function isStep2Valid() { return geotargetsSelect.val() !== '' && languagesSelect.val() !== ''; }
+    function isStep3Valid() { return keywordsTextarea.val().trim() !== ''; }
+
+    // 4. Zentrale Funktion zum Aktualisieren aller Buttons und Tabs
+    function updateValidation() {
+      const step1IsValid = isStep1Valid();
+      nextButtons.toStep2.toggleClass('disabled', !step1IsValid);
+      tabLinks.step2.toggleClass('disabled', !step1IsValid);
+
+      const step2IsValid = isStep2Valid();
+      const canGoToStep3 = step1IsValid && step2IsValid;
+      nextButtons.toStep3.toggleClass('disabled', !canGoToStep3);
+      tabLinks.step3.toggleClass('disabled', !canGoToStep3);
+      
+      const step3IsValid = isStep3Valid();
+      const canSubmit = canGoToStep3 && step3IsValid;
+      nextButtons.submit.toggleClass('disabled', !canSubmit);
+    }
+
+    // 5. Event-Listener an die Formularfelder binden
+    nameInput.on('input', updateValidation);
+    geotargetsSelect.on('change', updateValidation);
+    languagesSelect.on('change', updateValidation);
+    keywordsTextarea.on('input', updateValidation);
+
+    // 6. Klick-Handler für die Navigation hinzufügen
+    nextButtons.toStep2.on('click', function(e) { if ($(this).hasClass('disabled')) e.preventDefault(); else window.showTab('stepper-2'); });
+    nextButtons.toStep3.on('click', function(e) { if ($(this).hasClass('disabled')) e.preventDefault(); else window.showTab('stepper-3'); });
+    
+    $('#submit-study-button').on('click', function(e) {
+        if ($(this).hasClass('disabled')) { e.preventDefault(); }
+    });
+    
+    // 7. Validierung beim Laden der Seite ausführen
+    updateValidation();
+  });
+</script>
+{% endblock %}
+

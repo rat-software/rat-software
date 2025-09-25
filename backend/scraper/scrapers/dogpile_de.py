@@ -46,14 +46,14 @@ def run(query, limit, scraping, headless):
             serp_bin = scraping.take_screenshot(driver)
             soup = BeautifulSoup(source, features="lxml")
 
-            for result in soup.find_all("div", class_="web-bing__result"):
+            for result in soup.find_all("div", class_="web-yahoo__result"):
                 try:
-                    result_title = result.find("a", class_="web-bing__title").text.strip()
+                    result_title = result.find("a", class_="web-yahoo__title").text.strip()
                 except:
                     result_title = "N/A"
 
                 try:
-                    result_description = " ".join([desc.text.strip() for desc in result.find_all("span", class_="web-bing__description")])
+                    result_description = " ".join([desc.text.strip() for desc in result.find_all("span", class_="web-yahoo__description")])
                 except:
                     result_description = "N/A"
 
@@ -88,7 +88,7 @@ def run(query, limit, scraping, headless):
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="de",
+            locale_code="de-DE",
         )
 
         driver.maximize_window()

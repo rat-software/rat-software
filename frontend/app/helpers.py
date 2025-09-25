@@ -1,48 +1,47 @@
 from . import app, db
-from .forms import AnswerForm
-from app.models import Option
+from .forms import AnswerForm # Importieren, da get_options es braucht
+from app.models import Option, Question
 from markupsafe import Markup
 from crontab import CronTab
 
-def get_options(question):
+# --- NEUE FUNKTION (BLEIBT UNVERÄNDERT) ---
+def configure_form_options(form_instance, question):
     """
-    Retrieves and formats answer options for a given question based on its type.
-
-    Args:
-        question (Question): The question object for which to get options.
-
-    Returns:
-        AnswerForm: A form with fields populated based on the question's options and type.
+    Konfiguriert eine bereits existierende Formular-Instanz mit den
+    passenden Optionen für eine gegebene Frage.
     """
-    form = AnswerForm()
-    display = question.questiontype.display  # Get the display type of the question
+    display = question.questiontype.display
     choices = []
     options = Option.query.filter(Option.question == question)\
-                          .order_by(Option.position).all()  # Fetch options related to the question
+                          .order_by(Option.position).all()
 
     if display in ("true_false", "likert_scale", "multiple_choice"):
-        # Prepare choices for question types that use predefined options
         for o in options:
             choices.append((o.value, o.label))
 
         if display == "true_false":
-            form.true_false.choices = choices  # Set choices for True/False type questions
-
+            form_instance.true_false.choices = choices
         elif display == "likert_scale":
-            # Format choices for Likert scale with spacing
-            choices = [(c[0], Markup(f"{c[0]}&nbsp;&nbsp;{c[1]}")) for c in choices]
-            form.likert_scale.choices = choices  # Set choices for Likert scale type questions
-
+            choices = [(c[0], Markup(f"{c[0]}  {c[1]}")) for c in choices]
+            form_instance.likert_scale.choices = choices
         elif display == "multiple_choice":
-            form.multiple_choice.choices = choices  # Set choices for Multiple Choice type questions
-
+            form_instance.multiple_choice.choices = choices
     elif display == "scale_number":
-        # Prepare arguments for scale number type questions
         args = {o.label: o.value for o in options}
-        form.scale_number.render_kw = args  # Set render keyword arguments for scale number field
+        form_instance.scale_number.render_kw = args
 
+# --- WIEDERHERGESTELLTE FUNKTION ---
+def get_options(question):
+    """
+    Erstellt, konfiguriert und gibt eine neue AnswerForm-Instanz zurück.
+    Wird von anderen Teilen der Anwendung (z.B. question.py) benötigt.
+    """
+    # Erstelle eine neue Instanz
+    form = AnswerForm()
+    # Benutze unsere neue Funktion, um sie zu konfigurieren
+    configure_form_options(form, question)
+    # Gib die fertig konfigurierte Instanz zurück
     return form
-
 
 def create_monitoring(id, form):
     """

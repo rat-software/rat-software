@@ -115,7 +115,7 @@ def run(query, limit, scraping, headless):
             do_not_track=True,
             undetectable=True,
             extension_dir=ext_path,
-            locale_code="de"
+            locale_code="de-DE"
         )
 
         driver.maximize_window()

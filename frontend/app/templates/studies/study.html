@@ -4,8 +4,18 @@
 {% block title %}Study{% endblock %}
 {# Set the page title to "Study" #}
 
-{% block head %}{{ super() }}{% endblock %}
-{# Include additional content from the master template's head block #}
+{% block head %}
+    {{ super() }}
+    {# +++ NEU: CSS für den Text im Fortschrittsbalken +++ #}
+    <style>
+        .progress-bar-text {
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            font-weight: bold;
+        }
+    </style>
+{% endblock %}
+
 
 {% block content %}
 {# Start defining the content block for this page #}
@@ -33,61 +43,100 @@
           <div class="crd-header">Search Results Collection</div>
         </div>
 
+      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Start the scraping processes here to collect the search results on the defined search queries"><i class="fa-solid fa-circle-question"></i></a></span>
+
+
         <div class="py-2">
+          <b>Status: </b>
           {# Padding at the top and bottom of the content #}
+          <span id="status-text">
           {% if study.status == 0 %}
-          Status: Open.
+          <i>Open</i>, click on start to start the scraping process.
           {% elif study.status == -1 %}
-          Status: Oops. Something went wrong. Please contact us.
+          <i>Collection running</i>, but with errors. Scraping jobs will repeat.
+          {% elif study.status == -2 %}
+          <i>Collection finished</i>, but some processes failed.
+          {% elif study.status == -3 %}
+          <i>Collection finished.</i> Some queries returned no results.
+          {% elif study.status == -4 %}
+          Collection finished, but not all sources could be saved.
+          
+          {# +++ NEUER STATUS HINZUGEFÜGT +++ #}
+          {% elif study.status == -5 %}
+          <i>Collection finished</i>, but not all scraper jobs and sources could be completed.
+
           {% elif study.status == 1 %}
-          Status: Collection running.
+          <i>Collection running.</i>
           {% elif study.status == 2 %}
-          Status: Collection finished.
+          <i>Collection finished.</i>
           {% elif study.status == 3 %}
           {% if study.answers | length == 0 %}
-          Status: Collection finished.
+          <i>Collection finished but waiting for assessments.</i>
           {% else %}
-          Status: Assessments finished.
+          <i>Collection and assessments finished.</i>
           {% endif %}
           {% elif study.status == 4 %}
-          Status: Archived.
+          <i>Archived.</i>
           {% endif %}
-          {# Display the current status of the study based on its status code #}
+          </span>
 
-          {% if study.results | length == 0 %}
-          {% if study.status != -1 %}
-          No results yet.
-          {% endif %}
-          {% else %}
-          {{ results }} Results collected.
-          {% endif %}
-          {# Display the number of results collected or a message indicating no results yet #}
+          <div id="results-display" {% if study.status not in [1, 2, 3, -1, -2, -3, -4] %}style="display: none;"{% endif %}>
+            
+            <div id="standard-results-container" {% if study.studytype.id == 6 %}style="display: none;"{% endif %}>
+              {% if results > 0 %}
+              <br/><b>Search Result collected: </b> <span id="results-count">{{ results }}</span>
+              {% endif %}
+              {% if results_ai > 0 %}
+              <br/><b>AI Overviews collected: </b> <span id="results-ai-count">{{ results_ai }}</span>
+              {% endif %}
+              {# NEW: Display for Chatbot results #}
+              {% if results_chatbot > 0 %}
+              <br/><b>Chatbot Results collected: </b> <span id="results-chatbot-count">{{ results_chatbot }}</span>
+              {% endif %}
+            </div>
+    
+            <div id="type6-results-container" {% if study.studytype.id != 6 %}style="display: none;"{% endif %}>
+              {% if results > 0 %}
+              <br/><b>URLs collected: </b> <span id="urls-collected-count">{{ results }}</span>
+              {% endif %}
+              {% if results_ai > 0 %}
+              <br/><b>AI Overviews collected: </b> <span id="results-ai-count">{{ results_ai }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {# KORREKTUR: Sichtbarkeit des Containers angepasst #}
+          <div class="row" id="progress-container" {% if study.status in [0, 4] %}style="display: none;"{% endif %}>
+              <div class="col">
+                  {# KORREKTUR: Höhe angepasst für besseres Aussehen #}
+                  <div class="progress mt-2 mb-4" style="height: 25px;">
+                      <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                          {# NEU: Span für Prozentanzeige #}
+                          <span class="progress-bar-text"></span>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+        <div id="action-buttons">
+            {# KORREKTUR: Button-Logik angepasst für dynamische Anzeige #}
+            {% if study.status == 0 %}
+                <button type="button" class="btn btn-sm btn-outline-primary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy">
+                    <i class="fa-solid fa-forward-step"></i> Start
+                </button>
+            {% elif study.status in [2, 3, -2, -3, -4] %}
+                <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#closeStudy">
+                    <i class="fa-regular fa-circle-stop"></i> Archive
+                </button>
+            {% elif study.status in [1, -1] %}
+                <button class="btn btn-sm btn-info float-end me-2" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Collection running...
+                </button>
+            {% endif %}
         </div>
+    </div>
 
-        <!-- Pre-Test button (commented out) -->
-        <!--<a href="{{ url_for('run_pretest', id=study.id) }}" class="btn btn-sm btn-primary float-end"><i class="fa-solid fa-play"></i> Pre-Test</a>-->
-
-        {% if study.status == 0 %}
-        <!-- Button to start the study, triggers a modal -->
-        <button type="button" class="btn btn-sm btn-outline-primary float-end me-2" data-bs-toggle="modal"
-          data-bs-target="#startStudy">
-          <i class="fa-solid fa-forward-step"></i> Start
-        </button>
-        {% elif study.status == 3 %}
-        <!-- Button to archive the study, triggers a modal -->
-        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal"
-          data-bs-target="#closeStudy">
-          <i class="fa-regular fa-circle-stop"></i> Archive
-        </button>
-        {% else %}
-        <!-- Disabled button indicating the study has started -->
-        <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal"
-          data-bs-target="#startStudy" disabled>
-          <i class="fa-solid fa-forward-step"></i> Started
-        </button>
-        {% endif %}
-
-        <!-- Modal for starting the study -->
         <div class="modal fade" id="startStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -111,7 +160,6 @@
           </div>
         </div>
 
-        <!-- Modal for closing the study -->
         <div class="modal fade" id="closeStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -135,23 +183,20 @@
       </div>
     </div>
   </div>
+
+  {% if study.studytype.id != 6 %}
   {% if answers != -1 %}
   <div class="col pb-4">
-    {# Define another column with padding at the bottom #}
     <div class="card">
       <div class="card-body">
-        {# Card body containing the content #}
-
         <div class="hstack">
-          {# Horizontal stack for the section header #}
-          <div class="crd-header">Search Tasks & Questions</div>
+          <div class="crd-header">Questions for the Assessment Interface</div>
         </div>
 
-        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Create questions for the collection of ratings on the collected search results."><i class="fa-solid fa-circle-question"></i></a></span>
+      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Add questions for the ratings on the collected search results"><i class="fa-solid fa-circle-question"></i></a></span>
 
         <div class="py-2">
-          
-          {# Padding at the top and bottom of the content #}
+          <b>Number of questions: </b>
           {% if study.questions | length == 0 %}
           No questions yet. <a href="{{ url_for('new_question', id=study.id) }}">Create one!</a>
           {% elif study.questions | length == 1 %}
@@ -159,21 +204,8 @@
           {% else %}
           {{ study.questions | length }} Questions
           {% endif %}
-          {# Display the number of questions or a prompt to create one if none exist #}
-    
         </div>
 
-        <!-- Add Question button -->
-        <!--<div class="dropdown float-end">
-          <a class="btn btn-outline-primary btn-sm dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fa-solid fa-plus"></i> Add...
-          </a>
-
-          <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-            <li><a class="dropdown-item" href="#">Search Task</a></li>
-            <li><a class="dropdown-item" href="{{ url_for('new_question', id=study.id) }}">Question</a></li>
-          </ul>
-        </div>-->
         <a href="{{ url_for('new_question', id=study.id) }}" class="btn btn-outline-primary btn-sm float-end"><i
             class="fa-solid fa-plus"></i> Add Question</a>
 
@@ -181,25 +213,21 @@
         <a href="{{ url_for('questions', id=study.id) }}" class="btn btn-outline-secondary btn-sm float-end me-2"><i
             class="fa-solid fa-eye"></i> View</a>
         {% endif %}
-        {# Display "View" button if there are questions #}
       </div>
     </div>
   </div>
   
-  {% if ((study.results | length) > 0) and (study.status >= 2 ) %}
-  {# Only display if there are results and study status is 2 or greater #}
+  {% if (results > 0 or results_ai > 0 or results_chatbot > 0) and study.questions | length > 0 %}
   <div class="col pb-4">
     <div class="card">
       <div class="card-body">
         <div class="hstack">
-          {# Horizontal stack for the section header #}
           <div class="crd-header">Participants</div>
         </div>
 
         <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Manage study participants here. Create links to invite participants to answer the defined questions about the search results."><i class="fa-solid fa-circle-question"></i></a></span>
 
         <div class="py-2">
-          {# Padding at the top and bottom of the content #}
           {% if study.participants | length == 0 %}
           No participants yet. <a href="" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
             Invite one
@@ -207,16 +235,13 @@
           {% else %}
           Number of registered participants: {{ study.participants | length }}
           {% endif %}
-          {# Display the number of participants or a prompt to invite one if none exist #}
         </div>
 
-        <!-- Button to get the invitation link, triggers a modal -->
         <button type="button" class="btn btn-outline-primary btn-sm float-end" data-bs-toggle="modal"
           data-bs-target="#inviteURLmodal">
           <i class="fa-solid fa-user-plus"></i> Get invitation link
         </button>
 
-        <!-- Modal for inviting participants -->
         <div class="modal fade" id="inviteURLmodal" tabindex="-1" aria-labelledby="inviteURLLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -226,15 +251,10 @@
               </div>
               <div class="modal-body p-4 text-center">
                 <p>Use this URL to invite participants to join your study:</p>
-
                 <div class="input-group mb-3">
                   <input type="text" id="inviteURL" class="form-control" aria-describedby="inviteBTN"
                     value="{{ base }}join/{{ study.id }}" disabled />
-                  <!--<button class="btn btn-outline-secondary" type="button" id="inviteBTN" onclick="copyURL(inviteURL, inviteBTN)">
-                    <i class="fa-solid fa-clipboard"></i> Copy
-                  </button>-->
-                </div>
-
+                  </div>
               </div>
             </div>
           </div>
@@ -244,13 +264,34 @@
           <i class="fa-solid fa-eye"></i> View
         </a>
         {% endif %}
-        {# Display "View" button if there are participants #}
       </div>
     </div>
   </div>
   {% endif %}
+
+  {# FIX: The URL Filter card was incorrectly nested. It is now at the correct level. #}
+  {% if study.studytype.id != 6 and (study.assessment_result_types | selectattr('id', 'equalto', 1) | list | length > 0) %}
+  <div class="col pb-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">Optional URL Filtering</div>
+        </div>
+        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Define which domains to include or exclude in the assessment interface."><i class="fa-solid fa-circle-question"></i></a></span>
+        <div class="py-2"><br/></div>
+        <a href="{{ url_for('url_filters', id=study.id) }}" class="btn btn-outline-primary btn-sm float-end">
+            <i class="fa-solid fa-filter me-1"></i> Manage Filters
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+
+  {% endif %}
   {% endif %}
 </div>
+
 
 <div class="row">
   <div class="col-12 pb-4">
@@ -262,7 +303,6 @@
               <div class="crd-header col">
                 Study Summary
               </div>
-
               <div class="dropdown text-end col">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false">
@@ -273,7 +313,6 @@
                   <li><a class="dropdown-item" href="{{ url_for('edit_study', id=study.id) }}"><i
                         class="fa-solid fa-pen"></i> Edit Study</a></li>
                   {% endif %}
-                  <!--<li><a class="dropdown-item" href="#"><i class="fa-solid fa-lock"></i> Manage Access</a></li>-->
                   <li><a class="dropdown-item text-danger" href="{{ url_for('delete_study', id=study.id) }}"><i
                         class="fa-solid fa-trash-can"></i> Delete Study</a></li>
                 </ul>
@@ -288,17 +327,23 @@
                 <div class="col-4 pl-0">
                   <div class="summary-desc">Study Type</div>
                   {{ study.studytype.name }}
-
                 </div>
-                <div class="col-4 border-start">
-                  <div class="summary-desc">Result Type</div>
-                  {{ study.resulttype.name }}
-
-                </div>
+                  <div class="col-4 border-start">
+                      <div class="summary-desc">Collected Result Types</div>
+                      <p class="mb-0">
+                        {% for rt in collected_result_types_ %}
+                          <span class="badge rounded-pill bg-info mr-2">{{ rt.display }}</span>
+                        {% else %}
+                          <span class="text-muted">Not specified</span>
+                        {% endfor %}
+                      </p>
+                  </div>
+                {% if study.studytype.id != 6 and (study.assessment_result_types | selectattr('id', 'equalto', 1) | list | length > 0) %}
                 <div class="col-4 border-start">
                   <div class="summary-desc">Result Count</div>
                   {{ study.result_count }}
                 </div>
+                {% endif %}
               </div>
             </div>
 
@@ -310,10 +355,14 @@
                   <span class="badge rounded-pill bg-primary mr-2">{{ e.name }}</span>
                   {% endfor %}
                 </div>
+
+                {%if study.task %}
                 <div class="col-12 pl-0 mb-4">
                   <div class="summary-desc">Search Task</div>
                   {{ study.task }}
                 </div>
+                {% endif %}
+
                 <div class="col-12 pl-0">
                   <div class="summary-desc">
                     Search Queries
@@ -330,8 +379,49 @@
                   </p>
                 </div>
 
-                </div>
+            {% if study.studytype.id != 6 %}
+
+            <div class="crd-header">
+                Assessment Interface options
               </div>
+
+            <div class="col-12 mt-2 mb-3">
+                <div class="summary-desc">Result Types for Assessment</div>
+                <p class="mb-0">
+                  {% for rt in study.assessment_result_types %}
+                    <span class="badge rounded-pill bg-primary mr-2">{{ rt.display }}</span>
+                  {% else %}
+                    <span class="text-muted">Not specified</span>
+                  {% endfor %}
+                </p>
+            </div>
+
+            {# --- HIER BEGINNT DIE ÄNDERUNG --- #}
+            <div class="row">
+                {% if study.assessment_result_types | selectattr('id', 'equalto', 1) | list | length > 0 %}
+                    <div class="col-md-6 mb-2">
+                      <div class="summary-desc">Show URLs in Assessment Interface: <span class="badge bg-secondary mr-2">{{ study.show_urls }}</span></div>
+                    </div>
+                {% endif %}
+    
+                {% if study.assessment_result_types | selectattr('id', 'equalto', 2) | list | length > 0 %}
+                    <div class="col-md-6 mb-2">
+                      <div class="summary-desc">Show sources for AI overviews: <span class="badge bg-secondary mr-2">{{ study.show_ai_sources }}</span></div>
+                    </div>
+                {% endif %}
+                
+                {# NEU: Anzeige für das Limit pro Teilnehmer #}
+                {% if study.limit_per_participant %}
+                <div class="col-md-6 mb-2">
+                    <div class="summary-desc">Limit results per participant:
+                        <span class="badge bg-secondary">{{ study.max_results_per_participant }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {# --- HIER ENDET DIE ÄNDERUNG --- #}
+            
+            {% endif %}
             </div>
           </div>
         </div>
@@ -341,12 +431,10 @@
 </div>
 
 <div class="row pb-4">
-  {% if (study.results | length) > 0 %}
   <div class="col">
     <div class="card">
       <div class="card-body">
         <div class="hstack">
-          {# Horizontal stack for the section header #}
           <div class="crd-header">Analysis</div>
         </div>
         <div class="py-2">Find general study statistics and additional data about SEO analysis and source overlap.</div>
@@ -355,12 +443,10 @@
       </div>
     </div>
   </div>
-  {% endif %}
   <div class="col">
     <div class="card">
       <div class="card-body">
         <div class="hstack">
-          {# Horizontal stack for the section header #}
           <div class="crd-header">Export</div>
         </div>
         <div class="py-2">Download results as Excel Tables for further use and research data management.</div>
@@ -370,6 +456,189 @@
     </div>
   </div>
 </div>
+
+
+{% if study.status != 4 %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studyId = {{ study.id }};
+    let pollingInterval;
+
+    const uiElements = {
+        resultsDisplay: document.getElementById('results-display'),
+        standardResults: document.getElementById('standard-results-container'),
+        type6Results: document.getElementById('type6-results-container'),
+        resultsCount: document.getElementById('results-count'),
+        resultsAiCount: document.getElementById('results-ai-count'),
+        resultsChatbotCount: document.getElementById('results-chatbot-count'), // NEW: Chatbot count element
+        urlsCollectedCount: document.getElementById('urls-collected-count'),
+        progressContainer: document.getElementById('progress-container'),
+        progressBar: document.getElementById('progress-bar'),
+        progressBarText: document.querySelector('#progress-bar .progress-bar-text'),
+        statusText: document.getElementById('status-text'),
+        actionButtons: document.getElementById('action-buttons')
+    };
+
+function updateUI(data) {
+        // FIX: Do not update the UI via polling if the study is still 'Open' (status 0).
+        if (data.status === 0) {
+            return;
+        }
+
+        uiElements.resultsDisplay.style.display = 'block';
+        uiElements.progressContainer.style.display = 'block';
+
+        if (data.studytype_id === 6) {
+            uiElements.standardResults.style.display = 'none';
+            uiElements.type6Results.style.display = 'block';
+            
+            // --- Dynamische Aktualisierung für Studientyp 6 ---
+            if (data.urls_collected > 0) {
+                if (!uiElements.urlsCollectedCount) {
+                    const newElement = document.createElement('div');
+                    newElement.innerHTML = `<br/><b>URLs collected: </b> <span id="urls-collected-count">${data.urls_collected}</span>`;
+                    uiElements.type6Results.appendChild(newElement);
+                    uiElements.urlsCollectedCount = document.getElementById('urls-collected-count');
+                } else {
+                    uiElements.urlsCollectedCount.textContent = data.urls_collected;
+                }
+            }
+            // (Hier könnte bei Bedarf die Logik für AI-Results für Typ 6 ergänzt werden)
+
+        } else {
+            uiElements.standardResults.style.display = 'block';
+            uiElements.type6Results.style.display = 'none';
+
+            // --- Dynamische Aktualisierung für Standard-Studien ---
+            if (data.results > 0) {
+                // Prüfen, ob das Zähler-Element schon existiert
+                if (!uiElements.resultsCount) {
+                    // Wenn nicht, erstellen und zum Container hinzufügen
+                    const newElement = document.createElement('div');
+                    newElement.innerHTML = `<br/><b>Search Result collected: </b> <span id="results-count">${data.results}</span>`;
+                    uiElements.standardResults.appendChild(newElement);
+                    // Referenz im UI-Objekt aktualisieren
+                    uiElements.resultsCount = document.getElementById('results-count');
+                } else {
+                    // Wenn es existiert, nur den Text aktualisieren
+                    uiElements.resultsCount.textContent = data.results;
+                }
+            }
+
+            if (data.results_ai > 0) {
+                if (!uiElements.resultsAiCount) {
+                    const newElement = document.createElement('div');
+                    newElement.innerHTML = `<br/><b>AI Overviews collected: </b> <span id="results-ai-count">${data.results_ai}</span>`;
+                    uiElements.standardResults.appendChild(newElement);
+                    uiElements.resultsAiCount = document.getElementById('results-ai-count');
+                } else {
+                    uiElements.resultsAiCount.textContent = data.results_ai;
+                }
+            }
+
+            if (data.results_chatbot > 0) {
+                if (!uiElements.resultsChatbotCount) {
+                    const newElement = document.createElement('div');
+                    newElement.innerHTML = `<br/><b>Chatbot Results collected: </b> <span id="results-chatbot-count">${data.results_chatbot}</span>`;
+                    uiElements.standardResults.appendChild(newElement);
+                    uiElements.resultsChatbotCount = document.getElementById('results-chatbot-count');
+                } else {
+                    uiElements.resultsChatbotCount.textContent = data.results_chatbot;
+                }
+            }
+        }
+
+        // DER FOLGENDE CODE FÜR FORTSCHRITTSBALKEN UND STATUS IST UNVERÄNDERT
+        const percentage = data.progress_percent;
+        uiElements.progressBar.style.width = percentage + '%';
+        uiElements.progressBar.setAttribute('aria-valuenow', percentage);
+        uiElements.progressBarText.textContent = percentage + '%';
+
+        let statusHTML = '';
+        let buttonHTML = '';
+
+        if ([1, -1].includes(data.status)) {
+            statusHTML = (data.status === 1) ? '<i>Collection running.</i>' : '<i>Collection running</i>, but with errors. Scraping jobs will repeat.';
+            buttonHTML = `
+                <button class="btn btn-sm btn-info float-end me-2" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Collection running...
+                </button>`;
+            
+            if (!uiElements.progressBar.classList.contains('progress-bar-animated')) {
+                uiElements.progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
+            }
+
+        } else {
+            if ([2, 3, -2, -3, -4, -5].includes(data.status)) {
+                 uiElements.progressBar.style.width = '100%';
+                 uiElements.progressBarText.textContent = '100%';
+            }
+            uiElements.progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+            
+            if (data.status === 2 || data.status === 3) {
+                statusHTML = '<i>Collection finished.</i>';
+                uiElements.progressBar.classList.add('bg-success');
+            } else if (data.status === -2) {
+                statusHTML = '<i>Collection finished</i>, but some processes failed.';
+                uiElements.progressBar.classList.add('bg-danger');
+            } else if (data.status === -3) {
+                statusHTML = '<i>Collection finished.</i> Some queries returned no results.';
+                uiElements.progressBar.classList.add('bg-success');
+            } else if (data.status === -4) {
+                statusHTML = 'Collection finished, but not all sources could be saved.';
+                uiElements.progressBar.classList.add('bg-danger');
+            } else if (data.status === -5) {
+                statusHTML = '<i>Collection finished</i>, but not all scraper jobs and sources could be completed.';
+                uiElements.progressBar.classList.add('bg-danger');
+            }
+
+                        // +++ NEUER STATUS-BLOCK FÜR DIE DYNAMISCHE ANZEIGE +++
+
+
+            if ([2, 3, -2, -3, -4, -5].includes(data.status)) {
+                buttonHTML = `
+                    <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#closeStudy">
+                        <i class="fa-regular fa-circle-stop"></i> Archive
+                    </button>`;
+            }
+            
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        uiElements.statusText.innerHTML = statusHTML;
+        uiElements.actionButtons.innerHTML = buttonHTML;
+    }
+
+    async function fetchStatus() {
+        try {
+            const response = await fetch(`/study/${studyId}/progress`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            updateUI(data);
+        } catch (error) {
+            console.error('Fehler beim Abrufen des Fortschritts:', error);
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+        }
+    }
+    
+    {% if study.status in [1, -1] %}
+        fetchStatus();
+        pollingInterval = setInterval(fetchStatus, 5000);
+    {% else %}
+        fetchStatus();
+    {% endif %}
+});
+</script>
+{% endif %}
+
 
 {% endblock %}
 {# End the content block #}

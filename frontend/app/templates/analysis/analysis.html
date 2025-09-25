@@ -1,30 +1,32 @@
 {% extends "master.html" %}
 
 {% block title %}Analysis{% endblock %}
-{% block head %}{{ super() }}{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block content %}
-<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
-<!-- Link to navigate back to the study page -->
-<div class="pb-4">
-  <a class="text-dark" href="{{ url_for('study', id=study.id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to
-    Study</a>
+<div class="d-flex justify-content-between align-items-center pb-4">
+  <a class="text-dark" href="{{ url_for('study', id=study.id) }}">
+    <i class="fa-solid fa-angle-left me-2"></i> Back to Study
+  </a>
+  <a href="{{ url_for('export_analysis', id=study.id) }}" class="btn btn-success">
+    <i class="fa-solid fa-file-excel me-2"></i> Export Statistics (XLSX)
+  </a>
 </div>
 
 <div class="row">
-  <!-- Column for displaying results statistics -->
   <div class="col pb-4">
     <div class="card">
       <div class="card-body">
-        <!-- Header for the results statistics section -->
         <div class="hstack">
           <div class="crd-header">Results Statistics</div>
         </div>
-
         <div class="py-2">
-          <!-- Table displaying result statistics -->
           <table class="table table-striped table-borderless">
             {% for key, value in result_stats.items() %}
             <tr>
@@ -38,94 +40,133 @@
     </div>
   </div>
 
-  <!-- Column for displaying evaluation statistics -->
-  <div class="col">
+  {% if evaluation_stats %}
+  <div class="col pb-4">
     <div class="card">
       <div class="card-body">
-        <!-- Header for the evaluation statistics section -->
         <div class="hstack">
           <div class="crd-header">Evaluation Statistics</div>
         </div>
         <div class="py-2">
-          <!-- Table displaying evaluation statistics -->
           <table class="table table-striped table-borderless">
-            {% for key, value in evaluation_stats.items() %}
+            {% for key, value in evaluation_stats.items() if key != 'breakdown' %}
             <tr>
               <td>{{ key }}</td>
               <td>{{ value }}</td>
             </tr>
             {% endfor %}
           </table>
+
+          {% if evaluation_stats.breakdown %}
+            <hr class="my-2">
+            <div class="crd-header" style="font-size: 0.9rem; margin-bottom: 0.75rem;">Completed Evaluations by Type</div>
+            <table class="table table-striped table-borderless table-sm">
+              {% for item in evaluation_stats.breakdown %}
+              <tr>
+                <td>{{ item.type }}</td>
+                <td>{{ item.count }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+            <div class="mt-3" style="max-width: 300px; margin: auto;">
+                <canvas id="evaluationChart"></canvas>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if answer_stats %}
+<div class="row">
+  <div class="col">
+    <h2 class="crd-header" style="font-size: 1.5rem; margin-bottom: 1rem; margin-left: 0.5rem;">Answer Distribution per Question</h2>
   </div>
 </div>
 
 <div class="row">
-  <!-- Display SEO analysis if data is available -->
-  {% if classes %}
-  <div class="col pb-4">
-    <div class="card">
-      <div class="card-body">
-        <!-- Header for the SEO analysis section with additional information link -->
+  {% for question in answer_stats %}
+  <div class="col-md-6 pb-4">
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column">
         <div class="hstack">
-          <div class="crd-header">SEO Analysis <span class="ms-2 text-muted"><a
-                href="https://searchstudies.org/research/seo-effekt/" target="_blank"><i
-                  class="fa-solid fa-circle-info me-1"></i></a></span></div>
+          <div class="crd-header">{{ question.title }}</div>
         </div>
+        <div class="py-2 flex-grow-1">
+          {# --- Darstellung für Kategoriale Fragen --- #}
+          {% if question.type in ['likert_scale', 'true_false', 'multiple_choice'] %}
+            <table class="table table-striped table-borderless table-sm">
+              <thead>
+                <tr>
+                  <th>Answer</th>
+                  {# NEU: Spalte für den Wert hinzugefügt #}
+                  {% if question.type == 'likert_scale' %}<th>Value</th>{% endif %}
+                  <th>Count</th>
+                  <th>Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in question.distribution %}
+                <tr>
+                  <td>{{ item.label }}</td>
+                  {# NEU: Wert anzeigen, falls es eine Likert-Skala ist #}
+                  {% if question.type == 'likert_scale' %}<td>{{ item.value }}</td>{% endif %}
+                  <td>{{ item.count }}</td>
+                  <td>{{ item.percentage | round(1) }}%</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            
+            {% if question.numeric_stats %}
+            <div class="mt-3 pt-2 border-top">
+              <p class="mb-0 small"><strong>Average:</strong> {{ question.numeric_stats.mean | round(2) }}</p>
+              <p class="mb-0 small text-muted">Standard Deviation: {{ question.numeric_stats.std_dev | round(2) }}</p>
+            </div>
+            {% endif %}
 
-        <div class="py-2">
-          <!-- Table displaying SEO analysis data -->
-          <table class="table table-striped table-borderless mt-2">
-            <tr>
-              <th>Class</th>
-              <th>Total</th>
-              <th>Percentage</th>
-            </tr>
-            {% for class in classes %}
-            <tr>
-              <td>{{ class["label"] }}</td>
-              <td>{{ class["value"] }}</td>
-              <td>{{ class["pct"] | round(2) }}</td>
-            </tr>
-            {% endfor %}
-          </table>
+            <div class="mt-3"><canvas id="answerChart-{{ question.question_id }}"></canvas></div>
+          {% endif %}
+
+          {# --- Darstellung für Numerische Fragen --- #}
+          {% if question.type == 'scale_number' %}
+            <table class="table table-striped table-borderless table-sm">
+              <tbody>
+                <tr><td>Total Answers</td><td>{{ question.numeric_stats.count }}</td></tr>
+                <tr><td>Average</td><td>{{ question.numeric_stats.mean | round(2) }}</td></tr>
+                <tr><td>Min / Max</td><td>{{ question.numeric_stats.min }} / {{ question.numeric_stats.max }}</td></tr>
+              </tbody>
+            </table>
+             <div class="mt-3">
+                <p class="text-muted small">Distribution of Values:</p>
+                <canvas id="answerChart-{{ question.question_id }}"></canvas>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
-    {% endif %}
   </div>
+  {% endfor %}
+</div>
+{% endif %}
 
-  <!-- Display results overlap if data is available -->
-  {% if overlap_list %}
+{% if overlap_list %}
+<div class="row">
+  <div class="col">
+    <h2 class="crd-header" style="font-size: 1.5rem; margin-bottom: 1rem; margin-left: 0.5rem;">Results Overlap</h2>
+  </div>
+</div>
+<div class="row">
   <div class="col pb-4">
     <div class="card">
-      <div class="card-body">
-        <!-- Header for the results overlap section -->
-        <div class="hstack">
-          <div class="crd-header">Results Overlap</div>
-        </div>
-        <div class="pt-2">
-          <!-- Display progress bars showing overlap data -->
-          {% for overlap in overlap_list %}
-          <div class="progress" style="height: 30px;">
-            <div class="progress-bar bg-primary" role="progressbar" aria-label="{{ overlap['SE_1'] }}"
-              style="width: {{ overlap['SE_1 exclusive']/overlap['Total']*100 }}%"
-              aria-valuenow="{{ overlap['SE_1 exclusive']/overlap['Total']*100 }}" aria-valuemin="0"
-              aria-valuemax="100">{{ overlap['SE_1']}}</div>
-            <div class="progress-bar bg-secondary" role="progressbar" aria-label="{{ overlap['SE_2'] }}"
-              style="width: {{ overlap['SE_2 exclusive']/overlap['Total']*100 }}%"
-              aria-valuenow="{{ overlap['SE_2 exclusive']/overlap['Total']*100 }}" aria-valuemin="0"
-              aria-valuemax="100">{{ overlap['SE_2']}}</div>
-            <div class="progress-bar bg-dark" role="progressbar" aria-label="Overlap"
-              style="width: {{ overlap['Overlap']/overlap['Total']*100 }}%"
-              aria-valuenow="{{ overlap['Overlap']/overlap['Total']*100 }}" aria-valuemin="0" aria-valuemax="100">
-              Overlap</div>
+        <div class="card-body">
+          <div class="hstack">
+            <div class="crd-header">Overlap between Search Engines</div>
           </div>
-          {% endfor %}
-          <!-- Table displaying overlap details -->
-          <table class="table table-striped table-borderless mt-2">
+
+            <table class="table table-striped table-borderless mt-2">
             <tr>
               <th>Search Engine Pair</th>
               <th>SE 1 exlusive</th>
@@ -143,10 +184,375 @@
             </tr>
             {% endfor %}
           </table>
+          <div class="mt-4">
+            <canvas id="overlapChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if classifier_stats %}
+<div class="row">
+  <div class="col">
+    <h2 class="crd-header" style="font-size: 1.5rem; margin-bottom: 1rem; margin-left: 0.5rem;">Classifier Statistics</h2>
+  </div>
+</div>
+<div class="row">
+    {% for classifier_name, data_bundle in classifier_stats.items() %}
+    <div class="col-md-6 pb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="hstack">
+                    <div class="crd-header">{{ classifier_name }}</div>
+                </div>
+                <div class="py-2 flex-grow-1">
+                    <table class="table table-striped table-borderless">
+                        <thead>
+                            <tr><th>Classification Group</th><th>Count</th><th>Share of Total</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for group_name, group_data in data_bundle.grouped_stats.items() %}
+                              {% if group_data.count > 0 %}
+                                <tr>
+                                    <td>{{ group_name | replace("_", " ") | capitalize }}</td>
+                                    <td>{{ group_data.count }}</td>
+                                    <td>{{ group_data.percentage | round(1) }}%</td>
+                                </tr>
+                              {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="mt-3">
+                        <canvas id="classifierChart-{{ classifier_name | slugify }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if top_domains %}
+<div class="row">
+  <div class="col">
+    <h2 class="crd-header" style="font-size: 1.5rem; margin-bottom: 1rem; margin-left: 0.5rem;">Top Domains</h2>
+  </div>
+</div>
+<div class="row">
+  {% if top_domains.standard_results %}
+  <div class="col-md-6 pb-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">Top 10 Domains (Organic Results)</div>
+        </div>
+        <div class="py-2">
+          <table class="table table-striped table-borderless">
+            <thead>
+              <tr><th>Domain</th><th>Total Count</th><th>Share of Total</th><th>Avg. Position</th></tr>
+            </thead>
+            <tbody>
+              {% for item in top_domains.standard_results %}
+              <tr>
+                <td>{{ item.domain }}</td>
+                <td>{{ item.count }}</td>
+                <td>{{ item.percentage | round(1) }}%</td>
+                <td>{% if item.avg_position is not none %}{{ item.avg_position | round(1) }}{% else %}N/A{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-4">
+            <canvas id="topDomainsChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if top_domains.ai_sources %}
+  <div class="col-md-6 pb-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="hstack">
+          <div class="crd-header">Top 10 Domains (AI Sources)</div>
+        </div>
+        <div class="py-2">
+          <table class="table table-striped table-borderless">
+            <thead>
+              <tr><th>Domain</th><th>Total Count</th><th>Share of Total</th><th>Avg. Position</th></tr>
+            </thead>
+            <tbody>
+              {% for item in top_domains.ai_sources %}
+              <tr>
+                <td>{{ item.domain }}</td>
+                <td>{{ item.count }}</td>
+                <td>{{ item.percentage | round(1) }}%</td>
+                <td>{% if item.avg_position is not none %}{{ item.avg_position | round(1) }}{% else %}N/A{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-4">
+            <canvas id="topDomainsAiChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
   </div>
   {% endif %}
 </div>
+{% endif %}
+
+<script>
+// Der gesamte JavaScript-Block bleibt unverändert
+// ...
+document.addEventListener('DOMContentLoaded', function() {
+
+  function slugify(text) {
+    return text.toString().toLowerCase().trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  // --- Chart 1: Evaluation Breakdown (Doughnut Chart) ---
+  {% if evaluation_stats and evaluation_stats.breakdown %}
+    const evalData = {{ evaluation_stats.breakdown | tojson }};
+    const evalLabels = evalData.map(item => item.type);
+    const evalCounts = evalData.map(item => item.count);
+    new Chart(document.getElementById('evaluationChart'), {
+      type: 'doughnut',
+      data: {
+        labels: evalLabels,
+        datasets: [{
+          label: 'Count',
+          data: evalCounts,
+          backgroundColor: ['rgba(40, 167, 69, 0.7)', 'rgba(220, 53, 69, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(0, 123, 255, 0.7)'],
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'top' } } }
+    });
+  {% endif %}
+
+  // --- Chart 2: Top Domains (Organic Results - Horizontal Bar Chart) ---
+  {% if top_domains and top_domains.standard_results %}
+    const topDomainsData = {{ top_domains.standard_results | tojson }};
+    const domainLabels = topDomainsData.map(item => item.domain);
+    const domainCounts = topDomainsData.map(item => item.count);
+    new Chart(document.getElementById('topDomainsChart'), {
+      type: 'bar',
+      data: { labels: domainLabels, datasets: [{ label: 'Total Count', data: domainCounts, backgroundColor: 'rgba(0, 123, 255, 0.7)' }] },
+      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+    });
+  {% endif %}
+
+  // --- Chart für Top Domains (AI Sources) ---
+  {% if top_domains and top_domains.ai_sources %}
+    const topDomainsAiData = {{ top_domains.ai_sources | tojson }};
+    const domainAiLabels = topDomainsAiData.map(item => item.domain);
+    const domainAiCounts = topDomainsAiData.map(item => item.count);
+    new Chart(document.getElementById('topDomainsAiChart'), {
+      type: 'bar',
+      data: { labels: domainAiLabels, datasets: [{ label: 'Total Count', data: domainAiCounts, backgroundColor: 'rgba(23, 162, 184, 0.7)' }] },
+      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+    });
+  {% endif %}
+
+
+  // --- Chart 3: Search Engine Overlap (Horizontal 100% Stacked Bar Chart) ---
+  {% if overlap_list %}
+    const overlapData = {{ overlap_list | tojson }};
+    const overlapLabels = overlapData.map(item => item.SE_Pair.replace('-', ' vs '));
+    
+    const overlapCanvas = document.getElementById('overlapChart');
+    const chartContainer = overlapCanvas.parentElement;
+    const numberOfPairs = overlapData.length;
+    const dynamicHeight = 80 + (numberOfPairs * 90); 
+    chartContainer.style.height = `${dynamicHeight}px`;
+
+    const toPercent = (value, total) => (total > 0 ? (value / total) * 100 : 0);
+
+    new Chart(overlapCanvas, {
+      type: 'bar',
+      data: {
+        labels: overlapLabels,
+        datasets: [
+          {
+            label: 'SE 1 exclusive',
+            data: overlapData.map(item => toPercent(item['SE_1 exclusive'], item.Total)),
+            backgroundColor: 'rgba(0, 123, 255, 0.7)',
+            originalData: overlapData.map(item => ({ name: item.SE_1, value: item['SE_1 exclusive'] })),
+            maxBarThickness: 75
+          },
+          {
+            label: 'SE 2 exclusive',
+            data: overlapData.map(item => toPercent(item['SE_2 exclusive'], item.Total)),
+            backgroundColor: 'rgba(108, 117, 125, 0.7)',
+            originalData: overlapData.map(item => ({ name: item.SE_2, value: item['SE_2 exclusive'] })),
+            maxBarThickness: 75
+          },
+          {
+            label: 'Overlap',
+            data: overlapData.map(item => toPercent(item.Overlap, item.Total)),
+            backgroundColor: 'rgba(52, 58, 64, 0.7)',
+            originalData: overlapData.map(item => ({ name: 'Overlap', value: item.Overlap })),
+            maxBarThickness: 75
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const original = context.dataset.originalData[context.dataIndex];
+                const percentage = context.raw.toFixed(1);
+                return `${original.name}: ${original.value} (${percentage}%)`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, max: 100, ticks: { callback: function(value) { return value + "%" } } },
+          y: { stacked: true }
+        }
+      }
+    });
+  {% endif %}
+
+  // --- Chart 4: Classifier Statistics (Detailed Histograms with Trend Line) ---
+  {% if classifier_stats %}
+    const classifierData = {{ classifier_stats | tojson }};
+    for (const classifierName in classifierData) {
+        const dataBundle = classifierData[classifierName];
+        if (dataBundle.numeric_raw_stats && dataBundle.numeric_raw_stats.length > 0) {
+            const slug = slugify(classifierName);
+            const canvas = document.getElementById(`classifierChart-${slug}`);
+            if (canvas) {
+
+                const numBins = 20;
+                const binWidth = 100 / numBins;
+                const bins = Array(numBins).fill(0);
+                const binLabels = [];
+
+                for (const item of dataBundle.numeric_raw_stats) {
+                    const binIndex = Math.min(numBins - 1, Math.floor(item.value / binWidth));
+                    bins[binIndex] += item.count;
+                }
+
+                for (let i = 0; i < numBins; i++) {
+                    const start = i * binWidth;
+                    const end = start + binWidth - 1;
+                    binLabels.push(`${start}-${end}`);
+                }
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: binLabels,
+                        datasets: [
+                        {
+                            label: 'Count',
+                            data: bins,
+                            backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                            borderColor: 'rgba(23, 162, 184, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            type: 'line',
+                            label: 'Trend',
+                            data: bins,
+                            borderColor: 'rgba(220, 53, 69, 0.9)',
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointBackgroundColor: 'rgba(220, 53, 69, 0.9)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { 
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: `Classification Value (n=${dataBundle.total_numeric_count})`
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Results'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+  {% endif %}
+
+  // --- Chart 5: Answer Distribution ---
+  {% if answer_stats %}
+    const answerData = {{ answer_stats | tojson }};
+    answerData.forEach(question => {
+      const canvas = document.getElementById(`answerChart-${question.question_id}`);
+      if (!canvas) return;
+
+      if (['likert_scale', 'true_false', 'multiple_choice'].includes(question.type)) {
+        const labels = question.distribution.map(item => item.label);
+        const counts = question.distribution.map(item => item.count);
+        new Chart(canvas, {
+          type: 'bar',
+          data: { labels: labels, datasets: [{ label: 'Count', data: counts, backgroundColor: 'rgba(40, 167, 69, 0.7)' }] },
+          options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+        });
+      }
+
+      if (question.type === 'scale_number' && question.raw_values) {
+          const values = question.raw_values;
+          if (values.length === 0) return;
+          const min = Math.floor(Math.min(...values) / 10) * 10;
+          const max = Math.ceil(Math.max(...values) / 10) * 10;
+          const binCount = Math.min(10, max - min);
+          const binWidth = binCount > 0 ? (max - min) / binCount : 1;
+          const bins = Array(binCount).fill(0);
+          const binLabels = [];
+
+          values.forEach(val => {
+              let binIndex = binWidth > 0 ? Math.floor((val - min) / binWidth) : 0;
+              if (val === max) binIndex = binCount - 1;
+              if(binIndex >= 0 && binIndex < binCount) bins[binIndex]++;
+          });
+          
+          for(let i = 0; i < binCount; i++) {
+              const binStart = min + i * binWidth;
+              binLabels.push(`${binStart.toFixed(0)}-${(binStart + binWidth).toFixed(0)}`);
+          }
+
+          new Chart(canvas, {
+              type: 'bar',
+              data: { labels: binLabels, datasets: [{ label: 'Number of Answers', data: bins, backgroundColor: 'rgba(0, 123, 255, 0.7)' }] },
+              options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { categoryPercentage: 1.0, barPercentage: 0.95 } } }
+          });
+      }
+    });
+  {% endif %}
+
+});
+</script>
 {% endblock %}

@@ -47,7 +47,7 @@ def terminate_processes(args:list):
          
             if proc.info['cmdline']:
                 for cmd in proc.info['cmdline']:
-                    if any(keyword in cmd for keyword in ['sources', 'classifier', 'scraper', 'chrome_controller']):
+                    if any(keyword in cmd for keyword in ['sources', 'classifier', 'scraper']):
                         if '.py' in cmd:
                             try:
                                 print(f"Terminating process with PID {proc.info['pid']}: {cmd}")

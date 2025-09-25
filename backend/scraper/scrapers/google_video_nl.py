@@ -65,7 +65,7 @@ def run(query, limit, scraping, headless):
             serp_bin = scraping.take_screenshot(driver)
             soup = BeautifulSoup(source, features="lxml")
 
-            for result in soup.find_all("div", class_=["MjjYud"]):
+            for result in soup.find_all("div", class_=["MjjYud", "g PmEWq"]):
                 result_title = ""
                 result_description = ""
                 result_url = ""
@@ -93,8 +93,6 @@ def run(query, limit, scraping, headless):
                     url_element = result.find("a")
                     if url_element:
                         url = url_element.attrs.get('href', "N/A")
-                        if "bing." in url:
-                            url = scraping.get_real_url(url)
                         result_url = url
                 except Exception as e:
                     print(f"Error extracting URL: {e}")

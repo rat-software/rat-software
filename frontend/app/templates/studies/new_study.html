@@ -1,60 +1,85 @@
 {% extends "master.html" %}
 
 {% block title %}{{ title }}{% endblock %}
-{% block head %}{{ super() }}{% endblock %}
+{% block head %}{{ super() }}
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  
+  {# CSS für den Guide (unverändert) #}
+  <style>
+    .tour-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      z-index: 1100; display: none;
+    }
+    .tour-spotlight {
+      position: absolute; box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+      border-radius: 12px; outline: 2px solid rgba(255,255,255,0.7);
+      transition: all .2s ease; z-index: 1101; pointer-events: none;
+    }
+    .tour-tooltip {
+      position: absolute; z-index: 1102; max-width: 360px;
+      background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.2);
+      padding: 14px 16px;
+    }
+    .tour-tooltip h6 { margin: 0 0 6px 0; }
+    .tour-actions button { margin-right: .5rem; }
+    .tour-hidden { display: none !important; }
+    .tour-focusable:focus { outline: 3px solid #0d6efd; outline-offset: 2px; }
+  </style>
+{% endblock %}
 
 {% block content %}
 
 {% macro render_create_study_fields(field, url, field_class) %}
-  {{ field.label(class_="form-label") }}
-  <!--<span class="float-end help"><a href="{{ url }}"><i class="fa-solid fa-circle-question"></i></a></span>-->
-  {{ field(class_=field_class) }}
+{{ field.label(class_="form-label") }}
+{#<span class="float-end help"><a href="{{ url }}"><i class="fa-solid fa-circle-question"></i></a></span>#}
+{{ field(class_=field_class) }}
 
-  {% if field.errors %}
-    <ul class=errors>
-    {% for error in field.errors %}
-      <li>{{ error }}</li>
-    {% endfor %}
-    </ul>
-  {% endif %}
+{% if field.errors %}
+<ul class=errors>
+  {% for error in field.errors %}
+  <li>{{ error }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% endmacro %}
 
 <h1 class="sr-only">RAT</h1>
 
 <div class="row">
   <div class="col-8 offset-2">
-     <!-- Navigation pills for tabbed interface -->
+    
     <ul class="nav nav-pills mb-3" id="create-stepper" role="tablist" onchange="progress()">
-      <!-- Step 1: Study Details -->
       <li class="nav-item col-3">
-        <a class="nav-link text-muted active" id="study-stepper-1" data-bs-toggle="tab" data-bs-target="#tab-1" type="button" role="tab" aria-controls="tab-1" aria-selected="true">
+        <a class="nav-link text-muted active" id="study-stepper-1" data-bs-toggle="tab" data-bs-target="#tab-1"
+          type="button" role="tab" aria-controls="tab-1" aria-selected="true">
           <table class="row">
             <td class="step-number rounded"><i class="fa-solid fa-1"></i></td>
             <td class="step-text d-none d-lg-table-cell">Study Details</td>
           </table>
         </a>
       </li>
-      <!-- Step 2: Search Engines -->
       <li class="nav-item col-3">
-        <a class="nav-link" id="study-stepper-2" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab" aria-controls="tab-2" aria-selected="false">
+        <a class="nav-link" id="study-stepper-2" data-bs-toggle="tab" data-bs-target="#tab-2" type="button" role="tab"
+          aria-controls="tab-2" aria-selected="false">
           <table class="row">
             <td class="step-number rounded"><i class="fa-solid fa-2"></i></td>
             <td class="step-text d-none d-lg-table-cell">Search Engines</td>
           </table>
         </a>
       </li>
-      <!-- Step 3: Search Queries -->
       <li class="nav-item col-3">
-        <a class="nav-link" id="study-stepper-3" data-bs-toggle="tab" data-bs-target="#tab-3" type="button" role="tab" aria-controls="tab-3" aria-selected="false">
+        <a class="nav-link" id="study-stepper-3" data-bs-toggle="tab" data-bs-target="#tab-3" type="button" role="tab"
+          aria-controls="tab-3" aria-selected="false">
           <table class="row">
             <td class="step-number rounded"><i class="fa-solid fa-3"></i></td>
             <td class="step-text d-none d-lg-table-cell">Search Queries</td>
           </table>
         </a>
       </li>
-      <!-- Step 4: Result Options -->
       <li class="nav-item col-3">
-        <a class="nav-link" id="study-stepper-4" data-bs-toggle="tab" data-bs-target="#tab-4" type="button" role="tab" aria-controls="tab-4" aria-selected="false">
+        <a class="nav-link" id="study-stepper-4" data-bs-toggle="tab" data-bs-target="#tab-4" type="button" role="tab"
+          aria-controls="tab-4" aria-selected="false">
           <table class="row">
             <td class="step-number rounded"><i class="fa-solid fa-4"></i></td>
             <td class="step-text d-none d-lg-table-cell">Result Options</td>
@@ -62,363 +87,798 @@
         </a>
       </li>
     </ul>
-    <!-- Progress bar for the stepper -->
-    <div class="progress progress-fixed" style="height: 3px;">
-      <div id="stepper" class="progress-bar bg-secondary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-    </div>
+
   </div>
   <div class="col-12">
-    <!-- Form to create or update a study -->
     <form action="{{ url_for('confirm_new_study') }}" method="POST" enctype="multipart/form-data">
-    <div class="tab-content">
-      <!-- Tab Pane 1: Study Details -->
-      <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="study-stepper-1">
-        <div class="row justify-content-center">
-          <div class="col-xl-8">
-            <div class="card">
-              <h2 class="card-header crd-header">Study Details</h2>
-              <div class="card-body">
-                <!-- Study ID field -->
-                <div class="mb-3">{{ form.id }}</div>
-                <!-- Study name field -->
-                <div class="mb-3">
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Enter the title of your study. Choose a concise name that accurately reflects the focus of your research."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ render_create_study_fields(form.name, "#name", "form-control") }}
-                </div>
-                <!-- Description field -->
-                <div class="mb-3">
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Provide a brief description of your study. May include the main objectives and any relevant details that clarify the scope and purpose."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ render_create_study_fields(form.description, "#description", "form-control") }}
-                </div>
-                <!-- Study type field -->
-                <div class="mb-3">
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Select the type of study you wish to conduct, depending on the focus of your research."><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ render_create_study_fields(form.type, "#type", "form-select") }}
-                </div>
-
-                <!-- Collapsible Classifier Section -->
-                <div class="mb-3">
-                  <div class="form-group">
-                    <label class="form-label">Classifier 
-                      <i class="fa-solid fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#collapseClassifier"></i>
-                    </label>
-                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="(optional) Choose from available classifiers to analyze search results."><i class="fa-solid fa-circle-question"></i></a></span>
-                    <div id="collapseClassifier" class="collapse">
-                      {{ render_create_study_fields(form.classifiers, "#classifiers", "") }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Button to go to the next tab -->
-                <div onclick="showTab('study-stepper-2')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab Pane 2: Search Engines -->
-      <div class="tab-pane fade" id="tab-2" role="tabpanel" aria-labelledby="study-stepper-2">
-        <div class="row justify-content-center">
-          <div class="col-xl-8">
-            <div class="card">
-              <h2 class="card-header crd-header">Search Engines</h2>
-              <div class="card-body">
-                <div class="row">
-                  <!-- Provider Filter Dropdown -->
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Filter by Provider</label>
-                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Choose one or multiple desired Search Engine provider"><i class="fa-solid fa-circle-question"></i></a></span>
-                    <select id="providerFilter" class="form-select" multiple>
-                      <option value="Google">Google</option>
-                      <option value="Bing">Bing</option>
-                      <option value="DuckDuckGo">DuckDuckGo</option>
-                      <option value="Ecosia">Ecosia</option>
-                      <option value="Katalogplus">Katalogplus</option>
-                    </select>
-                  </div>
+      {{ form.hidden_tag() }}
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="tab-1" role="tabpanel" aria-labelledby="study-stepper-1">
+          <div class="row justify-content-center">
+            <div class="col-xl-8">
+              <div class="card">
+                <h2 class="card-header crd-header d-flex justify-content-between align-items-center">
+                  <span>Study Details</span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm start-step-tour" data-tour-target-tab="tab-1">
+                    <i class="fa-solid fa-person-walking"></i> Guide me
+                  </button>
+                </h2>
+                <div class="card-body">
+                  <div class="mb-3" style="display:none;">{{ form.id }}</div>
                   
-                  <!-- Location Filter Dropdown -->
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Filter by Location</label>
-                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Choose one or multiple desired locations"><i class="fa-solid fa-circle-question"></i></a></span>
-                    <select id="locationFilter" class="form-select" multiple>
-                      <option value="FR">FR</option>
-                      <option value="IT">IT</option>
-                      <option value="NL">NL</option>
-                      <option value="PL">PL</option>
-                      <option value="US">US</option>
-                      <option value="DE">DE</option>
-                      <option value="SE">SE</option>
+                  <div class="mb-3" data-tour-step="1" data-tour-title="Name your study" data-tour-text="Choose a short, descriptive title. You can change it later.">
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true"
+                        title="
+                        Enter the title of your study.<br/> Choose a concise name that accurately reflects the focus of your research."><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    {{ render_create_study_fields(form.name, "#name", "form-control") }}
+                  </div>
+                  <div class="mb-3">
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Provide a brief description of your study. May include the main objectives and any relevant details that clarify the scope and purpose."><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    {{ render_create_study_fields(form.description, "#description", "form-control") }}
+                  </div>
+
+                  <div class="mb-3" data-tour-step="2" data-tour-title="Select a study type" data-tour-text="This determines which options are available in the next steps and sets sensible defaults.">
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Select the type of study you wish to conduct, depending on the focus of your research."><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    {{ form.type.label(class_="form-label") }}
+                    <select id="type" name="type" class="form-select">
+                        {% for choice in study_type_choices %}
+                            <option value="{{ choice.id }}" data-description="{{ choice.description }}" 
+                                    {% if form.type.data and form.type.data|string == choice.id %}selected{% endif %}>
+                                {{ choice.name }}
+                            </option>
+                        {% endfor %}
                     </select>
                   </div>
+
+                  <div id="next-to-step-2" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
                 </div>
-
-                <div onclick="resetFilter()" class="btn btn-primary" style="margin-top: 5px; margin-bottom: 5px;">Reset Filters<i class="fa-solid"></i></div>
-
-
-                <!-- Search Engines field -->
-                <div id="searchEnginesList" class="mb-3">
-                  {{ render_create_study_fields(form.search_engines, "#search_engines", "") }}
-                </div>
-
-                <!-- Buttons to go to the previous or next tab -->
-                <div onclick="showTab('study-stepper-1')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
-                <div onclick="showTab('study-stepper-3')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Tab Pane 3: Search Queries -->
-      <div class="tab-pane fade" id="tab-3" role="tabpanel" aria-labelledby="study-stepper-3">
-        <div class="row justify-content-center">
-          <div class="col-xl-8">
-            <div class="card">
-              <h2 class="card-header crd-header">Search Queries</h2>
-              <div class="card-body">
-                <!-- Task field -->
-                <div class="mb-3">{{ render_create_study_fields(form.task, "#task", "form-control") }}</div>
-                <!-- Queries field -->
-                <div class="mb-3">
-                  {{ form.queries.label(class_="form-label") }}
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="This is additional info about queries"><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ form.queries(class_="form-control") }}
+        <div class="tab-pane fade" id="tab-2" role="tabpanel" aria-labelledby="study-stepper-2">
+          <div class="row justify-content-center">
+            <div class="col-xl-8">
+              <div class="card">
+                <h2 class="card-header crd-header d-flex justify-content-between align-items-center">
+                  <span>Search Engines</span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm start-step-tour" data-tour-target-tab="tab-2">
+                    <i class="fa-solid fa-person-walking"></i> Guide me
+                  </button>
+                </h2>
+                <div class="card-body" data-tour-step="3" data-tour-title="Choose search engines" data-tour-text="Filter by provider, location, or result type, then tick the engines you want to scrape data from.">
+                  <div class="row">
+                    <div class="col-md-4 mb-3">
+                      <label class="form-label">Filter by Provider</label>
+                      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Choose one or multiple desired Search Engine providers. You can also choose 'Other' if you want to upload a list of URLs to process."><i
+                            class="fa-solid fa-circle-question"></i></a></span>
+                      <select id="providerFilter" class="form-select" multiple>
+                        {% for provider in providers %}
+                        <option value="{{ provider }}">{{ provider }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <label class="form-label">Filter by Location</label>
+                      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Choose one or multiple desired locations"><i
+                            class="fa-solid fa-circle-question"></i></a></span>
+                      <select id="locationFilter" class="form-select" multiple>
+                        {% for location in locations %}
+                        <option value="{{ location }}">{{ location }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <label class="form-label">Filter by Result Type</label>
+                      {# --- HIER IST DIE KORREKTUR --- #}
+                      <span class="float-end help">
+                        <a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                          data-bs-html="true"
+                          data-bs-title="<p class='mb-0'>
+                            <strong>Organic Results:</strong> Organic search results are unpaid, algorithmically-ranked listings on a search engine results page (SERP) that appear because they are relevant to a user's search query.
+                          <br/><br/>
+                          <strong>AI Overviews:</strong> AI Overviews are AI-generated, comprehensive snapshots of key information that appear at the top of search results pages, providing direct answers to user queries by pulling information from multiple web sources and citing them as links.
+                          </p>">
+                          <i class="fa-solid fa-circle-question"></i>
+                        </a>
+                      </span>
+                      <select id="resultTypeFilter" class="form-select" multiple>
+                        {% for scraper_identifier_key, display_text in search_result_types %}
+                        <option value="{{ scraper_identifier_key }}">{{ display_text }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div onclick="resetFilter()" class="btn btn-primary" style="margin-top: 5px; margin-bottom: 5px;">
+                    Reset Filters<i class="fa-solid"></i></div>
+                  <div id="searchEnginesList" class="mb-3">
+                    <label class="form-label">Search Engines</label>
+                    <ul id="search_engines" class="list-unstyled"
+                      style="max-height: 250px; overflow-y: auto; border: 1px solid #ced4da; padding: 10px; border-radius: .25rem;">
+                      {% for engine in search_engines %}
+                      <li>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="search_engines" value="{{ engine.id }}"
+                            id="se-{{ engine.id }}" {% if form.search_engines.data and engine.id in
+                            form.search_engines.data %}checked{% endif %}>
+                          <label class="form-check-label" for="se-{{ engine.id }}">{{ engine.name }}</label>
+                        </div>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  <div onclick="showTab('study-stepper-1')" class="btn btn-secondary mt-5"><i
+                      class="fa-solid fa-angles-left"></i> Back</div>
+                  <div id="next-to-step-3" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
                 </div>
-                <div class="divider"><span class="border"></span><span class="text">OR</span></div>
-                <!-- Query list upload field -->
-                <div class="mb-3">
-                  {{ form.query_list.label(class_="form-label") }}
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Add the list of queries here "><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ form.query_list(class_="form-control") }}
-                </div>
-
-                <!-- Buttons to go to the previous or next tab -->
-                <div onclick="showTab('study-stepper-2')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div>
-                <div onclick="showTab('study-stepper-4')" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Tab Pane 4: Result Options (now includes Range) -->
-      <div class="tab-pane fade" id="tab-4" role="tabpanel" aria-labelledby="study-stepper-4">
-        <div class="row justify-content-center">
-          <div class="col-xl-8">
-            <div class="card">
-              <h2 class="card-header crd-header">Result Options</h2>
-              <div class="card-body">
-                <!-- Result type selection field -->
-                <div class="mb-3">
-                  {{ form.result_type.label(class_="form-label") }}
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="To define the type of desired results"><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ form.result_type(class_="form-select") }}
+        <div class="tab-pane fade" id="tab-3" role="tabpanel" aria-labelledby="study-stepper-3">
+          <div class="row justify-content-center">
+            <div class="col-xl-8">
+              <div class="card">
+                <h2 class="card-header crd-header d-flex justify-content-between align-items-center">
+                  <span>Search Queries</span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm start-step-tour" data-tour-target-tab="tab-3">
+                    <i class="fa-solid fa-person-walking"></i> Guide me
+                  </button>
+                </h2>
+                <div class="card-body" data-tour-step="4" data-tour-title="Add your queries" data-tour-text="Either type your search queries directly into the text box (one per line) or upload a text file containing your queries. You only need to do one.">
+                  <div class="mb-3">
+                    {{ form.queries.label(class_="form-label") }}
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="This is additional info about queries"><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    {{ form.queries(class_="form-control", rows="5", placeholder="Enter one search query per line...")
+                    }}
+                  </div>
+                  <div class="divider"><span class="border"></span><span class="text">OR</span></div>
+                  <div class="mb-3">
+                    {{ form.query_list.label(class_="form-label") }}
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Add the list of queries here "><i class="fa-solid fa-circle-question"></i></a></span>
+                    {{ form.query_list(class_="form-control") }}
+                  </div>
+                  <div>
+                    <p style="white-space: nowrap;">
+                      <i>Note: </i>
+                      You can use the 
+                      <a class="nav-link" href="/query_sampler/new_wizard" target="_blank" style="display:inline; text-decoration:underline;">
+                        <b>Query Sampler</b>
+                      </a>
+                      to generate a list of queries.
+                    </p>
+                  </div>
+                  <div onclick="showTab('study-stepper-2')" class="btn btn-secondary mt-5"><i
+                      class="fa-solid fa-angles-left"></i> Back</div>
+                  <div id="next-to-step-4" class="btn btn-primary float-end mt-5">Next <i class="fa-solid fa-angles-right"></i></div>
                 </div>
-                 <!-- Result count field to set number of results to collect -->
-                <div class="mb-3" id="result_count">
-                  {{ form.result_count.label(class_="form-label") }}
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of results to be collected"><i class="fa-solid fa-circle-question"></i></a></span>
-                  {{ form.result_count(class_="form-control") }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="tab-4" role="tabpanel" aria-labelledby="study-stepper-4">
+          <div class="row justify-content-center" id="ai-only-message-row" style="display: none;">
+            <div class="col-xl-8">
+              <div class="card">
+                <div class="card-body text-muted">
+                  Result options are only available for studies that include organic search results.
                 </div>
-
-                <!-- Collapsible Result Range Section -->
-                <div class="mb-3">
-                  <label class="form-label">Result Range
-                    <i class="fa-solid fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#collapseResultRange"></i>
-                  </label>
-                  <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="(optional) Add intervals for ranges to capture the desired search results (e.g. [1 - 10], [91 - 100])"><i class="fa-solid fa-circle-question"></i></a></span>
-
-                  <div id="collapseResultRange" class="collapse">
-                    
-                    <div class="mb-3">
-                      <!-- Container for dynamically added range fields -->
-                      <div id="ranges"></div>
-                      <!-- Button to add more range fields -->
-                      <button type="button" class="btn btn-secondary mt-5" onclick="addRange()">Add Range</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row justify-content-center" id="result-options-row">
+            <div class="col-xl-8">
+              <div class="card">
+                <h2 class="card-header crd-header d-flex justify-content-between align-items-center">
+                  <span>Organic Results Options</span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm start-step-tour" data-tour-target-tab="tab-4">
+                    <i class="fa-solid fa-person-walking"></i> Guide me
+                  </button>
+                </h2>
+                <div class="card-body" data-tour-step="5" data-tour-title="Configure result collection" data-tour-text="Specify how many search results to collect. You can either set a simple limit per query or define specific ranking ranges to capture (e.g., positions 1-10 and 91-100).">
+                  <div class="mb-3" id="result_count">
+                    {{ form.result_count.label(class_="form-label") }}
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Number of results to be collected"><i class="fa-solid fa-circle-question"></i></a></span>
+                    {{ form.result_count(class_="form-control") }}
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Result Ranges
+                      <i class="fa-solid fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#collapseResultRange"
+                        style="cursor: pointer;"></i>
+                    </label>
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="(optional) Add intervals for ranges to capture the desired search results (e.g. [1 - 10], [91 - 100])"><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                    <div id="collapseResultRange" class="collapse">
+                      <div id="ranges-container" data-existing-ranges="{{ form.ranges.data|tojson|e }}"></div>
+                      <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addRange()">Add
+                        Range</button>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
 
+          <div id="assessment-options-container">
+            <div class="row justify-content-center">
+              <div class="col-xl-8">
+                <div class="card">
+                  <h2 class="card-header crd-header">Assessment Options
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Options for the Assessment Interface"><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                  </h2>
+                  <div class="card-body" data-tour-step="6" data-tour-title="Set up the assessment" data-tour-text="Define what participants should see and do. Select which result types to assess and customize the interface (e.g., show or hide URLs).">
+                    <div class="mb-3">{{ render_create_study_fields(form.task, "#task", "form-control") }}</div>
+                    <div class="mb-3 form-check">
+                      {{ form.limit_per_participant(class="form-check-input", id="limit-per-participant-checkbox") }}
+                      {{ form.limit_per_participant.label(class="form-check-label") }}
+                      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Activate to limit how many results each participant has to assess."><i
+                            class="fa-solid fa-circle-question"></i></a></span>
+                    </div>
+                    <div class="mb-3" id="max-results-container" style="display: none;">
+                      {{ form.max_results_per_participant.label(class_="form-label") }}
+                      {{ form.max_results_per_participant(class_="form-control") }}
+                    </div>
+                    <label class="form-label" style="width: 100%;">Select the result types you want to be assessed
+                      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                          title="Select the result types, you want to be assessed."><i class="fa-solid fa-circle-question"></i></a></span>
+                    </label>
+                    <div class="mb-3">
+                      <ul id="assessment-result-types-list" class="list-unstyled"
+                        style="max-height: 250px; overflow-y: auto; border: 1px solid #ced4da; padding: 10px; border-radius: .25rem;">
+                        {% for res_type in assessment_result_types %}
+                        <li data-result-type-name="{{ res_type.name }}" 
+                            data-is-scraper-dependent="{{ 'true' if res_type.filter else 'false' }}">
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="assessment_result_types" value="{{ res_type.id }}"
+                              id="rt-{{ res_type.id }}"
+                              {% if form.assessment_result_types.data and res_type.id in form.assessment_result_types.data %} checked{% endif %}
+                            >
+                            <label class="form-check-label" for="rt-{{ res_type.id }}">
+                              {{ res_type.display }}
+                            </label>
+                          </div>
+                        </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                    <div id="show-urls-container" class="mb-3 form-check" style="margin-bottom: 0px !important;">
+                      {{ form.show_urls(class="form-check-input") }}
+                      {{ form.show_urls.label(class="form-check-label", text="Show URLs in the Assessment Interface [optional]") }}
+                      <span class="float-end help">
+                        <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="When activated the Assessment Interface will show the URL of the result to assess.">
+                          <i class="fa-solid fa-circle-question"></i>
+                        </a>
+                      </span>
+                    </div>
+                    <div id="show-ai-sources" class="mb-3 form-check" style="margin-bottom: 0px !important;">
+                      {{ form.show_ai_sources(class="form-check-input") }}
+                      {{ form.show_ai_sources.label(class="form-check-label", text="Show sources for the AI overviews in the Assessment Interface [optional]") }}
+                      <span class="float-end help">
+                        <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="When activated the Assessment Interface will show the URLs or the sources underneath the AI generated answers.">
+                          <i class="fa-solid fa-circle-question"></i>
+                        </a>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                <!-- Buttons to go to the previous tab -->
-                <div onclick="showTab('study-stepper-3')" class="btn btn-secondary mt-5"><i class="fa-solid fa-angles-left"></i> Back</div> 
-                <!-- Button to submit study, as this is the last page now -->
-                <button type="submit" class="btn btn-primary float-end mt-5">
-                  {% if title == "Create Study" %}
-                  Create Study <i class="fa-solid fa-check"></i>
-                  {% else %}
-                  Update Study <i class="fa-solid fa-check"></i>
-                  {% endif %}
-                </button>
-                
+          <div id="classifiers-options-container">
+            <div class="row justify-content-center">
+              <div class="col-xl-8">
+                <div class="card">
+                  <h2 class="card-header crd-header">Classifiers for Organic Search Results [optional]
+                    <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                        title="Select a classifier for your study"><i
+                          class="fa-solid fa-circle-question"></i></a></span>
+                  </h2>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      {{ form.classifiers(class_="form-control") }}
+                      {% if form.classifiers.errors %}
+                        <ul class=errors>
+                          {% for error in form.classifiers.errors %}
+                            <li>{{ error }}</li>
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row justify-content-center">
+            <div class="col-xl-8">
+              <div class="card">
+                <div class="card-body">
+                  <div onclick="showTab('study-stepper-3')" class="btn btn-secondary mt-5"><i
+                      class="fa-solid fa-angles-left"></i> Back</div>
+                  <button type="submit" id="submit-study-button" class="btn btn-primary float-end mt-5">
+                    {% if title == "Create Study" %}
+                    Create Study <i class="fa-solid fa-check"></i>
+                    {% else %}
+                    Update Study <i class="fa-solid fa-check"></i>
+                    {% endif %}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-    </div>
     </form>
   </div>
 </div>
 
-<!-- Include jQuery here, before the closing body tag -->
+<div class="tour-overlay" id="tour-overlay" aria-hidden="true"></div>
+<div class="tour-spotlight tour-hidden" id="tour-spotlight"></div>
+<div class="tour-tooltip tour-hidden" id="tour-tooltip" role="dialog" aria-modal="true" aria-live="polite">
+  <h6 id="tour-title"></h6>
+  <div id="tour-text" class="mb-2 small text-muted"></div>
+  <div class="tour-actions">
+    <button type="button" class="btn btn-sm btn-secondary" id="tour-prev">Back</button>
+    <button type="button" class="btn btn-sm btn-primary" id="tour-next">Next</button>
+    <button type="button" class="btn btn-sm btn-outline-dark float-end" id="tour-exit">Skip tour</button>
+  </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
-  // Function to dynamically add new range fields
-  function addRange() {
-    const rangesDiv = document.getElementById('ranges');
-    const rangeCount = rangesDiv.childElementCount;
-
-    const newRangeHtml = `
-      <div class="mb-3 row" id="range-row-${rangeCount}">
-        <div class="col">
-          <label for="ranges-${rangeCount}-start_range" class="form-label">Start Value</label>
-          <input class="form-control" id="ranges-${rangeCount}-start_range" name="ranges-${rangeCount}-start_range" type="number" min="1">
-        </div>
-        <div class="col">
-          <label for="ranges-${rangeCount}-end_range" class="form-label">End Value</label>
-          <input class="form-control" id="ranges-${rangeCount}-end_range" name="ranges-${rangeCount}-end_range" type="number" min="1">
-        </div>
-        <div class="col-auto align-self-end">
-          <button type="button" class="btn btn-danger" onclick="removeRange(${rangeCount})">Remove</button>
-        </div>
-        <div class="col-12 text-danger" id="error-${rangeCount}"></div>
-      </div>
-    `;
-
-    rangesDiv.insertAdjacentHTML('beforeend', newRangeHtml);
-
-  }
-
-  // Function to remove a specific range row
-  function removeRange(index) {
-    const rangeRow = document.getElementById(`range-row-${index}`);
-    if (rangeRow) {
-      rangeRow.remove();
+    // Bestehender JS-Block für Formularlogik (unverändert)
+    document.addEventListener("DOMContentLoaded", function() {
+        new TomSelect('#type',{
+            render: {
+                option: function(data, escape) {
+                    return `<div>` +
+                                `<div class="fw-bold">${escape(data.text)}</div>` +
+                                `<div class="text-muted small">${escape(data.description)}</div>` +
+                            `</div>`;
+                },
+                item: function(data, escape) {
+                    return `<div>${escape(data.text)}</div>`;
+                }
+            },
+            onInitialize: function() {
+                var select = this;
+                for (const option of select.options) {
+                    const optionElement = select.getOption(option.value);
+                    option.description = optionElement.dataset.description;
+                }
+                select.sync();
+            }
+        });
+    });
+    const scraperToAssessmentNameMap = {{ scraper_to_assessment_name_map|tojson }};
+    const relatedAssessmentTypes = {
+        "Organic": ["Snippets of Organic Results"]
+    };
+    function getScraperTypeFromLabel(label) {
+        const parts = label.split('_');
+        if (parts.length > 2 && parts[parts.length - 1].trim() !== '') {
+            return parts[parts.length - 1].trim();
+        }
+        return 'Organic';
     }
-  }
-
-
-
-  // Filter search engines based on provider and location
-  $(document).change(function () {
-    // Filter search engines based on provider and location
-    $('#providerFilter, #locationFilter').change(function () {
-      console.log("Filter change detected");
-
-      const selectedProviders = $('#providerFilter').val() || [];
-      const selectedLocations = $('#locationFilter').val() || [];
-
-      console.log("Selected Providers:", selectedProviders);
-      console.log("Selected Locations:", selectedLocations);
-
-      $('#searchEnginesList input[type="checkbox"]').each(function (index) {
-        const label = $(this).next('label').text();
-        console.log(`Checkbox ${index} label:`, label);
-
-        const providerMatch = selectedProviders.length === 0 || selectedProviders.some(provider => label.includes(provider));
-        const locationMatch = selectedLocations.length === 0 || selectedLocations.some(location => label.includes(location));
-
-        console.log(`Checkbox ${index} matches provider:`, providerMatch);
-        console.log(`Checkbox ${index} matches location:`, locationMatch);
-
-        if (providerMatch && locationMatch) {
-          console.log(`Showing checkbox ${index}`);
-          $(this).closest('li').show(); // Show matching checkboxes
+    function updateClassifierVisibility() {
+        const studyTypeIsOk = $('#type').val() !== '6';
+        let hasOrganicEngineSelected = false;
+        $('input[name="search_engines"]:checked').each(function() {
+            const labelText = $(this).siblings('label').text().trim();
+            const scraperType = getScraperTypeFromLabel(labelText);
+            if (scraperType === 'Organic') {
+                hasOrganicEngineSelected = true;
+                return false;
+            }
+        });
+        const shouldBeVisible = studyTypeIsOk && hasOrganicEngineSelected;
+        $('#classifiers-options-container').toggle(shouldBeVisible);
+    }
+$(document).ready(function () {
+    const studyTypeSelect = document.getElementById('type');
+    const assessmentOptionsContainer = document.getElementById('assessment-options-container');
+    const studyNameInput = $('#name');
+    const searchEngineCheckboxes = $('input[name="search_engines"]');
+    const queriesTextarea = $('#queries');
+    const queryListInput = $('#query_list');
+    const assessmentResultTypeCheckboxes = $('input[name="assessment_result_types"]');
+    const tabLinks = {
+        step2: $('#study-stepper-2'),
+        step3: $('#study-stepper-3'),
+        step4: $('#study-stepper-4')
+    };
+    const nextButtons = {
+        toStep2: $('#next-to-step-2'),
+        toStep3: $('#next-to-step-3'),
+        toStep4: $('#next-to-step-4'),
+        submit: $('#submit-study-button')
+    };
+    function isStep1Valid() { return studyNameInput.val().trim() !== ''; }
+    function isStep2Valid() { return searchEngineCheckboxes.is(':checked'); }
+    function isStep3Valid() { return queriesTextarea.val().trim() !== '' || queryListInput.val().trim() !== ''; }
+    function isStep4Valid() {
+        const selectedStudyType = studyTypeSelect.value;
+        if (selectedStudyType !== '1') {
+            return true;
+        }
+        return $('#assessment-result-types-list input[type="checkbox"]:checked').length > 0;
+    }
+    function updateValidation() {
+        const step1IsValid = isStep1Valid();
+        nextButtons.toStep2.toggleClass('disabled', !step1IsValid);
+        tabLinks.step2.toggleClass('disabled', !step1IsValid);
+        const step2IsValid = isStep2Valid();
+        const canGoToStep3 = step1IsValid && step2IsValid;
+        nextButtons.toStep3.toggleClass('disabled', !canGoToStep3);
+        tabLinks.step3.toggleClass('disabled', !canGoToStep3);
+        const step3IsValid = isStep3Valid();
+        const canGoToStep4 = canGoToStep3 && step3IsValid;
+        nextButtons.toStep4.toggleClass('disabled', !canGoToStep4);
+        tabLinks.step4.toggleClass('disabled', !canGoToStep4);
+        const step4IsValid = isStep4Valid();
+        const canSubmit = canGoToStep4 && step4IsValid;
+        nextButtons.submit.toggleClass('disabled', !canSubmit);
+    }
+    function updateAssessmentVisibility() {
+        const visibleAssessmentDisplayNames = new Set();
+        $('#assessment-result-types-list li').each(function() {
+            const listItem = $(this);
+            if (listItem.data('is-scraper-dependent') === false) {
+                visibleAssessmentDisplayNames.add(listItem.data('result-type-name'));
+            }
+        });
+        const selectedScraperTypes = new Set();
+        $('input[name="search_engines"]:checked').each(function() {
+            const labelText = $(this).siblings('label').text().trim();
+            selectedScraperTypes.add(getScraperTypeFromLabel(labelText));
+        });
+        for (const selectedScraperId of selectedScraperTypes) {
+            if (scraperToAssessmentNameMap[selectedScraperId]) {
+                const assessmentTypeName = scraperToAssessmentNameMap[selectedScraperId];
+                visibleAssessmentDisplayNames.add(assessmentTypeName);
+            }
+        }
+        const currentlyVisibleNamesCopy = new Set(visibleAssessmentDisplayNames); 
+        currentlyVisibleNamesCopy.forEach(name => {
+            if (relatedAssessmentTypes[name]) {
+                relatedAssessmentTypes[name].forEach(dependentName => {
+                    visibleAssessmentDisplayNames.add(dependentName);
+                });
+            }
+        });
+        $('#assessment-result-types-list li').each(function() {
+            const listItem = $(this);
+            const checkbox = listItem.find('input[type="checkbox"]');
+            const assessmentResultTypeName = listItem.data('result-type-name');
+            const wasInitiallyCheckedByJinja = checkbox.prop('defaultChecked');
+            if (visibleAssessmentDisplayNames.has(assessmentResultTypeName)) {
+                listItem.show();
+                if (wasInitiallyCheckedByJinja) {
+                    checkbox.prop('checked', true);
+                }
+            } else {
+                listItem.hide();
+                if (checkbox.is(':checked')) {
+                    checkbox.prop('checked', false);
+                }
+            }
+        });
+        updateValidation();
+    }
+    function updateSearchEngineVisibility() {
+        const selectedProviders = $('#providerFilter').val() || [];
+        const selectedLocations = $('#locationFilter').val() || [];
+        const selectedResultTypeFilterValues = $('#resultTypeFilter').val() || []; 
+        $('#searchEnginesList li').each(function () {
+            const listItem = $(this);
+            const label = listItem.find('label').text().trim();
+            const provider = label.split('_')[0] || '';
+            const location = label.split('_')[1] || '';
+            const engineType = getScraperTypeFromLabel(label);
+            const isVisible = (selectedProviders.length === 0 || selectedProviders.includes(provider)) && 
+                                (selectedLocations.length === 0 || selectedLocations.includes(location)) && 
+                                (selectedResultTypeFilterValues.length === 0 || selectedResultTypeFilterValues.includes(engineType)); 
+            listItem.toggle(isVisible);
+        });
+        updateAssessmentVisibility();
+    }
+    function toggleShowUrlsVisibility() {
+        const organicCheckbox = $('#rt-1');
+        const urlsContainer = $('#show-urls-container');
+        if (organicCheckbox.length && urlsContainer.length) {
+            urlsContainer.toggle(organicCheckbox.prop('checked'));
+        }
+    }
+    function toggleShowAiSourcesVisibility() {
+        const aiCheckbox = $('#rt-2');
+        const aiContainer = $('#show-ai-sources');
+        if (aiCheckbox.length && aiContainer.length) {
+            aiContainer.toggle(aiCheckbox.prop('checked'));
+        }
+    }
+    function toggleResultOptionsVisibility() {
+        const checkedEngines = $('input[name="search_engines"]:checked');
+        const resultOptionsRow = $('#result-options-row');
+        const AIOnlyMessageRow = $('#ai-only-message-row');
+        if (checkedEngines.length === 0) {
+            resultOptionsRow.show();
+            AIOnlyMessageRow.hide();
+            return;
+        }
+        let hasOrganicEngine = false;
+        checkedEngines.each(function() {
+            const labelText = $(this).siblings('label').text().trim();
+            const scraperType = getScraperTypeFromLabel(labelText);
+            if (scraperType === 'Organic') {
+                hasOrganicEngine = true;
+                return false;
+            }
+        });
+        resultOptionsRow.toggle(hasOrganicEngine);
+        AIOnlyMessageRow.toggle(!hasOrganicEngine);
+    }
+    searchEngineCheckboxes.on('change', function() {
+        updateAssessmentVisibility();
+        toggleResultOptionsVisibility();
+        updateClassifierVisibility();
+    });
+    $('#providerFilter, #locationFilter, #resultTypeFilter').on('change', function() {
+        updateSearchEngineVisibility();
+        toggleResultOptionsVisibility();
+        updateClassifierVisibility();
+    });
+    studyNameInput.on('input', updateValidation);
+    queriesTextarea.on('input', updateValidation);
+    queryListInput.on('input', updateValidation);
+    assessmentResultTypeCheckboxes.on('change', function() {
+        updateValidation();
+        toggleShowUrlsVisibility();
+        toggleShowAiSourcesVisibility();
+    });
+    $(studyTypeSelect).on('change', function() {
+        $(assessmentOptionsContainer).toggle(this.value === '1');
+        updateClassifierVisibility();
+        updateValidation();
+    });
+    nextButtons.toStep2.on('click', function(e) { if ($(this).hasClass('disabled')) e.preventDefault(); else window.showTab('study-stepper-2'); });
+    nextButtons.toStep3.on('click', function(e) { if ($(this).hasClass('disabled')) e.preventDefault(); else window.showTab('study-stepper-3'); });
+    nextButtons.toStep4.on('click', function(e) { if ($(this).hasClass('disabled')) e.preventDefault(); else window.showTab('study-stepper-4'); });
+    $('#submit-study-button').on('click', function(e) {
+        if ($(this).hasClass('disabled')) {
+            e.preventDefault();
+            e.stopPropagation();
+            alert('Bitte stellen Sie sicher, dass alle erforderlichen Felder ausgefüllt und gültig sind, bevor Sie die Studie absenden.');
+        }
+    });
+    updateSearchEngineVisibility();
+    $(studyTypeSelect).trigger('change');
+    setTimeout(function() {
+        toggleShowUrlsVisibility();
+        toggleShowAiSourcesVisibility();
+        updateClassifierVisibility();
+    }, 100);
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) { return new bootstrap.Tooltip(tooltipTriggerEl); });
+    const $limitCheckbox = $('#limit-per-participant-checkbox');
+    const $maxResultsContainer = $('#max-results-container');
+    if ($limitCheckbox.length > 0) {
+        const toggleMaxResultsField = () => $limitCheckbox.is(':checked') ? $maxResultsContainer.slideDown() : $maxResultsContainer.slideUp();
+        $limitCheckbox.on('change', toggleMaxResultsField);
+        toggleMaxResultsField();
+    }
+    const collapseEl = document.getElementById('collapseResultRange');
+    const resultCountEl = document.getElementById('result_count');
+    if (collapseEl) {
+        collapseEl.addEventListener('shown.bs.collapse', () => resultCountEl.style.display = 'none');
+        collapseEl.addEventListener('hidden.bs.collapse', () => resultCountEl.style.display = 'block');
+    }
+    const rangesContainer = document.getElementById('ranges-container');
+    const existingRanges = JSON.parse(rangesContainer.dataset.existingRanges || '[]');
+    if (existingRanges.length > 0) {
+        existingRanges.forEach(rangeData => {
+            window.addRange();
+            const lastRow = $(rangesContainer).find('.range-row').last();
+            lastRow.find('input[name$="-start_range"]').val(rangeData.start_range);
+            lastRow.find('input[name$="-end_range"]').val(rangeData.end_range);
+        });
+        if (collapseEl) new bootstrap.Collapse(collapseEl, { toggle: true });
+    } else {
+        window.addRange();
+    }
+    $('#ranges-container').on('input', 'input', function () {
+        const row = $(this).closest('.range-row');
+        const startInput = row.find('input[name$="-start_range"]');
+        const endInput = row.find('input[name$="-end_range"]');
+        const errorDiv = row.find('.text-danger');
+        const startValue = parseInt(startInput.val(), 10);
+        const endValue = parseInt(endInput.val(), 10);
+        if (!isNaN(startValue) && !isNaN(endValue)) {
+            if (endValue <= startValue) {
+                errorDiv.text('Endwert muss größer sein als der Startwert.');
+                endInput.addClass('is-invalid');
+            } else {
+                errorDiv.text('');
+                endInput.removeClass('is-invalid');
+            }
         } else {
-          console.log(`Hiding checkbox ${index}`);
-          $(this).closest('li').hide(); // Hide non-matching checkboxes
+            errorDiv.text('');
+            endInput.removeClass('is-invalid');
         }
-      });
-    });
-
-  });
-
-
-  // jQuery code to validate the range fields
-  $(document).change(function () {
-
-    // Function to validate all ranges
-    $('input[id^="ranges-"]').each(function (index, element) {
-      const startValue = parseInt($(`#ranges-${index}-start_range`).val());
-      const endValue = parseInt($(`#ranges-${index}-end_range`).val());
-      const errorDivId = `#error-${index}`;
-
-      // If there is no specific error div for this index, create it.
-      if (!$(errorDivId).length) {
-        const rangeDiv = document.getElementById('ranges');
-        rangeDiv.insertAdjacentHTML('beforeend', `<div id="error-${index}" class="error"></div>`);
-      }
-
-      const errorDiv = $(errorDivId);
-
-      if (isNaN(startValue) && isNaN(endValue)) {
-        console.log('Not a Number!');
-      }
-      else {
-        if (endValue <= startValue) {
-          errorDiv.text('End value must be greater than start value.').show();
-        } else {
-          errorDiv.text('').hide(); // Clear the error message if the values are valid
-        }
-      }
-    });
-  });
-
-
-  function resetFilter() {
-    const providerFilter = document.getElementById('providerFilter');
-    const locationFilter = document.getElementById('locationFilter');
-    const search_enginesLi = $("#search_engines li");
-    
-    // Deselect all options
-    for (let i = 0; i < providerFilter.options.length; i++) {
-      providerFilter.options[i].selected = false;
-    }
-
-    // Deselect all options
-    for (let i = 0; i < locationFilter.options.length; i++) {
-      locationFilter.options[i].selected = false;
-    }
-
-    // Show all search engines
-    for (let i = 0; i < search_enginesLi.length; i++) {
-      $('li').show();
-    }
-
-
-  }
-
-
-
-
-    
-    $(document).ready(function() {
-    // When the div is shown (class 'show' is added)
-    $('#collapseResultRange').on('shown.bs.collapse', function () {
-        if ($(this).hasClass("show")) {
-          $('#result_count').hide();
-        }
-    });
-
-    // When the div is hidden (class 'show' is removed)
-    $('#collapseResultRange').on('hidden.bs.collapse', function () {
-      $('#result_count').show();
     });
 });
-
-
-
-
-
+    window.showTab = function(tabId) {
+        const tabEl = document.getElementById(tabId);
+        if (tabEl && !$(tabEl).hasClass('disabled')) {
+            new bootstrap.Tab(tabEl).show();
+        }
+    };
+    window.addRange = function() {
+        const container = document.getElementById('ranges-container');
+        const index = container.getElementsByClassName('range-row').length;
+        const newRangeHtml = `<div class="row gx-2 align-items-center mb-2 range-row" id="range-row-${index}"><div class="col"><input class="form-control" name="ranges-${index}-start_range" type="number" min="1" placeholder="Start"></div><div class="col-auto">-</div><div class="col"><input class="form-control" name="ranges-${index}-end_range" type="number" min="1" placeholder="End"></div><div class="col-auto"><button type="button" class="btn btn-danger btn-sm" onclick="removeRange('range-row-${index}')">&times;</button></div><div class="col-12 text-danger small"></div></div>`;
+        container.insertAdjacentHTML('beforeend', newRangeHtml);
+    };
+    window.removeRange = function(rowId) { document.getElementById(rowId)?.remove(); };
+    window.resetFilter = function() { $('#providerFilter, #locationFilter, #resultTypeFilter').val(null).trigger('change'); };
 </script>
 
+{# +++ KORRIGIERTER JavaScript für den Guide +++ #}
+<script>
+(function(){
+  const overlay = document.getElementById('tour-overlay');
+  const spot    = document.getElementById('tour-spotlight');
+  const tip     = document.getElementById('tour-tooltip');
+  const tTitle  = document.getElementById('tour-title');
+  const tText   = document.getElementById('tour-text');
+  const btnPrev = document.getElementById('tour-prev');
+  const btnNext = document.getElementById('tour-next');
+  const btnExit = document.getElementById('tour-exit');
+  
+  let steps = [];
+  let idx = 0;
+  let lastFocus = null;
 
+  // NEU: Eine benannte Funktion für den Event-Handler, damit wir ihn wieder entfernen können
+  const tourRepositionHandler = () => {
+    if (steps[idx]) {
+      placeAround(steps[idx]);
+    }
+  };
 
+  function collectSteps(tabId){
+    const tabPane = document.getElementById(tabId);
+    if (!tabPane) {
+        steps = [];
+        return;
+    }
+    steps = Array.from(tabPane.querySelectorAll('[data-tour-step]'))
+      .sort((a,b)=> (+a.dataset.tourStep) - (+b.dataset.tourStep));
+  }
+  
+  function ensureTabVisible(el){
+    const pane = el.closest('.tab-pane');
+    if(!pane) return;
+    const paneId = '#' + pane.id;
+    if(!pane.classList.contains('active')){
+      const link = document.querySelector(`[data-bs-target="${paneId}"]`);
+      if(link){ link.click(); }
+    }
+  }
 
+  function rectWithScroll(el){
+    const r = el.getBoundingClientRect();
+    return {
+      left: window.scrollX + r.left,
+      top:  window.scrollY + r.top,
+      width:  r.width,
+      height: r.height
+    };
+  }
+
+  function placeAround(el){
+    const rect = rectWithScroll(el);
+    spot.style.left   = (rect.left - 8) + 'px';
+    spot.style.top    = (rect.top  - 8) + 'px';
+    spot.style.width  = (rect.width  + 16) + 'px';
+    spot.style.height = (rect.height + 16) + 'px';
+    const tipW = 360, gap = 12;
+    let left = rect.left + rect.width + gap;
+    let top  = rect.top;
+    if (left + tipW > window.scrollX + window.innerWidth){
+      left = rect.left;
+      top  = rect.top + rect.height + gap;
+    }
+    tip.style.left = left + 'px';
+    tip.style.top  = top  + 'px';
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  function showStep(i){
+    if(i<0 || i>=steps.length){ endTour(); return; }
+    idx = i;
+    const el = steps[idx];
+    const title = el.dataset.tourTitle || 'This field';
+    const text  = el.dataset.tourText  || '';
+    ensureTabVisible(el);
+    overlay.style.display = 'block';
+    spot.classList.remove('tour-hidden');
+    tip.classList.remove('tour-hidden');
+    tTitle.textContent = title;
+    tText.textContent  = text;
+    const focusable = el.querySelector('input, select, textarea, button') || el;
+    focusable.classList.add('tour-focusable');
+    focusable.focus({preventScroll:true});
+    placeAround(el);
+    btnPrev.disabled = (idx === 0);
+    btnNext.textContent = (idx === steps.length-1) ? 'Finish' : 'Next';
+  }
+
+  function endTour(){
+    overlay.style.display = 'none';
+    spot.classList.add('tour-hidden');
+    tip.classList.add('tour-hidden');
+    if(lastFocus){ lastFocus.focus(); }
+
+    // NEU: Entfernt die Event-Listener, um das Scroll-Problem zu beheben
+    window.removeEventListener('resize', tourRepositionHandler);
+    window.removeEventListener('scroll', tourRepositionHandler);
+  }
+
+  tip.addEventListener('keydown', (e)=>{
+    if(e.key === 'Tab'){
+      const f = tip.querySelectorAll('button');
+      const first = f[0], last = f[f.length-1];
+      if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+    if(e.key === 'Escape'){ endTour(); }
+  });
+
+  document.querySelectorAll('.start-step-tour').forEach(button => {
+    button.addEventListener('click', (e) => {
+        const targetTab = e.currentTarget.dataset.tourTargetTab;
+        if (!targetTab) return;
+
+        lastFocus = document.activeElement;
+        collectSteps(targetTab);
+        if(!steps.length) return;
+
+        // NEU: Fügt die Event-Listener hinzu, wenn die Tour startet
+        window.addEventListener('resize', tourRepositionHandler);
+        window.addEventListener('scroll', tourRepositionHandler);
+
+        showStep(0);
+    });
+  });
+
+  btnPrev.addEventListener('click', ()=> showStep(idx-1));
+  btnNext.addEventListener('click', ()=> showStep(idx+1));
+  btnExit.addEventListener('click', endTour);
+
+})();
+</script>
 
 {% endblock %}
+}

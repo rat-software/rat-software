@@ -3,7 +3,6 @@ from ..models import Study, Scraper
 from flask import Blueprint, render_template, flash, redirect, url_for
 from flask_security import login_required, current_user
 from datetime import datetime
-#bp = Blueprint('scraper', __name__)
 
 @app.route('/study/<id>/run')
 @login_required
@@ -19,17 +18,11 @@ def run_study(id):
     Returns:
         Redirects to the study page with a success message.
     """
-    # Retrieve the study based on the given ID or return a 404 error if not found
     study = Study.query.get_or_404(id)
-
-    # Set the study status to 'running' and update the timestamp
     study.status = 1
     study.updated_at = datetime.now()
-
-    # Initialize a list to hold scraper instances
     scrapers_ = []
 
-    # Create a scraper for each combination of query and search engine
     for query in study.queries:
         for searchengine in study.searchengines:
             scraper = Scraper()
@@ -40,19 +33,19 @@ def run_study(id):
             scraper.created_at = datetime.now()
             scraper.type = 1  # 1: regular study; 2: pre-test
 
-            # Associate the scraper with the current query, search engine, and study
+            # NEU: Setzt den Ergebnistyp des Scrapers basierend auf der Suchmaschine.
+            # Annahme: Das Feld heißt 'resulttype_id' im SearchEngine-Modell.
+            # Bitte passen Sie es an, falls es z.B. nur 'resulttype' heißt.
+            scraper.resulttype = searchengine.resulttype
+
             scraper.query_ = query
             scraper.searchengine = searchengine
             scraper.study = study
-
-            # Add the scraper to the list
             scrapers_.append(scraper)
 
-    # Add all new scrapers to the database session and commit the transaction
     db.session.add_all(scrapers_)
     db.session.commit()
 
-    # Flash a success message and redirect to the study page
     flash('Result collection started. You will be notified via e-mail when all results have been collected.', 'success')
     return redirect(url_for("study", id=id))
 
@@ -71,17 +64,11 @@ def run_pretest(id):
     Returns:
         Redirects to the study page with a success message.
     """
-    # Retrieve the study based on the given ID or return a 404 error if not found
     study = Study.query.get_or_404(id)
-
-    # Set the study status to 'running' and update the timestamp
     study.status = 1
     study.updated_at = datetime.now()
-
-    # Initialize a list to hold scraper instances
     scrapers_ = []
 
-    # Create a scraper for each combination of the first five queries and search engines
     for query in study.queries[:5]:
         for searchengine in study.searchengines:
             scraper = Scraper()
@@ -92,18 +79,18 @@ def run_pretest(id):
             scraper.created_at = datetime.now()
             scraper.type = 2  # 1: regular study; 2: pre-test
 
-            # Associate the scraper with the current query, search engine, and study
+            # NEU: Setzt den Ergebnistyp des Scrapers basierend auf der Suchmaschine.
+            # Annahme: Das Feld heißt 'resulttype_id' im SearchEngine-Modell.
+            # Bitte passen Sie es an, falls es z.B. nur 'resulttype' heißt.
+            scraper.resulttype = searchengine.resulttype
+
             scraper.query_ = query
             scraper.searchengine = searchengine
             scraper.study = study
-
-            # Add the scraper to the list
             scrapers_.append(scraper)
 
-    # Add all new scrapers to the database session and commit the transaction
     db.session.add_all(scrapers_)
     db.session.commit()
 
-    # Flash a success message and redirect to the study page
     flash('Pre-test started. You will be notified via e-mail when all results have been collected.', 'success')
     return redirect(url_for("study", id=id))

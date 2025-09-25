@@ -71,11 +71,35 @@
   <!-- Column for displaying embedded content based on MIME type -->
   <div class="col-9">
     {% if "html" in source.mime_type %}
-    <!-- Display HTML content as an embedded image -->
-    <embed width="100%" src="data:image/png;base64,{{ source.bin.decode('ascii') }}" />
+    {# HTML-Inhalte als iframe anzeigen #}
+    <iframe width="100%" height="600px" srcdoc="{{ source.bin.decode('ascii') }}" frameborder="0"></iframe>
     {% elif "pdf" in source.mime_type %}
-    <!-- Display PDF content as an embedded PDF viewer -->
-    <embed width="100%" height="100%" src="data:application/pdf;base64,{{ source.bin.decode('ascii') }}" />
+    {% if pdf_url %}
+    {# Methode 1: PDF über normale URL referenzieren (empfohlen) #}
+    <object data="{{ pdf_url }}" type="application/pdf" width="100%" height="600px">
+      <p>
+        Ihr Browser kann das PDF nicht anzeigen.
+        <a href="{{ pdf_url }}" target="_blank">PDF herunterladen</a>
+      </p>
+    </object>
+    {% elif pdf_file %}
+    {# Methode 2: Falls pdf_url nicht verfügbar ist, aber pdf_file existiert #}
+    <a href="{{ url_for('static', filename='temp_pdfs/' + pdf_file.split('/')[-1]) }}" class="btn btn-primary"
+      target="_blank">
+      PDF öffnen
+    </a>
+    {% else %}
+    {# Methode 3: Fallback-Lösung - Base64 (nur für kleine PDFs, nicht empfohlen) #}
+    <object data="data:application/pdf;base64,{{ source.bin.decode('ascii') }}" type="application/pdf" width="100%"
+      height="600px">
+      <p>Ihr Browser unterstützt keine eingebetteten PDFs.</p>
+    </object>
+    {% endif %}
+    {% else %}
+    {# Für andere Dateitypen entsprechende Anzeige implementieren #}
+    <div class="alert alert-info">
+      Dateityp: {{ source.mime_type }} wird nicht nativ unterstützt.
+    </div>
     {% endif %}
   </div>
 </div>
