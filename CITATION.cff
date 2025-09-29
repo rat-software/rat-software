@@ -1,7 +1,7 @@
 # This CITATION.cff file was generated with cffinit.
 # Visit https://bit.ly/cffinit to generate yours today!
 
-cff-version: 1.2.0
+cff-version: 1.4.0
 title: Result Assessment Tool (RAT)
 message: >-
   If you use this software, please cite it using the
@@ -24,7 +24,7 @@ authors:
     email: nurce.yagci@dmi-haw-hamburg.de
 identifiers:
   - type: doi
-    value: 10.17605/OSF.IO/25UAT
+    value: 10.5281/zenodo.14049810
 repository-code: 'https://github.com/rat-software'
 url: 'http://rat-software.org/'
 abstract: >-
