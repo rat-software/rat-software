@@ -10,18 +10,24 @@ type: software
 authors:
   - given-names: Dirk
     family-names: Lewandowski
-    email: dirk.lewandowski@dmi-haw-hamburg.de
+    email: dirk.lewandowski@haw-hamburg.de
     affiliation: HAW Hamburg
     orcid: 'https://orcid.org/0000-0002-2674-9509'
   - given-names: Sebastian
     family-names: Sünkler
-    email: sebastian.suenkler@dmi-haw-hamburg.de
+    email: sebastian.suenkler@haw-hamburg.de
     affiliation: HAW Hamburg
     orcid: 'https://orcid.org/0000-0001-9848-1137'
   - given-names: Nurce
     family-names: Yagci
     orcid: 'https://orcid.org/0000-0001-9634-5916'
-    email: nurce.yagci@dmi-haw-hamburg.de
+    email: nurce.yagci@haw-hamburg.de
+  - given-names: Kumar
+    family-names: Tuhina
+    email: tuhina.kumar@haw-hamburg.de
+  - given-names: Billir
+    family-names: Kardelen
+    email: kardelen.bilir@haw-hamburg.de
 identifiers:
   - type: doi
     value: 10.5281/zenodo.14049810
