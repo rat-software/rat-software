@@ -21,6 +21,16 @@ let currentTaskFilter = "ALL";
 let availableEngines = []; 
 let currentEditingEngineId = null;
 
+
+// --- ZOOM LOGIC ---
+let currentZoom = parseFloat(localStorage.getItem('rat_ui_zoom')) || 1.0;
+
+function applyZoom(zoomLevel) {
+    document.body.style.zoom = zoomLevel;
+    localStorage.setItem('rat_ui_zoom', zoomLevel);
+}
+
+
 // --- 1. LOCAL DATABASE HELPERS FOR HEAVY LIFTING ---
 async function initLocalDB() {
     return new Promise((resolve, reject) => {
@@ -209,6 +219,19 @@ async function performExportDataAsZip(sessionId) {
 // --- 3. INITIALIZATION & EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
     initLocalDB(); 
+
+
+    // Zoom anwenden und Event Listener setzen
+    applyZoom(currentZoom);
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+        currentZoom = Math.min(currentZoom + 0.1, 2.0); // Maximal auf 200% vergrößern
+        applyZoom(currentZoom);
+    });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+        currentZoom = Math.max(currentZoom - 0.1, 0.8); // Minimal auf 80% verkleinern
+        applyZoom(currentZoom);
+    });
+
     
     setupDragAndDropForKeywords('sessQueries');
     setupDragAndDropForKeywords('addQueryInput');
