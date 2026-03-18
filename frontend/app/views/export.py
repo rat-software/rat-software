@@ -11,6 +11,7 @@ import pandas as pd
 from datetime import datetime
 from io import BytesIO
 from sqlalchemy import text
+import re
 
 @app.route('/<id>/export', methods=['GET', 'POST'])
 @login_required
@@ -32,96 +33,125 @@ def export(id):
     # ==============================================================================
     
     def get_assessments_df():
-        """ Erstellt ein DataFrame für ALLE Assessments (Suchergebnisse, AI Overviews, Chatbots). """
-        has_participants = db.session.query(Participant.id).join(participant_study).filter(participant_study.c.study == id).first() is not None
-        
-        types_with_labels = ('true_false', 'likert_scale', 'multiple_choice')
-        types_with_labels_sql_string = ", ".join([f"'{val}'" for val in types_with_labels])
+            """ Erstellt ein DataFrame für ALLE Assessments (Suchergebnisse, AI Overviews, Chatbots). """
+            has_participants = db.session.query(Participant.id).join(participant_study).filter(participant_study.c.study == id).first() is not None
+            
+            types_with_labels = ('true_false', 'likert_scale', 'multiple_choice')
+            types_with_labels_sql_string = ", ".join([f"'{val}'" for val in types_with_labels])
 
-        base_columns = """
-            p.name AS participant_name,
-            q.title AS question_title,
-            q.position AS question_position,
-            qt.name AS question_type,
-            CASE
-                WHEN qt.name IN ({}) THEN COALESCE(o.label, a.value)
-                ELSE a.value
-            END AS answer,
-            a.created_at
-        """.format(types_with_labels_sql_string)
+            base_columns = """
+                p.name AS participant_name,
+                q.title AS question_title,
+                q.position AS question_position,
+                qt.name AS question_type,
+                CASE
+                    WHEN qt.name IN ({}) THEN COALESCE(o.label, a.value)
+                    ELSE a.value
+                END AS answer,
+                a.created_at
+            """.format(types_with_labels_sql_string)
 
-        query_results = f"""
-            SELECT
-                'Search Result' AS source_type,
-                r.url AS source_url,
-                r.id AS source_id,
-                {base_columns}
-            FROM answer a
-            JOIN result r ON a.result = r.id
-            JOIN question q ON a.question = q.id
-            LEFT JOIN participant p ON a.participant = p.id
-            LEFT JOIN option o ON a.question = o.question AND a.value = o.value
-            LEFT JOIN questiontype qt ON q.question_type = qt.id
-            WHERE a.study = :study_id AND a.result IS NOT NULL
-        """
+            query_results = f"""
+                SELECT
+                    'Search Result' AS source_type,
+                    r.url AS source_url,
+                    r.id AS source_id,
+                    qry.id AS query_id,          -- NEU: Query ID
+                    qry.query AS query_string,   -- NEU: Keyword
+                    {base_columns}
+                FROM answer a
+                JOIN result r ON a.result = r.id
+                LEFT JOIN query qry ON r.query = qry.id  -- NEU: Join mit Query Tabelle
+                JOIN question q ON a.question = q.id
+                LEFT JOIN participant p ON a.participant = p.id
+                LEFT JOIN option o ON a.question = o.question AND a.value = o.value
+                LEFT JOIN questiontype qt ON q.question_type = qt.id
+                WHERE a.study = :study_id AND a.result IS NOT NULL
+            """
 
-        query_ai = f"""
-            SELECT
-                'AI Overview' AS source_type,
-                qry.query AS source_url,
-                ra.id AS source_id,
-                {base_columns}
-            FROM answer a
-            JOIN result_ai ra ON a.result_ai = ra.id
-            JOIN query qry ON ra.query = qry.id
-            JOIN question q ON a.question = q.id
-            LEFT JOIN participant p ON a.participant = p.id
-            LEFT JOIN option o ON a.question = o.question AND a.value = o.value
-            LEFT JOIN questiontype qt ON q.question_type = qt.id
-            WHERE a.study = :study_id AND a.result_ai IS NOT NULL
-        """
+            query_ai = f"""
+                SELECT
+                    'AI Overview' AS source_type,
+                    qry.query AS source_url,
+                    ra.id AS source_id,
+                    qry.id AS query_id,          -- NEU: Query ID
+                    qry.query AS query_string,   -- NEU: Keyword
+                    {base_columns}
+                FROM answer a
+                JOIN result_ai ra ON a.result_ai = ra.id
+                JOIN query qry ON ra.query = qry.id
+                JOIN question q ON a.question = q.id
+                LEFT JOIN participant p ON a.participant = p.id
+                LEFT JOIN option o ON a.question = o.question AND a.value = o.value
+                LEFT JOIN questiontype qt ON q.question_type = qt.id
+                WHERE a.study = :study_id AND a.result_ai IS NOT NULL
+            """
 
-        query_chatbot = f"""
-            SELECT
-                'Chatbot' AS source_type,
-                qry.query AS source_url,
-                rc.id AS source_id,
-                {base_columns}
-            FROM answer a
-            JOIN result_chatbot rc ON a.result_chatbot = rc.id
-            JOIN query qry ON rc.query = qry.id
-            JOIN question q ON a.question = q.id
-            LEFT JOIN participant p ON a.participant = p.id
-            LEFT JOIN option o ON a.question = o.question AND a.value = o.value
-            LEFT JOIN questiontype qt ON q.question_type = qt.id
-            WHERE a.study = :study_id AND a.result_chatbot IS NOT NULL
-        """
+            query_chatbot = f"""
+                SELECT
+                    'Chatbot' AS source_type,
+                    qry.query AS source_url,
+                    rc.id AS source_id,
+                    qry.id AS query_id,          -- NEU: Query ID
+                    qry.query AS query_string,   -- NEU: Keyword
+                    {base_columns}
+                FROM answer a
+                JOIN result_chatbot rc ON a.result_chatbot = rc.id
+                JOIN query qry ON rc.query = qry.id
+                JOIN question q ON a.question = q.id
+                LEFT JOIN participant p ON a.participant = p.id
+                LEFT JOIN option o ON a.question = o.question AND a.value = o.value
+                LEFT JOIN questiontype qt ON q.question_type = qt.id
+                WHERE a.study = :study_id AND a.result_chatbot IS NOT NULL
+            """
 
-        if has_participants:
-            sql_query = text(f"""
-                {query_results} UNION ALL {query_ai} UNION ALL {query_chatbot}
-                ORDER BY participant_name, source_id, question_position
-            """)
-            labels = ['Source Type', 'Source URL/Query', 'Source ID', 'Participant Name', 'Question', 'Question Position', 'Question Type', 'Answer', 'Timestamp']
-        else:
-            sql_query = text(f"""
-                SELECT * FROM (
-                    {query_results.replace('p.name AS participant_name,', '')} UNION ALL
-                    {query_ai.replace('p.name AS participant_name,', '')} UNION ALL
-                    {query_chatbot.replace('p.name AS participant_name,', '')}
-                ) AS combined
-                ORDER BY source_id, question_position
-            """)
-            labels = ['Source Type', 'Source URL/Query', 'Source ID', 'Question', 'Question Position', 'Question Type', 'Answer', 'Timestamp']
+            # NEU: 'Query ID' und 'Keyword' zu den Labels hinzugefügt
+            if has_participants:
+                sql_query = text(f"""
+                    {query_results} UNION ALL {query_ai} UNION ALL {query_chatbot}
+                    ORDER BY participant_name, source_id, question_position
+                """)
+                labels = ['Source Type', 'Source URL/Query', 'Source ID', 'Query ID', 'Keyword', 'Participant Name', 'Question', 'Question Position', 'Question Type', 'Answer', 'Timestamp']
+            else:
+                sql_query = text(f"""
+                    SELECT * FROM (
+                        {query_results.replace('p.name AS participant_name,', '')} UNION ALL
+                        {query_ai.replace('p.name AS participant_name,', '')} UNION ALL
+                        {query_chatbot.replace('p.name AS participant_name,', '')}
+                    ) AS combined
+                    ORDER BY source_id, question_position
+                """)
+                labels = ['Source Type', 'Source URL/Query', 'Source ID', 'Query ID', 'Keyword', 'Question', 'Question Position', 'Question Type', 'Answer', 'Timestamp']
 
-        params = {'study_id': id}
-        records = db.session.execute(sql_query, params).all()
-        return pd.DataFrame.from_records(records, columns=labels).drop_duplicates()
+            params = {'study_id': id}
+            records = db.session.execute(sql_query, params).all()
+            return pd.DataFrame.from_records(records, columns=labels).drop_duplicates()
 
     def get_search_results_df():
-        """ Erstellt ein DataFrame für die Suchergebnisse. """
-        sql_query = text("SELECT se.name AS searchengine, r.title, r.description, r.url, r.main, r.position, r.ip, r.created_at FROM result r JOIN scraper s ON r.scraper = s.id JOIN searchengine se ON s.searchengine = se.id WHERE r.study = :study_id ORDER BY s.id, r.position")
-        return pd.DataFrame.from_records(db.session.execute(sql_query, {'study_id': id}).all(), columns=['Search Engine', 'Title', 'Description', 'URL', 'Main', 'Position', 'IP', 'Timestamp']).drop_duplicates()
+            """ Erstellt ein DataFrame für die Suchergebnisse inklusive Query/Keyword. """
+            sql_query = text("""
+                SELECT 
+                    q.id AS query_id, 
+                    q.query AS keyword, 
+                    se.name AS searchengine, 
+                    r.title, 
+                    r.description, 
+                    r.url, 
+                    r.main, 
+                    r.position, 
+                    r.ip, 
+                    r.created_at 
+                FROM result r 
+                JOIN scraper s ON r.scraper = s.id 
+                JOIN searchengine se ON s.searchengine = se.id 
+                LEFT JOIN query q ON r.query = q.id 
+                WHERE r.study = :study_id 
+                ORDER BY s.id, r.position
+            """)
+            
+            labels = ['Query ID', 'Keyword', 'Search Engine', 'Title', 'Description', 'URL', 'Main', 'Position', 'IP', 'Timestamp']
+            records = db.session.execute(sql_query, {'study_id': id}).all()
+            return pd.DataFrame.from_records(records, columns=labels).drop_duplicates()
 
     def get_classifier_results_df():
         """ Erstellt ein DataFrame für die Classifier-Ergebnisse (Rohdaten). """
@@ -220,7 +250,13 @@ def export(id):
         
         writer.close()
         output.seek(0)
-        filename = f"study_{id}_full_report_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+        
+        # Studiennamen sicher für den Dateinamen machen (Sonderzeichen durch Unterstriche ersetzen)
+        safe_study_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', study.name)
+        
+        # Neuen Dateinamen generieren
+        filename = f"study_{id}_{safe_study_name}_full_report_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+        
         return send_file(output, download_name=filename, as_attachment=True)
 
     return render_template('exports/assessment_export.html',

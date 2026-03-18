@@ -1,26 +1,57 @@
+import os
+import requests
+import zipfile
+import io
 import json
-import base64
-from bs4 import BeautifulSoup
+
+from werkzeug.utils import secure_filename
+from itsdangerous import URLSafeTimedSerializer, BadSignature
 
 class Helper:
-    """
-    A utility class providing various helper functions for operations like file reading,
-    base64 decoding, and picture decoding.
+    def __init__(self):
+        # Diese Werte müssen mit deinem Dashboard-Server übereinstimmen
+        self.api_key = "8eMYe0Y1sZ2MSv48NOt9EPhh1g61ze" 
+        self.base_url = "https://tool.rat-software.org/storage"
+        self.serializer = URLSafeTimedSerializer(self.api_key)
 
-    Methods:
-        __del__(): Destructor for the Helper object.
-        file_to_dict(path): Reads a JSON file from the given path and returns its contents as a dictionary.
-        decode_code(value): Decodes a base64-encoded string and returns the decoded HTML content.
-        decode_picture(value): Decodes a picture value and returns the decoded picture as a string.
+    def decode_code(self, filename):
+        """Lädt die source.html per HTTP vom Dashboard-Server."""
+        if not filename or filename == "error":
+            return ""
+            
+        # 1. Ticket generieren (wie in assessment.py)
+        ticket = self.serializer.dumps({'filename': filename}, salt='source-view')
+        
+        # 2. Datei via HTTP abrufen
+        url = f"{self.base_url}/view/{filename}/html"
+        try:
+            response = requests.get(url, params={'ticket': ticket}, timeout=15)
+            if response.status_code == 200:
+                return response.text
+            else:
+                print(f"Fehler: Server antwortete mit {response.status_code}")
+        except Exception as e:
+            print(f"Verbindungsfehler Classifier -> Dashboard: {e}")
+            
+        return ""
 
-    Example:
-        helper = Helper()
-        file_dict = helper.file_to_dict('path/to/file.json')
-        decoded_code = helper.decode_code(base64_encoded_string)
-        decoded_picture = helper.decode_picture(picture_value)
-        del helper
-    """
-
+    def decode_picture(self, filename):
+        """Lädt den Screenshot per HTTP vom Dashboard-Server."""
+        if not filename or filename == "error":
+            return None
+            
+        ticket = self.serializer.dumps({'filename': filename}, salt='source-view')
+        url = f"{self.base_url}/view/{filename}/screenshot"
+        
+        try:
+            response = requests.get(url, params={'ticket': ticket}, timeout=15)
+            if response.status_code == 200:
+                return response.content # Gibt rohe Bytes zurück
+        except Exception as e:
+            print(f"Verbindungsfehler Bild-Abruf: {e}")
+            
+        return None
+    
     def __del__(self):
         """
         Destructor for the Helper object.
@@ -47,39 +78,3 @@ class Helper:
         with open(path, encoding="utf-8") as f:
             # Load the content of the file as JSON and return it as a dictionary
             return json.load(f)
-
-    def decode_code(self, value):
-        """
-        Decode a base64-encoded string and return the decoded HTML content.
-
-        Args:
-            value (str): A base64-encoded string to be decoded.
-
-        Returns:
-            str: The decoded HTML content as a string. If decoding fails, returns "decoding error".
-        """
-        try:
-            # Decode the base64-encoded string
-            code_decoded = base64.b64decode(value)
-            # Convert the decoded bytes to a BeautifulSoup object and then to a string for HTML parsing
-            return str(BeautifulSoup(code_decoded, "html.parser"))
-        except Exception:
-            # Return an error message if decoding fails
-            return "decoding error"
-
-    def decode_picture(self, value):
-        """
-        Decode a picture value and return the decoded picture as a string.
-
-        Args:
-            value: The picture value to be decoded. It is expected to have a `tobytes` method.
-
-        Returns:
-            str: The decoded picture data as a string.
-
-        Note:
-            This method assumes that `value` has a method `tobytes` that returns byte data which
-            can be decoded using ASCII encoding.
-        """
-        # Convert the picture value to bytes and decode the bytes to a string using ASCII encoding
-        return value.tobytes().decode('ascii')

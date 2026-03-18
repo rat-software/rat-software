@@ -1,0 +1,35 @@
+{% extends "master.html" %}
+{% from "security/_macros.html" import render_field_with_errors, render_form_errors %}
+
+{% block title %}Resend confirmation{% endblock %}
+
+{% block content %}
+{% include "security/_messages.html" %}
+
+<div class="card col-md-6 offset-md-3">
+    <div class="card-body">
+        <h4 class="crd-header">Resend confirmation email</h4>
+        <p class="my-3">
+            Enter your email address to receive the confirmation email again.
+        </p>
+
+        <form action="{{ url_for_security('send_confirmation') }}" method="POST" name="send_confirmation_form">
+            {{ send_confirmation_form.hidden_tag() }}
+            <div class="mb-3">
+                {{ render_form_errors(send_confirmation_form) }}
+            </div>
+            <div class="mb-3">
+                {{ render_field_with_errors(send_confirmation_form.email, class_="form-control") }}
+            </div>
+
+            <div class="mb-3">
+                {{ render_field_with_errors(send_confirmation_form.recaptcha) }}
+            </div>
+
+            <div class="mb-3">
+                {{ send_confirmation_form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

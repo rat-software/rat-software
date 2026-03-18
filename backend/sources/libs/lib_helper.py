@@ -37,23 +37,3 @@ class Helper:
         
         return data
 
-    def decode_code(self, code):
-        """
-        Decodes a Base64 encoded string and beautifies the resulting HTML content.
-
-        Args:
-            code (str): The Base64 encoded string representing HTML content.
-
-        Returns:
-            str: The beautified HTML content as a string.
-        """
-        # Decode the Base64 encoded string
-        code_decoded = base64.b64decode(code)
-        
-        # Parse the decoded content using BeautifulSoup to clean up the HTML
-        code_decoded = BeautifulSoup(code_decoded, "html.parser")
-        
-        # Convert the BeautifulSoup object back to a string
-        code_decoded_str = str(code_decoded)
-        
-        return code_decoded_str

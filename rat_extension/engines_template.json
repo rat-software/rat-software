@@ -1,0 +1,79 @@
+{
+  "manifest_version": 1,
+  "engine": {
+    "id": "google_search",
+    "name": "Google",
+    "author": "RAT System",
+    "version": "1.0",
+    "description": "Standard Google Search Scraper"
+  },
+  
+  "request": {
+    "baseUrl": "https://{domain}/search",
+    "params": {
+      "query": "q",
+      "country": "gl",
+      "language": "hl",
+      "location": "uule"
+    },
+    "features": {
+      "requiresUuleEncoding": true,
+      "urlDecodingMethod": "none" 
+    },
+    "supportedCountries": [
+      { "code": "us", "name": "USA", "domain": "www.google.com" },
+      { "code": "de", "name": "Germany", "domain": "www.google.de" }
+    ],
+    "supportedLanguages": [
+      { "code": "en", "name": "English" },
+      { "code": "de", "name": "German" }
+    ]
+  },
+
+  "behavior": {
+    "cookieConsentSelectors": ["#L2AGLb", "#W0wltc"],
+    "popupDismissSelectors": [".mcPPZ", ".qk7LXc", "minor-moment-dialog", "[role='dialog'] button"],
+    "aiExpandSelectors": [".in7vHe[role='button']"],
+    "stickyHeaderSelectors": ["#searchform", "header", "[style*='position: fixed']"]
+  },
+
+  "captcha": {
+    "urlIndicators": ["/sorry/"],
+    "textIndicators": ["unusual traffic", "ungewöhnlicher datenverkehr", "not a robot"],
+    "selectors": ["form[action*='Captcha']", ".g-recaptcha", "iframe[src*='recaptcha']"]
+  },
+
+  "selectors": {
+    "pagination": {
+      "nextButton": "#pnnext"
+    },
+    "organic": {
+      "container": ".tF2Cxc, .g",
+      "excludeContainers": ["related-question-pair"], 
+      "title": "h3",
+      "url": "a",
+      "snippet": {
+        "selector": "div, span",
+        "minLength": 40
+      }
+    },
+    "ads": {
+      "container": "[data-text-ad='1'], .uEierd, .vdQmEd",
+      "title": "h3, [role='heading']",
+      "url": "a",
+      "snippet": ".v5yQqb"
+    },
+    "ai_overview": {
+      "container": ".LT6XE",
+      "text": {
+        "selector": ".LT6XE",
+        "elementsToRemove": [".wDa0n", ".MFrAxb", "button", "script", "style", "svg", "img", ".LLtSOc", "a.KEVENd"]
+      },
+      "sources": {
+        "container": ".LLtSOc, .CyMdWb, .LT6XE [role='listitem']",
+        "title": ".mNme1d, .Nn35F",
+        "url": "a.KEVENd, a.NDNGvf, a"
+      }
+    }
+  }
+}

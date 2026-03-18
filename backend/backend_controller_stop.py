@@ -90,11 +90,7 @@ def update_pending_jobs(db_conn, job_server):
     Args:
         db_conn (dict): Database connection parameters.
     """
-    # Reset progress of scraper jobs
-    with psycopg2.connect(**db_conn) as conn:
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("UPDATE scraper SET progress = 0 WHERE progress = -1 OR progress = 2 and job_server = %s", (job_server,))
-            conn.commit()
+
 
     # Remove obsolete classifier results
     with psycopg2.connect(**db_conn) as conn:

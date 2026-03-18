@@ -1,0 +1,246 @@
+{
+  "manifest_version": 1,
+  "engine": {
+    "id": "duckduckgo",
+    "name": "DuckDuckGo",
+    "author": "RAT System",
+    "version": "2.3",
+    "description": "Scraper for DuckDuckGo (Fixed Settings Popup Overlay)"
+  },
+  "request": {
+    "baseUrl": "https://duckduckgo.com/?ia=web&assist=true",
+    "params": {
+      "query": "q",
+      "country": "kl",
+      "language": "kad"
+    },
+    "features": {
+      "requiresUuleEncoding": false,
+      "urlDecodingMethod": "none"
+    },
+    "supportedCountries": [
+      {
+        "code": "us-en",
+        "name": "USA"
+      },
+      {
+        "code": "au-en",
+        "name": "Australia"
+      },
+      {
+        "code": "at-de",
+        "name": "Austria"
+      },
+      {
+        "code": "be-fr",
+        "name": "Belgium"
+      },
+      {
+        "code": "br-pt",
+        "name": "Brazil"
+      },
+      {
+        "code": "ca-en",
+        "name": "Canada"
+      },
+      {
+        "code": "dk-da",
+        "name": "Denmark"
+      },
+      {
+        "code": "fi-fi",
+        "name": "Finland"
+      },
+      {
+        "code": "fr-fr",
+        "name": "France"
+      },
+      {
+        "code": "de-de",
+        "name": "Germany"
+      },
+      {
+        "code": "in-en",
+        "name": "India"
+      },
+      {
+        "code": "ie-en",
+        "name": "Ireland"
+      },
+      {
+        "code": "it-it",
+        "name": "Italy"
+      },
+      {
+        "code": "jp-jp",
+        "name": "Japan"
+      },
+      {
+        "code": "mx-es",
+        "name": "Mexico"
+      },
+      {
+        "code": "nl-nl",
+        "name": "Netherlands"
+      },
+      {
+        "code": "nz-en",
+        "name": "New Zealand"
+      },
+      {
+        "code": "no-no",
+        "name": "Norway"
+      },
+      {
+        "code": "pl-pl",
+        "name": "Poland"
+      },
+      {
+        "code": "pt-pt",
+        "name": "Portugal"
+      },
+      {
+        "code": "ru-ru",
+        "name": "Russia"
+      },
+      {
+        "code": "sg-en",
+        "name": "Singapore"
+      },
+      {
+        "code": "es-es",
+        "name": "Spain"
+      },
+      {
+        "code": "se-sv",
+        "name": "Sweden"
+      },
+      {
+        "code": "ch-de",
+        "name": "Switzerland"
+      },
+      {
+        "code": "uk-en",
+        "name": "United Kingdom"
+      }
+    ],
+    "supportedLanguages": [
+      {
+        "code": "en_US",
+        "name": "English"
+      },
+      {
+        "code": "de_DE",
+        "name": "German"
+      },
+      {
+        "code": "fr_FR",
+        "name": "French"
+      },
+      {
+        "code": "it_IT",
+        "name": "Italian"
+      },
+      {
+        "code": "es_ES",
+        "name": "Spanish"
+      },
+      {
+        "code": "pt_PT",
+        "name": "Portuguese"
+      },
+      {
+        "code": "nl_NL",
+        "name": "Dutch"
+      },
+      {
+        "code": "sv_SE",
+        "name": "Swedish"
+      },
+      {
+        "code": "no_NO",
+        "name": "Norwegian"
+      },
+      {
+        "code": "da_DK",
+        "name": "Danish"
+      },
+      {
+        "code": "fi_FI",
+        "name": "Finnish"
+      },
+      {
+        "code": "pl_PL",
+        "name": "Polish"
+      },
+      {
+        "code": "ru_RU",
+        "name": "Russian"
+      },
+      {
+        "code": "ja_JP",
+        "name": "Japanese"
+      }
+    ]
+  },
+  "behavior": {
+    "cookieConsentSelectors": [],
+    "popupDismissSelectors": [],
+    "aiExpandSelectors": [
+      "[data-testid=\"duckassist-stream-more-pill\"]",
+      ".module__toggle--more"
+    ],
+    "stickyHeaderSelectors": [
+      ".header-wrap"
+    ]
+  },
+  "captcha": {
+    "urlIndicators": [],
+    "textIndicators": [],
+    "selectors": []
+  },
+  "selectors": {
+    "pagination": {
+      "nextButton": "#more-results, button.result--more__btn, a.result--more__btn",
+      "fallbackActiveSibling": ""
+    },
+    "organic": {
+      "mainCol": "#links, .react-results--main",
+      "container": "article[data-testid=\"result\"], article[data-nrn=\"result\"], div.result",
+      "excludeContainers": [
+        ".module--carousel",
+        ".has-image"
+      ],
+      "title": "a[data-testid=\"result-title-a\"], h2 a",
+      "url": "a[data-testid=\"result-title-a\"], h2 a",
+      "snippet": {
+        "selector": "[data-result=\"snippet\"], [data-testid=\"result-snippet\"], .result__snippet",
+        "minLength": 0
+      }
+    },
+    "ads": {
+      "container": "article[data-testid=\"ad\"], .result--ad",
+      "title": "a[data-testid=\"result-title-a\"], h2 a",
+      "url": "a[data-testid=\"result-title-a\"], h2 a",
+      "snippet": {
+        "selector": "[data-result=\"snippet\"], [data-testid=\"result-snippet\"], .result__snippet",
+        "maxLength": 300
+      }
+    },
+    "ai_overview": {
+      "container": "[data-react-module-id=\"wikinlp\"]",
+      "text": {
+        "selector": "[data-testid=\"duckassist-answer-content\"], .duckassist-answer",
+        "regexClean": ""
+      },
+      "sources": [
+        {
+          "type": "standard",
+          "container": "[data-react-module-id=\"wikinlp\"] li, [data-testid=\"duckassist-source\"]",
+          "title": "span",
+          "url": "a"
+        }
+      ]
+    }
+  }
+}

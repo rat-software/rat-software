@@ -1,644 +1,972 @@
 {% extends "master.html" %}
-{# Extend the base master template #}
 
-{% block title %}Study{% endblock %}
-{# Set the page title to "Study" #}
+{% block title %}Study Dashboard{% endblock %}
 
 {% block head %}
-    {{ super() }}
-    {# +++ NEU: CSS für den Text im Fortschrittsbalken +++ #}
-    <style>
-        .progress-bar-text {
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-            font-weight: bold;
-        }
-    </style>
+{{ super() }}
+<style>
+  .progress-bar-text {
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .extension-box {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* Smooth transition for collapsible chevrons */
+  .accordion-button:not(.collapsed) .fa-chevron-down {
+    transform: rotate(180deg);
+  }
+  .fa-chevron-down {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .config-section-header {
+      cursor: pointer;
+  }
+  .config-section-header:hover {
+      background-color: #f8f9fa;
+  }
+  
+  /* --- KONTRAST UND SCHRIFTEN --- */
+  .form-label {
+      color: #212529; 
+      font-size: 0.95rem; 
+  }
+  
+  .form-control, .form-select {
+      font-size: 0.95rem !important; 
+      padding: 0.4rem 0.75rem; 
+      color: #212529;
+      border: 1px solid #adb5bd;
+  }
+
+  .form-text, 
+  .text-secondary, 
+  .text-muted, 
+  .card-body p {
+      color: #343a40 !important; 
+  }
+
+  .form-text {
+      font-size: 0.85rem; 
+  }
+
+  .form-check-label {
+      color: #212529;
+      font-size: 0.95rem; 
+      padding-top: 2px;
+  }
+
+  .btn_config:hover {
+    background-color: #2b465d;
+  }
+
+  /* Tooltip Icon Styling */
+  .tooltip-icon {
+      color: #6c757d;
+      margin-left: 5px;
+      font-size: 0.85rem;
+      cursor: help;
+  }
+  .tooltip-icon:hover {
+      color: #0d6efd;
+  }
+
+  /* Sauberes Styling für die WTForms Checkbox-Liste */
+  #assessment_result_types {
+      padding-left: 0;
+  }
+  #assessment_result_types li {
+      margin-bottom: 0.6rem;
+  }
+  #assessment_result_types li:last-child {
+      margin-bottom: 0;
+  }
+  #assessment_result_types input[type="checkbox"] {
+      margin-right: 0.5rem;
+      cursor: pointer;
+  }
+
+  /* NEU: Animation für den Save-Button bei ungespeicherten Änderungen */
+@keyframes savePulse {
+      0% { box-shadow: 0 0 0 0 rgba(111, 66, 193, 0.5); }
+      70% { box-shadow: 0 0 0 10px rgba(111, 66, 193, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(111, 66, 193, 0); }
+  }
+  .btn-needs-save {
+      background-color: #6f42c1 !important; /* Indigo */
+      border-color: #6f42c1 !important;
+      color: #ffffff !important;
+      animation: savePulse 2s infinite;
+      transition: all 0.3s ease;
+  }
+  .btn-needs-save:hover {
+      background-color: #59339d !important;
+      border-color: #532f93 !important;
+      color: #ffffff !important;
+  }
+</style>
 {% endblock %}
 
-
 {% block content %}
-{# Start defining the content block for this page #}
 
 <h1 class="sr-only">RAT</h1>
-{# Screen reader-only heading for accessibility #}
 
 <div class="row">
-  {# Create a row for layout #}
-  <div class="pb-4">
-    {# Padding at the bottom of the first column #}
-    <a class="text-dark" href="{{ url_for('dashboard') }}">
-      <i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard
-    </a>
-  </div>
-  <div class="col pb-4">
-    {# Define a column with padding at the bottom #}
-    <div class="card">
-      {# Create a card for displaying study information #}
-      <div class="card-body">
-        {# Card body containing the main content #}
+  <div class="col-lg-10 offset-lg-1">
+      
+    <div class="pb-3">
+      <a class="text-secondary fw-bold hover-underline" href="{{ url_for('dashboard') }}">
+        <i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard
+      </a>
+    </div>
 
-        <div class="hstack">
-          {# Horizontal stack for the section header #}
-          <div class="crd-header">Search Results Collection</div>
+    <div class="card shadow-sm mb-4 border-0">
+      <div class="card-body d-flex justify-content-between align-items-start p-4 bg-white rounded">
+        <div>
+          <h2 class="h4 mb-1 fw-bold text-dark">
+            {{ study.name }}
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This is your main study dashboard. Use the 'Actions' button on the right to edit details or completely delete the study."></i>
+          </h2>
+          <div class="text-secondary fs-6">{{ study.description }}</div>
         </div>
 
-      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Start the scraping processes here to collect the search results on the defined search queries"><i class="fa-solid fa-circle-question"></i></a></span>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa-solid fa-gear"></i> Actions
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow">
+            <li><a class="dropdown-item py-2" href="{{ url_for('edit_study', id=study.id) }}"><i class="fa-solid fa-pen me-2"></i> Edit Details</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger py-2" href="{{ url_for('delete_study', id=study.id) }}"><i class="fa-solid fa-trash-can me-2"></i> Delete Study</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
 
-
-        <div class="py-2">
-          <b>Status: </b>
-          {# Padding at the top and bottom of the content #}
-          <span id="status-text">
-          {% if study.status == 0 %}
-          <i>Open</i>, click on start to start the scraping process.
-          {% elif study.status == -1 %}
-          <i>Collection running</i>, but with errors. Scraping jobs will repeat.
-          {% elif study.status == -2 %}
-          <i>Collection finished</i>, but some processes failed.
-          {% elif study.status == -3 %}
-          <i>Collection finished.</i> Some queries returned no results.
-          {% elif study.status == -4 %}
-          Collection finished, but not all sources could be saved.
-          
-          {# +++ NEUER STATUS HINZUGEFÜGT +++ #}
-          {% elif study.status == -5 %}
-          <i>Collection finished</i>, but not all scraper jobs and sources could be completed.
-
-          {% elif study.status == 1 %}
-          <i>Collection running.</i>
-          {% elif study.status == 2 %}
-          <i>Collection finished.</i>
-          {% elif study.status == 3 %}
-          {% if study.answers | length == 0 %}
-          <i>Collection finished but waiting for assessments.</i>
-          {% else %}
-          <i>Collection and assessments finished.</i>
-          {% endif %}
-          {% elif study.status == 4 %}
-          <i>Archived.</i>
-          {% endif %}
-          </span>
-
-          <div id="results-display" {% if study.status not in [1, 2, 3, -1, -2, -3, -4] %}style="display: none;"{% endif %}>
-            
-            <div id="standard-results-container" {% if study.studytype.id == 6 %}style="display: none;"{% endif %}>
-              {% if results > 0 %}
-              <br/><b>Search Result collected: </b> <span id="results-count">{{ results }}</span>
-              {% endif %}
-              {% if results_ai > 0 %}
-              <br/><b>AI Overviews collected: </b> <span id="results-ai-count">{{ results_ai }}</span>
-              {% endif %}
-              {# NEW: Display for Chatbot results #}
-              {% if results_chatbot > 0 %}
-              <br/><b>Chatbot Results collected: </b> <span id="results-chatbot-count">{{ results_chatbot }}</span>
-              {% endif %}
+    <div class="card mb-4 border-primary shadow-sm">
+      <div class="card-header bg-white border-primary text-primary fw-bold d-flex align-items-center py-3">
+        <i class="fa-solid fa-cloud-arrow-up me-2"></i> Data Collection & Status
+      </div>
+      <div class="card-body p-4">
+        
+        <div class="extension-box mt-2">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0 text-primary">
+              <i class="fa-brands fa-chrome fa-2x"></i>
             </div>
-    
-            <div id="type6-results-container" {% if study.studytype.id != 6 %}style="display: none;"{% endif %}>
-              {% if results > 0 %}
-              <br/><b>URLs collected: </b> <span id="urls-collected-count">{{ results }}</span>
-              {% endif %}
-              {% if results_ai > 0 %}
-              <br/><b>AI Overviews collected: </b> <span id="results-ai-count">{{ results_ai }}</span>
-              {% endif %}
+            <div class="flex-grow-1 ms-4">
+              <h6 class="mb-1 fw-bold text-dark">
+                  Browser Extension
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Use the RAT Chrome Extension to scrape search results directly from your browser."></i>
+              </h6>
+              <div class="text-secondary small">Current Version: <strong>1.0</strong></div>
+            </div>
+            <div>
+              <a href="#" class="btn btn-outline-primary btn-sm me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#installGuideModal">
+                <i class="fa-solid fa-circle-question me-1"></i> Guide
+              </a>
+              <a href="{{ url_for('static', filename='rat-extension_v1.zip') }}" class="btn btn-primary btn-sm fw-bold">
+                <i class="fa-solid fa-download me-1"></i> Download
+              </a>
             </div>
           </div>
+        </div>
 
-          {# KORREKTUR: Sichtbarkeit des Containers angepasst #}
-          <div class="row" id="progress-container" {% if study.status in [0, 4] %}style="display: none;"{% endif %}>
-              <div class="col">
-                  {# KORREKTUR: Höhe angepasst für besseres Aussehen #}
-                  <div class="progress mt-2 mb-4" style="height: 25px;">
-                      <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                          {# NEU: Span für Prozentanzeige #}
-                          <span class="progress-bar-text"></span>
-                      </div>
+        <div class="mb-4 mt-4">
+          <label class="form-label fw-bold mb-2 text-dark">
+              Upload Extension Archive
+              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="Upload the ZIP file generated by the RAT Browser Extension to import your collected search results."></i>
+          </label>
+          <form action="{{ url_for('upload_study_results', id=study.id) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+            {{ upload_form.hidden_tag() }}
+            <div class="flex-grow-1">
+              {{ upload_form.results_file(class="form-control") }}
+            </div>
+            <button type="submit" class="btn btn-success px-4 fw-bold">
+              <i class="fa-solid fa-upload me-1"></i> Upload
+            </button>
+          </form>
+        </div>
+
+        {% set has_any_data = (results > 0 or results_ai > 0 or results_chatbot > 0 or results_serp > 0 or ai_source_count > 0) %}
+
+        <div id="progress-container" class="{% if not has_any_data %}d-none{% endif %}">
+            <div id="download-progress-area" class="bg-light p-3 rounded border mb-4">
+                <label class="fw-bold text-dark mb-2">
+                    <i class="fa-solid fa-server text-secondary me-1"></i> Background Download Progress
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Shows the background download progress of HTML and screenshots for the uploaded URLs. Human assessment can start once this reaches 100%."></i>
+                </label>
+                <div class="progress mt-1" style="height: 25px; border-radius: 6px;">
+                <div id="progress-bar" 
+                        class="progress-bar {% if progress_percent is defined and progress_percent >= 100 %}bg-success{% else %}progress-bar-striped progress-bar-animated{% endif %}" 
+                        role="progressbar"
+                        style="width: {{ progress_percent | default(0) }}%;" 
+                        aria-valuenow="{{ progress_percent | default(0) }}" aria-valuemin="0" aria-valuemax="100">
+                    <span class="progress-bar-text">{{ progress_percent | default(0) }}%</span>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        {% if has_any_data %}<hr class="my-4 text-secondary">{% endif %}
+
+        <div class="py-2">
+          <div class="row align-items-end">
+            <div class="col-md-8">
+              <h6 class="fw-bold text-dark mb-3">
+                  Collected Data Summary
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Summary of all successfully imported results, categorized by their type."></i>
+              </h6>
+              <div id="results-display" class="text-dark small d-flex flex-wrap gap-4">
+                {% if has_any_data %}
+                  {% if results_serp > 0 %}<div><i class="fa-solid fa-image text-secondary me-1"></i><b>SERPs: </b> <span id="results-serp-count">{{ results_serp }}</span></div>{% endif %}
+                  {% if results > 0 %}<div><i class="fa-solid fa-list text-secondary me-1"></i><b>Standard: </b> <span id="results-count">{{ results }}</span></div>{% endif %}
+                  {% if results_ai > 0 %}<div><i class="fa-solid fa-robot text-secondary me-1"></i><b>AI Overviews: </b> <span id="results-ai-count">{{ results_ai }}</span></div>{% endif %}
+                  {% if ai_source_count > 0 %}<div><i class="fa-solid fa-link text-secondary me-1"></i><b>AI Sources: </b> <span id="ai-source-count">{{ ai_source_count }}</span></div>{% endif %}
+                  {% if results_chatbot > 0 %}<div><i class="fa-solid fa-message text-secondary me-1"></i><b>Chatbots: </b> <span id="results-chatbot-count">{{ results_chatbot }}</span></div>{% endif %}
+                {% else %}
+                  <div class="text-secondary"><i class="fa-solid fa-inbox me-2"></i> No results uploaded yet.</div>
+                {% endif %}
+              </div>
+
+              {% if total_queries > 0 or imported_engines %}
+              <div class="mt-3 pt-3 border-top">
+                <div class="row">
+                  <div class="col-md-7">
+                    <div class="fw-bold text-dark small mb-2"><i class="fa-solid fa-magnifying-glass me-1"></i> Keywords ({{ total_queries }} Total):</div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                      {% for q in recent_queries %}
+                        <span class="badge bg-light text-dark border">{{ q.query }}</span>
+                      {% endfor %}
+                      {% if total_queries > 5 %}<span class="text-muted small">...</span>{% endif %}
+                      <a href="{{ url_for('queries', id=study.id) }}" class="btn btn-sm btn-outline-primary ms-2 py-0" style="font-size: 0.75rem;">View All</a>
+                    </div>
                   </div>
-              </div>
-          </div>
-
-        <div id="action-buttons">
-            {# KORREKTUR: Button-Logik angepasst für dynamische Anzeige #}
-            {% if study.status == 0 %}
-                <button type="button" class="btn btn-sm btn-outline-primary float-end me-2" data-bs-toggle="modal" data-bs-target="#startStudy">
-                    <i class="fa-solid fa-forward-step"></i> Start
-                </button>
-            {% elif study.status in [2, 3, -2, -3, -4] %}
-                <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#closeStudy">
-                    <i class="fa-regular fa-circle-stop"></i> Archive
-                </button>
-            {% elif study.status in [1, -1] %}
-                <button class="btn btn-sm btn-info float-end me-2" disabled>
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Collection running...
-                </button>
-            {% endif %}
-        </div>
-    </div>
-
-        <div class="modal fade" id="startStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h3 class="modal-title crd-header" id="exampleModalLabel">Warning</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <p>Once you start the result collection <b class="text-danger">you won't be able to edit your search
-                    queries and selected search engines</b>.</p>
-                <p>Do you want to start the collection of results anyway and lose the ability to edit your study
-                  settings?</p>
-              </div>
-              <div class="modal-footer">
-                <button class="btn btn-sm btn-danger" data-bs-dismiss="modal" aria-label="Close">No, I want to edit my
-                  study</button>
-                <a href="{{ url_for('run_study', id=study.id) }}" class="btn btn-sm btn-success float-end">Yes, I am
-                  ready to start</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal fade" id="closeStudy" tabindex="-1" aria-labelledby="startStudyLabel" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h3 class="modal-title crd-header" id="exampleModalLabel">Warning</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <p>Once you close the study <b class="text-danger">you won't be able to add more participants to assess
-                    your results</b>.</p>
-                <p>Do you want to close the study anyway and archive the results of your study?</p>
-              </div>
-              <div class="modal-footer">
-                <a href="{{ url_for('close_study', id=study.id) }}" class="btn btn-sm btn-danger float-end">Yes, I am
-                  ready to close</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  {% if study.studytype.id != 6 %}
-  {% if answers != -1 %}
-  <div class="col pb-4">
-    <div class="card">
-      <div class="card-body">
-        <div class="hstack">
-          <div class="crd-header">Questions for the Assessment Interface</div>
-        </div>
-
-      <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Add questions for the ratings on the collected search results"><i class="fa-solid fa-circle-question"></i></a></span>
-
-        <div class="py-2">
-          <b>Number of questions: </b>
-          {% if study.questions | length == 0 %}
-          No questions yet. <a href="{{ url_for('new_question', id=study.id) }}">Create one!</a>
-          {% elif study.questions | length == 1 %}
-          {{ study.questions | length }} Question
-          {% else %}
-          {{ study.questions | length }} Questions
-          {% endif %}
-        </div>
-
-        <a href="{{ url_for('new_question', id=study.id) }}" class="btn btn-outline-primary btn-sm float-end"><i
-            class="fa-solid fa-plus"></i> Add Question</a>
-
-        {% if study.questions | length != 0 %}
-        <a href="{{ url_for('questions', id=study.id) }}" class="btn btn-outline-secondary btn-sm float-end me-2"><i
-            class="fa-solid fa-eye"></i> View</a>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-  
-  {% if (results > 0 or results_ai > 0 or results_chatbot > 0) and study.questions | length > 0 %}
-  <div class="col pb-4">
-    <div class="card">
-      <div class="card-body">
-        <div class="hstack">
-          <div class="crd-header">Participants</div>
-        </div>
-
-        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Manage study participants here. Create links to invite participants to answer the defined questions about the search results."><i class="fa-solid fa-circle-question"></i></a></span>
-
-        <div class="py-2">
-          {% if study.participants | length == 0 %}
-          No participants yet. <a href="" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
-            Invite one
-          </a>
-          {% else %}
-          Number of registered participants: {{ study.participants | length }}
-          {% endif %}
-        </div>
-
-        <button type="button" class="btn btn-outline-primary btn-sm float-end" data-bs-toggle="modal"
-          data-bs-target="#inviteURLmodal">
-          <i class="fa-solid fa-user-plus"></i> Get invitation link
-        </button>
-
-        <div class="modal fade" id="inviteURLmodal" tabindex="-1" aria-labelledby="inviteURLLabel" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h3 class="modal-title crd-header">Invitation URL</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body p-4 text-center">
-                <p>Use this URL to invite participants to join your study:</p>
-                <div class="input-group mb-3">
-                  <input type="text" id="inviteURL" class="form-control" aria-describedby="inviteBTN"
-                    value="{{ base }}join/{{ study.id }}" disabled />
+                  {% if imported_engines %}
+                  <div class="col-md-5 border-start">
+                    <div class="fw-bold text-dark small mb-2"><i class="fa-solid fa-server me-1"></i> Engines (Country / Lang):</div>
+                    <div class="d-flex flex-wrap gap-2">
+                      {% for engine in imported_engines %}
+                        <span class="badge bg-light text-primary border border-primary">{{ engine }}</span>
+                      {% endfor %}
+                    </div>
                   </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% if study.participants | length != 0 %}
-        <a class="btn btn-outline-secondary btn-sm float-end me-2" href="{{ url_for('participants', id=study.id) }}">
-          <i class="fa-solid fa-eye"></i> View
-        </a>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  {# FIX: The URL Filter card was incorrectly nested. It is now at the correct level. #}
-  {% if study.studytype.id != 6 and (study.assessment_result_types | selectattr('id', 'equalto', 1) | list | length > 0) %}
-  <div class="col pb-4">
-    <div class="card">
-      <div class="card-body">
-        <div class="hstack">
-          <div class="crd-header">Optional URL Filtering</div>
-        </div>
-        <span class="float-end help"><a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Define which domains to include or exclude in the assessment interface."><i class="fa-solid fa-circle-question"></i></a></span>
-        <div class="py-2"><br/></div>
-        <a href="{{ url_for('url_filters', id=study.id) }}" class="btn btn-outline-primary btn-sm float-end">
-            <i class="fa-solid fa-filter me-1"></i> Manage Filters
-        </a>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-
-  {% endif %}
-  {% endif %}
-</div>
-
-
-<div class="row">
-  <div class="col-12 pb-4">
-    <div class="row justify-content-center">
-      <div class="col">
-        <div class="card">
-          <div class="card-body">
-            <div class="row">
-              <div class="crd-header col">
-                Study Summary
-              </div>
-              <div class="dropdown text-end col">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <i class="fa-solid fa-gear"></i> Settings
-                </button>
-                <ul class="dropdown-menu">
-                  {% if study.status == 0 %}
-                  <li><a class="dropdown-item" href="{{ url_for('edit_study', id=study.id) }}"><i
-                        class="fa-solid fa-pen"></i> Edit Study</a></li>
                   {% endif %}
-                  <li><a class="dropdown-item text-danger" href="{{ url_for('delete_study', id=study.id) }}"><i
-                        class="fa-solid fa-trash-can"></i> Delete Study</a></li>
-                </ul>
+                </div>
               </div>
-            </div>
-
-            <h4 class="mb-0 py-2">{{ study.name }}</h4>
-            <p class="text-muted mb-4">{{ study.description }}</p>
-
-            <div class="col mb-4">
-              <div class="row">
-                <div class="col-4 pl-0">
-                  <div class="summary-desc">Study Type</div>
-                  {{ study.studytype.name }}
-                </div>
-                  <div class="col-4 border-start">
-                      <div class="summary-desc">Collected Result Types</div>
-                      <p class="mb-0">
-                        {% for rt in collected_result_types_ %}
-                          <span class="badge rounded-pill bg-info mr-2">{{ rt.display }}</span>
-                        {% else %}
-                          <span class="text-muted">Not specified</span>
-                        {% endfor %}
-                      </p>
-                  </div>
-                {% if study.studytype.id != 6 and (study.assessment_result_types | selectattr('id', 'equalto', 1) | list | length > 0) %}
-                <div class="col-4 border-start">
-                  <div class="summary-desc">Result Count</div>
-                  {{ study.result_count }}
-                </div>
-                {% endif %}
-              </div>
-            </div>
-
-            <div class="col">
-              <div class="row">
-                <div class="col-12 pl-0 mb-4">
-                  <div class="summary-desc">Search Engines</div>
-                  {% for e in study.searchengines %}
-                  <span class="badge rounded-pill bg-primary mr-2">{{ e.name }}</span>
-                  {% endfor %}
-                </div>
-
-                {%if study.task %}
-                <div class="col-12 pl-0 mb-4">
-                  <div class="summary-desc">Search Task</div>
-                  {{ study.task }}
-                </div>
-                {% endif %}
-
-                <div class="col-12 pl-0">
-                  <div class="summary-desc">
-                    Search Queries
-                     {% if study.queries | length > 5 %}
-                    (Showing 5 out of {{ study.queries | length }}.
-                    <a href="{{ url_for('queries', id=study.id) }}">See all <i
-                        class="fa-solid fa-arrow-up-right-from-square"></i></a>)
-                    {% endif %}
-                  </div>
-                  <p>
-                    {% for q in study.queries[:5] %}
-                    <span class="badge rounded-pill bg-primary mr-2">{{ q.query }}</span>
-                    {% endfor %}
-                  </p>
-                </div>
-
-            {% if study.studytype.id != 6 %}
-
-            <div class="crd-header">
-                Assessment Interface options
+              {% endif %}
               </div>
 
-            <div class="col-12 mt-2 mb-3">
-                <div class="summary-desc">Result Types for Assessment</div>
-                <p class="mb-0">
-                  {% for rt in study.assessment_result_types %}
-                    <span class="badge rounded-pill bg-primary mr-2">{{ rt.display }}</span>
-                  {% else %}
-                    <span class="text-muted">Not specified</span>
-                  {% endfor %}
-                </p>
-            </div>
-
-            {# --- HIER BEGINNT DIE ÄNDERUNG --- #}
-            <div class="row">
-                {% if study.assessment_result_types | selectattr('id', 'equalto', 1) | list | length > 0 %}
-                    <div class="col-md-6 mb-2">
-                      <div class="summary-desc">Show URLs in Assessment Interface: <span class="badge bg-secondary mr-2">{{ study.show_urls }}</span></div>
-                    </div>
-                {% endif %}
-    
-                {% if study.assessment_result_types | selectattr('id', 'equalto', 2) | list | length > 0 %}
-                    <div class="col-md-6 mb-2">
-                      <div class="summary-desc">Show sources for AI overviews: <span class="badge bg-secondary mr-2">{{ study.show_ai_sources }}</span></div>
-                    </div>
-                {% endif %}
-                
-                {# NEU: Anzeige für das Limit pro Teilnehmer #}
-                {% if study.limit_per_participant %}
-                <div class="col-md-6 mb-2">
-                    <div class="summary-desc">Limit results per participant:
-                        <span class="badge bg-secondary">{{ study.max_results_per_participant }}</span>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            {# --- HIER ENDET DIE ÄNDERUNG --- #}
             
-            {% endif %}
+            <div class="col-md-4 text-end">
+                {% if study.status != 4 and has_any_data %}
+                <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#closeStudy">
+                  <i class="fa-regular fa-circle-stop me-1"></i> Archive Study
+                </button>
+                {% elif study.status == 4 %}
+                <span class="badge bg-secondary p-2"><i class="fa-solid fa-box-archive me-1"></i> Archived</span>
+                {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {% if has_any_data %}
+    <h5 class="mt-5 mb-3 text-secondary fw-bold"><i class="fa-solid fa-sliders me-2 text-secondary"></i> Configuration</h5>
+    
+
+    
+    <form id="study-settings-form" action="{{ url_for('update_study_settings', id=study.id) }}" method="POST">
+      {{ settings_form.hidden_tag() }}
+
+      <div class="card mb-4 shadow-sm" style="border: 2px solid #0d6efd; background-color: #f8fbff;">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="fw-bold mb-1 text-primary">
+              <i class="fa-solid fa-bolt text-warning me-2"></i> Live Link Mode (Lightweight Study)
+            </h6>
+            <div class="text-secondary small">
+              Disables background scraping (no screenshots or HTML). Participants visit the live URLs directly. <b>Note: Disables Automated Classifiers and forces URLs to be visible.</b>
+            </div>
+          </div>
+          <div class="form-check form-switch ms-3" style="transform: scale(1.3); transform-origin: right center;">
+            {{ settings_form.live_link_mode(class="form-check-input", id="live_link_mode_checkbox", style="cursor: pointer;") }}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseAssessment" aria-expanded="false" aria-controls="collapseAssessment">
+          <span class="fw-bold text-dark">
+              <i class="fa-solid fa-users-viewfinder me-2 text-warning"></i> Human Assessment
+              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure the environment and rules for human participants evaluating the results."></i>
+          </span>
+          <i class="fa-solid fa-chevron-down text-secondary"></i>
+        </div>
+        
+        <div id="collapseAssessment" class="collapse">
+          <div class="card-body bg-light border-top p-4">
+          
+            <div class="mb-4">
+              <label class="form-label fw-bold">
+                  Participant Task Description
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This text is shown prominently at the top of the assessment interface. Use *** to automatically insert the current search query."></i>
+              </label>
+              <textarea name="task_description" class="form-control" rows="2" placeholder="e.g. Please evaluate the results for the query ***">{{ study.task or '' }}</textarea>
+            </div>
+
+            <div class="row mb-4 g-3">
+              <div class="col-md-6">
+                <div class="card h-100 border-secondary shadow-sm">
+                  <div class="card-body p-4 d-flex flex-column">
+                    <h6 class="fw-bold text-dark">
+                        <i class="fa-solid fa-clipboard-list me-2 text-primary"></i> Questionnaire
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create and manage the questions that human participants will answer for each search result."></i>
+                    </h6>
+                    <div class="text-secondary mb-3 small">
+                      {% if study.questions | length == 0 %} No questions defined. {% else %} <span class="badge bg-primary">{{ study.questions | length }} Defined</span> {% endif %}
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap mt-auto">
+                      <a href="{{ url_for('new_question', id=study.id) }}" class="btn btn-outline-primary btn-sm fw-bold"><i class="fa-solid fa-plus me-1"></i> Add</a>
+                      <a href="{{ url_for('import_questions_json', id=study.id) }}" class="btn btn-outline-secondary btn-sm" title="Import"><i class="fa-solid fa-file-import"></i></a>
+                      {% if study.questions|length > 0 %}
+                      <a href="{{ url_for('export_questions_json', id=study.id) }}" class="btn btn-outline-secondary btn-sm" title="Export"><i class="fa-solid fa-file-export"></i></a>
+                      <a href="{{ url_for('questions', id=study.id) }}" class="btn btn-primary btn-sm fw-bold"><i class="fa-solid fa-eye me-1"></i> View</a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="card h-100 border-secondary shadow-sm">
+                  <div class="card-body p-4 d-flex flex-column">
+                    <h6 class="fw-bold text-dark">
+                        <i class="fa-solid fa-users me-2 text-success"></i> Participants
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Track who has joined the study and view their individual progress."></i>
+                    </h6>
+                    <div class="text-secondary mb-3 small">
+                      {% if study.participants|length == 0 %} No participants yet. {% else %} <span class="badge bg-success">{{ study.participants|length }} Registered</span> {% endif %}
+                    </div>
+                    
+                    <div class="mt-auto">
+                        {% if study.questions|length == 0 %}
+                            <div class="text-warning fw-bold small">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Define questions below to invite participants.
+                            </div>
+                        {% else %}
+                            
+                          <div id="ui-warning-notypes" class="d-none mb-0 py-2 px-3 border-0 border-start border-4 border-warning small shadow-sm rounded" style="background-color: #fff3cd; color: #856404;">
+                            <div class="d-flex align-items-center">
+                              <i class="fa-solid fa-triangle-exclamation fs-5 me-3 text-warning"></i>
+                              <div>
+                                <strong>Action required:</strong> You must select at least one <b>Result Type</b> below and save your settings!
+                              </div>
+                            </div>
+                          </div>
+
+                          <div id="ui-warning-downloads" class="d-none text-warning fw-bold small">
+                              <i class="fa-solid fa-hourglass-half me-1"></i> Waiting for organic background downloads to finish before inviting...
+                          </div>
+
+                          <div id="ui-warning-unsaved-invite" class="d-none text-warning fw-bold small">
+                            <i class="fa-solid fa-lock me-1"></i> Save settings below to unlock invite link.
+                          </div>
+
+                          <div id="ui-invite-actions" class="d-none">
+                              <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-success btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
+                                  <i class="fa-solid fa-link me-1"></i> Invite Link
+                                </button>
+                                {% if study.participants|length > 0 %}
+                                <a href="{{ url_for('participants', id=study.id) }}" class="btn btn-success btn-sm fw-bold"><i class="fa-solid fa-eye me-1"></i> View</a>
+                                {% endif %}
+                              </div>
+                            </div>
+
+                        {% endif %}
+                    </div>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="card border-secondary shadow-sm">
+                <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="fw-bold text-dark">
+                        <i class="fa-solid fa-filter me-2 text-secondary"></i> Domain Filtering
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create rules to automatically exclude results from specific domains (e.g., youtube.com) from being shown to human assessors."></i>
+                    </span>
+                  </div>
+                  <a href="{{ url_for('url_filters', id=study.id) }}" class="btn btn-outline-secondary btn-sm fw-bold">Manage Filters</a>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="row g-4 mb-4">
+              <div class="col-md-6">
+                <div class="form-check form-switch mb-2">
+                  {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
+                  <label class="form-check-label fw-bold" for="limit_checkbox">
+                    Limit workload per user
+                  </label>
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Set a maximum number of search results each participant has to evaluate. This helps to distribute the workload evenly across multiple users."></i>
+                </div>
+                <div class="ms-4 mt-2" id="max_results_container" style="display: none;">
+                  {{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary", style="max-width: 150px;", placeholder="Max. items") }}
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-bold mb-2">
+                    Result Ranges (Optional)
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Define specific ranking sections to assess (e.g., only ranks 1-3 and 8-10). If left empty, all available results will be distributed."></i>
+                </label>
+                <div id="ranges-wrapper">
+                  {% for range_entry in settings_form.ranges %}
+                  <div class="row g-2 mb-2 range-row align-items-center">
+                    <div class="col-4">{{ range_entry.start_range(class="form-control form-control-sm border-secondary", placeholder="Start") }}</div>
+                    <div class="col-1 text-center fw-bold text-dark">-</div>
+                    <div class="col-4">{{ range_entry.end_range(class="form-control form-control-sm border-secondary", placeholder="End") }}</div>
+                    <div class="col-3">
+                      <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-range" tabindex="-1">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-1 fw-bold" id="add-range-btn">
+                  <i class="fa-solid fa-plus me-1"></i> Add Range
+                </button>
+              </div>
+            </div>
+            
+            <div class="row mt-4">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">
+                    Assessable Types
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select which types of content should be shown and evaluated by participants."></i>
+                </label>
+                <div class="card card-body bg-white border-secondary p-3" style="max-height: 180px; overflow-y: auto;">
+                  {{ settings_form.assessment_result_types(class="list-unstyled mb-0 text-dark") }}
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Interface Visibility</label>
+                <div class="d-flex flex-column gap-3 mt-2">
+                    
+                    <div class="form-check form-switch">
+                      {{ settings_form.show_urls(class="form-check-input border-secondary", id="show_urls_checkbox") }}
+                      <label class="form-check-label text-dark" for="show_urls_checkbox">
+                          Show URLs to participants
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, participants will only see the page title and content, but not the original domain/URL."></i>
+                          <span id="show_urls_badge" class="badge bg-light text-secondary border ms-2 d-none"><i class="fa-solid fa-lock"></i> Forced by Live Mode</span>
+                      </label>
+                    </div>
+
+                    <div class="form-check form-switch">
+                      {{ settings_form.show_ai_sources(class="form-check-input border-secondary") }}
+                      <label class="form-check-label text-dark">
+                          Show AI Overviews sources
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, citations and source links embedded within AI Overviews will be hidden from participants."></i>
+                      </label>
+                    </div>
+                    <div class="form-check form-switch">
+                      {{ settings_form.assess_failed(class="form-check-input border-secondary") }}
+                      <label class="form-check-label text-dark">
+                          Allow assessment of failed downloads
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, participants can still answer questions even if a website could not be scraped/loaded properly by the background worker."></i>
+                      </label>
+                    </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4 shadow-sm border-0" id="classifiers-card">
+        <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseClassifiers" aria-expanded="false" aria-controls="collapseClassifiers">
+          <span class="fw-bold text-dark">
+              <i class="fa-solid fa-robot me-2 text-info"></i> Automated Classifiers
+              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select algorithms to automatically analyze and score the collected HTML in the background."></i>
+          </span>
+          <i class="fa-solid fa-chevron-down text-secondary"></i>
+        </div>
+        <div id="collapseClassifiers" class="collapse">
+          <div class="card-body bg-light border-top p-4">
+            <div class="card card-body bg-white p-3 border-secondary" style="max-height: 250px; overflow-y: auto;">
+              {{ settings_form.classifiers(class="list-unstyled mb-0 text-dark") }}
             </div>
           </div>
         </div>
       </div>
+
+      <div id="ui-warning-unsaved-bottom" class="alert alert-warning border-warning shadow-sm d-none align-items-center mb-3 mt-4">
+          <i class="fa-solid fa-triangle-exclamation fs-4 me-3 text-warning"></i>
+          <div class="text-dark">
+            <strong>Unsaved changes detected!</strong> Please click "Save Configurations" below to apply your new settings.
+          </div>
+      </div>
+
+      <div class="d-grid mt-2 mb-5">
+        <button type="submit" id="save-settings-btn" class="btn btn-primary fw-bold shadow-sm btn_config">
+          <i class="fa-solid fa-floppy-disk me-2"></i> Save Configurations
+        </button>
+      </div>
+
+    </form>
+
+    <div class="card mb-5 border-primary shadow-sm">
+      <div class="card-header bg-white border-primary text-primary fw-bold d-flex align-items-center py-3">
+        <i class="fa-solid fa-chart-line me-2"></i> Results & Export
+      </div>
+      <div class="card-body p-4">
+        
+        <div class="row g-4">
+          <div class="col-sm-6">
+            <div class="card h-100 shadow-sm border-secondary">
+              <div class="card-body text-center p-4">
+                <div class="text-success mb-3">
+                    <i class="fa-solid fa-chart-pie fa-2x"></i>
+                </div>
+                <h6 class="card-title fw-bold text-dark mb-2">
+                    Analysis Dashboard
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="View interactive charts and statistical breakdowns of your collected data and participant answers."></i>
+                </h6>
+                <p class="card-text text-secondary mb-4 small">View SEO metrics, classifier statistics, and result overlap analysis.</p>
+                <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-outline-success btn-sm w-100 fw-bold">View Analysis</a>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="card h-100 shadow-sm border-secondary">
+              <div class="card-body text-center p-4">
+                <div class="text-primary mb-3">
+                    <i class="fa-solid fa-file-excel fa-2x"></i>
+                </div>
+                <h6 class="card-title fw-bold text-dark mb-2">
+                    Export Data
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Download raw data as Excel files for external analysis in SPSS, R, or Excel."></i>
+                </h6>
+                <p class="card-text text-secondary mb-4 small">Download all collected datasets and human answers as spreadsheets.</p>
+                <a href="{{ url_for('export', id=study.id) }}" class="btn btn-outline-primary btn-sm w-100 fw-bold">Download Excel</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+{% endif %}
+  </div>
+</div>
+
+<div class="modal fade" id="closeStudy" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Archive Study</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 text-dark">
+        <p>This will close the study for participants. You can still view results and export data.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">Cancel</button>
+        <a href="{{ url_for('close_study', id=study.id) }}" class="btn btn-danger fw-bold">Confirm Archive</a>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="row pb-4">
-  <div class="col">
-    <div class="card">
-      <div class="card-body">
-        <div class="hstack">
-          <div class="crd-header">Analysis</div>
-        </div>
-        <div class="py-2">Find general study statistics and additional data about SEO analysis and source overlap.</div>
-        <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i
-            class="fa-solid fa-chart-simple"></i> View Analysis</a>
+<div class="modal fade" id="inviteURLmodal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold text-dark">Participant Invitation URL</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="card">
-      <div class="card-body">
-        <div class="hstack">
-          <div class="crd-header">Export</div>
+      <div class="modal-body text-center p-4">
+        <p class="text-secondary mb-4">Share this link with your subjects so they can start the assessment.</p>
+        <div class="input-group shadow-sm">
+            <input type="text" class="form-control bg-light text-dark border-secondary" id="inviteLinkInput" value="{{ base }}join/{{ study.id }}" readonly />
+            <button class="btn btn-primary fw-bold px-3" type="button" onclick="navigator.clipboard.writeText(document.getElementById('inviteLinkInput').value); this.innerHTML='<i class=\'fa-solid fa-check\'></i> Copied';"><i class="fa-regular fa-copy me-2"></i> Copy</button>
         </div>
-        <div class="py-2">Download results as Excel Tables for further use and research data management.</div>
-        <a href="{{ url_for('export', id=study.id) }}" class="btn btn-sm btn-outline-primary float-end"><i
-            class="fa-solid fa-table-list"></i> Download Results</a>
       </div>
     </div>
   </div>
 </div>
 
+<div class="modal fade" id="installGuideModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold text-dark"><i class="fa-brands fa-chrome me-2 text-primary"></i> Extension Installation Guide</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 text-dark">
+        <ol class="list-group list-group-numbered list-group-flush mb-4">
+          <li class="list-group-item py-2">
+            <strong>Download & Unzip:</strong><br>
+            Download the <code>rat-extension_v1.zip</code> and extract (unzip) it to a folder on your computer.
+          </li>
+          <li class="list-group-item py-2">
+            <strong>Open Extensions Menu:</strong><br>
+            Open Google Chrome and type <code class="bg-light p-1 rounded">chrome://extensions</code> in the address bar.
+          </li>
+          <li class="list-group-item py-2">
+            <strong>Enable Developer Mode:</strong><br>
+            Toggle the switch <strong>Developer mode</strong> in the top right corner of the page.
+          </li>
+          <li class="list-group-item py-2">
+            <strong>Load Extension:</strong><br>
+            Click the button <strong><i class="fa-solid fa-folder-open text-secondary mx-1"></i> Load unpacked</strong> that appeared in the top left.
+          </li>
+          <li class="list-group-item py-2 border-bottom-0">
+            <strong>Select Folder:</strong><br>
+            Select the folder you extracted in step 1. The extension should now appear in your list and is ready to use.
+          </li>
+        </ol>
+          <div class="p-3 rounded bg-light border-start border-info border-4 text-secondary small">
+            <i class="fa-solid fa-circle-info text-info me-2"></i>
+            <strong>Note:</strong> Since this is a research tool, it is not listed in the Chrome Web Store and must be installed manually using these steps.
+          </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-primary fw-bold px-4" data-bs-dismiss="modal">Got it!</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-{% if study.status != 4 %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const studyId = {{ study.id }};
-    let pollingInterval;
+  document.addEventListener('DOMContentLoaded', function () {
+    const studyId = "{{ study.id }}";
 
+    // --- INIT TOOLTIPS ---
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // --- Chevron Animation for Collapses ---
+    const collapseElements = document.querySelectorAll('.collapse');
+    collapseElements.forEach(collapseEl => {
+        collapseEl.addEventListener('show.bs.collapse', function (e) {
+            const header = document.querySelector(`[data-bs-target="#${this.id}"]`);
+            if(header) {
+                const icon = header.querySelector('.fa-chevron-down');
+                if(icon) icon.style.transform = 'rotate(180deg)';
+            }
+        });
+        collapseEl.addEventListener('hide.bs.collapse', function (e) {
+            const header = document.querySelector(`[data-bs-target="#${this.id}"]`);
+            if(header) {
+                const icon = header.querySelector('.fa-chevron-down');
+                if(icon) icon.style.transform = 'rotate(0deg)';
+            }
+        });
+        
+        if(collapseEl.classList.contains('show')) {
+            const header = document.querySelector(`[data-bs-target="#${this.id}"]`);
+            if(header) {
+                const icon = header.querySelector('.fa-chevron-down');
+                if(icon) icon.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+
+    // --- Limit Per Participant Toggle ---
+    const limitCheckbox = document.getElementById('limit_checkbox');
+    const maxResultsContainer = document.getElementById('max_results_container');
+
+    if (limitCheckbox && maxResultsContainer) {
+      function toggleMaxResults() {
+        maxResultsContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
+      }
+      limitCheckbox.addEventListener('change', toggleMaxResults);
+      toggleMaxResults(); 
+    }
+
+    // --- Dynamic Ranges Logic ---
+    const rangesWrapper = document.getElementById('ranges-wrapper');
+    const addRangeBtn = document.getElementById('add-range-btn');
+
+    if (rangesWrapper && addRangeBtn) {
+      addRangeBtn.addEventListener('click', function () {
+        const index = rangesWrapper.children.length;
+        const newRow = document.createElement('div');
+        newRow.className = 'row g-2 mb-2 range-row align-items-center';
+        newRow.innerHTML = `
+            <div class="col-4"><input class="form-control form-control-sm border-secondary" name="ranges-${index}-start_range" type="number" min="1" placeholder="Start"></div>
+            <div class="col-1 text-center fw-bold text-dark">-</div>
+            <div class="col-4"><input class="form-control form-control-sm border-secondary" name="ranges-${index}-end_range" type="number" min="1" placeholder="End"></div>
+            <div class="col-3"><button type="button" class="btn btn-outline-danger btn-sm w-100 remove-range" tabindex="-1"><i class="fa-solid fa-xmark"></i></button></div>
+        `;
+        rangesWrapper.appendChild(newRow);
+      });
+
+      rangesWrapper.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-range')) {
+          const row = e.target.closest('.range-row');
+          if (row) row.remove();
+
+          const rows = rangesWrapper.querySelectorAll('.range-row');
+          rows.forEach((row, idx) => {
+            const startInput = row.querySelector('input[placeholder="Start"]');
+            const endInput = row.querySelector('input[placeholder="End"]');
+            startInput.name = `ranges-${idx}-start_range`;
+            endInput.name = `ranges-${idx}-end_range`;
+            startInput.id = `ranges-${idx}-start_range`;
+            endInput.id = `ranges-${idx}-end_range`;
+          });
+        }
+      });
+    }
+
+    // --- LIVE MODE & UI LOGIC (Now using robust Bootstrap classes) ---
+    try {
+        const serverStatus = {{ study.status | default(0) }}; 
+        const hasSavedTypes = {% if study.assessable_result_types_text %}true{% else %}false{% endif %};
+        let isDirty = false;
+
+        function updateLiveModeUI() {
+            const liveToggle = document.getElementById('live_link_mode_checkbox');
+            if (!liveToggle) return;
+            
+            const isLive = liveToggle.checked;
+            const cCard = document.getElementById('classifiers-card');
+            const urlCheck = document.getElementById('show_urls_checkbox');
+            const urlBadge = document.getElementById('show_urls_badge');
+            const dpArea = document.getElementById('download-progress-area');
+
+            if (cCard) {
+                if (isLive) {
+                    cCard.classList.add('d-none');
+                } else {
+                    cCard.classList.remove('d-none');
+                }
+            }
+            
+            if (urlCheck) {
+                if (isLive) {
+                    urlCheck.checked = true;
+                    urlCheck.disabled = true;
+                    if (urlBadge) {
+                        urlBadge.classList.remove('d-none');
+                        urlBadge.classList.add('d-inline-block');
+                    }
+                } else {
+                    urlCheck.disabled = false;
+                    if (urlBadge) {
+                        urlBadge.classList.add('d-none');
+                        urlBadge.classList.remove('d-inline-block');
+                    }
+                }
+            }
+            
+            if (dpArea) {
+                if (isLive) {
+                    dpArea.classList.add('d-none');
+                } else {
+                    dpArea.classList.remove('d-none');
+                }
+            }
+        }
+
+          function updateUIState() {
+            const typeCbs = document.querySelectorAll('input[name="assessment_result_types"]');
+            const liveToggle = document.getElementById('live_link_mode_checkbox');
+            
+            let checkedTypes = Array.from(typeCbs).filter(cb => cb.checked).map(cb => cb.value.toLowerCase());
+            const isLiveMode = liveToggle ? liveToggle.checked : false;
+
+            const noTypesSelected = checkedTypes.length === 0;
+
+            // --- 1. GLOBALE WARNUNGEN & BUTTON ---
+            const globalWarnTop = document.getElementById('ui-warning-unsaved-global');
+            const globalWarnBottom = document.getElementById('ui-warning-unsaved-bottom');
+            const saveBtn = document.getElementById('save-settings-btn');
+            
+            // Warnung Oben (nur wenn wirklich ungespeicherte Änderungen da sind)
+            if (globalWarnTop) {
+                if (isDirty) {
+                    globalWarnTop.classList.remove('d-none');
+                    globalWarnTop.classList.add('d-flex');
+                } else {
+                    globalWarnTop.classList.remove('d-flex');
+                    globalWarnTop.classList.add('d-none');
+                }
+            }
+            
+            // Warnung Unten (nur wenn wirklich ungespeicherte Änderungen da sind)
+            if (globalWarnBottom) {
+                if (isDirty) { 
+                    globalWarnBottom.classList.remove('d-none');
+                    globalWarnBottom.classList.add('d-flex');
+                } else {
+                    globalWarnBottom.classList.remove('d-flex');
+                    globalWarnBottom.classList.add('d-none');
+                }
+            }
+
+            // Save Button Pulsieren (nur wenn wirklich ungespeicherte Änderungen da sind)
+            if (saveBtn) {
+                if (isDirty) { 
+                    saveBtn.classList.remove('btn-primary', 'btn_config');
+                    saveBtn.classList.add('btn-needs-save');
+                    saveBtn.innerHTML = '<i class="fa-solid fa-circle-info me-2"></i> Save Configurations (Changes Pending)';
+                } else {
+                    saveBtn.classList.add('btn-primary', 'btn_config');
+                    saveBtn.classList.remove('btn-needs-save');
+                    saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save Configurations';
+                }
+            }
+
+            // --- 2. PARTICIPANTS BOX (Invite Link) ---
+            const boxNoTypes = document.getElementById('ui-warning-notypes');
+            const boxDownloads = document.getElementById('ui-warning-downloads');
+            const boxUnsavedInvite = document.getElementById('ui-warning-unsaved-invite');
+            const boxActions = document.getElementById('ui-invite-actions');
+
+            // Erst alles verstecken
+            if (boxNoTypes) { boxNoTypes.classList.add('d-none'); boxNoTypes.classList.remove('d-flex'); }
+            if (boxDownloads) { boxDownloads.classList.add('d-none'); boxDownloads.classList.remove('d-block'); }
+            if (boxUnsavedInvite) { boxUnsavedInvite.classList.add('d-none'); boxUnsavedInvite.classList.remove('d-block'); }
+            if (boxActions) { boxActions.classList.add('d-none'); boxActions.classList.remove('d-block'); }
+
+            // Logik-Baum für die Anzeige (Hier ist !hasSavedTypes weiterhin erlaubt, um den Invite-Link fairerweise zu blockieren)
+            if (noTypesSelected) {
+                if (boxNoTypes) { boxNoTypes.classList.remove('d-none'); boxNoTypes.classList.add('d-flex'); }
+            } else if (isDirty || !hasSavedTypes) {
+                if (boxUnsavedInvite) { boxUnsavedInvite.classList.remove('d-none'); boxUnsavedInvite.classList.add('d-block'); }
+            } else if (checkedTypes.includes('organic') && serverStatus !== 2 && !isLiveMode) {
+                if (boxDownloads) { boxDownloads.classList.remove('d-none'); boxDownloads.classList.add('d-block'); }
+            } else {
+                if (boxActions) { boxActions.classList.remove('d-none'); boxActions.classList.add('d-block'); }
+            }
+        }
+
+        // Initiale Aufrufe beim Laden der Seite
+        updateLiveModeUI();
+        updateUIState();
+
+        const settingsForm = document.getElementById('study-settings-form');
+        if (settingsForm) {
+            settingsForm.addEventListener('input', () => {
+                isDirty = true;
+                updateUIState();
+            });
+            
+            settingsForm.addEventListener('change', () => {
+                isDirty = true;
+                updateLiveModeUI();
+                updateUIState();
+            });
+        }
+
+        if (addRangeBtn) {
+            addRangeBtn.addEventListener('click', () => {
+                isDirty = true;
+                updateUIState();
+            });
+        }
+        
+        if (rangesWrapper) {
+            rangesWrapper.addEventListener('click', (e) => {
+                if (e.target.closest('.remove-range')) {
+                    isDirty = true;
+                    updateUIState();
+                }
+            });
+        }
+
+    } catch (error) {
+        console.error("Critical error in RAT UI logic: ", error);
+    }
+
+    // --- Polling Logic ---
     const uiElements = {
-        resultsDisplay: document.getElementById('results-display'),
-        standardResults: document.getElementById('standard-results-container'),
-        type6Results: document.getElementById('type6-results-container'),
-        resultsCount: document.getElementById('results-count'),
-        resultsAiCount: document.getElementById('results-ai-count'),
-        resultsChatbotCount: document.getElementById('results-chatbot-count'), // NEW: Chatbot count element
-        urlsCollectedCount: document.getElementById('urls-collected-count'),
-        progressContainer: document.getElementById('progress-container'),
-        progressBar: document.getElementById('progress-bar'),
-        progressBarText: document.querySelector('#progress-bar .progress-bar-text'),
-        statusText: document.getElementById('status-text'),
-        actionButtons: document.getElementById('action-buttons')
+      resultsCount: document.getElementById('results-count'),
+      resultsAiCount: document.getElementById('results-ai-count'),
+      resultsChatbotCount: document.getElementById('results-chatbot-count'),
+      aiSourceCount: document.getElementById('ai-source-count'),    
+      resultsSerpCount: document.getElementById('results-serp-count'), 
+      progressContainer: document.getElementById('progress-container'),
+      progressBar: document.getElementById('progress-bar'),
+      progressBarText: document.querySelector('#progress-bar .progress-bar-text')
     };
 
-function updateUI(data) {
-        // FIX: Do not update the UI via polling if the study is still 'Open' (status 0).
-        if (data.status === 0) {
-            return;
-        }
+    function updateUI(data) {
+      const hasAnyData = (data.results > 0 || data.results_ai > 0 || data.results_chatbot > 0 || data.results_serp > 0 || data.ai_source_count > 0);
+      
+      if (hasAnyData && uiElements.progressContainer) {
+          uiElements.progressContainer.classList.remove('d-none');
+          uiElements.progressContainer.classList.add('d-block');
+      }
 
-        uiElements.resultsDisplay.style.display = 'block';
-        uiElements.progressContainer.style.display = 'block';
+      if (data.results > 0 && uiElements.resultsCount) uiElements.resultsCount.textContent = data.results;
+      if (data.results_ai > 0 && uiElements.resultsAiCount) uiElements.resultsAiCount.textContent = data.results_ai;
+      if (data.results_chatbot > 0 && uiElements.resultsChatbotCount) uiElements.resultsChatbotCount.textContent = data.results_chatbot;
+      if (data.results_serp > 0 && uiElements.resultsSerpCount) uiElements.resultsSerpCount.textContent = data.results_serp;
+      if (data.ai_source_count > 0 && uiElements.aiSourceCount) uiElements.aiSourceCount.textContent = data.ai_source_count;
 
-        if (data.studytype_id === 6) {
-            uiElements.standardResults.style.display = 'none';
-            uiElements.type6Results.style.display = 'block';
-            
-            // --- Dynamische Aktualisierung für Studientyp 6 ---
-            if (data.urls_collected > 0) {
-                if (!uiElements.urlsCollectedCount) {
-                    const newElement = document.createElement('div');
-                    newElement.innerHTML = `<br/><b>URLs collected: </b> <span id="urls-collected-count">${data.urls_collected}</span>`;
-                    uiElements.type6Results.appendChild(newElement);
-                    uiElements.urlsCollectedCount = document.getElementById('urls-collected-count');
-                } else {
-                    uiElements.urlsCollectedCount.textContent = data.urls_collected;
-                }
-            }
-            // (Hier könnte bei Bedarf die Logik für AI-Results für Typ 6 ergänzt werden)
-
-        } else {
-            uiElements.standardResults.style.display = 'block';
-            uiElements.type6Results.style.display = 'none';
-
-            // --- Dynamische Aktualisierung für Standard-Studien ---
-            if (data.results > 0) {
-                // Prüfen, ob das Zähler-Element schon existiert
-                if (!uiElements.resultsCount) {
-                    // Wenn nicht, erstellen und zum Container hinzufügen
-                    const newElement = document.createElement('div');
-                    newElement.innerHTML = `<br/><b>Search Result collected: </b> <span id="results-count">${data.results}</span>`;
-                    uiElements.standardResults.appendChild(newElement);
-                    // Referenz im UI-Objekt aktualisieren
-                    uiElements.resultsCount = document.getElementById('results-count');
-                } else {
-                    // Wenn es existiert, nur den Text aktualisieren
-                    uiElements.resultsCount.textContent = data.results;
-                }
-            }
-
-            if (data.results_ai > 0) {
-                if (!uiElements.resultsAiCount) {
-                    const newElement = document.createElement('div');
-                    newElement.innerHTML = `<br/><b>AI Overviews collected: </b> <span id="results-ai-count">${data.results_ai}</span>`;
-                    uiElements.standardResults.appendChild(newElement);
-                    uiElements.resultsAiCount = document.getElementById('results-ai-count');
-                } else {
-                    uiElements.resultsAiCount.textContent = data.results_ai;
-                }
-            }
-
-            if (data.results_chatbot > 0) {
-                if (!uiElements.resultsChatbotCount) {
-                    const newElement = document.createElement('div');
-                    newElement.innerHTML = `<br/><b>Chatbot Results collected: </b> <span id="results-chatbot-count">${data.results_chatbot}</span>`;
-                    uiElements.standardResults.appendChild(newElement);
-                    uiElements.resultsChatbotCount = document.getElementById('results-chatbot-count');
-                } else {
-                    uiElements.resultsChatbotCount.textContent = data.results_chatbot;
-                }
-            }
-        }
-
-        // DER FOLGENDE CODE FÜR FORTSCHRITTSBALKEN UND STATUS IST UNVERÄNDERT
+      if (uiElements.progressBar) {
         const percentage = data.progress_percent;
         uiElements.progressBar.style.width = percentage + '%';
         uiElements.progressBar.setAttribute('aria-valuenow', percentage);
-        uiElements.progressBarText.textContent = percentage + '%';
+        if (uiElements.progressBarText) uiElements.progressBarText.textContent = percentage + '%';
 
-        let statusHTML = '';
-        let buttonHTML = '';
-
-        if ([1, -1].includes(data.status)) {
-            statusHTML = (data.status === 1) ? '<i>Collection running.</i>' : '<i>Collection running</i>, but with errors. Scraping jobs will repeat.';
-            buttonHTML = `
-                <button class="btn btn-sm btn-info float-end me-2" disabled>
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Collection running...
-                </button>`;
-            
-            if (!uiElements.progressBar.classList.contains('progress-bar-animated')) {
-                uiElements.progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
-            }
-
+        if (percentage >= 100) {
+          uiElements.progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+          uiElements.progressBar.classList.add('bg-success');
         } else {
-            if ([2, 3, -2, -3, -4, -5].includes(data.status)) {
-                 uiElements.progressBar.style.width = '100%';
-                 uiElements.progressBarText.textContent = '100%';
-            }
-            uiElements.progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
-            
-            if (data.status === 2 || data.status === 3) {
-                statusHTML = '<i>Collection finished.</i>';
-                uiElements.progressBar.classList.add('bg-success');
-            } else if (data.status === -2) {
-                statusHTML = '<i>Collection finished</i>, but some processes failed.';
-                uiElements.progressBar.classList.add('bg-danger');
-            } else if (data.status === -3) {
-                statusHTML = '<i>Collection finished.</i> Some queries returned no results.';
-                uiElements.progressBar.classList.add('bg-success');
-            } else if (data.status === -4) {
-                statusHTML = 'Collection finished, but not all sources could be saved.';
-                uiElements.progressBar.classList.add('bg-danger');
-            } else if (data.status === -5) {
-                statusHTML = '<i>Collection finished</i>, but not all scraper jobs and sources could be completed.';
-                uiElements.progressBar.classList.add('bg-danger');
-            }
-
-                        // +++ NEUER STATUS-BLOCK FÜR DIE DYNAMISCHE ANZEIGE +++
-
-
-            if ([2, 3, -2, -3, -4, -5].includes(data.status)) {
-                buttonHTML = `
-                    <button type="button" class="btn btn-sm btn-outline-secondary float-end me-2" data-bs-toggle="modal" data-bs-target="#closeStudy">
-                        <i class="fa-regular fa-circle-stop"></i> Archive
-                    </button>`;
-            }
-            
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-                pollingInterval = null;
-            }
+          uiElements.progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
+          uiElements.progressBar.classList.remove('bg-success');
         }
+      }
 
-        uiElements.statusText.innerHTML = statusHTML;
-        uiElements.actionButtons.innerHTML = buttonHTML;
+      const hasStaticOnly = (data.results === 0 && (data.results_ai > 0 || data.results_chatbot > 0 || data.results_serp > 0));
+      const isReady = (data.status === 2 || hasStaticOnly);
+
+      if (isReady && !document.getElementById('inviteURLmodal')) {
+        location.reload();
+      }
     }
 
     async function fetchStatus() {
-        try {
-            const response = await fetch(`/study/${studyId}/progress`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            updateUI(data);
-        } catch (error) {
-            console.error('Fehler beim Abrufen des Fortschritts:', error);
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-            }
+      try {
+        const response = await fetch(`/study/${studyId}/progress`);
+        if (response.ok) {
+          const data = await response.json();
+          updateUI(data);
         }
+      } catch (e) { console.log("Polling error", e); }
     }
-    
-    {% if study.status in [1, -1] %}
-        fetchStatus();
-        pollingInterval = setInterval(fetchStatus, 5000);
-    {% else %}
-        fetchStatus();
-    {% endif %}
-});
-</script>
-{% endif %}
 
+    {% if study.status != 4 %}
+    fetchStatus();
+    setInterval(fetchStatus, 4000);
+    {% endif %}
+  });
+</script>
 
 {% endblock %}
-{# End the content block #}

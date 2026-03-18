@@ -1,0 +1,99 @@
+{% extends "master.html" %}
+
+{% block title %}Assessment{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-3">
+    <!-- Progress bar und Task -->
+    <div class="row mb-2 py-0">
+      <div class="col-10"><div class="progress" style="height: 25px"><div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{closed}}" aria-valuemax="{{all}}"></div></div></div>
+      <div class="col text-start">{{ (pct | round(0) | string)[:-2] }}%</div>
+    </div>
+    {% if result.study.task %}<div class="card mb-4 shadow-sm"><div class="card-body"><p class="card-text">{{ result.study.task | replace('***', '<b>'~result.query_.query~'</b>') | safe}}</p></div></div>{% endif %}
+
+    <!-- MANUELLES FORMULAR-RENDERING MIT REPOPULATION FÜR ALLE TYPEN -->
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }} {# CSRF Token #}
+        
+        {% for answer in answers %}
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header"><b>{{ answer.question.title }}</b></div>
+          <div class="card-body">
+            {% set question = answer.question %}
+            {% set display_type = question.questiontype.display %}
+            {% set field_name = 'answer_' ~ answer.id %}
+
+            {# --- Logik für verschiedene Feldtypen mit `value` und `checked` --- #}
+            
+            {# Einfaches Textfeld #}
+            {% if display_type == 'short_text' %}
+              <input type="text" name="{{ field_name }}" class="form-control" value="{{ submitted_data.get(field_name, '') }}">
+            
+            {# Textbereich #}
+            {% elif display_type == 'long_text' %}
+              <textarea name="{{ field_name }}" class="form-control" rows="3">{{ submitted_data.get(field_name, '') }}</textarea>
+
+            {# Radio-Buttons (für Single-Choice-Fragen) #}
+            {% elif display_type in ['true_false', 'likert_scale'] %}
+              {% set selected_value = submitted_data.get(field_name) %}
+              {% for option in question.options|sort(attribute='position') %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="{{ field_name }}" id="{{ field_name }}_{{ option.value }}" value="{{ option.value }}"
+                       {% if selected_value == option.value %}checked{% endif %}>
+                <label class="form-check-label" for="{{ field_name }}_{{ option.value }}">
+                  {{ option.label }}
+                </label>
+              </div>
+              {% endfor %}
+            
+            {# Checkboxen (für Multiple-Choice-Fragen) #}
+            {% elif display_type == 'multiple_choice' %}
+              {% set selected_values = submitted_data.getlist(field_name) %}
+              {% for option in question.options|sort(attribute='position') %}
+              <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="{{ field_name }}" id="{{ field_name }}_{{ option.value }}" value="{{ option.value }}"
+                         {% if option.value in selected_values %}checked{% endif %}>
+                  <label class="form-check-label" for="{{ field_name }}_{{ option.value }}">
+                    {{ option.label }}
+                  </label>
+              </div>
+              {% endfor %}
+
+            {# Range Slider #}
+            {% elif display_type == 'scale_number' %}
+                <input type="range" class="form-range" name="{{ field_name }}" value="{{ submitted_data.get(field_name, '50') }}" min="0" max="100">
+                {# Optional: Anzeige des aktuellen Werts #}
+                <div class="text-center mt-1"><span id="range_value_{{answer.id}}">{{ submitted_data.get(field_name, '50') }}</span></div>
+                <script>
+                  document.querySelector('input[name="{{field_name}}"]').addEventListener('input', function(e) {
+                    document.getElementById('range_value_{{answer.id}}').textContent = e.target.value;
+                  });
+                </script>
+            {% endif %}
+
+            {# Fehleranzeige #}
+            {% if errors.get(answer.id) %}
+              <div class="text-danger small mt-2">{{ errors[answer.id] }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="mt-4">
+            <button type="submit" name="submit" class="btn btn-outline-primary btn-lg">Submit All Answers</button>
+            <button type="submit" name="skip" class="btn btn-link btn-lg ms-2" formnovalidate>Skip This URL</button>
+        </div>
+    </form>
+  </div>
+
+  <div class="col-9">
+    <!-- URL und Vorschau -->
+    {% if show_urls %}<div class="card mb-4 shadow-sm d-flex flex-row align-items-center gap-2" style="padding: 7px;"><span style="font-weight: bold;">URL:</span><span><a href="{{ result.url }}" target="_blank" class="hover-underline">{{ result.url }}</a></span></div>{% endif %}
+    {% if result.sources and result.sources[0] and result.sources[0].bin %}{% set source = result.sources[0] %}{% if source.content_type and "pdf" in source.content_type %}<embed class="source-container" width="100%" src="data:application/pdf;base64,{{ source.bin.decode('ascii', 'ignore') }}" />{% else %}<embed class="source-container" src="data:image/png;base64,{{ source.bin.decode('ascii', 'ignore') }}" />{% endif %}{% else %}<div class="alert alert-warning d-flex align-items-center" role="alert" style="height: 90%;"><div class="text-center w-100"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><h4 class="alert-heading">No Preview Available</h4><p>The content for this URL could not be loaded or is empty.</p><hr><p class="mb-0">Please assess based on the URL and task if possible, or skip this URL.</p></div></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

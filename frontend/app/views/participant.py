@@ -1,6 +1,7 @@
 from .. import app, db
-from app.models import Study, Participant, Answer, Result, Question, ResultAi, ResultChatbot, ResultSource
-from ..forms import JoinForm, ParticipantLogInForm
+from app.models import (Study, Participant, Answer, Result, Question, ResultAi, 
+                        ResultChatbot, ResultSource, Serp, RangeStudy)
+from ..forms import JoinForm, ParticipantLogInForm, ConfirmationForm
 from flask import Blueprint, render_template, flash, redirect, url_for, request, send_file
 from datetime import datetime
 from flask_login import logout_user
@@ -48,12 +49,15 @@ def participant(id):
     logout_user()
     participant = Participant.query.get_or_404(id)
     base = request.url_root
+    form = ConfirmationForm()
+    
     db.session.execute(sqlalchemy.sql.text(
         "UPDATE answer SET source_status_code = source.status_code "
         "FROM source JOIN result_source ON source.id = result_source.source "
         "WHERE answer.result = result_source.result AND answer.participant = :p_id"
     ), {'p_id': participant.id})
     db.session.commit()
+    
     info = []
     
     for study in participant.studies:
@@ -62,19 +66,25 @@ def participant(id):
             info.append([study.id, 0, 0, 0, 0])
             continue
 
-        # --- START: NEUE UND KORRIGIERTE ZÄHL-LOGIK ---
-
-        # 1. Zähle nur die "organischen" Ergebnisse, die eine gültige Quelle haben (progress = 1)
-        valid_open_organic_query = db.session.query(Answer.result_id).filter(
+        organic_q = db.session.query(Answer.result_id).filter(
             Answer.participant_id == participant.id,
             Answer.study_id == study.id,
             Answer.status == 0,
             Answer.result_id.isnot(None)
-        ).join(Result).join(Result.source_associations).filter(
-            ResultSource.progress == 1
-        ).distinct()
+        ).join(Result).join(Result.source_associations)
         
-        # Wende die gleichen URL-Filter an, die auch bei der Aufgabenauswahl gelten
+        if study.assess_failed:
+            organic_q = organic_q.filter(or_(ResultSource.progress == 1, ResultSource.progress == -1))
+        else:
+            organic_q = organic_q.filter(ResultSource.progress == 1)
+            
+        valid_open_organic_query = organic_q.distinct()
+        
+        ranges = RangeStudy.query.filter_by(study=study.id).all()
+        if ranges:
+            range_filters = [and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]
+            valid_open_organic_query = valid_open_organic_query.filter(or_(*range_filters))
+        
         include_filters = [f.url for f in study.study_url_filters if f.include and f.url]
         if include_filters:
             valid_open_organic_query = valid_open_organic_query.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
@@ -85,7 +95,6 @@ def participant(id):
             
         open_organic_count = valid_open_organic_query.count()
 
-        # 2. Zähle offene AI- und Chatbot-Aufgaben
         base_query = db.session.query(Answer).filter(
             Answer.participant_id == participant.id,
             Answer.study_id == study.id
@@ -98,19 +107,18 @@ def participant(id):
         open_chatbot_count = base_query.filter(
             Answer.status == 0, Answer.result_chatbot_id.isnot(None)
         ).distinct(Answer.result_chatbot_id).count()
-
-        # 3. Berechne die Gesamtzahl der offenen, bewertbaren Aufgaben
-        open_count = open_organic_count + open_ai_count + open_chatbot_count
         
-        # 4. Berechne geschlossene und übersprungene Aufgaben
+        open_serp_count = base_query.filter(
+            Answer.status == 0, Answer.result_serp_id.isnot(None)
+        ).distinct(Answer.result_serp_id).count()
+
+        open_count = open_organic_count + open_ai_count + open_chatbot_count + open_serp_count
+        
         closed_count = (base_query.filter(Answer.status == 1).count() // questions_count)
         skipped_count = (base_query.filter(Answer.status == 2).count() // questions_count)
 
-        # 5. Die Gesamtzahl ist die Summe aus den gültigen offenen, geschlossenen und übersprungenen
         all_count = open_count + closed_count + skipped_count
 
-        # --- ENDE: NEUE LOGIK ---
-        
         info.append([study.id, all_count, open_count, closed_count, skipped_count])
 
     if request.method == 'POST':
@@ -125,7 +133,8 @@ def participant(id):
     return render_template('participants/participant.html',
                            participant=participant,
                            info=info,
-                           base=base)
+                           base=base,
+                           form=form)
 
 
 @app.route('/study/<study_id>/participant/new', methods=["GET", "POST"])
@@ -149,54 +158,67 @@ def new_participant(study_id):
     participant.studies.append(study)
     db.session.add(participant)
 
-    # --- START: VOLLSTÄNDIGER KORRIGIERTER BLOCK ZUR AUFGABENZUWEISUNG ---
-
-    selected_result_type_names = [rt.name for rt in study.assessment_result_types]
+    # FIXED: Sicheres Bereinigen der Types (Leerzeichen entfernen, Lowercase)
+    selected_types = [t.strip().lower() for t in study.assessable_result_types_text.split(',')] if study.assessable_result_types_text else []
+    
     tasks_pool = []
     final_tasks = []
 
-    # 1. Sammle nur GÜLTIGE "Organic" Ergebnisse
-    if any('Organic' in name for name in selected_result_type_names):
-        # KORREKTUR: Füge .join() und .filter() hinzu, um nur Ergebnisse mit
-        # erfolgreichem Source-Download (progress == 1) zu berücksichtigen.
-        query_results = db.session.query(Result).join(
-            Result.source_associations
-        ).filter(
+    if selected_types:
+        org_q = db.session.query(Result).join(Result.source_associations).filter(
             Result.study_id == study.id,
-            ResultSource.progress == 1  # <-- Dies ist die entscheidende Filterung
+            Result.result_type_text.in_(selected_types)
         )
         
+        if study.assess_failed:
+            org_q = org_q.filter(or_(ResultSource.progress == 1, ResultSource.progress == -1))
+        else:
+            org_q = org_q.filter(ResultSource.progress == 1)
+
+        ranges = RangeStudy.query.filter_by(study=study.id).all()
+        if ranges:
+            range_filters = [and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]
+            org_q = org_q.filter(or_(*range_filters))
+            
         include_filters = [f.url for f in study.study_url_filters if f.include and f.url]
         if include_filters:
-            query_results = query_results.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
+            org_q = org_q.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
 
         exclude_filters = [f.url for f in study.study_url_filters if f.exclude and f.url]
         if exclude_filters:
-            query_results = query_results.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
+            org_q = org_q.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
 
-        tasks_pool.extend(query_results.all())
+        tasks_pool.extend(org_q.all())
 
-    # 2. Sammle AI Ergebnisse (keine Änderung nötig)
-    if any('AI' in name for name in selected_result_type_names):
-        query_ai_results = db.session.query(ResultAi).filter(ResultAi.study_id == study.id)
+        query_ai_results = db.session.query(ResultAi).filter(
+            ResultAi.study_id == study.id, 
+            ResultAi.result_type_text.in_(selected_types)
+        )
         tasks_pool.extend(query_ai_results.all())
 
-    # 3. Sammle Chatbot Ergebnisse (keine Änderung nötig)
-    if any('Chatbot' in name for name in selected_result_type_names):
-        query_chatbot_results = db.session.query(ResultChatbot).filter(ResultChatbot.study_id == study.id)
+        query_chatbot_results = db.session.query(ResultChatbot).filter(
+            ResultChatbot.study_id == study.id, 
+            ResultChatbot.result_type_text.in_(selected_types)
+        )
         tasks_pool.extend(query_chatbot_results.all())
-        
-    # 4. Load Balancing mit der gefilterten Aufgabenliste
+            
+        if "serp" in selected_types:
+            # FIXED: Den Check auf "file_path.isnot(None)" komplett entfernt. 
+            # Selbst wenn der Upload des Bildes schiefging, wird der Task vergeben, 
+            # und das Frontend zeigt die Info "Kein Screenshot vorhanden" an.
+            query_serp_results = db.session.query(Serp).filter(
+                Serp.study_id == study.id
+            )
+            tasks_pool.extend(query_serp_results.all())
+
     random.shuffle(tasks_pool)
     tasks_pool.sort(key=lambda task: task.assignment_count if task.assignment_count is not None else 0)
 
-    # 5. Limit anwenden
     if study.limit_per_participant and study.max_results_per_participant is not None:
         final_tasks = tasks_pool[:study.max_results_per_participant]
     else:
         final_tasks = tasks_pool
 
-    # 6. Answer-Objekte für die finale, gültige Aufgabenliste erstellen
     for task in final_tasks:
         for question in study.questions:
             answer = Answer(
@@ -207,25 +229,24 @@ def new_participant(study_id):
                 created_at=datetime.now()
             )
             
+            if getattr(task, 'result_type_text', None):
+                answer.result_type_text = task.result_type_text 
+            
             if isinstance(task, Result):
                 answer.result = task
-                answer.resulttype = 1
-                if task.assignment_count is None: task.assignment_count = 0
-                task.assignment_count += 1
             elif isinstance(task, ResultAi):
                 answer.result_ai = task
-                answer.resulttype = 2
-                if task.assignment_count is None: task.assignment_count = 0
-                task.assignment_count += 1
             elif isinstance(task, ResultChatbot):
                 answer.result_chatbot = task
-                answer.resulttype = 4
-                if task.assignment_count is None: task.assignment_count = 0
-                task.assignment_count += 1
+            elif isinstance(task, Serp):
+                answer.result_serp = task
+                answer.result_type_text = "serp"
+                
+            if getattr(task, 'assignment_count', None) is None: 
+                task.assignment_count = 0
+            task.assignment_count += 1
             
             db.session.add(answer)
-
-    # --- ENDE: VOLLSTÄNDIGER KORRIGIERTER BLOCK ---
 
     db.session.commit()
     return redirect(url_for('participant', id=participant.id))
@@ -267,7 +288,7 @@ def resume(id, code):
         return redirect(url_for('participant', id=id))
     else:
         flash('Code invalid.', 'danger')
-        return redirect(url_for('home'))
+        return redirect(url_for('security.login'))
 
 
 @app.route('/participant/<id>/delete', methods=["GET", "POST"])

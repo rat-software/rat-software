@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    /* --- 1. BASE LAYOUT & RESET --- */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 12px;
+      width: 100%; 
+      box-sizing: border-box; 
+      background: #f8f9fa;
+      color: #333;
+      margin: 0;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin-top: 0;
+      color: #2c3e50;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 8px;
+    }
+
+    /* --- 2. VIEW SYSTEM --- */
+    .view { 
+      display: none; 
+      flex: 1; 
+    }
+    #listView { display: block; }
+
+    /* --- 3. FORM ELEMENTS --- */
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      box-sizing: border-box; 
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    input[type="checkbox"] {
+      width: auto !important; 
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    textarea {
+      height: 120px;
+      resize: vertical;
+      font-family: monospace;
+    }
+
+    /* Spezielles Styling für den JSON Editor */
+    #engineJsonEditor {
+        height: 300px;
+        font-size: 11px;
+        background: #2d2d2d;
+        color: #f8f8f2;
+        border: 1px solid #000;
+        white-space: pre;
+        overflow-wrap: normal;
+        overflow-x: auto;
+        margin-top: 8px;
+    }
+
+    /* Visual Builder Input Groups */
+    .vb-group {
+        background: white;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 12px;
+    }
+
+    /* --- 4. ACTION BUTTONS --- */
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      transition: background 0.2s;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    .btn-primary { background: #007bff; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-info { background: #17a2b8; color: white; }
+    .btn-warning { background: #ffc107; color: #212529; }
+    
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+      width: auto;
+      margin: 0;
+      display: inline-block;
+    }
+
+    /* --- 5. CONFIGURATION CONTAINERS --- */
+    .config-box {
+      background: white;
+      padding: 10px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+    }
+
+    .row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+      align-items: center; 
+      justify-content: flex-start;
+    }
+
+    .config-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .config-list li {
+      background: #e9ecef;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+      border-radius: 3px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #ced4da;
+    }
+
+    /* --- 6. SESSION & ENGINE CARDS --- */
+    .session-card, .engine-card {
+      background: white;
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .session-card:hover, .engine-card:hover { background: #f1f3f5; }
+
+    .session-running { border-left: 4px solid #28a745; }
+    .session-paused-captcha { border-left: 4px solid #dc3545; background: #fff5f5; }
+
+    /* --- 7. PROGRESS & LOGGING UI --- */
+    #logContainer, #sandboxLiveLog {
+      height: 160px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 11px;
+      padding: 6px;
+      margin-top: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    
+    #sandboxResultsPreview {
+        margin-top: 10px;
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid #c3e6cb;
+        background: #d4edda;
+        border-radius: 4px;
+        padding: 10px;
+        font-size: 11px;
+        display: none;
+    }
+    
+    .sandbox-card {
+        background: white;
+        border: 1px solid #ccc;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .sandbox-card-title { font-weight: bold; color: #1a0dab; margin-bottom: 4px; font-size: 13px; }
+    .sandbox-card-url { color: #006621; margin-bottom: 4px; font-size: 11px; word-break: break-all; }
+    .sandbox-card-snippet { color: #545454; line-height: 1.4; }
+
+    .progress-container {
+      width: 100%;
+      background: #e9ecef;
+      height: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #28a745;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    /* --- 8. EXPANDABLE DETAILS SECTIONS --- */
+    details {
+      margin-top: 10px;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+    }
+
+    summary {
+      padding: 8px 12px;
+      cursor: pointer;
+      background: #f1f3f5;
+      font-size: 12px;
+      font-weight: bold;
+      outline: none;
+      user-select: none;
+    }
+    
+    details[open] summary {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    details > div {
+      padding: 10px;
+    }
+    
+    .remove-engine-btn {
+        margin-left: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        color: #dc3545;
+        font-size: 14px;
+        line-height: 1;
+    }
+    .remove-engine-btn:hover {
+        color: #a71d2a;
+    }
+
+    /* --- 9. INDIVIDUAL TASK LIST STYLES --- */
+    .task-scroll-box {
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        background: #fff;
+        margin-top: 5px;
+    }
+    .task-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 11px;
+    }
+    .task-item:last-child { border-bottom: none; }
+    .task-item:hover { background: #f8f9fa; }
+    
+    .status-badge {
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: bold;
+        text-transform: uppercase;
+        width: 60px;
+        text-align: center;
+        display: inline-block;
+    }
+    .st-OPEN { background: #e2e6ea; color: #555; }
+    .st-RUNNING { background: #cce5ff; color: #004085; }
+    .st-DONE { background: #d4edda; color: #155724; }
+    .st-FAILED { background: #f8d7da; color: #721c24; }
+    .st-CANCELLED { background: #fff3cd; color: #856404; text-decoration: line-through; }
+
+    .del-task-btn {
+        color: #dc3545;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 2px 6px;
+        font-size: 14px;
+    }
+    .del-task-btn:hover { background: #ffeeee; border-radius: 4px; }
+    
+    .filter-bar { display: flex; gap: 4px; margin-bottom: 5px; }
+    .filter-btn { flex: 1; font-size: 10px; padding: 4px; background: #e9ecef; border: none; cursor: pointer; border-radius: 3px; }
+    .filter-btn.active { background: #6c757d; color: white; }
+
+    /* --- 10. SETTINGS BADGES --- */
+    .setting-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-right: 4px;
+        background: #e9ecef;
+        color: #999;
+        border: 1px solid #dee2e6;
+    }
+    .setting-active {
+        background: #d4edda;
+        color: #155724;
+        border-color: #c3e6cb;
+        font-weight: bold;
+    }
+
+    /* --- 11. TOOLTIP SYSTEM --- */
+    .tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      background: #adb5bd;
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: help;
+      margin-left: 5px;
+      vertical-align: middle;
+      text-transform: none; 
+    }
+
+    .tooltip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 130%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #343a40;
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      white-space: normal;
+      width: max-content;
+      max-width: 200px;
+      text-align: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 100;
+      pointer-events: none;
+      font-weight: normal;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      line-height: 1.3;
+    }
+
+    .tooltip::before {
+      content: "";
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #343a40;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .tooltip:hover::after,
+    .tooltip:hover::before {
+      opacity: 1;
+      visibility: visible;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div id="listView" class="view">
+    <div style="display:flex; justify-content:space-between; align-items:center">
+      <h2>RAT Dashboard</h2>
+      <span style="font-size:10px; color:#888">2.0</span>
+    </div>
+    
+    <div class="row">
+      <button id="createSessionBtn" class="btn-primary" style="flex: 2;">+ New Study Session</button>
+      <button id="manageEnginesBtn" class="btn-info" style="flex: 1; padding: 8px 4px; font-size: 11px;">⚙️ Scrapers</button>
+    </div>
+
+    <div style="margin-top:15px; font-size:12px; font-weight:bold; color:#666; margin-bottom:5px">Your Sessions</div>
+    <div id="sessionList"></div>
+    
+    <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+    <div class="row">
+      <button id="exportAllBtn" class="btn-secondary" style="font-size:11px">Backup All</button>
+      <button id="importBtn" class="btn-secondary" style="font-size:11px">Restore</button>
+    </div>
+    <input type="file" id="importFile" style="display:none">
+  </div>
+
+
+  <div id="createView" class="view">
+    <h2>Create RAT Session</h2>
+    <label>Session Name</label>
+    <input type="text" id="sessName" placeholder="e.g. Research Study 1">
+    
+    <label>Queries (one per line) <span class="tooltip" data-tip="Enter one search query per line. Each query will be combined with all selected search engines.">?</span></label>
+    <textarea id="sessQueries" placeholder="query 1&#10;query 2&#10;(Or simply drag and drop your CSV/TXT file here)"></textarea>    
+    
+    <label style="margin-top:15px">Search Engines<span class="tooltip" data-tip="Configure target quota and add your search engines here.">?</span></label>
+    <div class="config-box">
+      
+      <label style="margin-top:0">Target Results <span class="tooltip" data-tip="The number of organic search results to collect per query on each engine.">?</span></label>
+      <input type="number" id="sessLimit" value="10" style="margin-bottom: 15px;">
+
+      <label style="margin-top:0">Configured Engines</label>
+      <ul id="addedConfigsList" class="config-list" style="margin-bottom:8px;"></ul>
+      
+      <button id="showEngineFormBtn" class="btn-info btn-sm" style="margin-top:5px;">+ Add Search Engine</button>
+      
+      <div id="engineFormContainer" style="display:none; background:#f8f9fa; padding:10px; border:1px solid #ced4da; border-radius:4px; margin-top:8px;">
+        <div class="row"><select id="confEngineSelect" style="flex:1; font-weight:bold"></select></div>
+        <div class="row">
+          <select id="confCountrySelect" style="flex:1"><option value="" disabled selected>Select Country</option></select>
+          <select id="confLangSelect" style="flex:1"><option value="" disabled selected>Select Language</option></select>
+        </div>
+        <div class="row"><input type="text" id="confLoc" placeholder="Location (City / UULE) - Optional" style="flex:1"></div>
+        <div class="row" style="margin-top:8px; justify-content: flex-end;">
+          <button id="cancelConfigBtn" class="btn-secondary btn-sm" style="margin-top:0; margin-right:5px;">Cancel</button>
+          <button id="addConfigBtn" class="btn-success btn-sm" style="margin-top:0;">Save</button>
+        </div>
+      </div>
+    </div>
+    
+    <label style="margin-top:15px">SERPs & Storage <span class="tooltip" data-tip="Save visual and HTML data. Warning: Takes up significant storage space.">?</span></label>
+    <div class="config-box" style="margin-bottom:15px;">
+        <div class="row">
+            <input type="checkbox" id="saveSerp" style="width:auto; margin-right:8px;">
+            <span style="font-size:12px;">Save SERP (Screenshot & HTML Source)</span>
+        </div>
+    </div>
+    
+    <details style="margin-top:15px">
+        <summary>⚙️ Advanced Settings <span class="tooltip" data-tip="Configure proxy servers and scrolling delays.">?</span></summary>
+        <div style="background:white; border-radius: 0 0 4px 4px;">
+            <label style="margin-top:0">Delays (Seconds) <span class="tooltip" data-tip="Random wait time between pagination to simulate human browsing and avoid captchas.">?</span></label>
+            <div class="row" style="margin-top:5px; margin-bottom:12px;">
+                <div style="flex:1"><input type="number" id="sessMin" value="5" placeholder="Min (s)"></div>
+                <div style="flex:1"><input type="number" id="sessMax" value="15" placeholder="Max (s)"></div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+
+            <label>Proxy Settings</label>
+            <div class="row" style="margin-bottom:8px;">
+                <input type="checkbox" id="useProxies">
+                <span style="font-size:12px; font-weight:bold">Enable Proxies</span>
+            </div>
+            <textarea id="proxyList" placeholder="IP:Port:User:Pass" style="height:50px; font-family:monospace;" disabled></textarea>
+        </div>
+    </details>
+
+    <div id="createErrorMsg" style="color: #dc3545; font-size: 12px; font-weight: bold; margin-top: 10px; display: none; background: #fff5f5; padding: 8px; border: 1px solid #ffcccc; border-radius: 4px;"></div>
+    
+    <div class="row" style="margin-top:20px">
+      <button id="backBtn" class="btn-secondary">Cancel</button>
+      <button id="startScrapeBtn" class="btn-success">Create & Queue</button>
+    </div>
+  </div>
+  
+
+  <div id="statusView" class="view">
+    <h2 id="statusTitle">Session Name</h2>
+    
+    <div style="background:white; padding:12px; border:1px solid #eee; border-radius:4px">
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px">
+        <span>Status: <strong id="statusState">...</strong></span>
+        <span id="progressText">0 / 0</span>
+      </div>
+      <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
+      <div style="font-size:11px; color:#666; margin-top:6px">Processing: <span id="currentQuery" style="font-family:monospace; font-weight:bold">...</span></div>
+    </div>
+
+    <div id="sessionManagement" style="margin-top:10px;">
+        
+        <label style="margin-top:15px">Search Engines & Limits <span class="tooltip" data-tip="Change quotas or add new search engines to the running session.">?</span></label>
+        <div class="config-box">
+          <label style="margin-top:0">Target Results <span class="tooltip" data-tip="Change the required organic count for all remaining tasks in this session.">?</span></label>
+          <div class="row" style="margin-bottom:15px;">
+            <input type="number" id="liveLimit" style="flex:1; padding:6px;" placeholder="Ex: 10">
+            <button id="applyLimitBtn" class="btn-secondary btn-sm" style="width:auto; margin:0">Update Limit</button>
+          </div>
+
+          <label style="margin-top:0">Active Search Engines</label>
+          <ul id="activeEnginesList" class="config-list" style="margin-bottom:8px;"></ul>
+          
+          <button id="showEditEngineFormBtn" class="btn-info btn-sm" style="margin-top:5px;">+ Add Search Engine</button>
+          
+          <div id="editEngineFormContainer" style="display:none; background:#f8f9fa; padding:10px; border:1px solid #ced4da; border-radius:4px; margin-top:8px;">
+            <div class="row"><select id="editConfEngineSelect" style="flex:1; font-weight:bold;"></select></div>
+            <div class="row">
+              <select id="editConfCountrySelect" style="flex:1"><option value="" disabled selected>Select Country</option></select>
+              <select id="editConfLangSelect" style="flex:1"></select>
+            </div>
+            <div class="row"><input type="text" id="editConfLoc" placeholder="Location" style="flex:1"></div>
+            
+            <div id="addEngineErrorMsg" style="color: #dc3545; font-size: 11px; font-weight: bold; margin-top: 5px; display: none; background: #fff5f5; padding: 6px; border: 1px solid #ffcccc; border-radius: 4px;"></div>
+
+            <div class="row" style="margin-top:8px; justify-content: flex-end;">
+                <button id="cancelEditConfigBtn" class="btn-secondary btn-sm" style="margin-top:0; margin-right:5px;">Cancel</button>
+                <button id="submitNewEngine" class="btn-success btn-sm" style="margin-top:0;">Save & Add</button>
+            </div>
+          </div>
+        </div>
+
+      <label style="margin-top:15px">SERPs & Storage</label>
+        <div class="config-box" style="margin-bottom:15px;">
+            <div class="row" style="margin-bottom:8px;">
+                <input type="checkbox" id="editSaveSerp" style="width:auto; margin-right:8px;">
+                <span style="font-size:12px;">Save SERP (Screenshot & HTML Source)</span>
+            </div>
+            <button id="saveStorageSettingsBtn" class="btn-primary btn-sm" style="margin-top:5px;">Update Storage Rules</button>
+        </div>
+
+        <details id="queriesAndTasksDetails" style="margin-top:15px">
+            <summary>🔍 Queries (<span id="totalQueriesCount">0</span>) <span class="tooltip" data-tip="View specific tasks or add new queries to the queue.">?</span></summary>
+            <div style="background:white; border-radius: 0 0 4px 4px;">
+                <div class="row">
+                    <button id="refreshTasksBtn" class="btn-secondary btn-sm" style="margin:0; width:auto;">↻ Refresh List</button>
+                    <span style="font-size:10px; color:#888; margin-left:auto;">Showing <span id="taskCountDisplay">0</span> tasks</span>
+                </div>
+                
+                <div class="filter-bar" style="margin-top:8px;">
+                    <button class="filter-btn active" data-filter="ALL">All</button>
+                    <button class="filter-btn" data-filter="OPEN">Pending</button>
+                    <button class="filter-btn" data-filter="DONE">Done</button>
+                    <button class="filter-btn" data-filter="CANCELLED">Cancelled</button>
+                </div>
+
+                <div id="taskListContainer" class="task-scroll-box" style="margin-bottom: 15px;">
+                    <div style="padding:10px; text-align:center; color:#999;">Click Refresh to load tasks...</div>
+                </div>
+
+                <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+
+                <label style="margin-top:0">Add New Queries (one per line)</label>
+                <textarea id="addQueryInput" placeholder="query 3&#10;query 4"></textarea>
+                <div id="addQueryErrorMsg" style="color: #dc3545; font-size: 11px; font-weight: bold; margin-top: 5px; display: none; background: #fff5f5; padding: 6px; border: 1px solid #ffcccc; border-radius: 4px;"></div>
+                <button id="submitNewQueries" class="btn-info btn-sm" style="margin-top:8px;">Add to Queue</button>
+            </div>
+        </details>
+
+        <details>
+            <summary>⚙️ Advanced Settings <span class="tooltip" data-tip="Adjust live proxy settings and delays.">?</span></summary>
+            <div style="background:white; border-radius: 0 0 4px 4px;">
+                <label style="margin-top:0">Delays (Seconds) <span class="tooltip" data-tip="Adjust the random browsing speed on the fly.">?</span></label>
+                <div class="row" style="margin-bottom:12px;">
+                  <input type="number" id="liveMin" style="flex:1; padding:4px" placeholder="Min">
+                  <input type="number" id="liveMax" style="flex:1; padding:4px" placeholder="Max">
+                  <button id="applyDelayBtn" class="btn-secondary btn-sm" style="width:auto; margin:0">Set</button>
+                </div>
+                
+                <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+
+                <label>Proxy Settings <span id="badgeProxies" class="setting-badge" style="float:right">🛡️ PROXY</span></label>
+                <div class="row" style="margin-bottom:8px;">
+                    <input type="checkbox" id="editUseProxies" style="width:auto; margin-right:8px;">
+                    <span style="font-size:12px;">Enable Proxies</span>
+                </div>
+                <textarea id="editProxyList" placeholder="IP:Port:User:Pass" style="height:60px; font-family:monospace;"></textarea>
+                <button id="saveProxySettings" class="btn-primary btn-sm">Update Proxies</button>
+            </div>
+        </details>
+
+    </div>
+
+    <div class="row" style="margin-top:15px;">
+      <button id="playPauseBtn" class="btn-primary">Start</button>
+      <button id="stopBtn" class="btn-danger">Delete</button>
+    </div>
+
+    <button id="downloadBtn" class="btn-info" style="margin-top:8px">Download Results (ZIP)</button>
+
+    <label style="margin-top:12px">Activity Log</label>
+    <div id="logContainer"></div>
+    
+    <button id="backToListBtn" class="btn-secondary" style="margin-top:10px">Back to Overview</button>
+  </div>
+
+
+  <div id="engineView" class="view">
+    <div style="display:flex; justify-content:space-between; align-items:center">
+        <h2>Scraper Sandbox</h2>
+        <button id="backToMainFromEnginesBtn" class="btn-secondary btn-sm" style="width:auto; margin:0; padding:4px 8px;">Back</button>
+    </div>
+    
+    <div id="engineListView">
+        <p style="font-size:12px; color:#555; margin-top:0;">Manage and test JSON search engine plugins. Add custom scrapers or edit existing ones.</p>
+        
+        <div class="row">
+            <button id="addNewEngineBtn" class="btn-success" style="margin-bottom:15px; flex:2;">+ Create New Scraper</button>
+            <button id="importEngineBtn" class="btn-secondary" style="margin-bottom:15px; flex:1;" title="Upload JSON from colleague">Import</button>
+        </div>
+        <input type="file" id="importEngineFile" accept=".json" style="display:none">
+        
+        <label>Installed Engines</label>
+        <div id="engineListContainer"></div>
+    </div>
+
+    <div id="engineEditView" style="display:none;">
+        
+        <div class="vb-group">
+            <label style="margin-top:0;">Engine Basics</label>
+            <div class="row">
+                <input type="text" id="vbEngineName" placeholder="Display Name (e.g. Ecosia)" title="Engine Name">
+                <input type="text" id="vbEngineId" placeholder="ID (e.g. ecosia_custom)" title="Unique Engine ID">
+            </div>
+            <label>Base URL & Parameters <span class="tooltip" data-tip="The base URL of the search engine. Use the placeholder {domain} if the domain changes per country. The parameter is usually 'q'.">?</span></label>
+            <div class="row">
+                <input type="text" id="vbBaseUrl" placeholder="https://{domain}/search" style="flex:2">
+                <input type="text" id="vbParamQuery" placeholder="q" style="flex:1" title="Query Parameter">
+            </div>
+            <div style="font-size:10px; color:#666; margin-top:4px; line-height:1.4;">
+                💡 <strong>Tip:</strong> Leave <code>{domain}</code> in the URL if your scraper supports multiple countries (it will be replaced by e.g. <i>www.google.de</i>). If the search engine always uses the same exact URL, simply type it in completely (e.g. <i>https://html.duckduckgo.com/html/</i>).
+            </div>
+        </div>
+
+        <div class="vb-group">
+            <label style="margin-top:0; color:#dc3545;">Data Selectors (CSS) <span class="tooltip" data-tip="Define how to find the search results on the page using CSS classes or HTML tags.">?</span></label>
+            
+            <label>Result Container</label>
+            <input type="text" id="vbSelContainer" placeholder="e.g. .result or .algo">
+            <div style="font-size:10px; color:#666; margin-top:2px; margin-bottom:8px;">
+                💡 <strong>Tip:</strong> The CSS class that wraps a single, complete search result. Usually starts with a dot (like <code>.g</code> for Google).
+            </div>
+            
+            <div class="row" style="margin-top:8px;">
+                <div style="flex:1;">
+                    <label style="margin-top:0;">Title Element</label>
+                    <input type="text" id="vbSelTitle" placeholder="e.g. h3 or h2 a">
+                </div>
+                <div style="flex:1;">
+                    <label style="margin-top:0;">URL Element</label>
+                    <input type="text" id="vbSelUrl" placeholder="e.g. a">
+                </div>
+            </div>
+            <div style="font-size:10px; color:#666; margin-top:2px; margin-bottom:8px;">
+                💡 <strong>Tip:</strong> How to find the title and the link <i>inside</i> the Result Container. The URL is almost always an <code>a</code> tag.
+            </div>
+
+            <label>Snippet / Description</label>
+            <input type="text" id="vbSelSnippet" placeholder="e.g. .snippet, div">
+
+            <label>Next Page Button</label>
+            <input type="text" id="vbSelNext" placeholder="e.g. #pnnext or .next-btn">
+        </div>
+
+<div class="vb-group">
+            <label style="margin-top:0; color:#dc3545;">Ads Selectors (CSS) <span class="tooltip" data-tip="Define how to find sponsored results / advertisements.">?</span></label>
+            
+            <label>Ad Container</label>
+            <input type="text" id="vbSelAdContainer" placeholder="e.g. .ad or .sponsored">
+            
+            <div class="row" style="margin-top:8px;">
+                <div style="flex:1;">
+                    <label style="margin-top:0;">Title Element</label>
+                    <input type="text" id="vbSelAdTitle" placeholder="e.g. h3 or h2 a">
+                </div>
+                <div style="flex:1;">
+                    <label style="margin-top:0;">URL Element</label>
+                    <input type="text" id="vbSelAdUrl" placeholder="e.g. a">
+                </div>
+            </div>
+
+            <label>Ad Snippet / Description</label>
+            <input type="text" id="vbSelAdSnippet" placeholder="e.g. .ad-snippet">
+        </div>
+
+        <div class="vb-group">
+            <label style="margin-top:0; color:#17a2b8;">AI Overview / Search Assist (CSS) <span class="tooltip" data-tip="Define how to find AI generated answers (like DuckAssist) and their sources.">?</span></label>
+            
+            <label>AI Box Container</label>
+            <input type="text" id="vbSelAiContainer" placeholder="e.g. #zero_click_wrapper or .ai-overview">
+            
+            <label>AI Text Element</label>
+            <input type="text" id="vbSelAiText" placeholder="e.g. .duckassist-answer">
+            
+            <label style="margin-top:10px;">Sources Box (Container)</label>
+            <input type="text" id="vbSelAiSourceContainer" placeholder="e.g. .duckassist-sources">
+            
+            <div class="row" style="margin-top:8px;">
+                <div style="flex:1;">
+                    <label style="margin-top:0;">Source Title</label>
+                    <input type="text" id="vbSelAiSourceTitle" placeholder="e.g. span">
+                </div>
+                <div style="flex:1;">
+                    <label style="margin-top:0;">Source URL</label>
+                    <input type="text" id="vbSelAiSourceUrl" placeholder="e.g. a">
+                </div>
+            </div>
+        </div>
+
+
+        <details>
+            <summary>⚙️ Advanced JSON Configuration <span class="tooltip" data-tip="Edit the raw schema. For AI Overviews, Cookie Banners, Captchas, and multiple languages.">?</span></summary>
+            <div>
+                <p style="font-size:10px; color:#666; margin:0 0 5px 0;">Modifying fields here overrides the visual form above (and vice versa).</p>
+                <textarea id="engineJsonEditor"></textarea>
+            </div>
+        </details>
+
+        <div id="engineJsonError" style="color: #dc3545; font-size: 11px; font-weight: bold; margin-top: 5px; display: none;"></div>
+
+        <div class="row" style="margin-top:15px;">
+            <button id="saveEngineJsonBtn" class="btn-primary" style="margin:0; flex:2;">Save Plugin</button>
+            <button id="exportEngineBtn" class="btn-info" style="margin:0; flex:1;" title="Download to share with colleagues">Download</button>
+            <button id="resetEngineBtn" class="btn-danger" style="margin:0; flex:1;" title="Restore to default">Reset</button>
+        </div>
+        
+        <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+
+        <div class="config-box" style="background: #eef2f5;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label style="margin:0; color:#0056b3;">🧪 Test Scraper (Sandbox)</label>
+            </div>
+            <p style="font-size:10px; color:#666; margin:4px 0 10px 0;">Test your rules live in an isolated browser tab.</p>
+            
+            <input type="text" id="sandboxQuery" placeholder="what is climate change?" style="margin-bottom:8px;">
+            <div class="row">
+                <select id="sandboxCountry" style="flex:1"><option value="">Select Country</option></select>
+                <select id="sandboxLanguage" style="flex:1"><option value="">Select Language</option></select>
+            </div>
+            
+            <button id="runSandboxBtn" class="btn-success" style="margin-top:10px;">▶ Run Test Scrape</button>
+
+            <label style="margin-top:15px;">Sandbox Activity Log</label>
+            <div id="sandboxLiveLog">Waiting to start test...</div>
+
+            <label id="sandboxPreviewLabel" style="margin-top:15px; display:none;">Data Preview</label>
+            <div id="sandboxResultsPreview"></div>
+        </div>
+
+        <div class="row" style="margin-top:15px;">
+          <button id="cancelEngineEditBtn" class="btn-secondary" style="margin:0; flex:2;">Cancel Editing</button>
+          <button id="deleteEngineBtn" class="btn-danger" style="margin:0; flex:1; display:none;">
+          Delete <span class="tooltip" data-tip="Permanently removes this search engine scraper from your extension. Cannot be undone.">?</span>
+          </button>
+      </div>
+    </div>
+  </div>
+
+
+  <footer style="margin-top: auto; padding-top: 15px; border-top: 1px solid #dee2e6; font-size: 10px; color: #6c757d; text-align: center; line-height: 1.6;">
+    Copyright &copy; 2026 <a href="https://rat-software.org" target="_blank" style="color: #007bff; text-decoration: none;">Result Assessment Tool</a>.<br>
+    Developed by <a href="https://searchstudies.org" target="_blank" style="color: #007bff; text-decoration: none;">Search Studies</a> (HAW Hamburg).<br>
+    Funded by the <a href="https://gepris.dfg.de/gepris/projekt/557366357?language=en" target="_blank" style="color: #007bff; text-decoration: none;">German Research Foundation (DFG)</a>.<br>
+    <a href="https://github.com/rat-software/" target="_blank" style="color: #007bff; text-decoration: none;">GitHub</a>
+  </footer>
+
+  <script src="jszip.min.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

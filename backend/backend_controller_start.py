@@ -25,9 +25,10 @@ from subprocess import call
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 sources_controller = os.path.join(currentdir, "sources", "sources_controller_start.py")
-scraper_controller = os.path.join(currentdir, "scraper", "scraper_controller_start.py")
 classifier_controller = os.path.join(currentdir, "classifier", "classifier_controller_start.py")
 query_sampler_controller = os.path.join(currentdir, "query_sampler", "query_sampler_controller_start.py")
+#scraper_controller = os.path.join(currentdir, "scraper", "scraper_controller_start.py")
+
 
 def source():
     """
@@ -38,14 +39,15 @@ def source():
     os.system("python " + sources_controller)
 
     
+# def scraper():
+#     """
+#     Function to start the Scraper Controller process.
 
-def scraper():
-    """
-    Function to start the Scraper Controller process.
+#     Uses the subprocess.call() function to execute the scraper_controller_start.py script.
+#     """
+#     os.system("python " + scraper_controller)
+    
 
-    Uses the subprocess.call() function to execute the scraper_controller_start.py script.
-    """
-    os.system("python " + scraper_controller)
     
 
 def classifier():
@@ -76,8 +78,8 @@ if __name__ == "__main__":
     process1 = threading.Thread(target=source, name="SourceControllerThread")
     process1.start()
 
-    process2 = threading.Thread(target=scraper, name="ScraperControllerThread")
-    process2.start()
+    # process2 = threading.Thread(target=scraper, name="ScraperControllerThread")
+    # process2.start()
 
     process3 = threading.Thread(target=classifier, name="ClassifierControllerThread")
     process3.start()
@@ -87,7 +89,6 @@ if __name__ == "__main__":
 
     # Optional: Join threads to ensure main thread waits for their completion
     process1.join()
-    process2.join()
     process3.join()
     process4.join()
 

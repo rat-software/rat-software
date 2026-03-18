@@ -1,29 +1,18 @@
 from .. import app, db, mail
-from app.models import User, Qs_Study
+from app.models import User, Qs_Study, Study
 from ..forms import ContactForm
 from flask import render_template, request, redirect, flash, url_for, current_app
 from flask_security import login_required, current_user
 from flask_mail import Message
 
-@app.route('/home')
-def home():
-    nav = 'static'
-    return render_template('home.html', nav=nav)
+@app.route('/')
+def main():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    else:
+        # Hier nutzen wir direkt security.login, um den BuildError zu vermeiden
+        return redirect(url_for('security.login'))
 
-@app.route('/features')
-def features():
-    nav = 'static'
-    return render_template('features.html', nav=nav)
-
-@app.route('/about')
-def about():
-    nav = 'static'
-    return render_template('about.html', nav=nav)
-
-@app.route('/roadmap')
-def roadmap():
-    nav = 'static'
-    return render_template('roadmap.html', nav=nav)
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
@@ -44,7 +33,7 @@ def contact():
             # Verwendet die zentrale mail-Instanz zum Senden
             mail.send(msg)
             flash("Thank you, we have received your message and will get back to you soon.", 'success')
-            return redirect(url_for('home'))
+            return redirect(url_for('dashboard'))
         except Exception as e:
             current_app.logger.error(f"Mail sending failed: {e}")
             flash("An error occurred while sending your message.", 'danger')
@@ -56,20 +45,27 @@ def contact():
 def dashboard():
     user = User.query.get(current_user.id)
     
-    # Lade die regulären Studien (wie bisher)
-    rat_studies = user.studies
+    # 1. RAT Studies: Wir holen alle Studies, wo der User verknüpft ist, 
+    # und sortieren direkt in der Datenbank absteigend (neueste zuerst).
+    rat_studies = Study.query.filter(
+        Study.users.any(id=user.id),
+        Study.visible == True
+    ).order_by(Study.created_at.desc()).all()
     
-    # NEU: Lade die Query Sampler Studien über die neue Relationship
-    qs_studies = user.qs_studies
+    
+    # 2. Query Sampler Studies: Das Gleiche für QS Studies.
+    qs_studies = Qs_Study.query.filter(
+        Qs_Study.users.any(id=user.id),
+        Qs_Study.visible == True
+    ).order_by(Qs_Study.created_at.desc()).all()
     
     return render_template('dashboard.html', 
                            user=user, 
                            rat_studies=rat_studies, 
                            qs_studies=qs_studies)
 
-@app.route('/')
-def main():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    else:
-        return redirect(url_for('home'))
+
+@app.route('/roadmap')
+def roadmap():
+    nav = 'static'
+    return render_template('roadmap.html', nav=nav)
