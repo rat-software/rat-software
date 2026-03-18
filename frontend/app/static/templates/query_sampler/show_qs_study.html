@@ -1,0 +1,194 @@
+{# templates/query_sampler/show_qs_study.html #}
+{% extends "master.html" %}
+
+{% block title %}Query Sampler Dashboard{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <style>
+        .progress-bar-text {
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            font-weight: bold;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="pb-4">
+        <a class="text-dark" href="{{ url_for('qs_studies') }}">
+            <i class="fa-solid fa-angle-left me-2"></i> Back to All Studies
+        </a>
+    </div>
+
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <div>
+                        <h3 class="mb-0">Study: {{ study.name }}</h3>
+                        {% if study.description %}
+                            <p class="text-muted mb-0">{{ study.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="btn-group flex-shrink-0">
+                        <a href="{{ url_for('edit_qs_study', id=study.id) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa-solid fa-pencil me-1"></i> Edit
+                        </a>
+                        <a href="{{ url_for('delete_qs_study', id=study.id) }}" class="btn btn-outline-danger btn-sm">
+                            <i class="fa-solid fa-trash-can me-1"></i> Delete
+                        </a>
+                    </div>
+                </div>
+
+                <div id="job-status-section" class="mb-4">
+                    <h4 class="crd-header mb-2">Generation Progress</h4>
+                    <p class="mb-2">
+                        <span id="completed-keywords">{{ completed_keywords }}</span> of <span id="total-keywords">{{ total_keywords }}</span> seed keywords processed.
+                    </p>
+                    <div class="progress" style="height: 25px;">
+                        <div id="progress-bar" class="progress-bar {% if progress_percent < 100 %}progress-bar-striped progress-bar-animated{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ progress_percent }}%;" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+                            <span class="progress-bar-text">{{ progress_percent }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="mb-4">
+                    <h4 class="crd-header mb-3">Seed Keywords & Targeting</h4>
+                    {% if keywords %}
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Keyword</th>
+                                <th>Language</th>
+                                <th>Country</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for k in keywords %}
+                            <tr>
+                                <td>{{ k.keyword }}</td>
+                                <td>{{ k.language }}</td>
+                                <td>{{ k.region }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted">No keywords found for this study.</p>
+                    {% endif %}
+                </div>
+
+                <hr />
+
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="crd-header">Keyword Ideas</h4>
+                        <p class="mb-2">
+                            Generated ideas: <strong id="keyword-ideas-count">{{ keyword_ideas_count }}</strong>
+                        </p>
+                        
+                        <a href="{{ url_for('export_keyword_ideas', id=study.id) }}" 
+                           class="btn btn-success btn-sm {% if keyword_ideas_count == 0 %}disabled{% endif %}" 
+                           id="download_button">
+                            <i class="fa-solid fa-download me-2"></i>Download Keyword Ideas
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-6 text-end" id="action-buttons">
+                        {# Dieser Bereich wird durch JavaScript dynamisch befüllt #}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const studyId = {{ study.id }};
+    let pollingInterval;
+
+    // DEBUG: Startnachricht, um zu sehen, dass das Skript geladen wurde
+    console.log("Live-Update Skript für Studie " + studyId + " gestartet.");
+
+    function updateUI(data) {
+        const progressBar = $('#progress-bar');
+        progressBar.css('width', data.progress_percent + '%');
+        progressBar.attr('aria-valuenow', data.progress_percent);
+        progressBar.find('.progress-bar-text').text(data.progress_percent + '%');
+        
+        $('#completed-keywords').text(data.completed_keywords);
+        $('#total-keywords').text(data.total_keywords);
+        
+        $('#keyword-ideas-count').text(data.keyword_ideas_count);
+
+        const downloadButton = $('#download_button');
+        if (data.keyword_ideas_count > 0) {
+            downloadButton.removeClass('disabled');
+        } else {
+            downloadButton.addClass('disabled');
+        }
+
+        const actionContainer = $('#action-buttons');
+        let actionButtonHtml = '';
+
+        if (data.is_busy) {
+            actionButtonHtml = `
+                <button class="btn btn-info" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Generation in Progress...
+                </button>`;
+            
+            if (!progressBar.hasClass('progress-bar-animated')) {
+                progressBar.addClass('progress-bar-animated progress-bar-striped');
+            }
+        } else {
+            actionButtonHtml = `
+       `;
+            progressBar.removeClass('progress-bar-animated progress-bar-striped');
+            progressBar.addClass('bg-success');
+
+            if (pollingInterval) {
+                // DEBUG: Nachricht, wenn das Polling stoppt
+                console.log("Prozess beendet. Polling wird gestoppt.");
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+        actionContainer.html(actionButtonHtml);
+    }
+
+    function fetchStatus() {
+        // DEBUG: Nachricht bei jedem Sendeversuch
+        console.log("Frage Server nach Status für Studie " + studyId + "...");
+
+        $.ajax({
+            url: `/query_sampler/status/${studyId}`,
+            type: 'GET',
+            success: function(data) {
+                // DEBUG: Die wichtigste Ausgabe! Zeigt die empfangenen Daten.
+                console.log("Daten erfolgreich empfangen:", data);
+                updateUI(data);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                // DEBUG: Detaillierte Fehlermeldung
+                console.error("Fehler bei der Abfrage des Status:", textStatus, errorThrown);
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                }
+            }
+        });
+    }
+
+    // Initiale Statusprüfung und Start des Pollings
+    fetchStatus();
+    pollingInterval = setInterval(fetchStatus, 5000);
+});
+</script>
+{% endblock %}

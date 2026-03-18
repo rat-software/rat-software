@@ -104,41 +104,41 @@ class DB:
 
 
     def get_results(self, classifier_id, study_id):
-        """
-        Get the results for a given classifier ID and study ID.
-        Only includes sources with progress=1 or (progress=-1 AND counter>=11).
+            """
+            Get the results for a given classifier ID and study ID.
+            Only includes sources with progress=1 or (progress=-1 AND counter>=11).
 
-        Args:
-            classifier_id (int): ID of the classifier.
-            study_id (int): ID of the study.
+            Args:
+                classifier_id (int): ID of the classifier.
+                study_id (int): ID of the study.
 
-        Returns:
-            list: List of results for the given classifier ID and study ID.
-        """
-        with self.connect_to_db() as conn:
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("""
-                SELECT r.id, r.url, r.main, r.position, r.title, r.description, r.ip, 
-                    r.final_url, s.code, s.bin, s.content_type, s.error_code, s.status_code, 
-                    rs.source, cs.classifier
-                FROM result r
-                JOIN result_source rs ON rs.result = r.id
-                JOIN source s ON rs.source = s.id 
-                    AND (s.progress = 1 OR (s.progress = -1 AND rs.counter >= 11))
-                JOIN classifier_study cs ON r.study = cs.study AND cs.classifier = %s
-                WHERE r.study = %s
-                    AND NOT EXISTS (
-                        SELECT 1 FROM classifier_result cr 
-                        WHERE cr.result = r.id AND cr.classifier = %s
-                    )
-                ORDER BY r.created_at, r.id
-                LIMIT 5
-            """, (classifier_id, study_id, classifier_id))
-            results = cur.fetchall()
-            
-        results = self.get_search_engines(results)
-        results = self.get_queries(results)
-        return results
+            Returns:
+                list: List of results for the given classifier ID and study ID.
+            """
+            with self.connect_to_db() as conn:
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("""
+                    SELECT r.id, r.url, r.main, r.position, r.title, r.description, r.ip, 
+                        r.final_url, s.file_path AS code, s.file_path AS bin, s.content_type, s.error_code, s.status_code, 
+                        rs.source, cs.classifier
+                    FROM result r
+                    JOIN result_source rs ON rs.result = r.id
+                    JOIN source s ON rs.source = s.id 
+                        AND (s.progress = 1 OR (s.progress = -1 AND rs.counter >= 11))
+                    JOIN classifier_study cs ON r.study = cs.study AND cs.classifier = %s
+                    WHERE r.study = %s
+                        AND NOT EXISTS (
+                            SELECT 1 FROM classifier_result cr 
+                            WHERE cr.result = r.id AND cr.classifier = %s
+                        )
+                    ORDER BY r.created_at, r.id
+                    LIMIT 5
+                """, (classifier_id, study_id, classifier_id))
+                results = cur.fetchall()
+                
+            results = self.get_search_engines(results)
+            results = self.get_queries(results)
+            return results
     
 
 
@@ -415,30 +415,4 @@ class DB:
             print(f"Error checking DB connection: {e}")
             return False
 
-    def get_results_test(self):
-        """
-        Get the results for a given classifier ID.
 
-        Args:
-            classifier_id (int): ID of the classifier.
-
-        Returns:
-            list: List of results for the given classifier ID.
-        """
-        with self.connect_to_db() as conn:
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("""
-                SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
-                       result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, 
-                       result_source.source 
-                FROM result, source, result_source 
-                WHERE result_source.result = result.id AND result_source.source = source.id 
-                      AND (source.progress = 1 OR source.progress = -1)
-                      AND result.id = 489564
-                      
-                ORDER BY result.created_at, result.id 
-                LIMIT 20
-            """)
-            conn.commit()
-            results = cur.fetchall()
-        return results

@@ -7,6 +7,7 @@ from sqlalchemy import MetaData
 from flask_security import Security, SQLAlchemyUserDatastore
 from flask_mail import Mail
 from app.forms import ExtendedRegisterForm, ExtendedSendConfirmationForm, ExtendedForgotPasswordForm
+from flask_wtf.csrf import CSRFProtect
 
 # ... (db, migrate, security, mail Objekte erstellen) ...
 db = SQLAlchemy(metadata=MetaData(naming_convention={
@@ -21,6 +22,7 @@ mail = Mail()
 
 app = Flask(__name__)
 app.config.from_object(Config)
+csrf = CSRFProtect(app)
 
 db.init_app(app)
 migrate.init_app(app, db)

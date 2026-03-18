@@ -1,3 +1,5 @@
+{# confirm_new_study.html #}
+
 {% extends "master.html" %}
 {# Extend the base master template #}
 
@@ -33,27 +35,29 @@
           <div class="col-md-4 border-start">
             <div class="summary-desc">Collected Result Types</div>
             <p class="mb-0">
-              {# KORRIGIERTE LOGIK: Schleife über die vom Backend übergebenen ResultType-Objekte #}
+              {# KORRIGIERTE LOGIK: Zeigt "Organic Results" für reine URL-Uploads an #}
               {% if collected_result_types_ %}
                 {% for rt in collected_result_types_ %}
                 <span class="badge bg-info mr-2">{{ rt.display }}</span>
                 {% endfor %}
+              {% elif not engines_ %}
+                <span class="badge bg-info mr-2">Organic Results</span>
               {% else %}
                 <span class="text-muted">None</span>
               {% endif %}
             </p>
           </div>
-
-          {# Dieser Block wurde verschoben #}
         </div>
 
+        {# +++ NEUE LOGIK: Dieser ganze Block wird nur angezeigt, wenn echtes Scraping stattfindet +++ #}
+        {% if involves_scraping %}
         {# Row for Organic-specific options like Result Count #}
-        {% if (assessment_result_types_ | selectattr('id', 'equalto', 1) | list | length > 0) %}
         <div class="row mb-4 border-top pt-3">
             {% if not ranges_.items() %}
             <div class="col-md-4">
                 <div class="summary-desc">Result Count</div>
-                {{ form.result_count[0] }}
+                {# Zugriff auf den Wert als Liste, da form_data Listen enthält #}
+                {{ form.result_count[0] if form.result_count else '' }}
             </div>
             {% endif %}
         </div>
@@ -65,7 +69,6 @@
             <h6 class="mb-3">Assessment Interface options</h6>
             <div class="row">
                 
-                {# --- NEUE PLATZIERUNG --- #}
                 <div class="col-12 mb-3">
                     <div class="summary-desc">Result Types for Assessment</div>
                     <p class="mb-0">
@@ -78,7 +81,6 @@
                       {% endif %}
                     </p>
                 </div>
-                {# --- ENDE NEUE PLATZIERUNG --- #}
 
                 {# Row for interface toggles #}
                 {% if (assessment_result_types_ | selectattr('id', 'equalto', 1) | list | length > 0) %}
@@ -143,12 +145,15 @@
         {% endif %}
         
         <div class="row pt-3 border-top">
+          {# KORRIGIERTE LOGIK: Wird nur angezeigt, wenn Suchmaschinen vorhanden sind (was bei Scraping der Fall ist). #}
+          {% if engines_ and involves_scraping %}
           <div class="col-12 mb-4">
             <div class="summary-desc">Search Engines</div>
             {% for e in engines_ %}
             <span class="badge bg-secondary mr-2">{{ e.name }}</span>
             {% endfor %}
           </div>
+          {% endif %}
           
           {% if classifiers_ %}
           <div class="col-12 mb-4">
@@ -159,6 +164,8 @@
           </div>
           {% endif %}
 
+          {# KORRIGIERTE LOGIK: Wird nur angezeigt, wenn Suchanfragen vorhanden sind. #}
+          {% if queries_ %}
           <div class="col-12 mb-4">
             <div class="summary-desc">Search Queries (A maximum of 5 are displayed)</div>
             <p class="mb-0">
@@ -167,27 +174,59 @@
               {% endfor %}
             </p>
           </div>
+          {% endif %}
           
-          {% if (assessment_result_types_ | selectattr('id', 'equalto', 1) | list | length > 0) %}
-            {% if ranges_.items() %}
+          {# KORRIGIERTE LOGIK: Prüft, ob es tatsächlich valide Ranges gibt. #}
+          {% set has_valid_ranges = false %}
+          {% for key, value in ranges_.items() %}
+            {% if value.start and value.end %}
+              {% set has_valid_ranges = true %}
+            {% endif %}
+          {% endfor %}
+
+          {# +++ NEUE LOGIK: Ranges werden nur bei echtem Scraping angezeigt +++ #}
+          {% if has_valid_ranges and involves_scraping %}
             <div class="col-12">
               <div class="summary-desc">Result Ranges</div>
               <p class="mb-0">
                 {% for key, value in ranges_.items() %}
-                <span class="badge bg-secondary mr-2"> {{ value['start'] }} - {{ value['end'] }} </span>
+                  {% if value.start and value.end %}
+                    <span class="badge bg-secondary mr-2"> {{ value.start }} - {{ value.end }} </span>
+                  {% endif %}
                 {% endfor %}
               </p>
             </div>
-            {% endif %}
           {% endif %}
         </div>
         
-        <div class="mt-4 pt-4 border-top">
-            <form action="{{ url_for('create_new_study') }}" method="POST" enctype="multipart/form-data">
-              {{ confirm.data(value=form) }}
-              <a href="{{ url_for('new_study')}}" class="btn btn-outline-secondary">Cancel</a>
-              {{ confirm.submit(class_="btn btn-primary float-end") }}
+        <div class="mt-4 pt-4 border-top d-flex justify-content-between">
+            <form action="{{ url_for('new_study') }}" method="POST" class="d-inline-block">
+                {% for key, values in form.items() %}
+                    {% for val in values %}
+                        <input type="hidden" name="{{ key }}" value="{{ val }}">
+                    {% endfor %}
+                {% endfor %}
+                <button type="submit" class="btn btn-secondary">Back</button>
             </form>
+
+            <div class="d-inline-block">
+                <a href="{{ url_for('new_study')}}" class="btn btn-outline-secondary me-2">Cancel</a>
+                <form action="{{ url_for('create_new_study') }}" method="POST" enctype="multipart/form-data" class="d-inline">
+                    {{ confirm.hidden_tag() }}
+
+                    <input type="hidden" name="data" value="{{ confirm.data.data | e }}">
+                    {% if query_filename %}
+                        <input type="hidden" name="query_filename" value="{{ query_filename }}">
+                    {% endif %}
+                    <button type="submit" id="submit-confirm-button" class="btn btn-primary">
+                        {% if 'id' in form and form.id[0] != '0' %}
+                        Update Study <i class="fa-solid fa-check"></i>
+                        {% else %}
+                        Create Study <i class="fa-solid fa-check"></i>
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
         </div>
 
       </div>
@@ -195,4 +234,3 @@
   </div>
 </div>
 {% endblock %}
-{# End the content block #}

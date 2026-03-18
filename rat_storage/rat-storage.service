@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn instance to serve RAT Storage Service
+After=network.target
+
+[Service]
+User=your_username
+Group=www-data
+WorkingDirectory=/path/to/your/project
+Environment="PATH=/path/to/your/project/venv/bin"
+ExecStart=/path/to/your/project/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:5001 app:app
+
+[Install]
+WantedBy=multi-user.target

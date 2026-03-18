@@ -11,7 +11,6 @@
       <div class="card-body">
         <h5 class="border-bottom text-center pb-3 mb-4">Please confirm your details</h5>
         
-        {# KORREKTUR: Direkter Zugriff auf die Dictionary-Werte ohne Index [0] #}
         <h4 class="mb-0">{{ form.name }}</h4>
         <p class="text-muted mb-4">{{ form.description }}</p>
 
@@ -44,17 +43,29 @@
           </div>
         </div>
         
-        <div class="mt-4 pt-4 border-top">
-            <form action="{{ url_for('create_new_qs_study') }}" method="POST">
-              {# Die `form`-Variable ist jetzt ein Dictionary und wird korrekt übergeben #}
-              {{ confirm.data(value=form) }}
-              <a href="{{ url_for('new_qs_study_wizard')}}" class="btn btn-outline-secondary">Cancel</a>
-              {{ confirm.submit(class_="btn btn-primary float-end") }}
+        <div class="mt-4 pt-4 border-top d-flex justify-content-between">
+            <form action="{{ url_for('new_qs_study_wizard') }}" method="POST">
+                {{ confirm.hidden_tag() }}
+                {% for key, value in form.items() %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <button type="submit" class="btn btn-secondary">Back</button>
             </form>
+
+            <div>
+                <a href="{{ url_for('new_qs_study_wizard')}}" class="btn btn-outline-secondary me-2">Cancel</a>
+                
+                <form action="{{ url_for('create_new_qs_study') }}" method="POST" class="d-inline">
+                    {# +++ KORREKTUR: Die problematische Zeile wurde entfernt. +++ #}
+                    {# hidden_tag() rendert jetzt das Feld 'data' mit dem korrekten JSON-String aus dem Backend. #}
+                    {{ confirm.hidden_tag() }}
+                    <button type="submit" class="btn btn-primary">Create Study <i class="fa-solid fa-check"></i></button>
+                </form>
+            </div>
         </div>
+
       </div>
     </div>
   </div>
 </div>
 {% endblock %}
-

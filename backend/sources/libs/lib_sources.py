@@ -25,12 +25,18 @@ import urllib.request
 import urllib.error
 import platform
 import psutil  # You may need to install: pip install psutil
+import zipfile
+import io
+import requests # Für den API-Upload
+from PIL import Image
 
 # Define the path for configurations and extensions
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
-ext_path = os.path.join(parentdir, "i_care_about_cookies_unpacked")
+#ext_path = os.path.join(parentdir, "cookies_extension")
+
+
 
 from libs.lib_helper import Helper
 from libs.lib_content import Content
@@ -51,6 +57,10 @@ else:
 
 # Add a timeout configuration with default of 300 seconds
 GLOBAL_TIMEOUT = sources_cnf.get('global_timeout', 300)
+
+API_KEY = sources_cnf.get('api-key')
+STORAGE_URL = sources_cnf.get('storage-url')
+
 
 del helper
 
@@ -74,6 +84,75 @@ class Sources:
             self.screenshot_folder = os.path.join(os.getcwd(), "tmp")
             os.makedirs(self.screenshot_folder, exist_ok=True)
             print(f"Using alternative screenshot folder: {self.screenshot_folder}")
+
+    def upload_to_storage(self, html_content, bin_data, content_type):
+        zip_filename = f"{uuid.uuid4()}.zip"
+        
+        # 1. ZIP im Speicher erstellen
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+            if html_content and isinstance(html_content, str) and html_content != "error":
+                zf.writestr('source.html', html_content.encode('utf-8', 'ignore'))
+            
+            if bin_data and bin_data != "error":
+                # KORREKTUR FÜR PDF-ERKENNUNG
+                c_type = str(content_type).lower() if content_type else ""
+                filename = 'source.pdf' if "pdf" in c_type else 'screenshot.jpg'
+                zf.writestr(filename, bin_data)
+        
+        zip_buffer.seek(0)
+        
+        # 2. ENTSCHEIDUNG: API oder LOKAL?
+        # Wir holen uns den Pfad aus der Config (oder nutzen einen Standard-Ordner)
+        # Dazu müssen wir evtl. sources_cnf neu laden oder als Klassenvariable nutzen
+        # Hier vereinfacht angenommen, STORAGE_URL ist global verfügbar
+        
+        # FALL A: Wir haben eine API-URL konfiguriert -> Versuch Upload
+        if STORAGE_URL and "http" in STORAGE_URL:
+            try:
+                headers = {"X-API-Key": API_KEY}
+                files = {"file": (zip_filename, zip_buffer, "application/zip")}
+                
+                print(f"Versuche Upload zu: {STORAGE_URL}")
+                response = requests.post(STORAGE_URL, headers=headers, files=files, timeout=30)
+                
+                if response.status_code == 200:
+                    remote_filename = response.json().get("filename")
+                    print(f"Upload erfolgreich: {remote_filename}")
+                    return remote_filename # Server-Dateiname zurückgeben
+                else:
+                    print(f"API Upload fehlgeschlagen: {response.status_code} - {response.text}")
+                    # Hier könnten wir Fallback zu Fall B machen!
+            except Exception as e:
+                print(f"API Fehler: {e}")
+                # Auch hier: Fallback zu Fall B möglich
+        
+        # FALL B: Keine API oder Upload fehlgeschlagen -> Lokal speichern
+        # Das macht den Scraper unabhängig!
+        try:
+            # Lokaler Speicherordner 
+            # (Achte darauf, dass dieser Pfad mit deinem STORAGE_FOLDER in der config.py übereinstimmt, 
+            # falls Frontend und Scraper auf dem gleichen Server laufen!)
+            local_storage_path = "/var/www/rat/storage/sources/" 
+            os.makedirs(local_storage_path, exist_ok=True)
+            
+            local_filepath = os.path.join(local_storage_path, zip_filename)
+            
+            # Buffer zurückspulen, da er evtl. beim Upload-Versuch gelesen wurde
+            zip_buffer.seek(0)
+            
+            with open(local_filepath, "wb") as f:
+                f.write(zip_buffer.read())
+            
+            #print(f"Lokal gespeichert: {local_filepath}")
+            
+            # WICHTIG: IMMER NUR DEN DATEINAMEN ZURÜCKGEBEN!
+            return zip_filename
+            
+        except Exception as e:
+            print(f"Kritischer Fehler beim lokalen Speichern: {e}")
+            return None
+
         
     def __del__(self):
         """
@@ -106,70 +185,45 @@ class Sources:
             except:
                 pass
 
-    def encode_code(self, code):
-        """
-        Encodes a string into Base64 format.
 
-        Args:
-            code (str): The string to be encoded.
 
-        Returns:
-            bytes: The Base64 encoded string.
-        """
-        return base64.b64encode(code.encode('utf-8', 'ignore'))
 
-    def decode_code(self, code):
-        """
-        Decodes a Base64 encoded string and beautifies the HTML content.
-
-        Args:
-            code (bytes): The Base64 encoded string.
-
-        Returns:
-            str: The beautified HTML content.
-        """
-        code_decoded = base64.b64decode(code)
-        soup = BeautifulSoup(code_decoded, "html.parser")
-        return str(soup)
-
-    def encode_file_base64(self, file):
-        """
-        Encodes a file's content into Base64 format.
-
-        Args:
-            file (str): The path to the file to be encoded.
-
-        Returns:
-            bytes: The Base64 encoded file content.
-        """
-        with open(file, 'rb') as f:
-            return base64.b64encode(f.read())
 
     def get_result_meta(self, url):
         """
-        Retrieves metadata for a given URL, including IP address and main URL.
-
-        Args:
-            url (str): The URL to retrieve metadata for.
-
-        Returns:
-            dict: A dictionary containing 'ip' and 'main' URL.
+        Ermittelt Metadaten für eine URL mit maximaler Datenrettung.
+        Versucht immer, die Haupt-URL zu parsen, auch wenn die IP-Abfrage fehlschlägt.
         """
-        meta = {}
-        try:
-            parsed_uri = urlparse(url)
-            hostname = parsed_uri.netloc
-            ip = socket.gethostbyname(hostname)
-        except Exception:
-            ip = "-1"
+        # 1. Standard-Fallback-Werte definieren
+        ip = "-1"
+        main = url  # Falls alles schiefgeht, bleibt es die Original-URL
+        hostname = None
 
+        # 2. Versuch, die Haupt-URL (main) zu extrahieren
         try:
-            main = f'{parsed_uri.scheme}://{parsed_uri.netloc}/'
-        except Exception:
-            main = url
+            parsed_url = urlparse(url)
+            # Wir brauchen sowohl ein Schema (http/https) als auch einen Hostnamen
+            if parsed_url.scheme and parsed_url.netloc:
+                hostname = parsed_url.netloc
+                main = f"{parsed_url.scheme}://{hostname}/"
+            else:
+                # Dies fängt relative URLs oder "javascript:"-Links ab
+                print(f"Parsing Warning: Ungültige URL-Struktur für '{url}'. 'main' bleibt Original-URL.")
+        except Exception as e:
+            print(f"Parsing Error für '{url}': {e}. 'main' bleibt Original-URL.")
+            # Hier nicht abbrechen, wir haben ja noch den Fallback-Wert für 'main'
 
-        meta = {"ip": ip, "main": main}
-        return meta
+        # 3. Versuch, die IP-Adresse zu ermitteln, falls ein Hostname gefunden wurde
+        if hostname:
+            try:
+                ip = socket.gethostbyname(hostname)
+            except Exception as e:
+                # Die IP-Abfrage schlug fehl, aber 'main' könnte trotzdem korrekt sein
+                print(f"DNS Error für Host '{hostname}': {e}. IP wird auf '-1' gesetzt.")
+                ip = "-1"
+
+        # 4. Das bestmögliche Ergebnis zurückgeben
+        return {"ip": ip, "main": main}
     
     def get_url_header_with_cdp(self, url, driver):
         """
@@ -200,9 +254,25 @@ class Sources:
             # Aktivieren des CDP Netzwerk-Monitorings
             try:
                 driver.execute_cdp_cmd("Network.enable", {})
-            except Exception:
-                # Möglicherweise ist CDP bereits aktiviert
-                pass
+                
+                # NEU: Blockiere bekannte Cookie-Consent-Provider direkt auf Netzwerkebene
+                driver.execute_cdp_cmd('Network.setBlockedURLs', {
+                    "urls": [
+                        "*cdn.cookielaw.org*",      # OneTrust
+                        "*consent.cookiebot.com*",  # Cookiebot
+                        "*trustarc.com*",           # TrustArc
+                        "*quantcast.com*",          # Quantcast
+                        "*usercentrics.eu*",        # Usercentrics
+                        "*app.usercentrics.eu*",    # Usercentrics App
+                        "*cmp.inmobi.com*",         # InMobi CMP
+                        "*sourcepoint.com*",        # Sourcepoint
+                        "*cdn.privacy-mgmt.com*",   # Privacy Manager
+                        "*cookie-script.com*"       # Cookie-Script
+                    ]
+                })
+                print("CDP: Cookie-Consent-Provider erfolgreich blockiert.")
+            except Exception as e:
+                print(f"CDP Network enable/block failed: {e}")
 
             # Sammeln der Netzwerkantworten
             driver.execute_script("""
@@ -601,9 +671,10 @@ class Sources:
                     print(f"Error verifying PDF content: {e}")
                 
                 # Encode the file content
-                bin_data = self.encode_file_base64(pdf_file)
-                print(f"PDF downloaded and encoded successfully ({os.path.getsize(pdf_file)} bytes)")
-                return bin_data
+                with open(pdf_file, 'rb') as f:
+                    pdf_data = f.read() # Rohe Bytes
+                print(f"PDF downloaded successfully ({os.path.getsize(pdf_file)} bytes)")
+                return pdf_data
                 
         except requests.exceptions.Timeout:
             print(f"PDF download timed out for URL: {url}")
@@ -660,7 +731,8 @@ class Sources:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
                 
-                bin_data = self.encode_file_base64(pdf_file)
+                with open(pdf_file, 'rb') as f: # Binär einlesen
+                    bin_data = f.read()
                 print(f"PDF downloaded with fallback session ({os.path.getsize(pdf_file)} bytes)")
                 return bin_data
         except Exception as e:
@@ -687,8 +759,9 @@ class Sources:
                 with open(pdf_file, 'wb') as f:
                     f.write(response.read())
             
-            bin_data = self.encode_file_base64(pdf_file)
-            print(f"PDF downloaded with urllib fallback ({os.path.getsize(pdf_file)} bytes)")
+            with open(pdf_file, 'rb') as f:
+                bin_data = f.read()            
+                print(f"PDF downloaded with urllib fallback ({os.path.getsize(pdf_file)} bytes)")
             return bin_data
         except Exception as e:
             print(f"Urllib fallback download failed: {e}")
@@ -706,92 +779,209 @@ class Sources:
 
     def take_screenshot(self, driver):
         """
-        Takes a screenshot of the current webpage.
-
-        Args:
-            driver (webdriver): The Selenium WebDriver instance.
-
-        Returns:
-            bytes: The Base64 encoded screenshot image.
+        Optimierte Screenshot-Funktion basierend auf dem erfolgreichen Standalone-Test.
         """
-        def simulate_scrolling(driver, required_height):
-            """
-            Scrolls the webpage to the specified height.
-
-            Args:
-                driver (webdriver): The Selenium WebDriver instance.
-                required_height (int): The height to scroll to.
-
-            Returns:
-                list: The driver and the required height after scrolling.
-            """
-            height = required_height
-            current_height = 0
-            block_size = sources_cnf.get('block-size', 100)
-            scroll_time_in_seconds = min(sources_cnf.get('scroll-time', 1), 0.5)  # Limit scroll time for safety
-            scrolling = []
-
-            # Calculate maximum time we should spend scrolling (not more than 15% of global timeout)
-            max_scroll_time = GLOBAL_TIMEOUT * 0.15
-            start_scroll_time = time.time()
-
-            while current_height < height and current_height < sources_cnf.get('max-height', 2000):
-                # Check if we're approaching the time limit
-                if (time.time() - start_scroll_time) > max_scroll_time:
-                    break
-                
-                current_height += block_size
-                scroll_to = f"window.scrollTo(0,{current_height})"
-                driver.execute_script(scroll_to)
-                height = driver.execute_script('return document.body.parentNode.scrollHeight')
-                time.sleep(scroll_time_in_seconds)
-
-            driver.execute_script("window.scrollTo(0,1)")
-            required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
-            scrolling = [driver, required_height]
-            return scrolling
-
         screenshot_folder = os.path.join(parentdir, "tmp")
-        screenshot_file = os.path.join(screenshot_folder, f"{uuid.uuid1()}.png")
+        screenshot_file = os.path.join(screenshot_folder, f"{uuid.uuid1()}")
+        temp_png = screenshot_file + ".png"
+        temp_jpg = screenshot_file + ".jpg"
+
+        # 1. Desktop-Standard setzen
+        target_w = sources_cnf.get('min-width', 1280)
 
         driver.maximize_window()  # Maximize browser window for screenshot
-        required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
 
         try:
             driver.execute_script("window.scrollTo(0,1)")
         except Exception:
             pass
 
+        time.sleep(2)
+
         try:
-            # Check if we have enough time for scrolling
-            scrolling = simulate_scrolling(driver, required_height)
-            driver = scrolling[0]
-            required_height = scrolling[1]
+            #NEU: Cookie-Banner per JavaScript zerstören / klicken
+            # --- 1. Storage Forgery (Hauptfenster) ---
+            try:
+                driver.execute_script("""
+                    // 1. Storage Forgery (Verhindert das Spawnen vieler Banner)
+                    const fakeConsentData = {
+                        'cookieconsent_status': 'dismiss',
+                        'sp_message_open': 'false', 
+                        'sp_consent': 'true',
+                        'OptanonAlertBoxClosed': new Date().toISOString()
+                    };
+                    for (const [key, value] of Object.entries(fakeConsentData)) {
+                        try { window.localStorage.setItem(key, value); } catch(e) {}
+                        try { window.sessionStorage.setItem(key, value); } catch(e) {}
+                    }
+
+                    // 2. DIE RULES.JS CSS-INJEKTION (Macht Banner unsichtbar und erzwingt Scrollen)
+                    const style = document.createElement('style');
+                    style.type = 'text/css';
+                    style.innerHTML = `
+                        /* Aus der commons Liste extrahierte und gebündelte Selektoren */
+                        #cookie, .cookie, #cookies, .cookies, #gdpr, .gdpr, #gdpr-modal, .gdpr-modal, #GDPR, .GDPR,
+                        #consent, .consent, .elementor-popup-modal, #cookie-consent, .cookie-consent,
+                        #privacy, .privacy, #cookie-modal, .cookie-modal, #cnil, .cnil, #CNIL,
+                        #privacy-policy, .privacy-policy, #privacyPolicy, .privacyPolicy,
+                        #cookies-modal, .cookies-modal, #modal-cookie, .modal-cookie, #modal-cookies, .modal-cookies,
+                        .cc_container, .cookie-container, .cookies-wrapper, .cookie-box, .cookie__wrap, .consent-container,
+                        /* Spezifische hartnäckige Provider (Sourcepoint, Usercentrics, TrustArc, OneTrust) */
+                        [id^="sp_message_container"], iframe[id^="sp_message_iframe"], [id^="sp_message_"],
+                        #usercentrics-root, #cookiebanner, #cookie-notice, [id^="cmpbox"], #BorlabsCookieBox,
+                        #onetrust-consent-sdk, #onetrust-banner-sdk, .onetrust-pc-dark-filter,
+                        #didomi-host, #didomi-popup, .didomi-popup-backdrop, .didomi-notice-popup,
+                        #tarteaucitronRoot, #tarteaucitronAlertBig,
+                        /* Overlays und Backdrops, die Klicks blockieren */
+                        .modal-backdrop, .ui-widget-overlay, .reveal-modal-bg, .cdk-overlay-container, .optin__backdrop
+                        { 
+                            display: none !important; 
+                            visibility: hidden !important; 
+                            opacity: 0 !important; 
+                            pointer-events: none !important; 
+                            width: 0 !important; 
+                            height: 0 !important; 
+                            z-index: -9999 !important;
+                        }
+
+                        /* Das Wichtigste aus commons Regel 2, 14 und 85: Scrollen zwingend wiederherstellen! */
+                        html, body, html.noscroll, body.modal-open, body.sp-message-open, body[style*="overflow"] {
+                            overflow: auto !important;
+                            overflow-y: auto !important;
+                            position: static !important;
+                            height: auto !important;
+                            padding-right: 0px !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+
+                    // 3. IDCAC CLICKER (Für den Fall, dass unsichtbar machen auf einer Seite das Layout zerstört)
+                    const acceptRegex = /(akzeptieren|alles akzeptieren|alle akzeptieren|verstanden|zustimmen|ok|okay|zulassen|alle zulassen|alles zulassen|einverstanden|accept|accept all|allow|allow all|got it|agree|i agree|consent|accepter|tout accepter|j'accepte|compris|aceptar|aceptar todo|estoy de acuerdo|entendido|accetta|accetta tutto|acconsento|capito|accepteren|alles accepteren|akkoord|begrepen|akceptuj|zaakceptuj wszystko|zgadzam się|rozumiem)/i;
+                    const negativeRegex = /(ablehnen|manage|settings|einstellungen|anpassen|configure|customize|reject|deny|decline|refuse|options|optionen|mehr|more|read|lesen)/i;
+                    
+                    const elements = document.querySelectorAll('button, a, input[type="button"], input[type="submit"], div[role="button"], span[role="button"]');
+                    
+                    for (let el of elements) {
+                        const rect = el.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) continue;
+                        
+                        let text = (el.innerText || el.value || el.getAttribute('aria-label') || el.title || '').trim().replace(/\\n/g, ' ');
+                        if (!text || text.length > 35) continue; // Wikipedia-Schutz
+                        
+                        // Wikipedia-Schutz: Keine echten Verlinkungen auf andere Seiten klicken
+                        if (el.tagName.toLowerCase() === 'a' && el.href && !el.href.startsWith('javascript:') && !el.href.includes('#')) continue; 
+                        if (negativeRegex.test(text)) continue;
+
+                        if (acceptRegex.test(text) || text.toLowerCase() === 'alle' || text.toLowerCase() === 'all') {
+                            const mouseEvent = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
+                            el.dispatchEvent(mouseEvent);
+                            break;
+                        }
+                    }
+                """)
+                time.sleep(3) # Warten auf das Ausblenden / Zerstören
+            except Exception as e:
+                print(f"Fehler bei der Cookie-Heuristik: {e}")
+            # Warten auf Layout-Stabilisierung
+            time.sleep(3)
+
+            def simulate_scrolling(driver, required_height):
+                """
+                Scrolls the webpage to the specified height.
+
+                Args:
+                    driver (webdriver): The Selenium WebDriver instance.
+                    required_height (int): The height to scroll to.
+
+                Returns:
+                    list: The driver and the required height after scrolling.
+                """
+                height = required_height
+                current_height = 0
+                block_size = sources_cnf.get('block-size', 100)
+                scroll_time_in_seconds = min(sources_cnf.get('scroll-time', 1), 0.5)  # Limit scroll time for safety
+                scrolling = []
+
+                # Calculate maximum time we should spend scrolling (not more than 15% of global timeout)
+                max_scroll_time = GLOBAL_TIMEOUT * 0.15
+                start_scroll_time = time.time()
+
+                while current_height < height and current_height < sources_cnf.get('max-height', 2000):
+                    # Check if we're approaching the time limit
+                    if (time.time() - start_scroll_time) > max_scroll_time:
+                        break
+                    
+                    current_height += block_size
+                    scroll_to = f"window.scrollTo(0,{current_height})"
+                    driver.execute_script(scroll_to)
+                    height = driver.execute_script('return document.body.parentNode.scrollHeight')
+                    time.sleep(scroll_time_in_seconds)
+
+                driver.execute_script("window.scrollTo(0,1)")
+                required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
+                scrolling = [driver, required_height]
+                return scrolling
+
+
+            driver.maximize_window()  # Maximize browser window for screenshot
+            required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
+
+            try:
+                driver.execute_script("window.scrollTo(0,1)")
+            except Exception:
+                pass
+
+            try:
+                # Check if we have enough time for scrolling
+                scrolling = simulate_scrolling(driver, required_height)
+                driver = scrolling[0]
+                required_height = scrolling[1]
+            except Exception as e:
+                print(str(e))
+
+
+            # 3. Dynamische Höhenermittlung (Das Herzstück des Erfolgs)
+            total_height = driver.execute_script("return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, document.body.offsetHeight);")
+            
+            # Max-Height aus Config als Sicherheitsnetz (setze diese in der .ini auf 10000)
+            max_allowed = sources_cnf.get('max-height', 5000)
+            final_height = min(total_height, max_allowed)
+            
+            # 4. Viewport auf die volle ermittelte Länge ziehen
+            print(f"Setze Viewport auf {target_w}x{final_height}")
+            driver.set_window_size(target_w, final_height)
+            time.sleep(1.5) # Zeit für Lazy-Loading Bilder
+
+            # 5. Finaler Screenshot
+            driver.save_screenshot(temp_png)
+
+            
         except Exception as e:
-            print(str(e))
+            print(f"Fehler in take_screenshot: {e}")
+            driver.save_screenshot(temp_png)
 
-        try:
-            driver.execute_script("window.scrollTo(0,1)")
-        except Exception:
-            pass
+        # 4. KOMPRIMIERUNG: PNG zu JPEG wandeln & Qualität senken
+        with Image.open(temp_png) as img:
+            # Falls das Bild im RGBA Modus ist (PNG), zu RGB konvertieren für JPEG
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            
+            output = io.BytesIO()
+            img.save(output, format="JPEG", optimize=True, quality=100, subsampling=0)
+            screenshot_bytes = output.getvalue()
 
-        try:
-            required_width = driver.execute_script('return document.body.parentNode.scrollWidth')
-            if required_width < sources_cnf.get('min-width', 1024):
-                required_width = sources_cnf.get('min-width', 1024)
-            if required_height > sources_cnf.get('max-height', 2000):
-                required_height = sources_cnf.get('max-height', 2000)
-            required_width = 1024
-            driver.set_window_size(required_width, required_height)
-            driver.save_screenshot(screenshot_file)
-        except Exception:
-            driver.save_screenshot(screenshot_file)
+        if sources_cnf.get("debug_screenshots", 0) != 0:
+            with open(temp_jpg, "wb") as f:
+                f.write(screenshot_bytes)
+            print(f"Debug-Screenshot gespeichert: {temp_jpg}")
 
-        screenshot = self.encode_file_base64(screenshot_file)
-        if sources_cnf.get("debug_screenshots", 0) == 0:
-            os.remove(screenshot_file)
+        if os.path.exists(temp_png):
+                try:
+                    os.remove(temp_png)
+                except:
+                    pass
 
-        return screenshot
+        return screenshot_bytes
         
 
     def _evaluate_content_quality(self, code, page_source, url, dict_request):
@@ -894,6 +1084,9 @@ class Sources:
                 "execution_time": 0
             }
         
+
+
+    
         # Define a killer function using direct system commands
         def killer(proc_id):
             try:
@@ -1092,7 +1285,51 @@ class Sources:
         # Use provided start_time or create a new one
         if start_time is None:
             start_time = time.time()
-        
+
+        # =========================================================================
+        # 1. DIREKTER PDF PRE-CHECK (Umgeht den Browser komplett!)
+        # =========================================================================
+        is_likely_pdf = False
+        parsed_path = urlparse(url).path.lower()
+        if parsed_path.endswith('.pdf') or '?pdf' in url.lower() or '&pdf' in url.lower():
+            is_likely_pdf = True
+        else:
+            try:
+                proxies_dict = {"http": proxy, "https": proxy} if proxy else None
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                head_resp = requests.head(url, timeout=5, verify=False, allow_redirects=True, proxies=proxies_dict, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                })
+                if 'pdf' in head_resp.headers.get('Content-Type', '').lower():
+                    is_likely_pdf = True
+            except:
+                pass
+                
+        if is_likely_pdf:
+            print(f"PDF erkannt VOR Browser-Start: {url}")
+            pdf_data = self.get_pdf_with_fallback(url, timeout=30)
+            if pdf_data:
+                print("PDF erfolgreich direkt heruntergeladen, überspringe Browser!")
+                try:
+                    meta = self.get_result_meta(url)
+                except: 
+                    pass
+                file_path = self.upload_to_storage("pdf", pdf_data, "application/pdf")
+                return {
+                    "file_path": file_path,
+                    "code": None, 
+                    "bin_data": None,
+                    "request": {"content_type": "application/pdf", "status_code": 200},
+                    "final_url": url,
+                    "meta": meta,
+                    "error_codes": "",
+                    "content_dict": {"":""}
+                }
+            else:
+                print("Direkter PDF-Download fehlgeschlagen, starte normalen Browser-Ablauf...")
+        # =========================================================================
+
         # Watchdog timer that can forcefully terminate operations if needed
         def watchdog_timer():
             watchdog_sleep = min(timeout * 0.1, 30)  # Check every 10% of timeout or 30 seconds, whichever is less
@@ -1194,9 +1431,15 @@ class Sources:
                 "no_sandbox": True
             }
             
-            # Only add extension if it exists
-            if os.path.exists(ext_path):
-                driver_options["extension_dir"] = ext_path
+            # if os.path.exists(ext_path):
+            #     print(f"Lade Extension von: {ext_path}")
+            #     # Versuche den offiziellen Weg
+            #     driver_options["extension_dir"] = ext_path
+                
+            #     # OPTIONALER FALLBACK: Wenn es trotzdem nicht geht, nutze agent_args
+            #     driver_options["agent"] = f"{driver_options['agent']} --load-extension={ext_path}"
+            # else:
+            #     print(f"FEHLER: Extension nicht gefunden in {ext_path}")
             
             if proxy:
                 driver_options["proxy"] = proxy
@@ -1368,7 +1611,6 @@ class Sources:
                 # Only wait if we have enough time and page loading was at least attempted
                 if page_load_success and not check_timeout(0.5, "page loading") and not cancel_event.is_set():
                     time.sleep(safe_wait_time)
-                    
             except Exception as e:
                 error_codes += f"URL unreachable: {e}; "
                 if driver:
@@ -1404,7 +1646,7 @@ class Sources:
                                     except Exception as e:
                                         error_codes += f"Emergency screenshot failed: {str(e)}; "
                                     
-                                    code = self.encode_code(code)
+                                    code = code
                                     dict_request["content_type"] = "html"
                                     # Critical for ensuring progress=1
                                     dict_request["status_code"] = 200
@@ -1539,7 +1781,7 @@ class Sources:
                                                 # Check if this might be PDF content that was rendered in the browser
                                                 if "pdf" in page_source.lower()[:1000] or "adobe" in page_source.lower()[:1000]:
                                                     print("PDF download failed but PDF might be embedded in page. Processing as HTML.")
-                                                    code = self.encode_code(page_source)
+                                                    code = page_source
                                                     dict_request["content_type"] = "html"
                                                     error_codes += "PDF download failed but processing embedded PDF as HTML; "
                                                 else:
@@ -1555,7 +1797,7 @@ class Sources:
                                         try:
                                             page_source = driver.page_source
                                             if page_source and len(page_source) > 1000:
-                                                code = self.encode_code(page_source)
+                                                code = page_source
                                                 dict_request["content_type"] = "html"
                                                 error_codes += "Using browser-rendered PDF content as fallback; "
                                             else:
@@ -1593,13 +1835,13 @@ class Sources:
                                         try:
                                             bin_data = screenshot_future.result(timeout=MAX_SCREENSHOT_TIME)
                                             if bin_data:
-                                                code = self.encode_code(code)
+                                                code = code
                                                 dict_request["content_type"] = "html"
                                             else:
                                                 error_codes += "Screenshot returned empty data; "
                                                 # Still try to encode the code even if screenshot fails
                                                 try:
-                                                    code = self.encode_code(code)
+                                                    code = code
                                                     dict_request["content_type"] = "html"
                                                 except:
                                                     code = "error"
@@ -1607,7 +1849,7 @@ class Sources:
                                             error_codes += f"Screenshot timeout after {time.time() - screenshot_start:.2f}s: {str(e)}; "
                                             # Still try to encode the code even if screenshot fails
                                             try:
-                                                code = self.encode_code(code)
+                                                code = code
                                                 dict_request["content_type"] = "html"
                                             except:
                                                 code = "error"
@@ -1649,7 +1891,7 @@ class Sources:
                                 error_codes += f"Screenshot attempt for recovered content failed: {str(e)}; "
                             
                             # Now encode the content
-                            code = self.encode_code(page_source)
+                            code = page_source
                             dict_request["content_type"] = "html"
                             
                             # Only preserve status_code=200 if that's what the server actually returned
@@ -1700,14 +1942,22 @@ class Sources:
             error_codes += f"Process exceeded the timeout limit of {timeout} seconds (took {elapsed_time:.2f}s); "
             code = "error"
 
+        print(f"DEBUG: Status von 'code': {'Inhalt vorhanden' if code and code != 'error' else 'LEER oder error'}")
+        print(f"DEBUG: Länge von 'bin_data': {len(bin_data) if bin_data and bin_data != 'error' else 0} Bytes")
+        print(f"DEBUG: Content-Type: {dict_request.get('content_type')}")
+
+
+        # HTML Content (code) ist hier noch ein String vom Driver
+        file_path = self.upload_to_storage(code, bin_data, dict_request.get("content_type"))
+
         result_dict = {
-            "code": code,
-            "bin_data": bin_data,
+            "file_path": file_path,
+            "code": None, 
+            "bin_data": None,
             "request": dict_request,
             "final_url": final_url,
             "meta": meta,
             "error_codes": error_codes,
             "content_dict": content_dict
         }
-
         return result_dict

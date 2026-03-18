@@ -18,6 +18,7 @@
     <h3>Delete Study</h3>
     {# Heading for the delete study form #}
     <form method="POST" class="card p-4 shadow-sm">
+      {{ form.hidden_tag() }}
       {# Start a form with POST method inside a card component with padding and shadow #}
       <div class="mb-3">Are you sure you want to delete {{ study.name }}?</div>
       {# Message asking for confirmation to delete the specific study #}

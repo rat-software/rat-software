@@ -1,0 +1,373 @@
+{% extends "master.html" %}
+
+{% block title %}
+  {% if engine %}Edit Custom Engine{% else %}Create Custom Engine{% endif %}
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="pb-3">
+    {% if study_id %}
+    <a class="text-dark" href="{{ url_for('study', id=study_id) }}">
+      <i class="fa-solid fa-angle-left me-2"></i> Back to Study
+    </a>
+    {% else %}
+    <a class="text-dark" href="{{ url_for('dashboard') }}">
+      <i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="col-md-8 offset-md-2">
+    <div class="card shadow-sm mb-4">
+      <h2 class="card-header crd-header">
+        {% if engine %}
+          Edit Search Engine: {{ engine.name }}
+        {% else %}
+          Create Custom Search Engine
+        {% endif %}
+      </h2>
+      
+      <div class="card-body">
+        <form method="POST" action="">
+          {{ form.hidden_tag() }}
+
+          <h5 class="border-bottom pb-2 mb-3"><i class="fa-solid fa-gear me-2"></i> Basic Settings</h5>
+          <div class="mb-3">
+            {{ form.name.label(class="form-label fw-bold") }}
+            {{ form.name(class="form-control") }}
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              {{ form.engine_type.label(class="form-label fw-bold") }}
+              {{ form.engine_type(class="form-select", id="engine_type") }}
+            </div>
+            <div class="col-md-8">
+              {{ form.search_url.label(class="form-label fw-bold") }}
+              {{ form.search_url(class="form-control", id="search_url") }}
+              <small class="form-text text-muted">Use <strong>{query}</strong> where the search term should be injected.</small>
+            </div>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="fa-solid fa-code me-2"></i> Organic Results (CSS Selectors)</h5>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              {{ form.sel_container.label(class="form-label") }}
+              {{ form.sel_container(class="form-control", id="sel_container") }}
+            </div>
+            <div class="col-md-6">
+              {{ form.sel_title.label(class="form-label") }}
+              {{ form.sel_title(class="form-control", id="sel_title") }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              {{ form.sel_url.label(class="form-label") }}
+              {{ form.sel_url(class="form-control", id="sel_url") }}
+            </div>
+            <div class="col-md-6">
+              {{ form.sel_snippet.label(class="form-label") }}
+              {{ form.sel_snippet(class="form-control", id="sel_snippet") }}
+            </div>
+          </div>
+
+          <div class="mb-3 border-start border-info border-3 ps-3 bg-light p-2">
+            {{ form.url_param_decoder.label(class="form-label fw-bold text-info") }}
+            {{ form.url_param_decoder(class="form-control", id="url_param_decoder") }}
+            <small class="form-text text-muted">If the search engine wraps URLs in tracking redirects, enter the parameter name here (e.g. <code>uddg</code> for DuckDuckGo) to extract the clean, actual website URL.</small>
+          </div>
+
+
+          <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="fa-solid fa-robot me-2"></i> AI Overviews & Sources</h5>
+          <div class="mb-3">
+            {{ form.sel_ai_text.label(class="form-label") }}
+            {{ form.sel_ai_text(class="form-control", id="sel_ai_text") }}
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              {{ form.sel_ai_source_container.label(class="form-label") }}
+              {{ form.sel_ai_source_container(class="form-control") }}
+            </div>
+            <div class="col-md-6">
+              {{ form.sel_ai_source_url.label(class="form-label") }}
+              {{ form.sel_ai_source_url(class="form-control") }}
+            </div>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="fa-solid fa-forward me-2"></i> Pagination</h5>
+          <div class="mb-3">
+              {{ form.sel_next_button.label(class="form-label fw-bold") }}
+              {{ form.sel_next_button(class="form-control", id="sel_next_button", placeholder=".next-page-link or button#more") }}
+              <div class="form-text">The CSS selector for the 'Next' button or 'Load More' to enable multi-page scraping.</div>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="fa-solid fa-code me-2"></i> Advanced: Custom Engine JS</h5>
+          <div class="mb-3">
+              {{ form.custom_js.label(class="form-label fw-bold") }}
+              {{ form.custom_js(class="form-control text-monospace", id="custom_js", rows="3") }}
+              <div class="form-text">Optional: Paste JavaScript here to inject specific cookies or LocalStorage values before the page loads (e.g., to force Ecosia's region).</div>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3 mt-4"><i class="fa-solid fa-toggle-on me-2"></i> Status & Sharing</h5>
+          
+          <div class="form-check form-switch mb-3">
+            {{ form.is_active(class="form-check-input", id="isActiveSwitch", role="switch") }}
+            <label class="form-check-label fw-bold" for="isActiveSwitch">
+              {{ form.is_active.label.text }}
+            </label>
+            <div class="form-text">If disabled, this scraper will be hidden from the "Run Scraper" dropdown menus.</div>
+          </div>
+
+          <div class="form-check form-switch mb-4">
+            {{ form.is_public(class="form-check-input", id="isPublicSwitch", role="switch") }}
+            <label class="form-check-label fw-bold text-success" for="isPublicSwitch">
+              {{ form.is_public.label.text }}
+            </label>
+            <div class="form-text">Allow other researchers on the platform to view and clone this scraper template.</div>
+          </div>
+
+          <div class="card bg-light border-info mb-4">
+            <div class="card-header bg-info text-white fw-bold">
+              <i class="fa-solid fa-vial"></i> Live Scraper Test
+            </div>
+            <div class="card-body">
+              <div class="row align-items-end mb-3">
+                <div class="col-md-8">
+                  <label for="testKeyword" class="form-label">Test Keyword</label>
+                  <input type="text" id="testKeyword" class="form-control" value="who is faker">
+                </div>
+                <div class="col-md-4">
+                  <button type="button" id="btnTestScraper" class="btn btn-outline-info w-100 fw-bold">
+                    Run Test
+                  </button>
+                </div>
+              </div>
+              
+              <div id="testOutputContainer" class="d-none">
+                <hr>
+                
+                <div class="card bg-dark text-white mb-3">
+                    <div class="card-header py-1 small fw-bold d-flex justify-content-between align-items-center">
+                      <span><i class="fa-solid fa-terminal me-1"></i> Scraper Debug Logs</span>
+                      <a href="{{ url_for('download_debug_html') }}" class="btn btn-sm btn-light py-0 fw-bold text-dark" target="_blank" title="Download the raw HTML file">
+                          <i class="fa-solid fa-download me-1"></i> Download HTML
+                      </a>
+                    </div>
+                    <div class="card-body py-2 small" style="max-height: 200px; overflow-y: auto; font-family: monospace;" id="debugLogConsole">
+                    </div>
+                </div>
+
+                <div class="card mb-3 border-secondary shadow-sm">
+                    <div class="card-header bg-secondary text-white py-1 small fw-bold">
+                        <i class="fa-solid fa-eye me-1"></i> Visual Browser Preview (What the bot saw)
+                    </div>
+                    <div class="card-body p-0">
+                        <iframe id="htmlPreviewIframe" src="" style="width: 100%; height: 450px; border: none; background: #fff;"></iframe>
+                    </div>
+                </div>
+
+                <h6 class="text-muted">Test URL: <a href="#" id="outTestUrl" target="_blank"></a></h6>
+                <div class="alert alert-secondary mt-2">
+                  <strong>AI Overview:</strong> <span id="outAiText"></span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered bg-white">
+                    <thead class="table-dark">
+                      <tr><th>Rank</th><th>Title</th><th>URL</th><th>Snippet</th></tr>
+                    </thead>
+                    <tbody id="outOrganicTable"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div id="testError" class="alert alert-danger d-none mt-2"></div>
+            </div>
+          </div>
+
+          <div class="mt-5">
+          {% if study_id %}
+            <a href="{{ url_for('study', id=study_id) }}" class="btn btn-secondary">
+              <i class="fa-solid fa-xmark"></i> Cancel
+            </a>
+            {% else %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+              <i class="fa-solid fa-xmark"></i> Cancel
+            </a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary float-end">
+              {% if engine %}
+                Update Engine <i class="fa-solid fa-check"></i>
+              {% else %}
+                Save Engine <i class="fa-solid fa-check"></i>
+              {% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // 1. Initialize TomSelect safely
+    const el = document.getElementById('engine_type');
+    if (el && !el.tomselect) {
+        new TomSelect(el, { create: false, sortField: { field: "text", direction: "asc" } });
+    }
+
+    // Prevent the "Enter" key in the test input from saving the whole form (causing a reload/retry)
+    const testInput = document.getElementById('testKeyword');
+    if (testInput) {
+        testInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                document.getElementById('btnTestScraper').click(); 
+            }
+        });
+    }
+
+    // 2. Main Live Test Logic
+    document.getElementById('btnTestScraper').addEventListener('click', async function(e) {
+      e.preventDefault(); 
+      e.stopPropagation(); // Stop event bubbling completely
+      
+      const btn = this;
+      
+      // HARD LOCK: Prevent running if already loading
+      if (btn.classList.contains('is-loading')) return;
+      
+      const originalText = btn.innerHTML;
+      btn.classList.add('is-loading');
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Scraping Pages...';
+      btn.disabled = true;
+      
+      const outContainer = document.getElementById('testOutputContainer');
+      const errDiv = document.getElementById('testError');
+      const tbody = document.getElementById('outOrganicTable');
+      
+      if (outContainer) outContainer.classList.add('d-none');
+      if (errDiv) errDiv.classList.add('d-none');
+      if (tbody) tbody.innerHTML = ''; 
+      
+      const payload = {
+          test_query: document.getElementById('testKeyword') ? document.getElementById('testKeyword').value : '',
+          search_url: document.getElementById('search_url') ? document.getElementById('search_url').value : '',
+          engine_type: document.getElementById('engine_type') ? document.getElementById('engine_type').value : '',
+          custom_js: document.getElementById('custom_js') ? document.getElementById('custom_js').value : '',
+          sel_container: document.getElementById('sel_container') ? document.getElementById('sel_container').value : '',
+          sel_title: document.getElementById('sel_title') ? document.getElementById('sel_title').value : '',
+          sel_url: document.getElementById('sel_url') ? document.getElementById('sel_url').value : '',
+          sel_snippet: document.getElementById('sel_snippet') ? document.getElementById('sel_snippet').value : '',
+          url_param_decoder: document.getElementById('url_param_decoder') ? document.getElementById('url_param_decoder').value : '', // <--- NEW
+          sel_ai_text: document.getElementById('sel_ai_text') ? document.getElementById('sel_ai_text').value : '',
+          sel_next_button: document.getElementById('sel_next_button') ? document.getElementById('sel_next_button').value : ''
+      };
+
+      try {
+          const response = await fetch("{{ url_for('test_engine') }}", {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              },
+              body: JSON.stringify(payload)
+          });
+          
+          const data = await response.json();
+          
+          // Print logs to UI
+          const logConsole = document.getElementById('debugLogConsole');
+          if (logConsole && data.debug_logs) {
+              logConsole.innerHTML = data.debug_logs.map(log => {
+                  const isError = log.includes('Error') || log.includes('Note') || log.includes('skipped') || log.includes('Warning');
+                  const colorStyle = isError ? 'color: #ff4d4d !important; font-weight: bold;' : 'color: #e5e7eb;';
+                  return `<div style="${colorStyle}">${log}</div>`;
+              }).join('');
+              logConsole.scrollTop = logConsole.scrollHeight;
+              
+              if (outContainer) outContainer.classList.remove('d-none'); 
+          }
+
+          // Refresh the Visual Preview Iframe
+          const iframe = document.getElementById('htmlPreviewIframe');
+          if (iframe) {
+              iframe.src = "{{ url_for('view_debug_html') }}?t=" + new Date().getTime();
+          }
+
+          if (!response.ok || data.status === 'error') {
+              throw new Error(data.message || 'Server returned an error. Check logs above.');
+          }
+
+          // 3. Display Pagination Status Badge safely
+          const statusLink = document.getElementById('outTestUrl');
+          if (statusLink) {
+              const oldBadge = document.querySelector('.pagination-badge');
+              if (oldBadge) oldBadge.remove();
+
+              const badgeClass = data.next_page_status === 'Success' ? 'bg-success' : 'bg-warning';
+              statusLink.insertAdjacentHTML('afterend', 
+                  `<span class="pagination-badge badge ${badgeClass} ms-2">Pagination: ${data.next_page_status || 'N/A'}</span>`
+              );
+              
+              statusLink.href = data.test_url || '#';
+              statusLink.textContent = data.test_url || 'Unknown URL';
+          }
+
+          // Safely set AI Overview text
+          const outAiText = document.getElementById('outAiText');
+          if (outAiText) {
+              outAiText.textContent = data.ai_overview || 'Not found';
+          }
+          
+          // 4. Populate Combined Results Table Safely
+          if (tbody && data.organic_results && Array.isArray(data.organic_results)) {
+              data.organic_results.forEach(res => {
+                  const tr = document.createElement('tr');
+                  if (res.rank > 10) {
+                      tr.style.borderLeft = "4px solid #198754"; 
+                      tr.classList.add('table-light');
+                  }
+                  
+                  // Use robust fallbacks for missing data points
+                  const rank = res.rank || '-';
+                  const title = res.title || 'No Title Extracted';
+                  const url = res.url || 'No URL Extracted';
+                  const snippet = res.snippet || '';
+                  
+                  tr.innerHTML = `
+                      <td>${rank}</td>
+                      <td><strong>${title}</strong></td>
+                      <td class="text-truncate" style="max-width: 250px;"><small>${url}</small></td>
+                      <td><small>${snippet}</small></td>
+                  `;
+                  tbody.appendChild(tr);
+              });
+          }
+
+      } catch (e) {
+          console.error("Test execution failed:", e);
+          if (errDiv) {
+              errDiv.textContent = 'Scraper Error: ' + e.message;
+              errDiv.classList.remove('d-none');
+          }
+      } finally {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+      }
+    });
+  });
+</script>
+{% endblock %}
+
+
+{% endblock %}

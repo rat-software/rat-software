@@ -12,7 +12,7 @@
 
   <div class="col-md-8 offset-md-2">
     <div class="card">
-      <h2 class="card-header crd-header">Manage URL Filters for: {{ study.name }}</h2>
+      <h2 class="card-header crd-header">Manage Domain Filters for: {{ study.name }}</h2>
       <div class="card-body">
         <p class="card-text text-muted">
           Here you can specify domains to be explicitly included or excluded in the assessment interface. Enter one domain per line (e.g., `example.com`).
@@ -24,7 +24,7 @@
           <div class="mb-3">
             <label for="include_urls" class="form-label">
               <i class="fa-solid fa-check-circle text-success me-2"></i>
-              <strong>Included URLs</strong>
+              <strong>Included Domains</strong>
               <small class="d-block text-muted">Only results from these domains will be shown.</small>
             </label>
             <textarea class="form-control" id="include_urls" name="include_urls" rows="6">{{ included_urls }}</textarea>
@@ -33,7 +33,7 @@
           <div class="mb-4">
             <label for="exclude_urls" class="form-label">
               <i class="fa-solid fa-times-circle text-danger me-2"></i>
-              <strong>Excluded URLs</strong>
+              <strong>Excluded Domains</strong>
               <small class="d-block text-muted">Results from these domains will be hidden.</small>
             </label>
             <textarea class="form-control" id="exclude_urls" name="exclude_urls" rows="6">{{ excluded_urls }}</textarea>

@@ -1,0 +1,74 @@
+{% extends "master.html" %}
+
+{% block title %}Preview Import{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">Import Preview</h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">
+                        Please review the data before confirming the import.
+                    </p>
+
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        Found <strong>{{ row_count }}</strong> records in the uploaded file.
+                    </div>
+
+                    <h5 class="mt-4">Sample Data (Mix of Result Types)</h5>
+                    <div class="table-responsive mb-4" style="max-height: 400px; border: 1px solid #dee2e6;">
+                        <table class="table table-sm table-striped table-hover mb-0">
+                            <thead class="table-light" style="position: sticky; top: 0;">
+                                <tr>
+                                    {% for col in columns %}
+                                    <th>{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in preview_rows %}
+                                <tr>
+                                    {% for col in columns %}
+                                    <td>
+                                        {% if col == 'type' %}
+                                        {% set val = row[col]|string|lower %}
+                                        {% if val == 'organic' %}
+                                        <span class="badge bg-primary">Organic</span>
+                                        {% elif 'ai' in val and 'overview' in val %}
+                                        <span class="badge bg-success">AI Overview</span>
+                                        {% elif 'ai' in val and 'source' in val %}
+                                        <!-- Changed to Green (Success) to match AI Overview -->
+                                        <span class="badge bg-success">AI Source</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ row[col] }}</span>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="small">{{ row[col] }}</span>
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('study', id=study.id) }}" class="btn btn-secondary">Cancel</a>
+
+                        <form action="{{ url_for('confirm_study_upload', id=study.id) }}" method="POST">
+                            {{ confirm_form.hidden_tag() }}
+                            {{ confirm_form.submit_confirm(class="btn btn-primary") }}
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

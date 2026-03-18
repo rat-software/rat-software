@@ -17,6 +17,7 @@
 
       <!-- Form for selecting user type -->
       <form method="POST">
+        {{ form.hidden_tag() }}
         <div class="card-body text-end">
           <!-- Button for returning users -->
           {{ form.returning(class_="btn btn-outline-secondary me-2") }}

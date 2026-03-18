@@ -69,21 +69,14 @@ class SourcesScraper:
         5. Initiates the scraping process using a separate thread.
         6. Waits for the scraping results, processes them, and updates the database.
         7. Logs errors and status updates throughout the process.
-
-        The method utilizes threading to perform concurrent scraping operations and ensures that the results are processed and updated in the database.
         """
 
         #initialize an event based dictionary for the scraping results
         result_dict_available = threading.Event()      
 
         def scrape_url(sources_url, proxy, country_code, timeout=450):
-            """Thread-sicherer URL-Scraper mit Timeout
-            
-            Verwendet einen längeren Default-Timeout (450s = 7.5min) und robustere Fehlerbehandlung
-            """
-            global result_dict  # Deklariere, dass wir die globale Variable nutzen
-            
-            # Setze result_dict auf None am Anfang
+            """Thread-sicherer URL-Scraper mit Timeout"""
+            global result_dict  
             result_dict = None
             
             try:
@@ -93,7 +86,6 @@ class SourcesScraper:
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future = executor.submit(self.sources.save_code, sources_url, proxy, country_code)
                     
-                    # Versuche, das Ergebnis mit Timeout zu bekommen
                     try:
                         result_dict = future.result(timeout=timeout)
                         elapsed = time.time() - start_time
@@ -102,8 +94,7 @@ class SourcesScraper:
                         error_msg = f"Scraping timed out after {timeout}s for URL: {sources_url}"
                         self.logger.write_to_log(error_msg)
                         result_dict = {
-                            "code": "error",
-                            "bin_data": "error",
+                            "file_path": None, 
                             "request": {"content_type": "error", "status_code": -1},
                             "final_url": sources_url,
                             "meta": {"ip": "-1", "main": sources_url},
@@ -114,58 +105,68 @@ class SourcesScraper:
                         error_msg = f"Error during scraping: {str(e)}"
                         self.logger.write_to_log(error_msg)
                         result_dict = {
-                            "code": "error",
-                            "bin_data": "error",
+                            "file_path": None, 
                             "request": {"content_type": "error", "status_code": -1},
                             "final_url": sources_url,
                             "meta": {"ip": "-1", "main": sources_url},
                             "error_codes": error_msg,
                             "content_dict": {"":""}
                         }
-                
-                # Überprüfe, ob result_dict gesetzt wurde
                 if result_dict is None:
                     self.logger.write_to_log(f"No result returned for {sources_url} - creating default error result")
                     result_dict = {
-                        "code": "error",
-                        "bin_data": "error",
+                        "file_path": None, 
                         "request": {"content_type": "error", "status_code": -1},
                         "final_url": sources_url,
                         "meta": {"ip": "-1", "main": sources_url},
-                        "error_codes": "No result returned from scraper",
+                        "error_codes": error_msg,
                         "content_dict": {"":""}
                     }
             except Exception as outer_e:
                 self.logger.write_to_log(f"Critical error in scrape_url function: {str(outer_e)}")
                 result_dict = {
-                    "code": "error",
-                    "bin_data": "error",
+                    "file_path": None, 
                     "request": {"content_type": "error", "status_code": -1},
                     "final_url": sources_url,
                     "meta": {"ip": "-1", "main": sources_url},
-                    "error_codes": f"Critical error: {str(outer_e)}",
+                    "error_codes": "Critical worker error",
                     "content_dict": {"":""}
                 }
             finally:
-                # Immer Signal setzen, um Deadlocks zu vermeiden
                 elapsed = time.time() - start_time
                 self.logger.write_to_log(f"Setting result available for {sources_url} after {elapsed:.2f}s")
                 result_dict_available.set()
 
-        # Initialize the sources configuration for the application
 
         #loop through all sources to scrape
         for source_to_scrape in self.get_sources:
-            # Definiere die globale Variable result_dict für diese Iteration
             global result_dict
             result_dict = None
             
-            result_id = source_to_scrape[0] # Id of the result from the result table.
-            url = source_to_scrape[1] # URL of the result from the result table.
-            country_proxy = source_to_scrape[2] # Country of the result from the result table.
-            country_code = source_to_scrape[3] # Country code of the result from the result table.
+            result_id = source_to_scrape[0] 
+            url = source_to_scrape[1] 
+            country_proxy = source_to_scrape[2] 
+            country_code = source_to_scrape[3] 
    
-            # Use our new proxy checker function with Timeout
+            # ====================================================================
+            # NEU: SOFORTIGES EXTRAHIEREN UND SPEICHERN DER MAIN DOMAIN
+            # ====================================================================
+            # Dadurch ist die Domain immer für die Analyse-Seite verfügbar,
+            # selbst wenn der Scraper bei dieser URL komplett abstürzt!
+            base_main = url
+            base_ip = "-1"
+            try:
+                # Wir nutzen die Hilfsfunktion aus lib_sources rein zum Parsen
+                base_meta = self.sources.get_result_meta(url)
+                base_main = base_meta.get("main", url)
+                base_ip = base_meta.get("ip", "-1")
+                
+                # Sofortiger DB-Eintrag!
+                self.db.update_result(result_id, base_ip, base_main, url)
+            except Exception as e:
+                self.logger.write_to_log(f"Fehler beim initialen Parsen der URL {url}: {e}")
+            # ====================================================================
+
             try:
                 proxy, proxy_error = get_proxy_for_scraping(country_proxy, self.country)
             except Exception as e:
@@ -173,32 +174,28 @@ class SourcesScraper:
                 proxy_error = f"Proxy selection failed: {str(e)}"
                 self.logger.write_to_log(f"Critical proxy error: {proxy_error}")
             
-            # Log if there was an error with proxy selection
             if proxy_error:
                 log = f"Proxy error for {country_proxy}: {proxy_error}"
                 self.logger.write_to_log(log)
                          
-            progress = 2 # Initialize code 2 for source scraping progres (2 = in_progress)
-            created_at = datetime.now() # Get current timestamp.
-            # Initialize content_dict with a default value to avoid undefined reference
+            progress = 2 
+            created_at = datetime.now() 
             content_dict = {"":""}
-            counter = 1  # Initialize counter with a default value
-            source_id = None  # Initialize source_id with a default value
+            counter = 1  
+            source_id = None  
             
-            #check the progress of the sources to scrape to prevent the scraping process of existing sources
             if self.db.check_progress(url, result_id):
                 self.logger.write_to_log(f"Skipping {url} (ID: {result_id}) - already in progress")
                 continue
             else:
                 try:
-                    source_id_check = self.db.get_source_check(url, country_proxy) # Check if source is already scraped by URL
+                    source_id_check = self.db.get_source_check(url, country_proxy) 
 
                     if source_id_check:
                         print("duplicate")
                         print(source_id_check)
 
                         log = str(source_id_check)+"_"+str(result_id)+"\t"+url+"\tupdate result"
-
                         self.logger.write_to_log(log)
                         
                         try:
@@ -209,7 +206,6 @@ class SourcesScraper:
 
                         self.db.update_result_source(result_id, source_id_check, 1, counter, created_at, self.job_server)
 
-                        # If source is scraped already and not older than 48 hours, duplicate the content
                         try:
                             if self.db.get_result_content(source_id_check):
                                 rc = self.db.get_result_content(source_id_check)
@@ -219,7 +215,6 @@ class SourcesScraper:
 
                                 if not(final_url):
                                     final_url = url
-
                                 elif len(final_url) == 0:
                                     final_url = url
 
@@ -229,7 +224,6 @@ class SourcesScraper:
 
                     else:
                         if self.db.get_source_check_by_result_id(result_id):
-                            
                             if self.db.get_result_source_source(result_id):
                                 source_id = self.db.get_result_source_source(result_id)
                                 counter = self.db.get_source_counter_result(result_id)
@@ -237,14 +231,14 @@ class SourcesScraper:
                                 source_id = self.db.insert_source(url, progress, created_at, self.job_server, country_proxy)
                                 source_id = source_id[0]
                                 counter = 1
-                            created_at = datetime.now() # Get current timestamp.
+                            created_at = datetime.now()
                             print("new")
                             print(source_id)
                             self.db.update_result_source(result_id, source_id, 2, counter, created_at, self.job_server)
                         else:
                             source_id = False
 
-                        if source_id: # If source_id is found, start the scraping job.
+                        if source_id: 
                             try:
                                 try:
                                     counter = self.db.get_source_counter_result(result_id)
@@ -252,7 +246,6 @@ class SourcesScraper:
                                     self.logger.write_to_log(f"Error getting counter for result {result_id}: {str(e)}")
                                     counter = 1
                                 
-                                # If proxy is needed but no working proxies were found
                                 if country_proxy != self.country and country_proxy is not None and proxy is None:
                                     error_code = f"No working proxies available for {country_proxy}: {proxy_error}"
                                     progress = -1
@@ -260,50 +253,37 @@ class SourcesScraper:
                                     error = "error"
                                     log = f"{source_id}_{result_id}\t{url}\t{progress}\t{error_code}"
                                     self.logger.write_to_log(log)
-                                    self.db.update_source(source_id, error, error, progress, error, error_code, status_code, created_at, content_dict)
                                     created_at = datetime.now()
+                                    self.db.update_source(source_id, None, progress, error, error_code, status_code, created_at, content_dict)                                    
                                     self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server)
                                     continue
 
-                                # Setze ein Timeout für den gesamten Scrape-Prozess
-                                max_scrape_time = 450  # 7.5 Minuten maximale Laufzeit pro URL
+                                max_scrape_time = 450  
                                 start_time = time.time()
                                 
-                                # Erstelle und starte den Thread mit Argumenten
                                 thread = threading.Thread(target=scrape_url, args=(url, proxy, country_code, max_scrape_time))
-                                thread.daemon = True  # Daemon-Thread, damit er nicht die Ausführung blockiert
+                                thread.daemon = True  
                                 thread.start()
 
-                                # Warte auf das Ergebnis mit einem längeren Timeout
-                                wait_timeout = max_scrape_time * 1.5  # 50% mehr Zeit als die maximale Scraping-Zeit
-                                
-                                # Warten mit periodischen Checks
+                                wait_timeout = max_scrape_time * 1.5  
                                 wait_start_time = time.time()
+                                
                                 while not result_dict_available.is_set():
-                                    # Kurz warten (5 Sekunden)
                                     result_dict_available.wait(5)
-                                    
-                                    # Überprüfen, ob wir das Timeout erreicht haben
                                     elapsed = time.time() - wait_start_time
                                     if elapsed > wait_timeout:
                                         self.logger.write_to_log(f"Timeout waiting for result from {url} after {elapsed:.2f}s")
                                         break
-                                        
-                                    # Periodischer Status-Log
-                                    if int(elapsed) % 60 == 0:  # Jede Minute
+                                    if int(elapsed) % 60 == 0:
                                         self.logger.write_to_log(f"Still waiting for result from {url} ({elapsed:.2f}s elapsed)")
-                                    
-                                    # Prüfen, ob result_dict bereits verfügbar ist
                                     if result_dict is not None:
                                         self.logger.write_to_log(f"Result available for {url} after {elapsed:.2f}s")
                                         break
                                 
-                                # Überprüfe ob result_dict definiert ist
                                 if result_dict is None:
                                     self.logger.write_to_log(f"Result dict not available for {url} after {time.time() - wait_start_time:.2f}s")
                                     result_dict = {
-                                        "code": "error",
-                                        "bin_data": "error",
+                                        "file_path": None, 
                                         "request": {"content_type": "error", "status_code": -1},
                                         "final_url": url,
                                         "meta": {"ip": "-1", "main": url},
@@ -311,20 +291,24 @@ class SourcesScraper:
                                         "content_dict": {"":""}
                                     }
                                     
-                                # Event zurücksetzen für die nächste Verwendung
                                 result_dict_available.clear()
 
-                                #Store all results from the dictionary to save them to the database
-                                code = result_dict.get('code', "error") # Source code of the URL
-                                bin_data = result_dict.get('bin_data', "error") # Screenshot of the URL
-                                content_type = result_dict.get('request', {}).get('content_type', "error") # HTML header content_type of the URL
-                                status_code = result_dict.get('request', {}).get('status_code', -1) # Server status_code of the URL
-                                final_url = result_dict.get('final_url', url) # Redirected URL
-                                ip = result_dict.get('meta', {}).get('ip', "-1") # IP of the URL
-                                main = result_dict.get('meta', {}).get('main', url) # Main domain of the URL
-                                error_code = result_dict.get('error_codes', "") # Error code of the scraping process, if an error occured
+                                file_path = result_dict.get('file_path')
+                                content_type = result_dict.get('request', {}).get('content_type', "error") 
+                                status_code = result_dict.get('request', {}).get('status_code', -1) 
+                                final_url = result_dict.get('final_url', url) 
+                                ip = result_dict.get('meta', {}).get('ip', "-1") 
+                                main = result_dict.get('meta', {}).get('main', url) 
+                                error_code = result_dict.get('error_codes', "") 
+                                
+                                # NEU: Wenn der Scraper wegen Timeout abstürzt, gibt er als "main" oft 
+                                # einfach wieder die Roh-URL zurück. Wir fangen das ab und verwenden 
+                                # unsere saubere base_main Domain!
+                                if main == url or main == final_url:
+                                    main = base_main
+                                if ip == "-1":
+                                    ip = base_ip
 
-                                # Append proxy information to error_code if there was a proxy error
                                 if proxy_error:
                                     if error_code:
                                         error_code += "; " + proxy_error
@@ -339,29 +323,21 @@ class SourcesScraper:
                                 timeout_indicators = ["timeout", "timed out", "partial content"]
                                 has_timeout = any(indicator in error_code.lower() for indicator in timeout_indicators)
 
-                                # Set progress to -1 if any condition is not met
                                 if (status_code != 200 or 
                                     content_type == 'error' or 
-                                    code == 'error' or 
-                                    bin_data == 'error' or 
+                                    file_path is None or  
                                     has_timeout):
                                     progress = -1
                                 else:
                                     progress = 1
 
-                                # Log the progress determination for debugging
                                 log_msg = f"Progress set to {progress} for {url}: status={status_code}, content_type={content_type}"
                                 if progress == -1:
-                                    # Log why progress is set to -1
                                     reasons = []
                                     if status_code != 200:
                                         reasons.append(f"status_code is {status_code} (not 200)")
                                     if content_type == 'error':
                                         reasons.append("content_type is error")
-                                    if code == 'error':
-                                        reasons.append("source code is error")
-                                    if bin_data == 'error':
-                                        reasons.append("screenshot is error")
                                     if has_timeout:
                                         reasons.append(f"timeout detected: '{error_code}'")
                                     
@@ -372,81 +348,83 @@ class SourcesScraper:
                                     final_url = url
 
                                 try:
-                                    self.db.update_source(source_id, code, bin_data, progress, content_type, error_code, status_code, created_at, content_dict) # Update source in database
-                                    created_at = datetime.now() # Get current timestamp.
-                                    self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) # Update source in database
-                                    self.db.update_result(result_id, ip, main, final_url) # Update result in database
+                                    self.db.update_source(
+                                            source_id, 
+                                            file_path, 
+                                            progress, 
+                                            content_type, 
+                                            error_code, 
+                                            status_code, 
+                                            created_at, 
+                                            content_dict
+                                        ) 
+                                    created_at = datetime.now()
+                                    self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server)
+                                    
+                                    # Das 2. Update der Result Tabelle, falls sich durch einen Redirect die URL/Domain geändert hat
+                                    self.db.update_result(result_id, ip, main, final_url)
 
                                 except Exception as e:
                                     self.logger.write_to_log("Updating source table failed \t \t \t"+str(e))
-
                                     log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
-
                                     self.logger.write_to_log(log)
 
                                     print(str(e))
-                                    # Add proxy error information if there was any
                                     proxy_info = f" (Proxy: {proxy})" if proxy else ""
                                     if proxy_error:
                                         proxy_info += f" Proxy issues: {proxy_error}"
                                     
-                                    error_code = f"Source Controller scraping failed: {str(e)}{proxy_info}" # Store the error code in database
+                                    error_code = f"Source Controller scraping failed: {str(e)}{proxy_info}" 
                                     error = "error"
                                     progress = -1
                                     status_code = -1
                                     content_dict = "error"
                                     log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
+                                    created_at = datetime.now()
                                     self.logger.write_to_log(log)
-                                    self.db.update_source(source_id, error, error, progress, error, error_code, status_code, created_at, content_dict) # Update source in database with error codes
-                                    created_at = datetime.now() # Get current timestamp.
-                                    self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) # Update source in database
+                                    self.db.update_source(source_id, None, progress, error, error_code, status_code, created_at, content_dict)
+                                    self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) 
 
-
-                            # Store information about failure when the function raises an error
                             except Exception as e:
                                 try:
                                     counter = self.db.get_source_counter_result(result_id)
                                 except:
                                     counter = 1
                                 
-                                # Add proxy error information if there was any
                                 proxy_info = f" (Proxy: {proxy})" if proxy else ""
                                 if proxy_error:
                                     proxy_info += f" Proxy issues: {proxy_error}"
                                     
-                                error_code = f"Final Source Controller scraping failed: {str(e)}{proxy_info}" # Store the error code in database
+                                error_code = f"Final Source Controller scraping failed: {str(e)}{proxy_info}"
                                 print(error_code)
                                 error = "error"
                                 progress = -1
                                 status_code = -1
                                 log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
+                                created_at = datetime.now() 
                                 self.logger.write_to_log(log)
-                                self.db.update_source(source_id, error, error, progress, error, error_code, status_code, created_at, content_dict) # Update source in database with error codes
-                                created_at = datetime.now() # Get current timestamp.
-                                self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) # Update source in database
+                                self.db.update_source(source_id, None, progress, error, error_code, status_code, created_at, content_dict)                                
+                                self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) 
 
                 except Exception as e:
-                    # Add proxy error information if there was any
                     proxy_info = f" (Proxy: {proxy})" if proxy else ""
                     if proxy_error:
                         proxy_info += f" Proxy issues: {proxy_error}"
                         
-                    error_code = f"Process failed Source Controller scraping failed: {str(e)}{proxy_info}" # Store the error code in database
+                    error_code = f"Process failed Source Controller scraping failed: {str(e)}{proxy_info}" 
                     print(error_code)
                     error = "error"
                     progress = -1
                     status_code = -1
-                    # content_dict is now initialized at the beginning of the loop
-                    content_dict = "error"  # Setting it again here for clarity
+                    content_dict = "error"  
                     log = "Skipped Result:"+str(result_id)+"\t"+str(e)+"\t \t \t "
                     self.logger.write_to_log(log)
-                    if source_id:  # Only update if source_id exists
-                        self.db.update_source(source_id, error, error, progress, error, error_code, status_code, created_at, content_dict) # Update source in database with error codes
-                        created_at = datetime.now() # Get current timestamp.
-                        self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) # Update source in database
+                    if source_id:  
+                        self.db.update_source(source_id, None, progress, error, error_code, status_code, created_at, content_dict) 
+                        created_at = datetime.now() 
+                        self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) 
 
 if __name__ == "__main__":
-    #Load all necessary config files to connect to the database and load the parameters for the sources scraper
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
@@ -463,7 +441,6 @@ if __name__ == "__main__":
     refresh_time = sources_cnf['refresh_time']
     country = sources_cnf['country']
 
-    # Fehlerbehandlung für Datenbankkonfiguration
     try:
         db = DB(db_cnf, job_server, refresh_time)
         if not db.check_db_connection():
@@ -476,13 +453,11 @@ if __name__ == "__main__":
     logger = Logger()
     sources = Sources()
 
-    # Fehlerbehandlung für get_sources
     try:
-        get_sources = db.get_sources(job_server) # Call the external function from /libs/lib_db.py to read the results without a source.
+        get_sources = db.get_sources(job_server) 
         if not get_sources:
             print("Keine Quellen zum Scrapen gefunden.")
             logger.write_to_log("No sources to scrape found")
-            # Clean up
             del logger
             del helper
             del db
@@ -491,7 +466,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Fehler beim Abrufen der Quellen: {str(e)}")
         logger.write_to_log(f"Error getting sources: {str(e)}")
-        # Cleanup
         del logger
         del helper
         del db
@@ -500,18 +474,15 @@ if __name__ == "__main__":
 
     print(get_sources)
 
-    # Setze Gesamttimeout für den Scraper
-    MAX_TOTAL_RUNTIME = 7200  # 2 Stunden maximale Laufzeit für den gesamten Scraper
+    MAX_TOTAL_RUNTIME = 7200  
     start_time = time.time()
 
-    sources_scraper = SourcesScraper(get_sources, job_server, db, logger, sources, country) #Initialize the sources scraper
+    sources_scraper = SourcesScraper(get_sources, job_server, db, logger, sources, country) 
     
     try:
-        # Verwende ThreadPoolExecutor mit Timeout für den gesamten Scrape-Prozess
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(sources_scraper.scrape)
             try:
-                # Setze ein striktes Zeitlimit für den gesamten Scrape-Vorgang
                 future.result(timeout=MAX_TOTAL_RUNTIME)
             except concurrent.futures.TimeoutError:
                 logger.write_to_log(f"Scraper exceeded maximum runtime of {MAX_TOTAL_RUNTIME}s")
@@ -520,14 +491,11 @@ if __name__ == "__main__":
     except Exception as e:
         logger.write_to_log(f"Critical scraper error: {str(e)}")
 
-    # Berichterstellung über die Laufzeit
     runtime = time.time() - start_time
     logger.write_to_log(f"Total runtime: {runtime:.2f}s for {len(get_sources)} sources")
 
-    # Get the directory path to locate the proxy file
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-    # Bereinigung und Ressourcenfreigabe
     del logger
     del helper
     del db
@@ -536,4 +504,3 @@ if __name__ == "__main__":
     except:
         pass
     del sources
-    

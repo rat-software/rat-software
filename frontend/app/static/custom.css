@@ -2,7 +2,7 @@ body {
   padding-top: 100px;
   /*padding-bottom: 100px;*/
   background-color: #f8f9fa !important;
-  font-size:0.9rem;
+  font-size: 1rem; /* KORRIGIERT: Vorher 0.9rem (zu klein) */
 }
 
 .bg-blue {
@@ -28,8 +28,8 @@ ul li {
 }
 
 .btn-xs {
-  padding: .1rem .3rem;
-  font-size: .75rem;
+  padding: .2rem .4rem;
+  font-size: .85rem;
 }
 
 #loading {
@@ -39,8 +39,9 @@ ul li {
   padding-top: 15%;
 }
 
+/* KORRIGIERT: Lesbarere kleine Texte */
 .text-small {
-  font-size: 0.8rem;
+  font-size: 0.9rem; 
 }
 
 .nav-pills .nav-link.active {
@@ -49,14 +50,14 @@ ul li {
 }
 
 .nav-pills .nav-link {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .nav-pills .nav-link .step-number {
   background-color: #aaa;
   color: #fff;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.1rem;
   width: 48px !important;
   height: 48px;
   text-align: center;
@@ -73,7 +74,7 @@ ul li {
   padding: 0 10px;
   background-color: #f8f9fa;
   text-transform: uppercase;
-  font-size: .7rem;
+  font-size: .8rem;
   font-weight: 600;
   letter-spacing: .05rem;
 }
@@ -89,25 +90,11 @@ ul li {
   width: 95%;
 }
 
-ul#result_types {
+ul#result_types, ul#search_engines, ul.cols {
   columns: 2;
   padding-left: 20px;
   -webkit-columns: 2;
   -moz-columns: 2;
-}
-
-ul#search_engines {
-  columns: 3;
-  padding-left: 20px;
-  -webkit-columns: 3;
-  -moz-columns: 3;
-}
-
-ul.cols {
-  columns: 3;
-  padding-left: 0;
-  -webkit-columns: 3;
-  -moz-columns: 3;
 }
 
 @media (max-width: 720px) {
@@ -115,27 +102,13 @@ ul.cols {
     padding-left: 0px;
     width: 100%;
   }
-
   .step-number {
     padding: 0 17px !important;
   }
-
-  ul#result_types {
+  ul#result_types, ul#search_engines, ul.cols {
     columns: 1;
     -webkit-columns: 1;
     -moz-columns: 1;
-  }
-
-  ul#search_engines {
-    columns: 2;
-    -webkit-columns: 2;
-    -moz-columns: 2;
-  }
-
-  ul.cols {
-    columns: 2;
-    -webkit-columns: 2;
-    -moz-columns: 2;
   }
 }
 
@@ -184,8 +157,8 @@ ul.cols {
 
 .accordion .accordion-item .accordion-button {
   font-weight: 600;
-  padding: 10px;
-  font-size: .75rem;
+  padding: 12px;
+  font-size: .9rem;
   color: #212529;
   background-color: #fff !important;
 }
@@ -207,7 +180,7 @@ ul.cols {
   height: auto;
   font-family: "Font Awesome 5 Free";
   content: "\2b";
-  font-size: .75rem;
+  font-size: .9rem;
   background-image: none;
   color: #777;
   transform: translateY(-4px);
@@ -219,7 +192,7 @@ ul.cols {
   background-image: none;
   font-family: "Font Awesome 5 Free";
   content: "\f068";
-  font-size: .75rem;
+  font-size: .9rem;
   transform: translate(-5px, -4px);
   transform: rotate(0deg);
 }
@@ -241,7 +214,7 @@ ul.cols {
 }
 
 .nav-link-heading {
-  font-size: .75rem;
+  font-size: .85rem;
   font-weight: 700;
   text-transform: uppercase;
   color: #777;
@@ -249,22 +222,24 @@ ul.cols {
 }
 
 .form-control {
-  padding: .375rem .75rem;
+  padding: .5rem .75rem;
 }
 
 .summary-desc {
   text-transform: uppercase;
   letter-spacing: .05rem;
-  font-size: 0.7rem;
+  font-size: 0.85rem; /* KORRIGIERT: Vorher 0.7rem */
   color: #868e96;
   font-weight: bold;
 }
 
+/* KORRIGIERT: Die Box-Header sind jetzt viel lesbarer */
 .crd-header {
-  font-weight: bold;
-  font-size: .7rem;
+  font-weight: 700;
+  font-size: 1rem; /* KORRIGIERT: Vorher 0.7rem! */
   text-transform: uppercase;
   letter-spacing: .05rem;
+  color: #495057;
 }
 
 .img-layer {
@@ -312,7 +287,7 @@ img {
   text-decoration: none;
 }
 
-/* Den Unterstrich NUR beim Hovern hinzufügen */
 .hover-underline:hover {
   text-decoration: underline;
 }
+

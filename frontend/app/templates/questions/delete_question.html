@@ -15,6 +15,7 @@
 
     <!-- Form for confirming the deletion of a question -->
     <form method="POST" class="card p-4 shadow-sm">
+      {{ form.hidden_tag() }}
       <!-- Confirmation message asking if the user is sure they want to delete the question -->
       <div class="mb-3">Are you sure you want to delete {{ question.title }}?</div>
 

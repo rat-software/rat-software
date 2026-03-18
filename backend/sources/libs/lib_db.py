@@ -93,27 +93,56 @@ class DB:
         return sources_pending
 
     def update_sources_failed(self, job_server):
-        """
-        Get all finally failed sources (progress = 2 and counter > 3)
-        """
-        conn = DB.connect_to_db(self)
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT result_source.source  FROM result_source where (result_source.progress = 2 or result_source.progress = -1 or result_source.progress = 0)  and result_source.counter > 3 and result_source.job_server = %s",(job_server,))
-        conn.commit()
-        sources_failed = cur.fetchall()
-        conn.close()
-
-        for s in sources_failed:
-            source = s[0]
-            print("Finalize Sources")
-            print(source)
+            """
+            Get all finally failed sources. 
+            Fixes the gap for counter == 3 and ensures running jobs are not killed prematurely.
+            Calculates time in Python to prevent timezone mismatch with DB.
+            """
+            from datetime import datetime, timedelta
+            
             conn = DB.connect_to_db(self)
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cur.execute("Update source SET progress=-1 WHERE id = %s and job_server = %s",(source, job_server))
+            
+            # Python berechnet die exakte Zeitgrenze (10 Minuten in der Vergangenheit)
+            threshold_time = datetime.now() - timedelta(minutes=10)
+            
+            sql = """
+                SELECT id, source 
+                FROM result_source 
+                WHERE counter >= 3 
+                AND job_server = %s 
+                AND (
+                    progress = -1 
+                    OR (progress IN (0, 2) AND created_at < %s)
+                )
+            """
+            # Wir übergeben threshold_time an das SQL-Skript (%s)
+            cur.execute(sql, (job_server, threshold_time))
+            sources_failed = cur.fetchall()
             conn.commit()
-            cur.execute("Update result_source SET progress=-1 WHERE result_source.source = %s and job_server = %s",(source, job_server))
-            conn.commit()                   
             conn.close()
+
+            # Debug-Ausgabe für dein Terminal
+            print(f"Gefundene feststeckende Jobs (Counter >= 3): {len(sources_failed)}")
+
+            for s in sources_failed:
+                rs_id = s[0]
+                source_id = s[1]
+                
+                print(f"-> Setze ResultSource ID {rs_id} final auf progress = -1")
+                
+                conn = DB.connect_to_db(self)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+                
+                # 1. Update result_source
+                cur.execute("UPDATE result_source SET progress=-1 WHERE id = %s", (rs_id,))
+                
+                # 2. Update source Tabelle (falls existent)
+                if source_id:
+                    cur.execute("UPDATE source SET progress=-1 WHERE id = %s", (source_id,))
+                    
+                conn.commit()                   
+                conn.close()
 
     def get_source_check(self, url, country):
         """
@@ -203,13 +232,20 @@ class DB:
         else:
             return False
 
-    def update_source(self, source_id, code, bin, progress, content_type, error_code, status_code, created_at, content_dict):
-        """
-        Update source content when scraping job is done
-        """
-        conn = DB.connect_to_db(self)
+    def update_source(self, source_id, file_path, progress, content_type, error_code, status_code, created_at, content_dict):
+        conn = self.connect_to_db()
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("Update source SET code=%s, bin=%s, progress=%s, content_type=%s, error_code=%s, status_code=%s, created_at=%s, content_dict = %s WHERE id = %s", (code, bin, progress, content_type, error_code, status_code, created_at, content_dict, source_id))
+        
+        # Wir speichern NUR noch den file_path. 
+        # Die Spalten code und bin werden nicht mehr angefasst.
+        sql = """
+            UPDATE source 
+            SET file_path=%s, progress=%s, content_type=%s, 
+                error_code=%s, status_code=%s, created_at=%s, 
+                content_dict=%s 
+            WHERE id = %s
+        """
+        cur.execute(sql, (file_path, progress, content_type, error_code, status_code, created_at, content_dict, source_id))
         conn.commit()
         conn.close()
 
@@ -337,6 +373,16 @@ class DB:
     def get_sources(self, job_server):
         """
         Read all results with no source id (no source_code nor a screenshot)
+
+            SELECT r.id, r.url, c.name AS country_name, c.code, s.studytype 
+            FROM result r 
+            JOIN study s ON r.study = s.id 
+            LEFT JOIN country c ON r.country = c.id 
+            LEFT JOIN result_source rs ON rs.result = r.id 
+            WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3)) AND r.id > 492000
+            ORDER BY r.id ASC 
+            LIMIT 5;
+
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -346,8 +392,9 @@ class DB:
             JOIN study s ON r.study = s.id 
             LEFT JOIN country c ON r.country = c.id 
             LEFT JOIN result_source rs ON rs.result = r.id 
-            WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3)) 
-            AND s.studytype != 6 
+            WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3))
+            -- NEU: Ignoriere Studien, die im Live Link Mode sind
+            AND s.live_link_mode = FALSE 
             ORDER BY r.id ASC 
             LIMIT 5;
         """

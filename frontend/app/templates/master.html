@@ -29,17 +29,18 @@
     {% if nav == 'static' %}
     <div class="img-layer">
         <img src="{{ url_for('static', filename='img/rat_icon_schwarz.png') }}">
-    </div>
+    </div> Result Assessment Tool
     {% endif %}
 
     {% if nav == 'static' %}
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-white">
       <div class="container">
-        <a class="navbar-brand" href="{{ url_for('home') }}">
-          <img src="{{ url_for('static', filename='img/rat_logo_schwarz.png') }}" height="80px"
-            class="d-inline-block align-center" alt="RAT Logo">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+          <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" width="48"
+              class="d-inline-block" alt="RAT Logo">
+          <span class="ms-2">Result Assessment Tool</span>
         </a>
-
+           
         <div class="collapse navbar-collapse" id="nav">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
             {% if current_user.is_authenticated %}
@@ -68,9 +69,10 @@
     {% else %}
     <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
-        <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-          <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" width="48"
-            class="d-inline-block align-top" alt="RAT Logo">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main') }}">
+          <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" height="80px"
+              class="d-inline-block" alt="RAT Logo"> 
+          <span class="ms-2">Result Assessment Tool</span>
         </a>
         {% if current_user.is_authenticated %}
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
@@ -84,8 +86,9 @@
             {{ nav_link('new_qs_study_wizard', 'New Query Sampler Study', 'fa-regular fa-square-plus') }}
           </ul>
           <ul class="navbar-nav ms-auto">
-            {{ nav_link('home', 'Home', 'fa-solid fa-house') }}
-            {{ nav_link('contact', 'Contact', 'fa-solid fa-comment') }}
+            {{ nav_link('security.login', 'Home', 'fa-solid fa-house') }}
+
+
             
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
@@ -132,21 +135,26 @@
     <div class="container-fluid text-small bg-primary mt-auto">
       <footer class="d-flex flex-wrap justify-content-between align-items-center py-3">
         <p class="col-md-8 d-flex align-items-center text-white justify-content-start mb-3 mb-md-0 me-md-auto">
-          <span>Copyright © 2025 Result Assessment Tool</span>
+          <span>Copyright © 2026 Result Assessment Tool</span>
           <span class="px-4"><a href="https://searchstudies.org/" class="text-white" target="_blank">Developed by Search
               Studies</a> (HAW Hamburg)</span>
           <span><a href="https://gepris.dfg.de/gepris/projekt/557366357" class="text-white"
               target="_blank">Funded by the German Research Foundation (DFG)</a></span>
-          <span class="px-4"><a href="{{ url_for('roadmap') }}" class="text-white" target="_blank">Roadmap</a></span>
       
-          <span><a href="https://github.com/rat-software" class="text-white"
+          <span class="px-2"><a href="{{ url_for('roadmap') }}" class="text-white" target="_blank">Roadmap</a></span>
+
+          <span class="px-1"><a href="https://rat-software.org/" class="text-white" target="_blank">About</a></span>
+
+          <span class="px-2"><a href="https://rat-software.org/contact/" class="text-white" target="_blank">Contact</a></span>
+
+          <span class="px-1"><a href="https://github.com/rat-software" class="text-white"
               target="_blank">GitHub</a></span>
 
         </p>
 
         <ul class="nav col-md-4 justify-content-end">
-          <li class="nav-item"><a href="https://searchstudies.org/privacy/" class="nav-link px-2 text-white" target="_blank">Privacy</a></li>
-          <li class="nav-item"><a href="https://searchstudies.org/imprint/" class="nav-link px-2 text-white" target="_blank">Legal</a></li>
+          <li class="nav-item"><a href="https://rat-software.org/privacy/" class="nav-link px-2 text-white" target="_blank">Privacy</a></li>
+          <li class="nav-item"><a href="https://rat-software.org/imprint/" class="nav-link px-2 text-white" target="_blank">Legal</a></li>
         </ul>
       </footer>
     </div>
@@ -349,10 +357,7 @@
         $('.toast').toast('show')
       });
 
-      // Automatically close alerts after 2 seconds
-      $(".alert").delay(2000).slideUp(200, function () {
-        $(this).alert('close');
-      });
+
     </script>
 
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>

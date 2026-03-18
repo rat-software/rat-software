@@ -4,41 +4,33 @@
 {% block head %}{{ super() }}{% endblock %}
 
 {% block content %}
-<!-- Hidden heading for screen readers to identify the page -->
 <h1 class="sr-only">RAT</h1>
 
-<!-- Container for participant details -->
 <div class="row mb-4">
-  <div class="col-8 offset-2">
-    <div class="card">
-      <div class="card-body">
-        <!-- Header for participant details section -->
-        <div class="hstack">
-          <div class="crd-header">Participant</div>
-        </div>
+  <div class="col-lg-8 offset-lg-2">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Participant Details</h5>
 
-        <!-- Table displaying participant information -->
-        <div class="py-2 font-monospace">
-          <table class="table table-sm">
+        <div class="py-2 fs-5">
+          <table class="table table-sm table-borderless">
             <tr>
-              <!-- Display participant icon and name -->
-              <td width="5%"><i class="fas fa-user"></i></td>
-              <td width="15%" class="text-left">Name</td>
-              <td>{{ participant.name }}</td>
+              <td width="5%" class="text-muted"><i class="fas fa-user"></i></td>
+              <td width="20%" class="text-muted fw-bold">Name</td>
+              <td class="text-dark">{{ participant.name }}</td>
             </tr>
             <tr>
-              <!-- Display participant icon and code -->
-              <td><i class="fas fa-key"></i></td>
-              <td>Code</td>
-              <td>{{ participant.password }}</td>
+              <td class="text-muted"><i class="fas fa-key"></i></td>
+              <td class="text-muted fw-bold">Login Code</td>
+              <td class="text-dark font-monospace fw-bold">{{ participant.password }}</td>
             </tr>
           </table>
         </div>
 
-        <!-- Form to download participant details -->
-        <form method="post">
-          <button type="submit" name="download" value="1" class="btn btn-sm btn-outline-primary float-end">
-            <i class="fa-solid fa-download"></i> Save Details
+        <form method="post" class="mt-3 text-end">
+          {{ form.hidden_tag() }}
+          <button type="submit" name="download" value="1" class="btn btn-outline-primary fw-bold" data-bs-toggle="tooltip" data-bs-placement="left" title="Download a text file with your credentials so you don't lose them.">
+            <i class="fa-solid fa-download me-1"></i> Save Details
           </button>
         </form>
       </div>
@@ -46,46 +38,41 @@
   </div>
 </div>
 
-<!-- Container for studies associated with the participant -->
 <div class="row">
-  <div class="col-8 offset-2">
-    <div class="card">
-      <div class="card-body">
-        <!-- Header for studies section -->
-        <div class="hstack">
-          <div class="crd-header">Studies</div>
-        </div>
+  <div class="col-lg-8 offset-lg-2">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Assigned Studies</h5>
 
-        <!-- Loop through and display each study associated with the participant -->
         <div class="py-2">
           {% for i in info %}
-          <div class="row align-items-center">
-            <!-- Display study number -->
-            <div class="col-2"><b>#{{ i[0] }}</b></div>
+          <div class="row align-items-center mb-3">
+            <div class="col-2 fs-5 text-dark fw-bold">#{{ i[0] }}</div>
 
             {% if i[1] > 0 %}
-            <!-- Display progress bar if there are evaluations -->
-            <div class="col-8">
-              <div class="progress" style="height: 25px;" data-bs-toggle="tooltip" data-bs-placement="top"
-                data-bs-title="{{ i[1]-i[2] }} out of {{ i[1] }}">
-                <div class="progress-bar" role="progressbar" style="width: {{(i[1]-i[2])/i[1]*100}}%;"
-                  aria-valuenow="{{ i[1]-i[2] }}" aria-valuemin="0" aria-valuemax="{{ i[4] }}">{{ i[1]-i[2] }} out of {{
-                  i[1] }}</div>
+            <div class="col-7">
+              <div class="progress shadow-sm" style="height: 30px; border-radius: 6px; cursor: help;" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ i[1]-i[2] }} out of {{ i[1] }} completed">
+                <div class="progress-bar bg-success fw-bold" role="progressbar" style="width: {{(i[1]-i[2])/i[1]*100}}%; font-size: 1rem;"
+                  aria-valuenow="{{ i[1]-i[2] }}" aria-valuemin="0" aria-valuemax="{{ i[4] }}">
+                  {{ i[1]-i[2] }} / {{ i[1] }}
+                </div>
               </div>
             </div>
 
-            <!-- Display button to start evaluation if there are open evaluations -->
             {% if i[2] > 0 %}
-            <div class="col-2">
-              <a href="{{ url_for('assessment', participant_id=participant.id, study_id=i[0])}}"
-                class="float-end btn-outline-primary btn btn-sm">
-                Start <i class="fa-solid fa-arrow-right"></i>
+            <div class="col-3 text-end">
+              <a href="{{ url_for('assessment', participant_id=participant.id, study_id=i[0])}}" class="btn btn-primary fw-bold">
+                Start <i class="fa-solid fa-arrow-right ms-1"></i>
               </a>
             </div>
-            {% endif %}
             {% else %}
-            <!-- Message if there are no evaluations available -->
-            <div class="col-10">
+            <div class="col-3 text-end text-success fw-bold">
+                <i class="fa-solid fa-check me-1"></i> Done
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="col-10 text-muted">
               Currently, there are no results to evaluate. Please come back later.
             </div>
             {% endif %}
@@ -96,4 +83,13 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+  });
+</script>
 {% endblock %}
