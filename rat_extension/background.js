@@ -784,21 +784,18 @@ async function processQueue(sessionId) {
 }
 
 // --- 8. UTILITIES ---
-// NEU: Komplett generischer URL-Builder basierend auf dem JSON-Schema
 function buildSearchUrl(term, taskConfig, engineConfig) {
-    const q = encodeURIComponent(term);
+    // encodeURIComponent wurde hier entfernt, da searchParams das automatisch (und besser) macht!
     const reqData = engineConfig.request;
     
-    // Ersetze {domain} mit dem echten Wert
     let u = reqData.baseUrl.replace("{domain}", taskConfig.domain || "");
     const urlObj = new URL(u);
     
-    // Setze die Parameter aus dem JSON
-    if (reqData.params.query) urlObj.searchParams.set(reqData.params.query, q);
+    if (reqData.params.query) urlObj.searchParams.set(reqData.params.query, term);
+    
     if (reqData.params.country && taskConfig.countryCode) urlObj.searchParams.set(reqData.params.country, taskConfig.countryCode);
     if (reqData.params.language && taskConfig.langCode) urlObj.searchParams.set(reqData.params.language, taskConfig.langCode);
     
-    // Spezial-Feature: Google UULE (bleibt aus Sicherheitsgründen hier in der Background)
     if (reqData.features && reqData.features.requiresUuleEncoding && taskConfig.location) {
         urlObj.searchParams.set(reqData.params.location, generateUule(taskConfig.location));
     }
