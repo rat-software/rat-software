@@ -396,12 +396,16 @@
 
 <body>
 
-  <div id="listView" class="view">
-    <div style="display:flex; justify-content:space-between; align-items:center">
+  <div style="display:flex; justify-content:space-between; align-items:center">
       <h2>RAT Dashboard</h2>
-      <span style="font-size:10px; color:#888">2.0</span>
+      
+      <div style="display:flex; align-items:center; gap: 5px;">
+        <label style="margin: 0;">Zoom</label>
+        <button id="zoomOutBtn" class="btn-secondary btn-sm" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift verkleinern">-</button>
+        <button id="zoomInBtn" class="btn-secondary btn-sm" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift vergrößern">+</button>
+      </div>  
     </div>
-    
+      
     <div class="row">
       <button id="createSessionBtn" class="btn-primary" style="flex: 2;">+ New Study Session</button>
       <button id="manageEnginesBtn" class="btn-info" style="flex: 1; padding: 8px 4px; font-size: 11px;">⚙️ Scrapers</button>
