@@ -462,7 +462,6 @@
       return text.toString().toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
     }
 
-    // --- NEU: Hilfsfunktion zum Kürzen der Chart-Labels ---
     function truncateLabel(text, maxLength = 35) {
         if (!text) return "";
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
@@ -492,6 +491,18 @@
     });
     {% endif %}
 
+
+    {% if top_domains and top_domains.ai_sources %}
+    const topDomainsAiData = {{ top_domains.ai_sources | tojson }};
+    new Chart(document.getElementById('topDomainsAiChart'), {
+      type: 'bar',
+      data: { 
+          labels: topDomainsAiData.map(i => truncateLabel(i.domain)), 
+          datasets: [{ label: 'Total Count', data: topDomainsAiData.map(i => i.count), backgroundColor: 'rgba(40, 167, 69, 0.7)' }] 
+      },
+      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+    });
+    {% endif %}
 
 
     {% if overlap_list %}
