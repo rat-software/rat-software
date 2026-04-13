@@ -2,7 +2,7 @@
 
 # RAT
 
-The Result Assessment Tool (RAT) is a software toolkit that allows researchers to conduct large-scale studies based on results from (commercial) search engines and other information retrieval systems. It is developed by the research group Search Studies at the Hamburg University of Applied Sciences in Germany. The RAT project is funded by the German Research Foundation (DFG –Deutsche Forschungsgemeinschaft) from 8/2021 until 10/2024, project number 460676551.
+The Result Assessment Tool (RAT) is a software toolkit that allows researchers to conduct large-scale studies based on results from (commercial) search engines and other information retrieval systems. It is developed by the research group Search Studies at the Hamburg University of Applied Sciences in Germany. The RAT project is funded by the German Research Foundation (DFG –Deutsche Forschungsgemeinschaft) from 2021 until 2024, project number 460676551 and from 2024 - 2028, project number 557366357.
 
 ## RAT Project resources
 - For detailed information about the research project and additional resources, visit: [https://searchstudies.org/research/rat/](https://searchstudies.org/rat/)
@@ -10,7 +10,6 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 - An installation of RAT can be accessed at: https://rat-software.org/
 - Datasets generated using RAT and supplementary documentation can be found at: https://osf.io/t3hg9/
 - Videos from the RAT Community Meeting are available at: https://www.youtube.com/watch?v=K2Gev8C7Xxw&list=PLiTHQpIQWsZwRaDAgFTANPvI3fHMncXUO
-- Overview of the technical implementation: https://osf.io/5v48w
 
 ## Repository Structure
 * [rat_backend](./rat_backend): The core API and logic of the tool.
