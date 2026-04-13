@@ -1,7 +1,7 @@
 # This CITATION.cff file was generated with cffinit.
 # Visit https://bit.ly/cffinit to generate yours today!
 
-cff-version: 1.4.0
+cff-version: 1.5.0
 title: Result Assessment Tool (RAT)
 message: >-
   If you use this software, please cite it using the
@@ -24,10 +24,15 @@ authors:
     email: nurce.yagci@haw-hamburg.de
   - given-names: Kumar
     family-names: Tuhina
+    orcid: 'https://orcid.org/0009-0007-0232-7989'
     email: tuhina.kumar@haw-hamburg.de
   - given-names: Billir
     family-names: Kardelen
+    orcid: 'https://orcid.org/0009-0006-1260-0777'
     email: kardelen.bilir@haw-hamburg.de
+  - given-names: Bosnak
+    family-names: Sophia
+    email: sophia.bosnak@haw-hamburg.de
 identifiers:
   - type: doi
     value: 10.5281/zenodo.14049810
