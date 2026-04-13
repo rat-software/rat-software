@@ -5,7 +5,7 @@
  * Now dynamically loads JSON scrapers (Engines) instead of hardcoding logic.
  */
 
-// --- 0. POWER ---
+// --- 1. POWER ---
 try {
     chrome.power.requestKeepAwake('system');
 } catch (e) {
@@ -17,7 +17,7 @@ const DB_NAME = "RAT_Database";
 const STORE_SESSIONS = "sessions"; 
 const STORE_RESULTS = "results";   
 const STORE_LOGS = "logs";         
-const STORE_ENGINES = "engines";    // NEU: Speicherort für unsere JSON-Scraper
+const STORE_ENGINES = "engines";
 const MAX_PAGES = 100;              
 
 const RETRY_DELAYS = [5, 15, 30, 60]; 
@@ -118,7 +118,6 @@ async function initDB() {
         request.onsuccess = async (event) => {
             db = event.target.result;
             
-            // --- NEU: AUTO-LOADER FÜR STANDARD SCRAPER ---
             await loadDefaultEnginesIfEmpty();
             
             resolve();
@@ -131,9 +130,9 @@ async function initDB() {
     });
 }
 
-// --- HELPER FÜR DEN AUTO-LOADER ---
+// --- HELPER FUNCTION ---
 async function loadDefaultEnginesIfEmpty() {
-    // 1. Prüfen, ob die Tabelle leer ist (kurze Lese-Transaktion)
+    // 1. Check whether the Engines table is empty (with NO open transactions at all)
     const isEmpty = await new Promise((resolve) => {
         const tx = db.transaction(STORE_ENGINES, "readonly");
         const store = tx.objectStore(STORE_ENGINES);
@@ -143,12 +142,12 @@ async function loadDefaultEnginesIfEmpty() {
         countRequest.onerror = () => resolve(false);
     });
 
-    if (!isEmpty) return; // Es sind schon Scraper da, also nichts tun!
+    if (!isEmpty) return; // Engines already exist, so do nothing
 
     console.log("💿 No engines found in DB. Fetching default JSONs...");
     const enginesToSave = [];
 
-    // 2. Alle JSON-Dateien laden (VÖLLIG OHNE offene Datenbank-Transaktion)
+    // 2. Load each default engine JSON, parse it, and prepare it for saving
     for (const fileName of DEFAULT_ENGINE_FILES) {
         try {
             const url = chrome.runtime.getURL(`engines/${fileName}`);
@@ -163,7 +162,7 @@ async function loadDefaultEnginesIfEmpty() {
 
     if (enginesToSave.length === 0) return;
 
-    // 3. Neue Schreib-Transaktion öffnen und alles auf einmal speichern
+    // 3. Save all loaded engines to the database in a single transaction
     return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_ENGINES, "readwrite");
         const store = tx.objectStore(STORE_ENGINES);
@@ -313,7 +312,7 @@ async function handleCaptchaEvent(sessionId, tabId) {
     const s = await getSession(sessionId);
     if (!s || s.status !== "RUNNING") return;
 
-    // Wir holen uns die engineConfig für den Captcha-Check
+    // Load the current engine config
     const currentTask = s.tasks[s.currentIndex];
     let engineConfig = null;
     if (currentTask && currentTask.config && currentTask.config.engineId) {
@@ -630,7 +629,7 @@ async function processQueue(sessionId) {
     const currentTask = session.tasks[nextIdx];
     await saveSession(session);
 
-    // NEU: Lade das passende JSON-Regelwerk aus der Datenbank!
+    // Load the engine configuration for the current task
     const engineConfig = await getEngine(currentTask.config.engineId);
     if (!engineConfig) {
         logToSession(sessionId, `❌ ERROR: Plugin for '${currentTask.config.engineId}' not found!`, "ERROR");
@@ -651,7 +650,7 @@ async function processQueue(sessionId) {
 
     let tabId = null;
     try {
-        // Übergib das JSON an den URL-Builder
+        // Load the search page with the correct URL built from the engine config and search term
         const url = buildSearchUrl(currentTask.term, currentTask.config, engineConfig);
         logToSession(sessionId, `🔗 INITIALIZING: ${url}`);
 
@@ -670,7 +669,7 @@ async function processQueue(sessionId) {
             await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
             await sleep(getRandomDelay(2000, 4000));
 
-            // NEU: Übergib das JSON-Plugin bei jedem Befehl an content.js!
+            // Pre-check for CAPTCHA before doing anything on the page
             let preCheck = await chrome.tabs.sendMessage(tabId, { action: "CHECK_CAPTCHA", payload: { config: engineConfig } }).catch(() => null);
             if (preCheck && preCheck.isCaptcha) {
                 await handleCaptchaEvent(sessionId, tabId);

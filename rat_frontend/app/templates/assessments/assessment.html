@@ -1,0 +1,426 @@
+{% extends "master.html" %}
+
+{% block title %}Assessment{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .assessment-card.is-invalid {
+    border: 1px solid #dc3545;
+    box-shadow: 0 0 0.25rem rgba(220, 53, 69, 0.5);
+  }
+
+  .server-error-message {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+  }
+
+  /* --- Preview Image Styles --- */
+  .image-preview-wrapper {
+      max-height: 850px;
+      overflow-y: auto;
+      /* NEU: Horizontales Scrollen auch in der Vorschau erlauben! */
+      overflow-x: hidden; 
+      border: 1px solid #dee2e6;
+      border-radius: 0.25rem;
+      background-color: #e9ecef;
+  }
+
+  .zoomable-img {
+    cursor: zoom-in;
+    display: block;
+    /* FIXED: Überschreibt Bootstraps img-fluid komplett! 
+       Zwingt das Bild zu 1:1 Pixel-Rendering ohne Quetschen. */
+    max-width: none !important; 
+    width: auto !important; 
+    margin: 0 auto; 
+    height: auto;
+    transition: opacity 0.2s;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+  }
+
+  .zoomable-img:hover {
+    opacity: 0.99;
+  }
+
+  /* --- MODAL STYLES (ZOOM & FLOATING CLOSE) --- */
+  #imageModal .modal-body {
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 0;
+    background-color: #212529;
+    display: block;
+    text-align: center;
+    min-height: 100vh;
+  }
+
+  #modalImageDisplay {
+    width: auto !important; 
+    max-width: none !important; 
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    padding-top: 60px;
+    padding-bottom: 60px;
+  }
+
+  #imageModal .btn-close {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    z-index: 1100;
+    width: 3rem;
+    height: 3rem;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    padding: 0.5rem;
+    opacity: 1;
+    filter: invert(1) grayscale(100%) brightness(200%);
+    transition: background-color 0.2s;
+  }
+
+  #imageModal .btn-close:hover {
+    background-color: rgba(255, 0, 0, 0.7);
+  }
+
+  /* Tooltip Icon Styling */
+  .tooltip-icon {
+      color: #6c757d;
+      margin-left: 8px;
+      font-size: 0.9rem;
+      cursor: help;
+  }
+  .tooltip-icon:hover {
+      color: #0d6efd;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-3">
+    <div class="row mb-2 py-0">
+      <div class="col-10">
+        <div class="progress" style="height: 25px">
+          <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{closed}}"
+            aria-valuemax="{{all}}"></div>
+        </div>
+      </div>
+      <div class="col text-start">{{ pct }}%</div>
+    </div>
+    {% if task_item.study.task %}
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        {% set query_text = '' %}
+        {% if task_type == 'result' and task_item.query_ %}
+        {% set query_text = task_item.query_.query %}
+        {% elif task_type == 'result_ai' and task_item.query %}
+        {% set query_text = task_item.query.query %}
+        {% elif task_type == 'result_chatbot' and task_item.query %}
+        {% set query_text = task_item.query.query %}
+        {% elif task_type == 'serp' and task_item.scraper.query_ %}
+        {% set query_text = task_item.scraper.query_.query %}
+        {% endif %}
+        <p class="card-text">{{ task_item.study.task | replace('***', '<b>'~query_text~'</b>') | safe}}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <form method="POST" id="assessment-form" novalidate>
+      {{ form.hidden_tag() }}
+
+      {% for answer in answers %}
+      {% set question = answer.question %}
+      {% set display_type = question.questiontype.display %}
+      {% set field_name = 'question_' ~ question.id %}
+      {% set has_error = errors and question.id in errors %}
+
+      <div class="card mb-4 shadow-sm assessment-card {% if has_error %}is-invalid{% endif %}"
+        data-display-type="{{ display_type }}">
+        <div class="card-header"><b>{{ question.title }}</b></div>
+        <div class="card-body">
+          {% set old_value = submitted_data.get(field_name) %}
+
+          {% if display_type == 'short_text' %}
+          <input type="text" name="{{ field_name }}" class="form-control" value="{{ old_value or '' }}">
+          {% elif display_type == 'long_text' %}
+          <textarea name="{{ field_name }}" class="form-control" rows="3">{{ old_value or '' }}</textarea>
+          {% elif display_type in ['true_false', 'likert_scale'] %}
+          {% for option in question.options|sort(attribute='position') %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="{{ field_name }}" value="{{ option.value }}"
+              id="q{{question.id}}-opt{{option.id}}" {% if old_value==option.value %}checked{% endif %}>
+            <label class="form-check-label" for="q{{question.id}}-opt{{option.id}}">{{ option.label }}</label>
+          </div>
+          {% endfor %}
+          {% elif display_type == 'multiple_choice' %}
+          {% set old_values_list = submitted_data.getlist(field_name) if submitted_data.getlist is defined else [] %}
+          {% for option in question.options|sort(attribute='position') %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="{{ field_name }}" value="{{ option.value }}" {% if
+              option.value in old_values_list %}checked{% endif %}>
+            <label class="form-check-label">{{ option.label }}</label>
+          </div>
+          {% endfor %}
+
+          {% elif display_type == 'scale_number' %}
+          {% set slider_options = {} %}
+          {% for o in question.options %}{% set _ = slider_options.update({o.label: o.value}) %}{% endfor %}
+
+          <div class="d-flex justify-content-between small">
+            <span>{{ slider_options.get('start_text', slider_options.get('start', '0')) }}</span>
+            <span>{{ slider_options.get('stop_text', slider_options.get('stop', '100')) }}</span>
+          </div>
+
+          <input type="range" class="form-range" name="{{ field_name }}" min="{{ slider_options.get('start', '0') }}"
+            max="{{ slider_options.get('stop', '100') }}" step="{{ slider_options.get('step', '1') }}"
+            value="{{ old_value or slider_options.get('start', '0') }}">
+
+          {% endif %}
+
+          <div class="js-error-message text-danger small mt-2"></div>
+          {% if has_error %}
+          <div class="server-error-message">{{ errors[question.id] }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="mt-4 d-flex align-items-center flex-wrap gap-3">
+        <div>
+            <button type="submit" name="submit" class="btn btn-primary btn-lg fw-bold px-4 shadow-sm">Submit</button>
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Save your answers and proceed to the next search result."></i>
+        </div>
+
+        {% if study.skippable %}
+        <div>
+            <button type="submit" name="skip" class="btn btn-outline-secondary btn-lg" formnovalidate>Skip This Result</button>
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Skip this result if the page is broken or you cannot evaluate it."></i>
+        </div>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+<div class="col-9">
+    {% if task_type == 'result' %}
+        {% if show_urls %}
+        <div class="card mb-4 shadow-sm px-3 py-2">
+            <div class="d-flex align-items-center">
+                <span class="fw-bold me-2 flex-shrink-0">URL:</span>
+                <div class="text-truncate">
+                    <a href="{{ task_item.normalized_url }}" target="_blank" class="hover-underline" title="{{ task_item.normalized_url }}">
+                        {{ task_item.normalized_url }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% set source = task_item.sources[0] if task_item.sources else None %}
+
+        {% if source and source.file_path %}
+            
+            {% if source.content_type and "pdf" in source.content_type.lower() %}
+                {# CASE 1: View PDF file directly #}
+                <div class="card shadow-sm" style="height: 850px;">
+                    <embed src="{{ get_storage_url(source.file_path, 'html') }}" 
+                           type="application/pdf" 
+                           width="100%" 
+                           height="100%" />
+                </div>
+                <div class="text-center text-muted small mt-2">
+                    <i class="fa-solid fa-file-pdf"></i> PDF Document Preview
+                </div>
+            {% else %}
+                {# CASE 2: Extract the screenshot (PNG) from the ZIP archive #}
+                <div class="image-preview-wrapper shadow-sm">
+                    <img class="img-fluid zoomable-img" 
+                         src="{{ get_storage_url(source.file_path, 'screenshot') }}"
+                         onclick="openImageModal(this.src)" 
+                         alt="Scraped Content" 
+                         onerror="this.onerror=null; this.src='/static/img/placeholder_error.png'; console.log('Image load failed');">
+                </div>
+                <div class="text-center text-muted small mt-2">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i> Click image to enlarge (Original Size)
+                </div>
+            {% endif %}
+
+        {% else %}
+            {# B: Content Not Available Fallback #}
+            <div class="card shadow-sm p-5 text-center bg-white">
+                <div class="mb-3 text-secondary">
+                    <i class="fa-regular fa-image fa-3x"></i>
+                </div>
+                <h4 class="h5 mb-3 text-dark">
+                    {{ task_item.title if task_item.title else "No Content Available" }}
+                </h4>
+                <p class="text-muted mb-4">
+                    The content could not be visualized directly. Please assess the website by visiting the link below.
+                </p>
+                <div>
+                    <a href="{{ task_item.normalized_url }}" target="_blank" class="btn btn-primary px-4">
+                        <i class="fa-solid fa-external-link-alt me-2"></i> Open Website
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+    {% elif task_type == 'result_ai' %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">
+        <b>AI Generated Answer</b>
+      </div>
+      <div class="card-body">
+        {{ task_item.answer_html | safe }}
+      </div>
+    </div>
+
+    {% if study.show_ai_sources and task_item.sources %}
+    <div class="card shadow-sm mt-4">
+      <div class="card-header">
+        <b>Sources</b>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% for source in task_item.sources %}
+          <li class="list-group-item">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-link text-muted me-3 flex-shrink-0"></i>
+              <div class="text-truncate">
+                {% if source.url %}
+                <span class="fw-bold text-dark" title="{{ source.url }}" style="word-break: break-all;">
+                  {{ source.url }}
+                </span>
+                {% else %}
+                <span class="text-muted">Source URL missing</span>
+                {% endif %}
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+    {% elif task_type == 'result_chatbot' %}
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <b>Chatbot Generated Answer</b>
+      </div>
+      <div class="card-body">
+        {{ task_item.answer_html | safe }}
+      </div>
+    </div>
+
+{% elif task_type == 'serp' %}
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <b>Search Engine Results Page (Snapshot)</b>
+      </div>
+      <div class="card-body bg-light p-0">
+        {% if task_item.file_path %}
+        <div class="image-preview-wrapper shadow-sm m-3">
+          <img src="{{ get_storage_url(task_item.file_path, 'screenshot') }}"
+              class="img-fluid zoomable-img"
+              onclick="openImageModal(this.src)" 
+              alt="SERP Screenshot"
+              onerror="this.onerror=null; this.src='/static/img/placeholder_error.png'; console.log('Image load failed');">
+        </div>
+        <div class="text-center text-muted small mt-2 mb-3"><i class="fa-solid fa-magnifying-glass-plus"></i> Click image to enlarge</div>
+        {% else %}
+        <div class="alert alert-warning m-3">No screenshot available for this SERP. The upload might have failed.</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content bg-dark">
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+      <div class="modal-body">
+        <img id="modalImageDisplay" src="">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  var imageModal = null;
+  
+  function openImageModal(src) {
+    document.getElementById('modalImageDisplay').src = src;
+    if (imageModal) imageModal.show();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // --- Activate tooltips ---
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // --- Initialize Modal ---
+    const modalElement = document.getElementById('imageModal');
+    if (modalElement) {
+        imageModal = new bootstrap.Modal(modalElement);
+    }
+
+    // --- Form Validation ---
+    const form = document.getElementById('assessment-form');
+    if (!form) return;
+
+    const submitButton = form.querySelector('button[name="submit"]');
+    if (!submitButton) return;
+
+    submitButton.addEventListener('click', function (event) {
+      let allValid = true;
+      const questionCards = form.querySelectorAll('.assessment-card');
+
+      questionCards.forEach(card => {
+        const errorDiv = card.querySelector('.js-error-message');
+        if (errorDiv) errorDiv.textContent = '';
+        card.classList.remove('is-invalid');
+        const serverError = card.querySelector('.server-error-message');
+        if (serverError) serverError.style.display = 'none';
+      });
+
+      questionCards.forEach(card => {
+        const displayType = card.dataset.displayType;
+        let questionIsValid = false;
+
+        if (displayType === 'short_text' || displayType === 'long_text') {
+          const input = card.querySelector('input[type="text"], textarea');
+          if (input && input.value.trim() !== '') questionIsValid = true;
+        } else if (displayType === 'scale_number') {
+          if (card.querySelector('input[type="range"]')) questionIsValid = true;
+        } else {
+          if (card.querySelector('input:checked')) questionIsValid = true;
+        }
+
+        if (!questionIsValid) {
+          allValid = false;
+          const errorDiv = card.querySelector('.js-error-message');
+          if (errorDiv) errorDiv.textContent = 'This field is required.';
+          card.classList.add('is-invalid');
+        }
+      });
+
+      if (!allValid) {
+        event.preventDefault();
+        const firstError = form.querySelector('.is-invalid');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  });
+</script>
+{% endblock %}

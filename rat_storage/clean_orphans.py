@@ -10,8 +10,8 @@ from sqlalchemy import create_engine, text
 
 # --- CONFIGURATION ---
 # Database connection URI and local storage path
-DB_URI = 'postgresql://rat:6n9TYHN@85.214.110.132/rat3' # Your DB URI e. g. 'postgresql://user:password@ip/dbname'
-STORAGE_DIR = '/var/www/rat/storage/sources/' # Define your STORAGE Folder on your web server
+DB_URI = 'your_db_uri_here' # Your DB URI e. g. 'postgresql://user:password@ip/dbname'
+STORAGE_DIR = 'your_storage_folder' # Define your STORAGE Folder on your web server
 # ---------------------
 
 def clean_orphans():

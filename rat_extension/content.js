@@ -138,7 +138,6 @@ if (!window.ratListenerAdded) {
                         btn.scrollIntoView({ block: "center", behavior: "smooth" });
                         await wait(600);
                         
-                        // FIX FÜR CSP ERROR: Entfernt javascript: links vor dem Klick
                         const anchor = btn.tagName === 'A' ? btn : btn.closest('a');
                         if (anchor && (anchor.getAttribute('href') || '').toLowerCase().startsWith('javascript:')) {
                             anchor.removeAttribute('href');

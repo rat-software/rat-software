@@ -5,7 +5,7 @@
     "name": "DuckDuckGo",
     "author": "RAT System",
     "version": "2.3",
-    "description": "Scraper for DuckDuckGo (Fixed Settings Popup Overlay)"
+    "description": "Scraper for DuckDuckGo"
   },
   "request": {
     "baseUrl": "https://duckduckgo.com/?ia=web&assist=true",
