@@ -16,8 +16,8 @@ app = Flask(__name__)
 
 # Configuration constants
 # Note: These values must remain synchronized with the main scraper service
-API_KEY = "" # Add your own safe API-Key
-STORAGE_FOLDER = "/var/www/rat/storage/sources/" # Define your STORAGE Folder on your web server
+API_KEY = "your_api_key_here" # Add your own safe API-Key
+STORAGE_FOLDER = "your_storage_folder" # Define your STORAGE Folder on your web server
 
 app.config['SESSION_COOKIE_NAME'] = 'rat_storage_session' # Set unique SESSION COOKIE NAME
 app.config['SESSION_COOKIE_PATH'] = '/storage' # Set unique SESSION COOKIE PATH
@@ -79,7 +79,7 @@ def view(filename, file_type):
                 target = 'screenshot.jpg'
                 mime = 'image/jpeg'
             else:
-                # Wenn 'html' angefragt wird, prüfen wir zuerst, ob es eigentlich ein PDF gibt!
+                # CASE 3: HTML Files
                 if 'source.pdf' in files_in_zip:
                     target = 'source.pdf'
                     mime = 'application/pdf'
@@ -87,13 +87,11 @@ def view(filename, file_type):
                     target = 'source.html'
                     mime = 'text/html'
                     
-            # REPARATUR-HACK FÜR GANZ ALTE SCRAPES (als das PDF versehentlich als screenshot.jpg gespeichert wurde)
             if file_type != 'screenshot' and 'source.html' in files_in_zip:
                 html_data = z.read('source.html')
                 if html_data.strip() == b"pdf" and 'screenshot.jpg' in files_in_zip and 'source.pdf' not in files_in_zip:
                     target = 'screenshot.jpg'
                     mime = 'application/pdf'
-            # ---------------------
             
             if target not in files_in_zip:
                 return f"{target} not found in ZIP", 404
