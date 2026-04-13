@@ -10,7 +10,13 @@ The Result Assessment Tool (RAT) is a software toolkit that allows researchers t
 - An installation of RAT can be accessed at: https://rat-software.org/
 - Datasets generated using RAT and supplementary documentation can be found at: https://osf.io/t3hg9/
 - Videos from the RAT Community Meeting are available at: https://www.youtube.com/watch?v=K2Gev8C7Xxw&list=PLiTHQpIQWsZwRaDAgFTANPvI3fHMncXUO
-- Overview of the technical implementatio: https://osf.io/5v48w
+- Overview of the technical implementation: https://osf.io/5v48w
+
+## Repository Structure
+* [rat_backend](./rat_backend): The core API and logic of the tool.
+* [rat_frontend](./rat_frontend): The web-based user interface.
+* [rat_storage](./rat_storage): Service for handling web data and PDF storage (Required).
+* [rat_extension](./rat_extension): Browser extension for scraping search results.
 
 ## Contributors to RAT
 - #### Project Lead: [Professor Dirk Lewandowski](https://searchstudies.org/team/dirk-lewandowski/) - https://github.com/dirklew
