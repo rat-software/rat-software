@@ -8,6 +8,7 @@ from markupsafe import Markup
 from sqlalchemy.orm import raiseload, joinedload
 from sqlalchemy import or_, and_, text, func
 from flask_security import login_required, current_user, roles_accepted
+from flask import send_file
 from datetime import datetime
 import pandas as pd
 from io import BytesIO, StringIO
@@ -706,3 +707,30 @@ def close_study(id):
     db.session.commit()
     flash('Study archived.', 'success')
     return redirect(url_for("study", id=id))
+
+
+@app.route('/study/download_extension')
+@login_required
+def download_extension():
+    # 1. Define the path for the log file (e.g., in the app's main directory)
+    log_file_path = os.path.join(app.root_path, 'extension_downloads.csv')
+    
+    # 2. Check whether the file already exists so that a header can be written if necessary
+    file_exists = os.path.isfile(log_file_path)
+    
+    # 3. Append data to the CSV file
+    with open(log_file_path, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(['Timestamp', 'User_ID', 'User_Email']) # CSV Header
+        
+        # Write a data record for this download
+        writer.writerow([
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            current_user.id,
+            current_user.email
+        ])
+
+    # 4. Send the actual ZIP file to the user
+    extension_path = os.path.join(app.root_path, 'static', 'rat-extension_v1.zip')
+    return send_file(extension_path, as_attachment=True)
