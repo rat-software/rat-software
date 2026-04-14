@@ -355,7 +355,6 @@
                 <th style="width: 55%;">Domain</th>
                 <th style="width: 15%;">Count</th>
                 <th style="width: 15%;">Share</th>
-                <th style="width: 15%;">Avg. Pos</th>
               </tr>
             </thead>
             <tbody>
@@ -364,7 +363,6 @@
                 <td class="text-truncate" title="{{ item.domain }}">{{ item.domain }}</td>
                 <td>{{ item.count }}</td>
                 <td>{{ item.percentage | round(1) }}%</td>
-                <td>{% if item.avg_position is not none %}{{ item.avg_position | round(1) }}{% else %}N/A{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>
