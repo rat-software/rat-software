@@ -257,7 +257,7 @@ def process_upload_file(study_id, filepath):
                         for f in zip_ref.namelist():
                             fl_clean = re.sub(r'[^a-z0-9]', '', f.lower())
                             if f.lower().endswith(('.jpg', '.jpeg', '.png')):
-                                if (query_clean in fl_clean) and (engine_clean in fl_clean) and (f"p{page_num}j" in fl_clean or f"p{page_num}p" in fl_clean):
+                                if (query_clean[:20] in fl_clean) and (engine_clean in fl_clean) and (f"p{page_num}j" in fl_clean or f"p{page_num}p" in fl_clean):
                                     img_match = f
                                     break
                                     
@@ -269,7 +269,7 @@ def process_upload_file(study_id, filepath):
                         for f in zip_ref.namelist():
                             fl_clean = re.sub(r'[^a-z0-9]', '', f.lower())
                             if f.lower().endswith('.html'):
-                                if (query_clean in fl_clean) and (engine_clean in fl_clean) and (f"p{page_num}h" in fl_clean):
+                                if (query_clean[:20] in fl_clean) and (engine_clean in fl_clean) and (f"p{page_num}h" in fl_clean):
                                     html_match = f
                                     break
                                 
