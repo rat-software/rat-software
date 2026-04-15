@@ -39,9 +39,15 @@ def get_result_stats(study):
                 
         collection_status_display = f"{round(collection_status_percent)}%"
 
+
+    search_engines_count = db.session.query(Result.engine_text).filter(
+        Result.study_id == study.id, 
+        Result.engine_text.isnot(None)
+    ).distinct().count()    
+
     result_stats = {
         "Queries": len(study.queries),
-        "Search Engines": len(study.searchengines),
+        "Search Engines": search_engines_count,
         "Results to Collect per Query": study.result_count,
         "Collection Status": collection_status_display
     }

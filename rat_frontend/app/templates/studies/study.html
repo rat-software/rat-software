@@ -80,7 +80,6 @@
       color: #0d6efd;
   }
 
-  /* Sauberes Styling für die WTForms Checkbox-Liste */
   #assessment_result_types {
       padding-left: 0;
   }
@@ -95,24 +94,18 @@
       cursor: pointer;
   }
 
-  /* NEU: Animation für den Save-Button bei ungespeicherten Änderungen */
-@keyframes savePulse {
-      0% { box-shadow: 0 0 0 0 rgba(111, 66, 193, 0.5); }
-      70% { box-shadow: 0 0 0 10px rgba(111, 66, 193, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(111, 66, 193, 0); }
+.floating-save-warning {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999; /* Bleibt immer im Vordergrund */
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+      width: 90%;
+      max-width: 600px;
+      margin: 0 !important;
   }
-  .btn-needs-save {
-      background-color: #6f42c1 !important; /* Indigo */
-      border-color: #6f42c1 !important;
-      color: #ffffff !important;
-      animation: savePulse 2s infinite;
-      transition: all 0.3s ease;
-  }
-  .btn-needs-save:hover {
-      background-color: #59339d !important;
-      border-color: #532f93 !important;
-      color: #ffffff !important;
-  }
+
 </style>
 {% endblock %}
 
@@ -317,7 +310,7 @@
         
         <div id="collapseAssessment" class="collapse">
           <div class="card-body bg-light border-top p-4">
-          
+
             <div class="mb-4">
               <label class="form-label fw-bold">
                   Participant Task Description
@@ -519,11 +512,14 @@
         </div>
       </div>
 
-      <div id="ui-warning-unsaved-bottom" class="alert alert-warning border-warning shadow-sm d-none align-items-center mb-3 mt-4">
+      <div id="ui-warning-unsaved-bottom" class="alert alert-warning border-warning d-none align-items-center floating-save-warning" style="background-color: #fff3cd;">
           <i class="fa-solid fa-triangle-exclamation fs-4 me-3 text-warning"></i>
-          <div class="text-dark">
-            <strong>Unsaved changes detected!</strong> Please click "Save Configurations" below to apply your new settings.
+          <div class="text-dark flex-grow-1">
+            <strong>Unsaved changes detected!</strong> Please save your new settings.
           </div>
+          <button type="button" class="btn btn-primary btn-sm ms-3 fw-bold shadow-sm" onclick="document.getElementById('study-settings-form').submit();">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Save Now
+          </button>
       </div>
 
       <div class="d-grid mt-2 mb-5">
@@ -801,12 +797,11 @@
 
             const noTypesSelected = checkedTypes.length === 0;
 
-            // --- 1. GLOBALE WARNUNGEN & BUTTON ---
+            // --- 1. GLOBAL WARNING ---
             const globalWarnTop = document.getElementById('ui-warning-unsaved-global');
             const globalWarnBottom = document.getElementById('ui-warning-unsaved-bottom');
             const saveBtn = document.getElementById('save-settings-btn');
             
-            // Warnung Oben (nur wenn wirklich ungespeicherte Änderungen da sind)
             if (globalWarnTop) {
                 if (isDirty) {
                     globalWarnTop.classList.remove('d-none');
@@ -817,7 +812,6 @@
                 }
             }
             
-            // Warnung Unten (nur wenn wirklich ungespeicherte Änderungen da sind)
             if (globalWarnBottom) {
                 if (isDirty) { 
                     globalWarnBottom.classList.remove('d-none');
@@ -828,18 +822,7 @@
                 }
             }
 
-            // Save Button Pulsieren (nur wenn wirklich ungespeicherte Änderungen da sind)
-            if (saveBtn) {
-                if (isDirty) { 
-                    saveBtn.classList.remove('btn-primary', 'btn_config');
-                    saveBtn.classList.add('btn-needs-save');
-                    saveBtn.innerHTML = '<i class="fa-solid fa-circle-info me-2"></i> Save Configurations (Changes Pending)';
-                } else {
-                    saveBtn.classList.add('btn-primary', 'btn_config');
-                    saveBtn.classList.remove('btn-needs-save');
-                    saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i> Save Configurations';
-                }
-            }
+
 
             // --- 2. PARTICIPANTS BOX (Invite Link) ---
             const boxNoTypes = document.getElementById('ui-warning-notypes');
@@ -847,13 +830,11 @@
             const boxUnsavedInvite = document.getElementById('ui-warning-unsaved-invite');
             const boxActions = document.getElementById('ui-invite-actions');
 
-            // Erst alles verstecken
             if (boxNoTypes) { boxNoTypes.classList.add('d-none'); boxNoTypes.classList.remove('d-flex'); }
             if (boxDownloads) { boxDownloads.classList.add('d-none'); boxDownloads.classList.remove('d-block'); }
             if (boxUnsavedInvite) { boxUnsavedInvite.classList.add('d-none'); boxUnsavedInvite.classList.remove('d-block'); }
             if (boxActions) { boxActions.classList.add('d-none'); boxActions.classList.remove('d-block'); }
 
-            // Logik-Baum für die Anzeige (Hier ist !hasSavedTypes weiterhin erlaubt, um den Invite-Link fairerweise zu blockieren)
             if (noTypesSelected) {
                 if (boxNoTypes) { boxNoTypes.classList.remove('d-none'); boxNoTypes.classList.add('d-flex'); }
             } else if (isDirty || !hasSavedTypes) {
@@ -865,39 +846,40 @@
             }
         }
 
-        // Initiale Aufrufe beim Laden der Seite
         updateLiveModeUI();
         updateUIState();
 
         const settingsForm = document.getElementById('study-settings-form');
         if (settingsForm) {
-            settingsForm.addEventListener('input', () => {
-                isDirty = true;
-                updateUIState();
-            });
+            const getFormState = () => new URLSearchParams(new FormData(settingsForm)).toString();
             
-            settingsForm.addEventListener('change', () => {
-                isDirty = true;
+            const initialFormState = getFormState();
+
+            const checkDirtyState = () => {
+                const currentFormState = getFormState();
+                isDirty = (currentFormState !== initialFormState); 
                 updateLiveModeUI();
                 updateUIState();
-            });
+            };
+
+            settingsForm.addEventListener('input', checkDirtyState);
+            settingsForm.addEventListener('change', checkDirtyState);
+
+            if (addRangeBtn) {
+                addRangeBtn.addEventListener('click', () => {
+                    setTimeout(checkDirtyState, 10); 
+                });
+            }
+            
+            if (rangesWrapper) {
+                rangesWrapper.addEventListener('click', (e) => {
+                    if (e.target.closest('.remove-range')) {
+                        setTimeout(checkDirtyState, 10);
+                    }
+                });
+            }
         }
 
-        if (addRangeBtn) {
-            addRangeBtn.addEventListener('click', () => {
-                isDirty = true;
-                updateUIState();
-            });
-        }
-        
-        if (rangesWrapper) {
-            rangesWrapper.addEventListener('click', (e) => {
-                if (e.target.closest('.remove-range')) {
-                    isDirty = true;
-                    updateUIState();
-                }
-            });
-        }
 
     } catch (error) {
         console.error("Critical error in RAT UI logic: ", error);
