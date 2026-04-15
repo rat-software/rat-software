@@ -733,6 +733,7 @@ class User(db.Model, UserMixin):
     mf_recovery_codes = db.Column(db.String)
     us_phone_number = db.Column(db.String)
     newsletter_opt_in = db.Column(db.Boolean, default=False)
+    super_admin = db.Column(db.Boolean, default=False)
 
     roles = db.relationship('Role', secondary=user_role, back_populates='users', lazy='select')
     studies = db.relationship('Study', secondary=study_user, back_populates='users', lazy='select')
