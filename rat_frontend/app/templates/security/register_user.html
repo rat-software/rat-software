@@ -60,8 +60,8 @@
 
       <div class="mb-3 form-check">
         {{ register_user_form.newsletter_opt_in(class="form-check-input") }}
-        <label class="form-check-label text-muted" for="newsletter_opt_in">
-          Yes, I would like to receive occasional updates and tips by email (optional).
+        <label class="form-check-label" for="newsletter_opt_in">
+          Yes, I would like to subscribe to the newsletter for occasional updates and tips (optional).
         </label>
         <div class="text-danger">
           {{ render_form_errors(register_user_form.newsletter_opt_in) }}
