@@ -56,7 +56,7 @@ class StudySettingsForm(FlaskForm):
     live_link_mode = BooleanField("Live Link Mode", default=True)
     
     # Participant Limits
-    limit_per_participant = BooleanField('Limit workload per participant')
+    limit_per_participant = BooleanField('Limit workload per participant', default=10)
     max_results_per_participant = IntegerField('Max results per participant', validators=[Optional(), NumberRange(min=1)])
     
     # Ranges
