@@ -57,7 +57,17 @@
         {{ render_field_with_errors(register_user_form.password_confirm, class_="form-control") }}
       </div>
       {% endif %}
-      
+
+      <div class="mb-3 form-check">
+        {{ register_user_form.newsletter_opt_in(class="form-check-input") }}
+        <label class="form-check-label text-muted" for="newsletter_opt_in">
+          Yes, I would like to receive occasional updates and tips by email (optional).
+        </label>
+        <div class="text-danger">
+          {{ render_form_errors(register_user_form.newsletter_opt_in) }}
+        </div>
+      </div>
+
       <div class="mb-3">
         {{ render_field_with_errors(register_user_form.recaptcha) }}
       </div>
