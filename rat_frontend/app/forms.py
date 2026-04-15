@@ -14,6 +14,7 @@ class MultiCheckboxField(SelectMultipleField):
 
 class ExtendedRegisterForm(RegisterForm):
     recaptcha = RecaptchaField()
+    newsletter_opt_in = BooleanField('Newsletter')
 
 class ExtendedSendConfirmationForm(SendConfirmationForm):
     recaptcha = RecaptchaField()
