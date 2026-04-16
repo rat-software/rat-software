@@ -22,6 +22,10 @@ STORAGE_FOLDER = "your_storage_folder" # Define your STORAGE Folder on your web 
 app.config['SESSION_COOKIE_NAME'] = 'rat_storage_session' # Set unique SESSION COOKIE NAME
 app.config['SESSION_COOKIE_PATH'] = '/storage' # Set unique SESSION COOKIE PATH
 
+@app.route('/')
+def index():
+    return "RAT Storage Service is running!", 200
+
 @app.route('/upload', methods=['POST'])
 def upload():
     """
@@ -59,7 +63,7 @@ def view(filename, file_type):
         if data.get('filename') != filename:
             return "Access denied (Ticket mismatch)", 403
     except Exception as e:
-        return "Access denied (Ticket expired or invalid)", 403
+        return f"Access denied (Error: {type(e).__name__} - {str(e)})", 403
 
     zip_path = os.path.join(STORAGE_FOLDER, secure_filename(filename))
     if not os.path.exists(zip_path):
@@ -74,7 +78,7 @@ def view(filename, file_type):
         with zipfile.ZipFile(zip_path, 'r') as z:
             files_in_zip = z.namelist()
             
-            # --- LOGIK-UPDATE ---
+           
             if file_type == 'screenshot':
                 target = 'screenshot.jpg'
                 mime = 'image/jpeg'

@@ -124,7 +124,7 @@
         {% elif task_type == 'serp' and task_item.scraper.query_ %}
         {% set query_text = task_item.scraper.query_.query %}
         {% endif %}
-        <p class="card-text">{{ task_item.study.task | replace('***', '<b>'~query_text~'</b>') | safe}}</p>
+        <div class="card-text">{{ task_item.study.task | replace('[QUERY]', '<strong>'~query_text~'</strong>') | markdown }}</div>
       </div>
     </div>
     {% endif %}

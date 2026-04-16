@@ -1,4 +1,3 @@
-```
 # RAT Storage Service
 
 A dedicated Flask-based microservice designed to store, manage, and serve scraped data (HTML sources, screenshots, and PDFs). This service includes automated cleanup utilities and secure access via timed tokens.
@@ -26,11 +25,10 @@ A dedicated Flask-based microservice designed to store, manage, and serve scrape
 ## 📦 Installation & Setup
 
 ### 1. Automatic Setup (Linux)
-Run the setup script to create the directory structure and virtual environment:
+Run the setup script to create the directory structure, build the virtual environment, and install dependencies automatically:
 ```bash
 chmod +x setup.sh
 ./setup.sh
-
 ```
 
 ### 2. Configuration

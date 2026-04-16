@@ -9,7 +9,10 @@ from flask_mail import Mail
 from app.forms import ExtendedRegisterForm, ExtendedSendConfirmationForm, ExtendedForgotPasswordForm
 from flask_wtf.csrf import CSRFProtect
 
-# ... (db, migrate, security, mail Objekte erstellen) ...
+
+import markdown
+from markupsafe import Markup
+
 db = SQLAlchemy(metadata=MetaData(naming_convention={
     'pk': 'pk_%(table_name)s', 'fk': 'fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s',
     'ix': 'ix_%(table_name)s_%(column_0_name)s', 'uq': 'uq_%(table_name)s_%(column_0_name)s',
@@ -21,6 +24,14 @@ mail = Mail()
 
 
 app = Flask(__name__)
+
+
+@app.template_filter('markdown')
+def render_markdown(text):
+    if not text:
+        return ""
+    return Markup(markdown.markdown(text))
+
 app.config.from_object(Config)
 csrf = CSRFProtect(app)
 

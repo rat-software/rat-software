@@ -456,7 +456,7 @@ if __name__ == "__main__":
     try:
         get_sources = db.get_sources(job_server) 
         if not get_sources:
-            print("Keine Quellen zum Scrapen gefunden.")
+            print("No sources to scrape found.")
             logger.write_to_log("No sources to scrape found")
             del logger
             del helper
@@ -464,7 +464,7 @@ if __name__ == "__main__":
             del sources
             sys.exit(0)
     except Exception as e:
-        print(f"Fehler beim Abrufen der Quellen: {str(e)}")
+        print(f"Error getting sources: {str(e)}")
         logger.write_to_log(f"Error getting sources: {str(e)}")
         del logger
         del helper
