@@ -1,5 +1,4 @@
 from datetime import datetime
-from seleniumwire import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException, WebDriverException, SessionNotCreatedException
 from selenium.webdriver.common.keys import Keys
@@ -34,7 +33,6 @@ from PIL import Image
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
-#ext_path = os.path.join(parentdir, "cookies_extension")
 
 
 
@@ -767,7 +765,7 @@ class Sources:
         temp_jpg = screenshot_file + ".jpg"
 
         # 1. Desktop-Standard setzen
-        target_w = sources_cnf.get('min-width', 1280)
+        target_w = sources_cnf.get('max-width', 1280)
 
         driver.maximize_window()  # Maximize browser window for screenshot
 
@@ -903,6 +901,36 @@ class Sources:
             driver.maximize_window()  # Maximize browser window for screenshot
             required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
 
+
+            # Forcefully unlock the page scroll before simulation
+            try:
+                driver.execute_script("""
+                    // List of common classes that lock the scroll
+                    const lockClasses = ['modal-open', 'is-locked', 'no-scroll', 'fixed', 'sp-message-open'];
+                    
+                    // Targeted elements: html and body
+                    [document.documentElement, document.body].forEach(el => {
+                        // 1. Remove inline styles that prevent scrolling
+                        el.style.setProperty('overflow', 'auto', 'important');
+                        el.style.setProperty('overflow-y', 'auto', 'important');
+                        el.style.setProperty('position', 'static', 'important');
+                        el.style.setProperty('height', 'auto', 'important');
+                        
+                        // 2. Remove known lock-classes
+                        lockClasses.forEach(cls => el.classList.remove(cls));
+                        
+                        // 3. Remove any blur or pointer-event blocks
+                        el.style.setProperty('pointer-events', 'auto', 'important');
+                        el.style.setProperty('filter', 'none', 'important');
+                    });
+                    
+                    console.log('Scroll lock forcefully removed.');
+                """)
+                time.sleep(1) # Short pause for the browser to recalculate the layout
+            except Exception as e:
+                print(f"Failed to unlock scroll: {e}")
+
+
             try:
                 driver.execute_script("window.scrollTo(0,1)")
             except Exception:
@@ -916,25 +944,42 @@ class Sources:
             except Exception as e:
                 print(str(e))
 
+            
+            print(f"Change Viewport Size ({target_w}x900)")
+            driver.set_window_size(target_w, 900)
+            time.sleep(10)
 
-            # Dynamic Altitude Measurement (The Key to Success)
-            total_height = driver.execute_script("return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, document.body.offsetHeight);")
+            # Dynamic Altitude Measurement
+            total_height = driver.execute_script('return document.body.parentNode.scrollHeight')
             
             # Max-Height from the config file as a safety net (set this to 10000 in the .ini file)
             max_allowed = sources_cnf.get('max-height', 5000)
             final_height = min(total_height, max_allowed)
-            
-            # Drag the viewport to the full calculated length
-            print(f"Setze Viewport auf {target_w}x{final_height}")
-            driver.set_window_size(target_w, final_height)
-            time.sleep(1.5) # Zeit für Lazy-Loading Bilder
 
-            # 5. Final Screenshot
-            driver.save_screenshot(temp_png)
+
+            try:
+                screenshot_base64 = driver.execute_cdp_cmd('Page.captureScreenshot', {
+                    'format': 'png',
+                    'captureBeyondViewport': True, 
+                    'clip': {
+                        'width': target_w,
+                        'height': final_height, 
+                        'x': 0,
+                        'y': 0,
+                        'scale': 1
+                    }
+                })
+                
+                with open(temp_png, "wb") as f:
+                    f.write(base64.b64decode(screenshot_base64['data']))
+            except Exception as e:
+                print(f"CDP Screenshot fehlgeschlagen, nutze Fallback: {e}")
+                driver.set_window_size(target_w, final_height)
+                driver.save_screenshot(temp_png)
 
             
         except Exception as e:
-            print(f"Fehler in take_screenshot: {e}")
+            print(f"Error in take_screenshot: {e}")
             driver.save_screenshot(temp_png)
 
         
@@ -949,7 +994,7 @@ class Sources:
         if sources_cnf.get("debug_screenshots", 0) != 0:
             with open(temp_jpg, "wb") as f:
                 f.write(screenshot_bytes)
-            print(f"Debug-Screenshot gespeichert: {temp_jpg}")
+            print(f"Debug-Screenshot saved: {temp_jpg}")
 
         if os.path.exists(temp_png):
                 try:
@@ -1909,8 +1954,8 @@ class Sources:
 
         result_dict = {
             "file_path": file_path,
-            "code": None, 
-            "bin_data": None,
+            "code": len(code), 
+            "bin_data": len(bin_data),
             "request": dict_request,
             "final_url": final_url,
             "meta": meta,

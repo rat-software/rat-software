@@ -311,13 +311,14 @@
         <div id="collapseAssessment" class="collapse">
           <div class="card-body bg-light border-top p-4">
 
-            <div class="mb-4">
-              <label class="form-label fw-bold">
-                  Participant Task Description
-                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This text is shown prominently at the top of the assessment interface. Use *** to automatically insert the current search query."></i>
-              </label>
-              <textarea name="task_description" class="form-control" rows="2" placeholder="e.g. Please evaluate the results for the query ***">{{ study.task or '' }}</textarea>
-            </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">
+                Participant Task Description
+                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This text is shown prominently at the top of the assessment interface. Use [QUERY] to automatically insert the current search query. Markdown formatting (e.g., **bold**, *italic*, - lists) is supported!"></i>
+            </label>
+            <textarea name="task_description" class="form-control font-monospace text-dark" rows="5" placeholder="e.g. Please evaluate the results for the query [QUERY].">{{ study.task or '' }}</textarea>
+            <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown for formatting.</div>
+          </div>
 
             <div class="row mb-4 g-3">
               <div class="col-md-6">
@@ -421,7 +422,12 @@
                   <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Set a maximum number of search results each participant has to evaluate. This helps to distribute the workload evenly across multiple users."></i>
                 </div>
                 <div class="ms-4 mt-2" id="max_results_container" style="display: none;">
-                  {{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary", style="max-width: 150px;", placeholder="Max. items") }}
+                  {{ settings_form.max_results_per_participant(
+                      class="form-control form-control-sm border-secondary", 
+                      style="max-width: 150px;", 
+                      placeholder="Max. items", 
+                      value=settings_form.max_results_per_participant.data or 10
+                  ) }}
                 </div>
               </div>
 
