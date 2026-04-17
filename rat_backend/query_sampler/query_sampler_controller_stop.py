@@ -19,8 +19,8 @@ class KeywordController:
         Returns:
             None
         """
-        # Liste der Skript-Namen, die beendet werden sollen.
-        # generate_keywords_bg.py wird hinzugefügt, da es von job_qs.py aufgerufen wird.
+        # List of script names to be terminated.
+        # generate_keywords_bg.py is added because it is called by job_qs.py.
         processes_to_kill = [
             "job_qs.py",
             "generate_keywords.py",
@@ -28,31 +28,30 @@ class KeywordController:
         ]
 
         print("Searching for processes to terminate...")
-        # Iteriert über alle laufenden Prozesse
+        # Iterates over all running processes
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
-                # Prüft nur Python-Prozesse
+                
                 if "python" in proc.info['name'].lower():
                     if proc.info['cmdline']:
-                        # Vergleicht die Kommandozeile des Prozesses mit der Kill-Liste
+                        # Compares the process's command line with the kill list
                         cmd_line_str = " ".join(proc.info['cmdline'])
                         for process_name in processes_to_kill:
                             if process_name in cmd_line_str:
                                 print(f"Terminating process '{process_name}' with PID {proc.info['pid']}...")
                                 proc.kill()
                                 print(f"Process {proc.info['pid']} terminated.")
-                                # Springe zum nächsten Prozess, da dieser bereits beendet wurde
                                 break
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                # Ignoriert Fehler, wenn ein Prozess bereits beendet ist oder keine Zugriffsrechte bestehen
+                # Ignores errors if a process has already terminated or if there are no access permissions
                 pass
         
         print("All associated processes have been terminated.")
 
 
 if __name__ == "__main__":
-    # Initialisiert das KeywordController-Objekt
+    # Initializes the KeywordController object
     keyword_controller = KeywordController()
 
-    # Ruft die stop-Methode auf, um die Prozesse zu beenden
+    # Calls the stop method to terminate the processes
     keyword_controller.stop()

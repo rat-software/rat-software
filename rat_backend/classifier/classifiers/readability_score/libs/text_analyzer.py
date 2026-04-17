@@ -7,7 +7,7 @@ from langdetect import detect, LangDetectException
 import textstat
 from bs4 import BeautifulSoup
 
-class TextAnalyzer:
+class Text_Analyzer:
     def __init__(self) -> None:
         pass  
 

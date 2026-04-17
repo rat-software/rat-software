@@ -96,17 +96,8 @@ def main(
     csv_file = query+".csv"
     csv_header = "Keyword idea text\taverage monthly searches\tcompetition"
         
-    # with open(csv_file,'w+', encoding='utf-8') as f:
-    #     f.write(csv_header)
-    # f.close()
-
     for idea in keyword_ideas:
         competition_value = idea.keyword_idea_metrics.competition.name
-
-
-        # with open(csv_file,'a+', encoding='utf-8') as f:
-        #     f.write("\n"+str(idea.text)+"\t"+str(idea.keyword_idea_metrics.avg_monthly_searches)+"\t"+str(competition_value))
-        # f.close() 
 
         print(
             f'Keyword idea text "{idea.text}" has '
@@ -114,7 +105,6 @@ def main(
             f'average monthly searches and "{competition_value}" '
             "competition.\n"
         )
-    # [END generate_keyword_ideas]
 
 
 def map_locations_ids_to_resource_names(client, location_ids):

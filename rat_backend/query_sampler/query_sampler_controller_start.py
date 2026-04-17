@@ -27,29 +27,29 @@ class KeywordController:
             Internal function to start the scheduler job.
             This function calls the job_qs.py script.
             """
-            # Stellt sicher, dass der Pfad zum Job-Skript korrekt ist
+            # Ensures that the path to the job script is correct
             job_path = os.path.join(workingdir, "jobs", 'job_qs.py')
             print(f"Starte Job: python {job_path}")
             os.system(f'python {job_path}')
 
-        # Erstellt einen neuen Thread für die start_job-Funktion und startet ihn
+        # Creates a new thread for the start_job function and starts it
         process = threading.Thread(target=start_job)
         process.start()
         print("Keyword Generation Controller launched.")
 
 
 if __name__ == "__main__":
-    # Initialisiert das KeywordController-Objekt
+    # Initializes the KeywordController object
     keyword_controller = KeywordController()
 
-    # Ermittelt das aktuelle Verzeichnis des Skripts
+    # Determines the current directory of the script
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     # Ermittelt das übergeordnete Verzeichnis
     parentdir = os.path.dirname(currentdir)
 
-    # Bestimmt das Arbeitsverzeichnis. Annahme ist, dass sich das Skript im Hauptverzeichnis
-    # oder einem Unterverzeichnis befindet und das 'jobs'-Verzeichnis im Hauptverzeichnis liegt.
+    # Sets the working directory. It is assumed that the script is located in the root directory
+    # or a subdirectory, and that the 'jobs' directory is in the root directory.
     workingdir = parentdir if "controller" in currentdir else currentdir
 
-    # Startet den Controller
+    # Start the controller
     keyword_controller.start(workingdir)

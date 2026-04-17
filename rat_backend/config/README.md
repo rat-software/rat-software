@@ -1,33 +1,53 @@
-# Config Files
+# ⚙️ RAT Configuration Folder
 
-The RAT-Backend applications use configuration files to connect to the database and initialize the backend for scraping.
+This folder serves as the central settings hub for the RAT Backend applications. All files are provided with **placeholders** to keep the repository secure while providing a clear template for your own environment.
 
-## Setting Up the Configuration Files
+## 🚀 Getting Started
 
-1. **config_db.ini**
-   - This file configures the connection to the RAT database, which uses PostgreSQL.
-   
-   ```
-   [database]
-   name = your_db        # Name of your database
-   user = your_user      # Database user
-   host = db_ip          # IP address of the database
-   port = db_port        # Port of the database
-   password = db_pass    # Database password
-   ```
+1.  Identify the three configuration files in the backend structure.
+2.  Replace all placeholder values (e.g., `your_db`, `your_api_key`) with your actual credentials.
+3.  **Security Note**: Never commit your finalized files with real credentials to a public repository.
 
-2. **config_sources.ini:**
-   - This file configures the sources scraper to meet your needs.
-   ```
-   [scraper]
-   wait_time = 5                 # Time in seconds that Selenium Driver waits before saving the content of a URL. A higher value increases the likelihood of scraping all content.
-   debug_screenshots = 0         # Set to 1 to save screenshots of the scraping process for debugging; 0 to disable.
-   timeout = 45                  # Maximum time in seconds before a scraping process is canceled.
-   headless = 1                  # Set to 1 to enable headless mode (no browser UI), 0 to disable.
-   job_server = local_windows    # Name of the server where scraping occurs. Relevant if using multiple servers.
-   refresh_time = 48             # Interval in hours to ensure sources are refreshed, preventing more than one scrape within 48 hours for similar queries or search engines.
-   max_height = 50000            # Maximum height in pixels for scraping. Lower values speed up scraping but may result in incomplete content.
-   min_width = 1024              # Minimum width in pixels for scraping.
-   block_size = 500              # Size of scrolling blocks in pixels. Lower values result in slower scrolling but may capture more information.
-   scroll_time = 2               # Time in seconds to pause scrolling. This accounts for slow-loading content by pausing at the end of each scrolling block.
-   ```   
+---
+
+## 🗄️ 1. Database Configuration (`config_db.ini`)
+
+This file enables backend workers to communicate with your PostgreSQL database.
+
+| Parameter | Placeholder | Description |
+| :--- | :--- | :--- |
+| **database** | `your_db` | The name of your RAT database. |
+| **user** | `your_user` | The database username. |
+| **host** | `db_ip` | The IP address or hostname of your database server. |
+| **port** | `db_port` | The connection port (default is `5432`). |
+| **password** | `db_pass` | The password for the specified database user. |
+
+---
+
+## 🕸️ 2. Scraper & Storage Settings (`config_sources.ini`)
+
+This file configures the behavior of the Selenium-based scraper and its connection to the storage microservice.
+
+* **`job_server`**: A unique name for this scraper instance (e.g., `your_server`).
+* **`wait_time`**: Seconds the browser waits to ensure full page rendering.
+* **`api-key`**: Your secret key for authenticating with the **RAT Storage Service**.
+* **`storage-url`**: The full upload endpoint (e.g., `your_storage_url`).
+
+---
+
+## 🔍 3. Google Ads API (`google-ads.yaml`)
+
+Required for the **Query Sampler** module to discover new keywords. This file is located in the `query_sampler/` directory but is a core part of the system configuration.
+
+| Key | Placeholder | Description |
+| :--- | :--- | :--- |
+| **developer_token** | `your_developer_token` | Your unique Google Ads developer token. |
+| **client_id** | `your_client_id` | Your Google Cloud OAuth2 client ID. |
+| **client_secret** | `your_client_secret` | Your Google Cloud OAuth2 client secret. |
+| **refresh_token** | `your_refresh_token` | The token generated via `generate_user_credentials.py`. |
+| **login_customer_id** | `your_manager_id` | Your manager account ID (if applicable). |
+
+---
+
+## 📜 License
+GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007

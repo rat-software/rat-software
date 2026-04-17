@@ -47,8 +47,8 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 # Add the /libs/ directory to the system path to enable imports from that location
 sys.path.append(currentdir + "/libs/")
 
-# Import everything from the 'indicators' module
-from textanalyzer import *
+# Import everything from the 'text_analyzer' module
+from text_analyzer import *
 
 def main(classifier_id, db, helper, job_server, study_id):
     print("readibility_score")
@@ -150,7 +150,7 @@ def main(classifier_id, db, helper, job_server, study_id):
 
             try:
                 if status_code == 200 and not error_code and code:
-                    tx = TextAnalyzer()
+                    tx = Text_Analyzer()
                     analysis_output = tx.analyze(code)
 
                     # Check if the result is a numerical score
