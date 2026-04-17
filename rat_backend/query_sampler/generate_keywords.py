@@ -133,13 +133,6 @@ if keywords:
 
                     insert_keyword_idea(study_id, keyword_id, keyword_idea, avg_monthly_searches, competition)
 
-                    # print(
-                    #     f'Keyword idea text "{idea.text}" has '
-                    #     f'"{idea.keyword_idea_metrics.avg_monthly_searches}" '
-                    #     f'average monthly searches and "{competition_value}" '
-                    #     "competition.\n"
-                    # )
-                # [END generate_keyword_ideas]
 
                 status = 1
                 update_keyword_status(status, keyword_id)
@@ -162,9 +155,6 @@ if keywords:
 
 
             if __name__ == "__main__":
-                # GoogleAdsClient will read the google-ads.yaml configuration file in the
-                # home directory if none is specified.
-                #googleads_client = GoogleAdsClient.load_from_storage(version="v16")
                 googleads_client = GoogleAdsClient.load_from_storage(google_ads_client)
 
 
