@@ -1,4 +1,4 @@
-const { generateUule, buildSearchUrl, getRandomDelay, parseProxyLine } = require('../src/utils');
+const { generateUule, buildSearchUrl, getRandomDelay, parseProxyLine } = require('./src/utils');
 
 // ─────────────────────────────────────────────
 // Helpers / Fixtures
