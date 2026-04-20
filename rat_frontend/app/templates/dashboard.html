@@ -1,0 +1,290 @@
+{% extends "master.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
+<style>
+  /* Styling for the collapsible Super Admin header */
+  .admin-collapse-header {
+      cursor: pointer;
+      background-color: #343a40; /* Dark admin theme */
+      color: white;
+  }
+  .admin-collapse-header:hover {
+      background-color: #23272b;
+  }
+
+  /* Fix table layout to prevent headers from jumping during sorting */
+  .admin-datatable {
+      table-layout: fixed;
+      word-wrap: break-word;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1 class="sr-only">RAT</h1>
+
+<div class="row mb-4">
+  <div class="col-8 offset-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="py-2">
+          <table class="table table-sm table-borderless mb-0">
+            <tr>
+              <td class="fw-bold" style="width: 80px;">E-Mail:</td>
+              <td>{{ user.email }}</td>
+            </tr>
+            {% if user.super_admin == True %}
+            <tr>
+              <td class="fw-bold">Role:</td>
+              <td><span class="badge bg-danger">Super Admin</span></td>
+            </tr>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-8 offset-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="hstack border-bottom pb-2 mb-3">
+          <h5 class="mb-0 fw-bold text-primary"><i class="fa-solid fa-list-check me-2"></i> RAT Studies</h5>
+        </div>
+        <div class="py-2">
+          {% if rat_studies %}
+            {% for s in rat_studies %}
+            <div class="row align-items-center py-2 border-bottom">
+              <div class="col-md-10 d-flex align-items-center">
+                <a class="text-dark fw-bold" href="{{ url_for('study', id=s.id) }}">{{ s.name }}</a>
+                <span class="badge bg-light text-muted border ms-3" style="font-weight: normal;">
+                  <i class="fa-regular fa-calendar-days me-1"></i> {{ s.created_at.strftime('%Y-%m-%d') if s.created_at else 'N/A' }}
+                </span>
+              </div>
+              <div class="col-md-2 text-end">
+                <div class="btn-group" role="group">
+                  <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="View"><i class="fa-solid fa-eye"></i></a>
+                  {% if s.status == 0 %}
+                  <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="Edit"><i class="fa-solid fa-pen"></i></a>
+                  {% endif %}
+                  <a href="{{ url_for('delete_study', id=s.id) }}" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" data-bs-title="Delete"><i class="fa-solid fa-trash"></i></a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="row align-items-center py-2">
+              <div class="col-md-12 text-center text-muted">
+                <p class="mb-2">You haven't created any RAT studies yet.</p>
+                <a href="{{ url_for('new_study') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i> Create a new study</a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-8 offset-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="hstack border-bottom pb-2 mb-3">
+          <h5 class="mb-0 fw-bold text-success"><i class="fa-solid fa-layer-group me-2"></i> Query Sampler Studies</h5>
+        </div>
+        <div class="py-2">
+          {% if qs_studies %}
+            {% for s in qs_studies %}
+            <div class="row align-items-center py-2 border-bottom">
+              <div class="col-md-10 d-flex align-items-center">
+                <a class="text-dark fw-bold" href="{{ url_for('show_qs_study', id=s.id) }}">{{ s.name }}</a>
+                <span class="badge bg-light text-muted border ms-3" style="font-weight: normal;">
+                  <i class="fa-regular fa-calendar-days me-1"></i> {{ s.created_at.strftime('%Y-%m-%d') if s.created_at else 'N/A' }}
+                </span>
+              </div>
+              <div class="col-md-2 text-end">
+                <div class="btn-group" role="group">
+                  <a href="{{ url_for('show_qs_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="View">
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+                  <a href="{{ url_for('edit_qs_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="Edit">
+                    <i class="fa-solid fa-pen"></i>
+                  </a>
+                  <a href="{{ url_for('delete_qs_study', id=s.id) }}" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" data-bs-title="Delete">
+                    <i class="fa-solid fa-trash"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="row align-items-center py-2">
+              <div class="col-md-12 text-center text-muted">
+                <p class="mb-2">You haven't created any Query Sampler studies yet.</p>
+                <a href="{{ url_for('new_qs_study_wizard') }}" class="btn btn-success btn-sm"><i class="fa-solid fa-plus me-1"></i> Create a new QS study</a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if user.super_admin == True %}
+<div class="row mb-5 mt-5">
+  <div class="col-8 offset-2">
+    <div class="card border-dark shadow-lg">
+      
+      <div class="card-header admin-collapse-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#adminCollapse" aria-expanded="false" aria-controls="adminCollapse">
+        <span class="fw-bold fs-5"><i class="fa-solid fa-user-shield me-2 text-warning"></i> Super Admin Area: All Studies Overview</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </div>
+      
+      <div id="adminCollapse" class="collapse">
+        <div class="card-body">
+          
+          <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-bold" id="rat-tab" data-bs-toggle="tab" data-bs-target="#admin-rat" type="button" role="tab" aria-controls="admin-rat" aria-selected="true">RAT Studies</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-bold" id="qs-tab" data-bs-toggle="tab" data-bs-target="#admin-qs" type="button" role="tab" aria-controls="admin-qs" aria-selected="false">Query Sampler Studies</button>
+            </li>
+          </ul>
+          
+          <div class="tab-content" id="adminTabsContent">
+            
+            <div class="tab-pane fade show active" id="admin-rat" role="tabpanel" aria-labelledby="rat-tab">
+              <div class="table-responsive pb-3">
+                <table class="table table-striped table-hover admin-datatable w-100">
+                  <thead class="table-dark">
+                    <tr>
+                      <th style="width: 45%;">Study Name</th>
+                      <th style="width: 15%;">Created</th>
+                      <th style="width: 25%;">Owner (Email)</th>
+                      <th class="text-end" style="width: 15%;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for s in other_rat_studies %}
+                    <tr>
+                      <td class="align-middle">
+                        <span class="fw-bold text-truncate d-block" title="{{ s.name }}">{{ s.name }}</span>
+                        {% if user in s.users %}
+                          <span class="badge bg-primary ms-2" style="font-size: 0.65rem;">Me</span>
+                        {% endif %}
+                      </td>
+                      <td class="align-middle text-nowrap" data-sort="{{ s.created_at.strftime('%Y%m%d%H%M%S') if s.created_at else '0' }}">
+                        <small class="text-muted">{{ s.created_at.strftime('%Y-%m-%d') if s.created_at else '---' }}</small>
+                      </td>
+                      <td class="align-middle small text-muted text-truncate" title="{% if s.users %}{{ s.users[0].email }}{% endif %}">
+                        {% if s.users %}{{ s.users[0].email }}{% else %}No Owner{% endif %}
+                      </td>
+                      <td class="align-middle text-end">
+                        <div class="btn-group">
+                          <a href="{{ url_for('study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" title="View"><i class="fa-solid fa-eye"></i></a>
+                          <a href="{{ url_for('edit_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="tab-pane fade" id="admin-qs" role="tabpanel" aria-labelledby="qs-tab">
+              <div class="table-responsive pb-3">
+                <table class="table table-striped table-hover admin-datatable w-100">
+                  <thead class="table-dark">
+                    <tr>
+                      <th style="width: 45%;">Study Name</th>
+                      <th style="width: 15%;">Created</th>
+                      <th style="width: 25%;">Owner (Email)</th>
+                      <th class="text-end" style="width: 15%;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for s in other_qs_studies %}
+                    <tr>
+                      <td class="align-middle">
+                        <span class="fw-bold text-truncate d-block" title="{{ s.name }}">{{ s.name }}</span>
+                        {% if user in s.users %}
+                          <span class="badge bg-primary ms-2" style="font-size: 0.65rem;">Me</span>
+                        {% endif %}
+                      </td>
+                      <td class="align-middle text-nowrap" data-sort="{{ s.created_at.strftime('%Y%m%d%H%M%S') if s.created_at else '0' }}">
+                        <small class="text-muted">{{ s.created_at.strftime('%Y-%m-%d') if s.created_at else '---' }}</small>
+                      </td>
+                      <td class="align-middle small text-muted text-truncate" title="{% if s.users %}{{ s.users[0].email }}{% endif %}">
+                        {% if s.users %}{{ s.users[0].email }}{% else %}No Owner{% endif %}
+                      </td>
+                      <td class="align-middle text-end">
+                        <div class="btn-group">
+                          <a href="{{ url_for('show_qs_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" title="View"><i class="fa-solid fa-eye"></i></a>
+                          <a href="{{ url_for('edit_qs_study', id=s.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+      // Toggle chevron rotation
+      const adminCollapse = document.getElementById('adminCollapse');
+      if(adminCollapse) {
+          adminCollapse.addEventListener('show.bs.collapse', function () {
+              document.querySelector('.admin-collapse-header .fa-chevron-down').style.transform = 'rotate(180deg)';
+          });
+          adminCollapse.addEventListener('hide.bs.collapse', function () {
+              document.querySelector('.admin-collapse-header .fa-chevron-down').style.transform = 'rotate(0deg)';
+          });
+      }
+
+      // Initialize Datatables
+      const dataTables = document.querySelectorAll('.admin-datatable');
+      dataTables.forEach(table => {
+          new simpleDatatables.DataTable(table, {
+              searchable: true,
+              fixedHeight: false, 
+              perPage: 10,
+              perPageSelect: [10, 25, 50, 100],
+              sortable: true,
+              initialSort: {
+                  column: 1,  // Sort by 'Created' column
+                  dir: "desc" 
+              },
+              labels: {
+                  placeholder: "Search studies...",
+                  perPage: "entries per page",
+                  noRows: "No entries found",
+                  info: "Showing {start} to {end} of {rows} entries",
+              }
+          });
+      });
+  });
+</script>
+{% endif %}
+
+{% endblock %}

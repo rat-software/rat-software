@@ -1,7 +1,7 @@
 # This CITATION.cff file was generated with cffinit.
 # Visit https://bit.ly/cffinit to generate yours today!
 
-cff-version: 1.2.0
+cff-version: 1.5.0
 title: Result Assessment Tool (RAT)
 message: >-
   If you use this software, please cite it using the
@@ -10,21 +10,32 @@ type: software
 authors:
   - given-names: Dirk
     family-names: Lewandowski
-    email: dirk.lewandowski@dmi-haw-hamburg.de
+    email: dirk.lewandowski@haw-hamburg.de
     affiliation: HAW Hamburg
     orcid: 'https://orcid.org/0000-0002-2674-9509'
   - given-names: Sebastian
     family-names: Sünkler
-    email: sebastian.suenkler@dmi-haw-hamburg.de
+    email: sebastian.suenkler@haw-hamburg.de
     affiliation: HAW Hamburg
     orcid: 'https://orcid.org/0000-0001-9848-1137'
   - given-names: Nurce
     family-names: Yagci
     orcid: 'https://orcid.org/0000-0001-9634-5916'
-    email: nurce.yagci@dmi-haw-hamburg.de
+    email: nurce.yagci@haw-hamburg.de
+  - given-names: Kumar
+    family-names: Tuhina
+    orcid: 'https://orcid.org/0009-0007-0232-7989'
+    email: tuhina.kumar@haw-hamburg.de
+  - given-names: Billir
+    family-names: Kardelen
+    orcid: 'https://orcid.org/0009-0006-1260-0777'
+    email: kardelen.bilir@haw-hamburg.de
+  - given-names: Bosnak
+    family-names: Sophia
+    email: sophia.bosnak@haw-hamburg.de
 identifiers:
   - type: doi
-    value: 10.17605/OSF.IO/25UAT
+    value: 10.5281/zenodo.14049810
 repository-code: 'https://github.com/rat-software'
 url: 'http://rat-software.org/'
 abstract: >-

@@ -1,0 +1,60 @@
+{# templates/query_sampler/edit_qs_study.html #}
+{% extends "master.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="pb-4">
+        <a class="text-dark" href="{{ url_for('show_qs_study', id=study.id) }}">
+            <i class="fa-solid fa-angle-left me-2"></i> Back to Study
+        </a>
+    </div>
+
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow-sm">
+            <h3 class="card-header crd-header">Edit Study: {{ study.name }}</h3>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('edit_qs_study', id=study.id) }}">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">{{ form.name.label }}</label>
+                        {{ form.name(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description(class="form-control", rows=3) }}
+                    </div>
+
+                    <hr />
+
+                    <h4 class="crd-header mb-3">Keywords</h4>
+                    
+                    <h5>Existing Keywords</h5>
+                    {% if existing_keywords %}
+                    <p>
+                        {% for k in existing_keywords %}
+                        <span class="badge bg-secondary me-1 mb-1">{{ k.keyword }}</span>
+                        {% endfor %}
+                    </p>
+                    {% else %}
+                    <p class="text-muted">No keywords found for this study.</p>
+                    {% endif %}
+
+                    <div class="mt-4">
+                         <label for="new_keywords" class="form-label">{{ form.new_keywords.label }}</label>
+                        {{ form.new_keywords(class="form-control", rows=5) }}
+                    </div>
+                    
+                    <div class="mt-4 border-top pt-3">
+                        <a href="{{ url_for('show_qs_study', id=study.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary float-end") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
