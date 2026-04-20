@@ -1,0 +1,52 @@
+{% extends "master.html" %}
+
+{% block title %}Import Questions{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-8 offset-2">
+
+    <div class="pb-4">
+      <a class="text-dark" href="{{ url_for('study', id=study.id) }}">
+        <i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard
+      </a>
+    </div>
+
+    <div class="card">
+      <h2 class="card-header crd-header">Import Questions</h2>
+      <div class="card-body">
+
+        <div class="alert alert-info">
+          <i class="fa-solid fa-circle-info"></i>
+          Upload a JSON file previously exported from RAT. Duplicate questions (same title and type) will be skipped
+          automatically.
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ form.file.label(class_="form-label") }}
+            {{ form.file(class_="form-control") }}
+            {% if form.file.errors %}
+            <div class="text-danger small">
+              {% for error in form.file.errors %}
+              {{ error }}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a href="{{ url_for('study', id=study.id) }}" class="btn btn-secondary me-md-2">Cancel</a>
+            {{ form.submit(class_="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

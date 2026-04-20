@@ -1,0 +1,73 @@
+{% extends "master.html" %}
+
+{% block title %}Assessments{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="row justify-content-center mt-5">
+  <div class="col-12 text-center mb-4">
+    <h3 class="fw-bold text-dark">Assessments for: {{ study.name }}</h3>
+    <p class="lead text-secondary">Welcome, <strong>{{ participant.name }}</strong>!</p>
+  </div>
+  
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white pt-3 pb-2 border-bottom">
+        <h5 class="fw-bold text-dark mb-0">
+            Your Progress
+            <i class="fa-solid fa-circle-question float-end text-muted mt-1" style="font-size: 1rem; cursor: help;" data-bs-toggle="tooltip" title="This shows how many of your assigned tasks you have already completed."></i>
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="text-center lead mb-3 text-dark">
+            <strong>{{ answers_closed }}</strong> out of <strong>{{ answers_all }}</strong> assessments completed
+        </div>
+        <div class="progress shadow-sm" style="height: 35px; border-radius: 8px;">
+          <div class="progress-bar bg-success" role="progressbar" style="width: {{pct}}%; font-size: 1rem;"
+            aria-valuenow="{{answers_closed}}" aria-valuemin="0" aria-valuemax="{{answers_all}}">
+            <b>{{pct}}%</b>
+          </div>
+        </div>
+      </div>
+      
+      {% if answers_closed == answers_all and answers_all > 0 %}
+      <div class="card-footer text-center bg-light p-4">
+        <h4 class="text-success mb-3 fw-bold"><i class="fas fa-check-circle me-2"></i>Assessment Complete!</h4>
+        <p class="mb-0 text-dark fs-5">Thank you for your participation.</p>
+        
+        {% if study.completion_text %}
+        <hr class="my-4">
+        <div class="text-start text-dark">
+            {{ study.completion_text | safe }}
+        </div>
+        {% endif %}
+        
+      </div>
+      {% else %}
+      <div class="card-footer bg-white border-top-0 text-center p-4">
+        <a href="{{ url_for('assessment', participant_id=participant.id, study_id=study.id) }}"
+           class="btn btn-primary btn-lg fw-bold shadow-sm w-100" data-bs-toggle="tooltip" title="Click here to load the next search result to evaluate.">
+           {% if answers_closed > 0 %}
+             Continue Assessment
+           {% else %}
+             Start Assessment
+           {% endif %}
+           <i class="fas fa-arrow-right ms-2"></i>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+  });
+</script>
+{% endblock %}

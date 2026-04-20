@@ -1,0 +1,960 @@
+{% extends "master.html" %}
+
+{% block title %}Study Dashboard{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .progress-bar-text {
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .extension-box {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* Smooth transition for collapsible chevrons */
+  .accordion-button:not(.collapsed) .fa-chevron-down {
+    transform: rotate(180deg);
+  }
+  .fa-chevron-down {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .config-section-header {
+      cursor: pointer;
+  }
+  .config-section-header:hover {
+      background-color: #f8f9fa;
+  }
+  
+  /* --- KONTRAST UND SCHRIFTEN --- */
+  .form-label {
+      color: #212529; 
+      font-size: 0.95rem; 
+  }
+  
+  .form-control, .form-select {
+      font-size: 0.95rem !important; 
+      padding: 0.4rem 0.75rem; 
+      color: #212529;
+      border: 1px solid #adb5bd;
+  }
+
+  .form-text, 
+  .text-secondary, 
+  .text-muted, 
+  .card-body p {
+      color: #343a40 !important; 
+  }
+
+  .form-text {
+      font-size: 0.85rem; 
+  }
+
+  .form-check-label {
+      color: #212529;
+      font-size: 0.95rem; 
+      padding-top: 2px;
+  }
+
+  .btn_config:hover {
+    background-color: #2b465d;
+  }
+
+  /* Tooltip Icon Styling */
+  .tooltip-icon {
+      color: #6c757d;
+      margin-left: 5px;
+      font-size: 0.85rem;
+      cursor: help;
+  }
+  .tooltip-icon:hover {
+      color: #0d6efd;
+  }
+
+  #assessment_result_types {
+      padding-left: 0;
+  }
+  #assessment_result_types li {
+      margin-bottom: 0.6rem;
+  }
+  #assessment_result_types li:last-child {
+      margin-bottom: 0;
+  }
+  #assessment_result_types input[type="checkbox"] {
+      margin-right: 0.5rem;
+      cursor: pointer;
+  }
+
+.floating-save-warning {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999; /* Bleibt immer im Vordergrund */
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+      width: 90%;
+      max-width: 600px;
+      margin: 0 !important;
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-lg-10 offset-lg-1">
+      
+    <div class="pb-3">
+      <a class="text-secondary fw-bold hover-underline" href="{{ url_for('dashboard') }}">
+        <i class="fa-solid fa-angle-left me-2"></i> Back to Dashboard
+      </a>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-0">
+      <div class="card-body d-flex justify-content-between align-items-start p-4 bg-white rounded">
+        <div>
+          <h2 class="h4 mb-1 fw-bold text-dark">
+            {{ study.name }}
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This is your main study dashboard. Use the 'Actions' button on the right to edit details or completely delete the study."></i>
+          </h2>
+          <div class="text-secondary fs-6">{{ study.description }}</div>
+        </div>
+
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa-solid fa-gear"></i> Actions
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow">
+            <li><a class="dropdown-item py-2" href="{{ url_for('edit_study', id=study.id) }}"><i class="fa-solid fa-pen me-2"></i> Edit Details</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger py-2" href="{{ url_for('delete_study', id=study.id) }}"><i class="fa-solid fa-trash-can me-2"></i> Delete Study</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 border-primary shadow-sm">
+      <div class="card-header bg-white border-primary text-primary fw-bold d-flex align-items-center py-3">
+        <i class="fa-solid fa-cloud-arrow-up me-2"></i> Data Collection & Status
+      </div>
+      <div class="card-body p-4">
+        
+        <div class="extension-box mt-2">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0 text-primary">
+              <i class="fa-brands fa-chrome fa-2x"></i>
+            </div>
+            <div class="flex-grow-1 ms-4">
+              <h6 class="mb-1 fw-bold text-dark">
+                  Browser Extension
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Use the RAT Chrome Extension to scrape search results directly from your browser."></i>
+              </h6>
+              <div class="text-secondary small">Current Version: <strong>1.0</strong></div>
+            </div>
+            <div>
+              <a href="#" class="btn btn-outline-primary btn-sm me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#installGuideModal">
+                <i class="fa-solid fa-circle-question me-1"></i> Guide
+              </a>
+                <a href="{{ url_for('download_extension') }}" class="btn btn-primary btn-sm fw-bold">
+                    <i class="fa-solid fa-download me-1"></i> Download
+                </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4 mt-4">
+          <label class="form-label fw-bold mb-2 text-dark">
+              Upload Extension Archive
+              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="Upload the ZIP file generated by the RAT Browser Extension to import your collected search results."></i>
+          </label>
+          <form action="{{ url_for('upload_study_results', id=study.id) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+            {{ upload_form.hidden_tag() }}
+            <div class="flex-grow-1">
+              {{ upload_form.results_file(class="form-control") }}
+            </div>
+            <button type="submit" class="btn btn-success px-4 fw-bold">
+              <i class="fa-solid fa-upload me-1"></i> Upload
+            </button>
+          </form>
+        </div>
+
+        {% set has_any_data = (results > 0 or results_ai > 0 or results_chatbot > 0 or results_serp > 0 or ai_source_count > 0) %}
+
+        <div id="progress-container" class="{% if not has_any_data %}d-none{% endif %}">
+            <div id="download-progress-area" class="bg-light p-3 rounded border mb-4">
+                <label class="fw-bold text-dark mb-2">
+                    <i class="fa-solid fa-server text-secondary me-1"></i> Background Download Progress
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Shows the background download progress of HTML and screenshots for the uploaded URLs. Human assessment can start once this reaches 100%."></i>
+                </label>
+                <div class="progress mt-1" style="height: 25px; border-radius: 6px;">
+                <div id="progress-bar" 
+                        class="progress-bar {% if progress_percent is defined and progress_percent >= 100 %}bg-success{% else %}progress-bar-striped progress-bar-animated{% endif %}" 
+                        role="progressbar"
+                        style="width: {{ progress_percent | default(0) }}%;" 
+                        aria-valuenow="{{ progress_percent | default(0) }}" aria-valuemin="0" aria-valuemax="100">
+                    <span class="progress-bar-text">{{ progress_percent | default(0) }}%</span>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        {% if has_any_data %}<hr class="my-4 text-secondary">{% endif %}
+
+        <div class="py-2">
+          <div class="row align-items-end">
+            <div class="col-md-8">
+              <h6 class="fw-bold text-dark mb-3">
+                  Collected Data Summary
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Summary of all successfully imported results, categorized by their type."></i>
+              </h6>
+              <div id="results-display" class="text-dark small d-flex flex-wrap gap-4">
+                {% if has_any_data %}
+                  {% if results_serp > 0 %}<div><i class="fa-solid fa-image text-secondary me-1"></i><b>SERPs: </b> <span id="results-serp-count">{{ results_serp }}</span></div>{% endif %}
+                  {% if results > 0 %}<div><i class="fa-solid fa-list text-secondary me-1"></i><b>Standard: </b> <span id="results-count">{{ results }}</span></div>{% endif %}
+                  {% if results_ai > 0 %}<div><i class="fa-solid fa-robot text-secondary me-1"></i><b>AI Overviews: </b> <span id="results-ai-count">{{ results_ai }}</span></div>{% endif %}
+                  {% if ai_source_count > 0 %}<div><i class="fa-solid fa-link text-secondary me-1"></i><b>AI Sources: </b> <span id="ai-source-count">{{ ai_source_count }}</span></div>{% endif %}
+                  {% if results_chatbot > 0 %}<div><i class="fa-solid fa-message text-secondary me-1"></i><b>Chatbots: </b> <span id="results-chatbot-count">{{ results_chatbot }}</span></div>{% endif %}
+                {% else %}
+                  <div class="text-secondary"><i class="fa-solid fa-inbox me-2"></i> No results uploaded yet.</div>
+                {% endif %}
+              </div>
+
+              {% if total_queries > 0 or imported_engines %}
+              <div class="mt-3 pt-3 border-top">
+                <div class="row">
+                  <div class="col-md-7">
+                    <div class="fw-bold text-dark small mb-2"><i class="fa-solid fa-magnifying-glass me-1"></i> Search Queries ({{ total_queries }} Total):</div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                      {% for q in recent_queries %}
+                        <span class="badge bg-light text-dark border">{{ q.query }}</span>
+                      {% endfor %}
+                      {% if total_queries > 5 %}<span class="text-muted small">...</span>{% endif %}
+                      <a href="{{ url_for('queries', id=study.id) }}" class="btn btn-sm btn-outline-primary ms-2 py-0" style="font-size: 0.75rem;">View All</a>
+                    </div>
+                  </div>
+                  {% if imported_engines %}
+                  <div class="col-md-5 border-start">
+                    <div class="fw-bold text-dark small mb-2"><i class="fa-solid fa-server me-1"></i> Engines (Country / Lang):</div>
+                    <div class="d-flex flex-wrap gap-2">
+                      {% for engine in imported_engines %}
+                        <span class="badge bg-light text-primary border border-primary">{{ engine }}</span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+              </div>
+
+            
+            <div class="col-md-4 text-end">
+                {% if study.status != 4 and has_any_data %}
+                <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#closeStudy">
+                  <i class="fa-regular fa-circle-stop me-1"></i> Archive Study
+                </button>
+                {% elif study.status == 4 %}
+                <span class="badge bg-secondary p-2"><i class="fa-solid fa-box-archive me-1"></i> Archived</span>
+                {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {% if has_any_data %}
+    <h5 class="mt-5 mb-3 text-secondary fw-bold"><i class="fa-solid fa-sliders me-2 text-secondary"></i> Configuration</h5>
+    
+
+    
+    <form id="study-settings-form" action="{{ url_for('update_study_settings', id=study.id) }}" method="POST">
+      {{ settings_form.hidden_tag() }}
+
+      <div class="card mb-4 shadow-sm" style="border: 2px solid #0d6efd; background-color: #f8fbff;">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="fw-bold mb-1 text-primary">
+              <i class="fa-solid fa-bolt text-warning me-2"></i> Live Link Mode (Lightweight Study)
+            </h6>
+            <div class="text-secondary small">
+              Disables background scraping (no screenshots or HTML). Participants visit the live URLs directly. <b>Note: Disables Automated Classifiers and forces URLs to be visible.</b>
+            </div>
+          </div>
+          <div class="form-check form-switch ms-3" style="transform: scale(1.3); transform-origin: right center;">
+            {{ settings_form.live_link_mode(class="form-check-input", id="live_link_mode_checkbox", style="cursor: pointer;") }}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseAssessment" aria-expanded="false" aria-controls="collapseAssessment">
+          <span class="fw-bold text-dark">
+              <i class="fa-solid fa-users-viewfinder me-2 text-warning"></i> Human Assessment
+              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure the environment and rules for human participants evaluating the results."></i>
+          </span>
+          <i class="fa-solid fa-chevron-down text-secondary"></i>
+        </div>
+        
+        <div id="collapseAssessment" class="collapse">
+          <div class="card-body bg-light border-top p-4">
+
+          <div class="mb-4">
+            <label class="form-label fw-bold">
+                Participant Task Description
+                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This text is shown prominently at the top of the assessment interface. Use [QUERY] to automatically insert the current search query. Markdown formatting (e.g., **bold**, *italic*, - lists) is supported!"></i>
+            </label>
+            <textarea name="task_description" class="form-control font-monospace text-dark" rows="5" placeholder="e.g. Please evaluate the results for the query [QUERY].">{{ study.task or '' }}</textarea>
+            <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown for formatting.</div>
+          </div>
+
+            <div class="row mb-4 g-3">
+              <div class="col-md-6">
+                <div class="card h-100 border-secondary shadow-sm">
+                  <div class="card-body p-4 d-flex flex-column">
+                    <h6 class="fw-bold text-dark">
+                        <i class="fa-solid fa-clipboard-list me-2 text-primary"></i> Questionnaire
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create and manage the questions that human participants will answer for each search result."></i>
+                    </h6>
+                    <div class="text-secondary mb-3 small">
+                      {% if study.questions | length == 0 %} No questions defined. {% else %} <span class="badge bg-primary">{{ study.questions | length }} Defined</span> {% endif %}
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap mt-auto">
+                      <a href="{{ url_for('new_question', id=study.id) }}" class="btn btn-outline-primary btn-sm fw-bold"><i class="fa-solid fa-plus me-1"></i> Add</a>
+                      <a href="{{ url_for('import_questions_json', id=study.id) }}" class="btn btn-outline-secondary btn-sm" title="Import"><i class="fa-solid fa-file-import"></i></a>
+                      {% if study.questions|length > 0 %}
+                      <a href="{{ url_for('export_questions_json', id=study.id) }}" class="btn btn-outline-secondary btn-sm" title="Export"><i class="fa-solid fa-file-export"></i></a>
+                      <a href="{{ url_for('questions', id=study.id) }}" class="btn btn-primary btn-sm fw-bold"><i class="fa-solid fa-eye me-1"></i> View</a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="card h-100 border-secondary shadow-sm">
+                  <div class="card-body p-4 d-flex flex-column">
+                    <h6 class="fw-bold text-dark">
+                        <i class="fa-solid fa-users me-2 text-success"></i> Participants
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Track who has joined the study and view their individual progress."></i>
+                    </h6>
+                    <div class="text-secondary mb-3 small">
+                      {% if study.participants|length == 0 %} No participants yet. {% else %} <span class="badge bg-success">{{ study.participants|length }} Registered</span> {% endif %}
+                    </div>
+                    
+                    <div class="mt-auto">
+                        {% if study.questions|length == 0 %}
+                            <div class="text-warning fw-bold small">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Define questions below to invite participants.
+                            </div>
+                        {% else %}
+                            
+                          <div id="ui-warning-notypes" class="d-none mb-0 py-2 px-3 border-0 border-start border-4 border-warning small shadow-sm rounded" style="background-color: #fff3cd; color: #856404;">
+                            <div class="d-flex align-items-center">
+                              <i class="fa-solid fa-triangle-exclamation fs-5 me-3 text-warning"></i>
+                              <div>
+                                <strong>Action required:</strong> You must select at least one <b>Result Type</b> below and save your settings!
+                              </div>
+                            </div>
+                          </div>
+
+                          <div id="ui-warning-downloads" class="d-none text-warning fw-bold small">
+                              <i class="fa-solid fa-hourglass-half me-1"></i> Waiting for organic background downloads to finish before inviting...
+                          </div>
+
+                          <div id="ui-warning-unsaved-invite" class="d-none text-warning fw-bold small">
+                            <i class="fa-solid fa-lock me-1"></i> Save settings below to unlock invite link.
+                          </div>
+
+                          <div id="ui-invite-actions" class="d-none">
+                              <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-success btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#inviteURLmodal">
+                                  <i class="fa-solid fa-link me-1"></i> Invite Link
+                                </button>
+                                {% if study.participants|length > 0 %}
+                                <a href="{{ url_for('participants', id=study.id) }}" class="btn btn-success btn-sm fw-bold"><i class="fa-solid fa-eye me-1"></i> View</a>
+                                {% endif %}
+                              </div>
+                            </div>
+
+                        {% endif %}
+                    </div>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="card border-secondary shadow-sm">
+                <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="fw-bold text-dark">
+                        <i class="fa-solid fa-filter me-2 text-secondary"></i> Domain Filtering
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create rules to automatically exclude results from specific domains (e.g., youtube.com) from being shown to human assessors."></i>
+                    </span>
+                  </div>
+                  <a href="{{ url_for('url_filters', id=study.id) }}" class="btn btn-outline-secondary btn-sm fw-bold">Manage Filters</a>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="row g-4 mb-4">
+              <div class="col-md-6">
+                <div class="form-check form-switch mb-2">
+                  {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
+                  <label class="form-check-label fw-bold" for="limit_checkbox">
+                    Limit workload per user
+                  </label>
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Set a maximum number of search results each participant has to evaluate. This helps to distribute the workload evenly across multiple users."></i>
+                </div>
+                <div class="ms-4 mt-2" id="max_results_container" style="display: none;">
+                  {{ settings_form.max_results_per_participant(
+                      class="form-control form-control-sm border-secondary", 
+                      style="max-width: 150px;", 
+                      placeholder="Max. items", 
+                      value=settings_form.max_results_per_participant.data or 10
+                  ) }}
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-bold mb-2">
+                    Result Ranges (Optional)
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Define specific ranking sections to assess (e.g., only ranks 1-3 and 8-10). If left empty, all available results will be distributed."></i>
+                </label>
+                <div id="ranges-wrapper">
+                  {% for range_entry in settings_form.ranges %}
+                  <div class="row g-2 mb-2 range-row align-items-center">
+                    <div class="col-4">{{ range_entry.start_range(class="form-control form-control-sm border-secondary", placeholder="Start") }}</div>
+                    <div class="col-1 text-center fw-bold text-dark">-</div>
+                    <div class="col-4">{{ range_entry.end_range(class="form-control form-control-sm border-secondary", placeholder="End") }}</div>
+                    <div class="col-3">
+                      <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-range" tabindex="-1">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-1 fw-bold" id="add-range-btn">
+                  <i class="fa-solid fa-plus me-1"></i> Add Range
+                </button>
+              </div>
+            </div>
+            
+            <div class="row mt-4">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">
+                    Assessable Types
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select which types of content should be shown and evaluated by participants."></i>
+                </label>
+                <div class="card card-body bg-white border-secondary p-3" style="max-height: 180px; overflow-y: auto;">
+                  {{ settings_form.assessment_result_types(class="list-unstyled mb-0 text-dark") }}
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Interface Visibility</label>
+                <div class="d-flex flex-column gap-3 mt-2">
+                    
+                    <div class="form-check form-switch">
+                      {{ settings_form.show_urls(class="form-check-input border-secondary", id="show_urls_checkbox") }}
+                      <label class="form-check-label text-dark" for="show_urls_checkbox">
+                          Show URLs to participants
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, participants will only see the page title and content, but not the original domain/URL."></i>
+                          <span id="show_urls_badge" class="badge bg-light text-secondary border ms-2 d-none"><i class="fa-solid fa-lock"></i> Forced by Live Mode</span>
+                      </label>
+                    </div>
+
+                    <div class="form-check form-switch">
+                      {{ settings_form.show_ai_sources(class="form-check-input border-secondary") }}
+                      <label class="form-check-label text-dark">
+                          Show AI Overviews sources
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, citations and source links embedded within AI Overviews will be hidden from participants."></i>
+                      </label>
+                    </div>
+                    <div class="form-check form-switch">
+                      {{ settings_form.assess_failed(class="form-check-input border-secondary") }}
+                      <label class="form-check-label text-dark">
+                          Allow assessment of failed downloads
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, participants can still answer questions even if a website could not be scraped/loaded properly by the background worker."></i>
+                      </label>
+                    </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4 shadow-sm border-0" id="classifiers-card">
+        <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseClassifiers" aria-expanded="false" aria-controls="collapseClassifiers">
+          <span class="fw-bold text-dark">
+              <i class="fa-solid fa-robot me-2 text-info"></i> Automated Classifiers
+              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select algorithms to automatically analyze and score the collected HTML in the background."></i>
+          </span>
+          <i class="fa-solid fa-chevron-down text-secondary"></i>
+        </div>
+        <div id="collapseClassifiers" class="collapse">
+          <div class="card-body bg-light border-top p-4">
+            <div class="card card-body bg-white p-3 border-secondary" style="max-height: 250px; overflow-y: auto;">
+              {{ settings_form.classifiers(class="list-unstyled mb-0 text-dark") }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ui-warning-unsaved-bottom" class="alert alert-warning border-warning d-none align-items-center floating-save-warning" style="background-color: #fff3cd;">
+          <i class="fa-solid fa-triangle-exclamation fs-4 me-3 text-warning"></i>
+          <div class="text-dark flex-grow-1">
+            <strong>Unsaved changes detected!</strong> Please save your new settings.
+          </div>
+          <button type="button" class="btn btn-primary btn-sm ms-3 fw-bold shadow-sm" onclick="document.getElementById('study-settings-form').submit();">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Save Now
+          </button>
+      </div>
+
+      <div class="d-grid mt-2 mb-5">
+        <button type="submit" id="save-settings-btn" class="btn btn-primary fw-bold shadow-sm btn_config">
+          <i class="fa-solid fa-floppy-disk me-2"></i> Save Configurations
+        </button>
+      </div>
+
+    </form>
+
+    <div class="card mb-5 border-primary shadow-sm">
+      <div class="card-header bg-white border-primary text-primary fw-bold d-flex align-items-center py-3">
+        <i class="fa-solid fa-chart-line me-2"></i> Results & Export
+      </div>
+      <div class="card-body p-4">
+        
+        <div class="row g-4">
+          <div class="col-sm-6">
+            <div class="card h-100 shadow-sm border-secondary">
+              <div class="card-body text-center p-4">
+                <div class="text-success mb-3">
+                    <i class="fa-solid fa-chart-pie fa-2x"></i>
+                </div>
+                <h6 class="card-title fw-bold text-dark mb-2">
+                    Analysis Dashboard
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="View interactive charts and statistical breakdowns of your collected data and participant answers."></i>
+                </h6>
+                <p class="card-text text-secondary mb-4 small">View SEO metrics, classifier statistics, and result overlap analysis.</p>
+                <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-outline-success btn-sm w-100 fw-bold">View Analysis</a>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="card h-100 shadow-sm border-secondary">
+              <div class="card-body text-center p-4">
+                <div class="text-primary mb-3">
+                    <i class="fa-solid fa-file-excel fa-2x"></i>
+                </div>
+                <h6 class="card-title fw-bold text-dark mb-2">
+                    Export Data
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Download raw data as Excel files for external analysis in SPSS, R, or Excel."></i>
+                </h6>
+                <p class="card-text text-secondary mb-4 small">Download all collected datasets and human answers as spreadsheets.</p>
+                <a href="{{ url_for('export', id=study.id) }}" class="btn btn-outline-primary btn-sm w-100 fw-bold">Download Excel</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+{% endif %}
+  </div>
+</div>
+
+<div class="modal fade" id="closeStudy" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Archive Study</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 text-dark">
+        <p>This will close the study for participants. You can still view results and export data.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">Cancel</button>
+        <a href="{{ url_for('close_study', id=study.id) }}" class="btn btn-danger fw-bold">Confirm Archive</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="inviteURLmodal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold text-dark">Participant Invitation URL</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <p class="text-secondary mb-4">Share this link with your subjects so they can start the assessment.</p>
+        <div class="input-group shadow-sm">
+            <input type="text" class="form-control bg-light text-dark border-secondary" id="inviteLinkInput" value="{{ base }}join/{{ study.id }}" readonly />
+            <button class="btn btn-primary fw-bold px-3" type="button" onclick="navigator.clipboard.writeText(document.getElementById('inviteLinkInput').value); this.innerHTML='<i class=\'fa-solid fa-check\'></i> Copied';"><i class="fa-regular fa-copy me-2"></i> Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="installGuideModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold text-dark"><i class="fa-brands fa-chrome me-2 text-primary"></i> Extension Installation Guide</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 text-dark">
+        <ol class="list-group list-group-numbered list-group-flush mb-4">
+          <li class="list-group-item py-2">
+            <strong>Download & Unzip:</strong><br>
+            Download the <code>rat-extension_v1.zip</code> and extract (unzip) it to a folder on your computer.
+          </li>
+          <li class="list-group-item py-2">
+            <strong>Open Extensions Menu:</strong><br>
+            Open Google Chrome and type <code class="bg-light p-1 rounded">chrome://extensions</code> in the address bar.
+          </li>
+          <li class="list-group-item py-2">
+            <strong>Enable Developer Mode:</strong><br>
+            Toggle the switch <strong>Developer mode</strong> in the top right corner of the page.
+          </li>
+          <li class="list-group-item py-2">
+            <strong>Load Extension:</strong><br>
+            Click the button <strong><i class="fa-solid fa-folder-open text-secondary mx-1"></i> Load unpacked</strong> that appeared in the top left.
+          </li>
+          <li class="list-group-item py-2 border-bottom-0">
+            <strong>Select Folder:</strong><br>
+            Select the folder you extracted in step 1. The extension should now appear in your list and is ready to use.
+          </li>
+        </ol>
+          <div class="p-3 rounded bg-light border-start border-info border-4 text-secondary small">
+            <i class="fa-solid fa-circle-info text-info me-2"></i>
+            <strong>Note:</strong> Since this is a research tool, it is not listed in the Chrome Web Store and must be installed manually using these steps.
+          </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-primary fw-bold px-4" data-bs-dismiss="modal">Got it!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const studyId = "{{ study.id }}";
+
+    // --- INIT TOOLTIPS ---
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // --- Chevron Animation for Collapses ---
+    const collapseElements = document.querySelectorAll('.collapse');
+    collapseElements.forEach(collapseEl => {
+        collapseEl.addEventListener('show.bs.collapse', function (e) {
+            const header = document.querySelector(`[data-bs-target="#${this.id}"]`);
+            if(header) {
+                const icon = header.querySelector('.fa-chevron-down');
+                if(icon) icon.style.transform = 'rotate(180deg)';
+            }
+        });
+        collapseEl.addEventListener('hide.bs.collapse', function (e) {
+            const header = document.querySelector(`[data-bs-target="#${this.id}"]`);
+            if(header) {
+                const icon = header.querySelector('.fa-chevron-down');
+                if(icon) icon.style.transform = 'rotate(0deg)';
+            }
+        });
+        
+        if(collapseEl.classList.contains('show')) {
+            const header = document.querySelector(`[data-bs-target="#${this.id}"]`);
+            if(header) {
+                const icon = header.querySelector('.fa-chevron-down');
+                if(icon) icon.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+
+    // --- Limit Per Participant Toggle ---
+    const limitCheckbox = document.getElementById('limit_checkbox');
+    const maxResultsContainer = document.getElementById('max_results_container');
+
+    if (limitCheckbox && maxResultsContainer) {
+      function toggleMaxResults() {
+        maxResultsContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
+      }
+      limitCheckbox.addEventListener('change', toggleMaxResults);
+      toggleMaxResults(); 
+    }
+
+    // --- Dynamic Ranges Logic ---
+    const rangesWrapper = document.getElementById('ranges-wrapper');
+    const addRangeBtn = document.getElementById('add-range-btn');
+
+    if (rangesWrapper && addRangeBtn) {
+      addRangeBtn.addEventListener('click', function () {
+        const index = rangesWrapper.children.length;
+        const newRow = document.createElement('div');
+        newRow.className = 'row g-2 mb-2 range-row align-items-center';
+        newRow.innerHTML = `
+            <div class="col-4"><input class="form-control form-control-sm border-secondary" name="ranges-${index}-start_range" type="number" min="1" placeholder="Start"></div>
+            <div class="col-1 text-center fw-bold text-dark">-</div>
+            <div class="col-4"><input class="form-control form-control-sm border-secondary" name="ranges-${index}-end_range" type="number" min="1" placeholder="End"></div>
+            <div class="col-3"><button type="button" class="btn btn-outline-danger btn-sm w-100 remove-range" tabindex="-1"><i class="fa-solid fa-xmark"></i></button></div>
+        `;
+        rangesWrapper.appendChild(newRow);
+      });
+
+      rangesWrapper.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-range')) {
+          const row = e.target.closest('.range-row');
+          if (row) row.remove();
+
+          const rows = rangesWrapper.querySelectorAll('.range-row');
+          rows.forEach((row, idx) => {
+            const startInput = row.querySelector('input[placeholder="Start"]');
+            const endInput = row.querySelector('input[placeholder="End"]');
+            startInput.name = `ranges-${idx}-start_range`;
+            endInput.name = `ranges-${idx}-end_range`;
+            startInput.id = `ranges-${idx}-start_range`;
+            endInput.id = `ranges-${idx}-end_range`;
+          });
+        }
+      });
+    }
+
+    // --- LIVE MODE & UI LOGIC (Now using robust Bootstrap classes) ---
+    try {
+        const serverStatus = {{ study.status | default(0) }}; 
+        const hasSavedTypes = {% if study.assessable_result_types_text %}true{% else %}false{% endif %};
+        let isDirty = false;
+
+        function updateLiveModeUI() {
+            const liveToggle = document.getElementById('live_link_mode_checkbox');
+            if (!liveToggle) return;
+            
+            const isLive = liveToggle.checked;
+            const cCard = document.getElementById('classifiers-card');
+            const urlCheck = document.getElementById('show_urls_checkbox');
+            const urlBadge = document.getElementById('show_urls_badge');
+            const dpArea = document.getElementById('download-progress-area');
+
+            if (cCard) {
+                if (isLive) {
+                    cCard.classList.add('d-none');
+                } else {
+                    cCard.classList.remove('d-none');
+                }
+            }
+            
+            if (urlCheck) {
+                if (isLive) {
+                    urlCheck.checked = true;
+                    urlCheck.disabled = true;
+                    if (urlBadge) {
+                        urlBadge.classList.remove('d-none');
+                        urlBadge.classList.add('d-inline-block');
+                    }
+                } else {
+                    urlCheck.disabled = false;
+                    if (urlBadge) {
+                        urlBadge.classList.add('d-none');
+                        urlBadge.classList.remove('d-inline-block');
+                    }
+                }
+            }
+            
+            if (dpArea) {
+                if (isLive) {
+                    dpArea.classList.add('d-none');
+                } else {
+                    dpArea.classList.remove('d-none');
+                }
+            }
+        }
+
+          function updateUIState() {
+            const typeCbs = document.querySelectorAll('input[name="assessment_result_types"]');
+            const liveToggle = document.getElementById('live_link_mode_checkbox');
+            
+            let checkedTypes = Array.from(typeCbs).filter(cb => cb.checked).map(cb => cb.value.toLowerCase());
+            const isLiveMode = liveToggle ? liveToggle.checked : false;
+
+            const noTypesSelected = checkedTypes.length === 0;
+
+            // --- 1. GLOBAL WARNING ---
+            const globalWarnTop = document.getElementById('ui-warning-unsaved-global');
+            const globalWarnBottom = document.getElementById('ui-warning-unsaved-bottom');
+            const saveBtn = document.getElementById('save-settings-btn');
+            
+            if (globalWarnTop) {
+                if (isDirty) {
+                    globalWarnTop.classList.remove('d-none');
+                    globalWarnTop.classList.add('d-flex');
+                } else {
+                    globalWarnTop.classList.remove('d-flex');
+                    globalWarnTop.classList.add('d-none');
+                }
+            }
+            
+            if (globalWarnBottom) {
+                if (isDirty) { 
+                    globalWarnBottom.classList.remove('d-none');
+                    globalWarnBottom.classList.add('d-flex');
+                } else {
+                    globalWarnBottom.classList.remove('d-flex');
+                    globalWarnBottom.classList.add('d-none');
+                }
+            }
+
+
+
+            // --- 2. PARTICIPANTS BOX (Invite Link) ---
+            const boxNoTypes = document.getElementById('ui-warning-notypes');
+            const boxDownloads = document.getElementById('ui-warning-downloads');
+            const boxUnsavedInvite = document.getElementById('ui-warning-unsaved-invite');
+            const boxActions = document.getElementById('ui-invite-actions');
+
+            if (boxNoTypes) { boxNoTypes.classList.add('d-none'); boxNoTypes.classList.remove('d-flex'); }
+            if (boxDownloads) { boxDownloads.classList.add('d-none'); boxDownloads.classList.remove('d-block'); }
+            if (boxUnsavedInvite) { boxUnsavedInvite.classList.add('d-none'); boxUnsavedInvite.classList.remove('d-block'); }
+            if (boxActions) { boxActions.classList.add('d-none'); boxActions.classList.remove('d-block'); }
+
+            if (noTypesSelected) {
+                if (boxNoTypes) { boxNoTypes.classList.remove('d-none'); boxNoTypes.classList.add('d-flex'); }
+            } else if (isDirty || !hasSavedTypes) {
+                if (boxUnsavedInvite) { boxUnsavedInvite.classList.remove('d-none'); boxUnsavedInvite.classList.add('d-block'); }
+            } else if (checkedTypes.includes('organic') && serverStatus !== 2 && !isLiveMode) {
+                if (boxDownloads) { boxDownloads.classList.remove('d-none'); boxDownloads.classList.add('d-block'); }
+            } else {
+                if (boxActions) { boxActions.classList.remove('d-none'); boxActions.classList.add('d-block'); }
+            }
+        }
+
+        updateLiveModeUI();
+        updateUIState();
+
+        const settingsForm = document.getElementById('study-settings-form');
+        if (settingsForm) {
+            const getFormState = () => new URLSearchParams(new FormData(settingsForm)).toString();
+            
+            const initialFormState = getFormState();
+
+            const checkDirtyState = () => {
+                const currentFormState = getFormState();
+                isDirty = (currentFormState !== initialFormState); 
+                updateLiveModeUI();
+                updateUIState();
+            };
+
+            settingsForm.addEventListener('input', checkDirtyState);
+            settingsForm.addEventListener('change', checkDirtyState);
+
+            if (addRangeBtn) {
+                addRangeBtn.addEventListener('click', () => {
+                    setTimeout(checkDirtyState, 10); 
+                });
+            }
+            
+            if (rangesWrapper) {
+                rangesWrapper.addEventListener('click', (e) => {
+                    if (e.target.closest('.remove-range')) {
+                        setTimeout(checkDirtyState, 10);
+                    }
+                });
+            }
+        }
+
+
+    } catch (error) {
+        console.error("Critical error in RAT UI logic: ", error);
+    }
+
+    // --- Polling Logic ---
+    const uiElements = {
+      resultsCount: document.getElementById('results-count'),
+      resultsAiCount: document.getElementById('results-ai-count'),
+      resultsChatbotCount: document.getElementById('results-chatbot-count'),
+      aiSourceCount: document.getElementById('ai-source-count'),    
+      resultsSerpCount: document.getElementById('results-serp-count'), 
+      progressContainer: document.getElementById('progress-container'),
+      progressBar: document.getElementById('progress-bar'),
+      progressBarText: document.querySelector('#progress-bar .progress-bar-text')
+    };
+
+    function updateUI(data) {
+      const hasAnyData = (data.results > 0 || data.results_ai > 0 || data.results_chatbot > 0 || data.results_serp > 0 || data.ai_source_count > 0);
+      
+      if (hasAnyData && uiElements.progressContainer) {
+          uiElements.progressContainer.classList.remove('d-none');
+          uiElements.progressContainer.classList.add('d-block');
+      }
+
+      if (data.results > 0 && uiElements.resultsCount) uiElements.resultsCount.textContent = data.results;
+      if (data.results_ai > 0 && uiElements.resultsAiCount) uiElements.resultsAiCount.textContent = data.results_ai;
+      if (data.results_chatbot > 0 && uiElements.resultsChatbotCount) uiElements.resultsChatbotCount.textContent = data.results_chatbot;
+      if (data.results_serp > 0 && uiElements.resultsSerpCount) uiElements.resultsSerpCount.textContent = data.results_serp;
+      if (data.ai_source_count > 0 && uiElements.aiSourceCount) uiElements.aiSourceCount.textContent = data.ai_source_count;
+
+      if (uiElements.progressBar) {
+        const percentage = data.progress_percent;
+        uiElements.progressBar.style.width = percentage + '%';
+        uiElements.progressBar.setAttribute('aria-valuenow', percentage);
+        if (uiElements.progressBarText) uiElements.progressBarText.textContent = percentage + '%';
+
+        if (percentage >= 100) {
+          uiElements.progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+          uiElements.progressBar.classList.add('bg-success');
+        } else {
+          uiElements.progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
+          uiElements.progressBar.classList.remove('bg-success');
+        }
+      }
+
+      const hasStaticOnly = (data.results === 0 && (data.results_ai > 0 || data.results_chatbot > 0 || data.results_serp > 0));
+      const isReady = (data.status === 2 || hasStaticOnly);
+
+      if (isReady && !document.getElementById('inviteURLmodal')) {
+        location.reload();
+      }
+    }
+
+    async function fetchStatus() {
+      try {
+        const response = await fetch(`/study/${studyId}/progress`);
+        if (response.ok) {
+          const data = await response.json();
+          updateUI(data);
+        }
+      } catch (e) { console.log("Polling error", e); }
+    }
+
+    {% if study.status != 4 %}
+    fetchStatus();
+    setInterval(fetchStatus, 4000);
+    {% endif %}
+  });
+</script>
+
+{% endblock %}

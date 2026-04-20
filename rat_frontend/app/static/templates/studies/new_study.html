@@ -1,0 +1,99 @@
+{% extends "master.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+
+{% macro render_create_study_fields(field, url, field_class) %}
+{{ field.label(class_="form-label") }}
+{{ field(class_=field_class) }}
+
+{% if field.errors %}
+<ul class=errors>
+  {% for error in field.errors %}
+  <li>{{ error }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
+
+<h1 class="sr-only">RAT</h1>
+
+<div class="row">
+  <div class="col-8 offset-2">
+
+    <form action="{{ url_for('create_new_study') }}" method="POST">
+      {{ form.hidden_tag() }}
+
+      <div style="display:none;">{{ form.id }}</div>
+
+      <div class="card">
+        <h2 class="card-header crd-header d-flex justify-content-between align-items-center">
+          <span>
+            {% if study and study.id %}
+            Edit Study
+            {% else %}
+            Create Study
+            {% endif %}
+          </span>
+        </h2>
+
+        <div class="card-body">
+
+          <div class="mb-3">
+            <span class="float-end help">
+              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true"
+                title="Enter the title of your study.<br/> Choose a concise name that accurately reflects the focus of your research.">
+                <i class="fa-solid fa-circle-question"></i>
+              </a>
+            </span>
+            {{ render_create_study_fields(form.name, "#name", "form-control") }}
+          </div>
+
+          <div class="mb-3">
+            <span class="float-end help">
+              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
+                title="Provide a brief description of your study. May include the main objectives and any relevant details.">
+                <i class="fa-solid fa-circle-question"></i>
+              </a>
+            </span>
+            {{ render_create_study_fields(form.description, "#description", "form-control") }}
+          </div>
+
+          <div class="mt-5">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+              <i class="fa-solid fa-xmark"></i> Cancel
+            </a>
+
+            <button type="submit" class="btn btn-primary float-end">
+              {% if study and study.id %}
+              Update Study <i class="fa-solid fa-check"></i>
+              {% else %}
+              Create Study <i class="fa-solid fa-check"></i>
+              {% endif %}
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize Bootstrap Tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+</script>
+
+{% endblock %}

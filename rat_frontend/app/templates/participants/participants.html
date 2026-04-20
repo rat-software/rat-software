@@ -1,0 +1,75 @@
+{% extends "master.html" %}
+
+{% block title %}Participants{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .tooltip-icon {
+      color: #6c757d;
+      margin-left: 5px;
+      font-size: 0.85rem;
+      cursor: help;
+  }
+  .tooltip-icon:hover {
+      color: #0d6efd;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">RAT</h1>
+
+<div class="pb-4">
+  <a class="text-secondary fw-bold hover-underline" href="{{ url_for('study', id=study.id) }}"><i class="fa-solid fa-angle-left me-2"></i> Back to Study</a>
+</div>
+
+<div class="row">
+  <div class="col pb-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+
+        <div class="hstack mb-3">
+          <h5 class="fw-bold text-dark mb-0">Participants</h5>
+        </div>
+
+        <div class="py-2">
+          <table class="table table-striped table-borderless">
+            <thead>
+              <th>#</th>
+              <th>Name</th>
+              <th>Finished <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of results successfully evaluated by this participant."></i></th>
+              <th>Open <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Assigned results that have not been evaluated yet."></i></th>
+              <th>Skipped <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Results the participant explicitly skipped (e.g. broken link)."></i></th>
+              <th>Created at</th>
+              <th>URL</th>
+            </thead>
+            <tbody>
+              {% for p in info %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td class="fw-bold">{{ p[0].name }}</td>
+                <td class="text-success">{{ p[3] }}</td>
+                <td class="text-warning">{{ p[2] }}</td>
+                <td class="text-danger">{{ p[4] }}</td>
+                <td>{{ p[0].created_at.strftime('%d.%m.%Y') }}</td>
+                <td><a href="{{url_for('participant', id=p[0].id)}}" class="btn btn-sm btn-outline-primary fw-bold">View / Participate</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+  });
+</script>
+{% endblock %}

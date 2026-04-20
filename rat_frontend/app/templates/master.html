@@ -1,0 +1,369 @@
+{% from "macros.html" import nav_link, nav_link_id, question_, question_display with context %}
+<!doctype html>
+<html>
+
+<head>
+  {% block head %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+    integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='custom_bootstrap.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+
+  <title>{% block title %}{% endblock %} - RAT</title>
+
+
+  {% endblock %}
+</head>
+
+<body class="d-flex flex-column min-vh-100 {% if nav == 'static' %}bg-blue{% endif %}">
+    {% if nav == 'static' %}
+    <div class="img-layer">
+        <img src="{{ url_for('static', filename='img/rat_icon_schwarz.png') }}">
+    </div> Result Assessment Tool
+    {% endif %}
+
+    {% if nav == 'static' %}
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-white">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+          <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" width="48"
+              class="d-inline-block" alt="RAT Logo">
+          <span class="ms-2">Result Assessment Tool</span>
+        </a>
+           
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            {% if current_user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="me-2 fa-regular fa-user"></i> {{ current_user.email }}
+              </a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('dashboard') }}">
+                    <i class="fa-regular fa-map me-2"></i> Dashboard</a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('security.logout') }}">
+                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Sign out</a>
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+    {% else %}
+    <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main') }}">
+          <img src="{{ url_for('static', filename='img/rat_icon_weiss.png') }}" height="80px"
+              class="d-inline-block" alt="RAT Logo"> 
+          <span class="ms-2">Result Assessment Tool</span>
+        </a>
+        {% if current_user.is_authenticated %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav"
+          aria-expanded="false" aria-label="Toggle nav">
+          <i class="fa-solid fa-ellipsis-vertical"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            {{ nav_link('dashboard', 'Dashboard', 'fa-regular fa-map') }}
+            {{ nav_link('new_study', 'New RAT Study', 'fa-regular fa-square-plus') }}
+            {{ nav_link('new_qs_study_wizard', 'New Query Sampler Study', 'fa-regular fa-square-plus') }}
+          </ul>
+          <ul class="navbar-nav ms-auto">
+            {{ nav_link('security.login', 'Home', 'fa-solid fa-house') }}
+
+
+            
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="me-2 fa-regular fa-user"></i> {{ current_user.email }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('security.logout') }}">
+                    <i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Sign out</a>
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+    {% endif %}
+
+    <main class="py-4 flex-grow-1">
+
+    <div class="container">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      {% for category, message in messages %}
+      <div class="alert alert-{{category}} alert-dismissible fade show" role="alert">
+        {{ message | safe }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %}
+      {% endif %}
+      {% endwith %}
+
+      <div id="loading" class="d-none">
+        <i class="fas fa-spinner fa-pulse"></i>
+      </div>
+
+      <div id="main">{% block content %}{% endblock %}</div>
+    </div>
+    </main>
+
+    <div class="container-fluid text-small bg-primary mt-auto">
+      <footer class="d-flex flex-wrap justify-content-between align-items-center py-3">
+        <p class="col-md-8 d-flex align-items-center text-white justify-content-start mb-3 mb-md-0 me-md-auto">
+          <span>Copyright © 2026 Result Assessment Tool</span>
+          <span class="px-4"><a href="https://searchstudies.org/" class="text-white" target="_blank">Developed by Search
+              Studies</a> (HAW Hamburg)</span>
+          <span><a href="https://gepris.dfg.de/gepris/projekt/557366357" class="text-white"
+              target="_blank">Funded by the German Research Foundation (DFG)</a></span>
+      
+          <span class="px-2"><a href="{{ url_for('roadmap') }}" class="text-white" target="_blank">Roadmap</a></span>
+
+          <span class="px-1"><a href="https://rat-software.org/" class="text-white" target="_blank">About</a></span>
+
+          <span class="px-2"><a href="https://rat-software.org/contact/" class="text-white" target="_blank">Contact</a></span>
+
+          <span class="px-1"><a href="https://github.com/rat-software" class="text-white"
+              target="_blank">GitHub</a></span>
+
+        </p>
+
+        <ul class="nav col-md-4 justify-content-end">
+          <li class="nav-item"><a href="https://rat-software.org/privacy/" class="nav-link px-2 text-white" target="_blank">Privacy</a></li>
+          <li class="nav-item"><a href="https://rat-software.org/imprint/" class="nav-link px-2 text-white" target="_blank">Legal</a></li>
+        </ul>
+      </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='jquery-3.6.0.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+      crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      // Initialize tooltips
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+      // Functions for handling loading state
+      function loading() {
+        $("#loading").removeClass("d-none");
+        $("#main").addClass("d-none");
+      };
+
+      function resetLoading() {
+        $("#loading").addClass("d-none");
+        $("#main").removeClass("d-none");
+      }
+
+      // FORM NEW QUESTIONS
+      // Add new options to the form dynamically
+      function addOptions() {
+        let new_id = ($("input[id^='options-'][id$='value']").length);
+        let ov = 'options-' + new_id.toString() + '-value';
+        let ol = 'options-' + new_id.toString() + '-label';
+        let ov_ = '<label class="form-label" for="' + ov + '">Value</label><input class="form-control" id="' + ov + '" name="' + ov + '" type="text" value="">';
+        let ol_ = '<label class="form-label" for="' + ol + '">Label</label><input class="form-control" id="' + ol + '" name="' + ol + '" type="text" value="">';
+        let new_option = '<div class="row"><div class="mb-3 col-3">' + ov_ + '</div><div class="mb-3 col-9">' + ol_ + '</div></div>';
+        $("#options").append(new_option);
+      };
+
+      // FORM NEW QUESTIONS
+      // Remove the last option from the form
+      function removeOptions() {
+        if ($("#options .row").length > 2) {
+          $("#options .row").last().remove();
+        } else {
+          alert("needs at least two options.");
+        }
+      };
+
+      // CHANGE TEXT OF ELEMENT
+      // Update the inner HTML of an element
+      function changeText(id, text) {
+        id.innerHTML = text;
+      }
+
+      // Copy text to clipboard
+      function copy(text) {
+        var input = document.createElement('input');
+        input.setAttribute('value', text);
+        document.body.appendChild(input);
+        input.select();
+        var result = document.execCommand('copy');
+        document.body.removeChild(input);
+        return result;
+      }
+
+      // CLICK TO COPY TO CLIPBOARD
+      // Handle URL copy to clipboard and visual feedback
+      function copyURL(text_id, own_id) {
+        console.log(text_id.value);
+        let url = text_id.value
+        console.log(url);
+        copy(url);
+        changeText(own_id, '<i class="fa-solid fa-clipboard-check"></i> Copied');
+        setTimeout(changeText, 2000, own_id, '<i class="fa-solid fa-clipboard"></i> Copy');
+      }
+
+      // Show a specific tab
+      function showTab(id) {
+        $('#' + id).tab('show');
+      }
+
+      // Show all queries by toggling visibility
+      function showAllQueries() {
+        $("#50-queries").addClass("d-none");
+        $("50-queries-button").addClass("d-none");
+        $("#all-queries").removeClass("d-none");
+      }
+
+      // Update stepper progress based on active tab
+      $(document).on('shown.bs.tab', 'a[data-bs-toggle="tab"]', function (e) {
+        let key = $(".show.active")[0]["id"].split('-')[1];
+        let dict = {};
+        dict[1] = 0;
+        dict[2] = 33;
+        dict[3] = 60;
+        dict[4] = 100;
+        console.log(key);
+        $("#stepper").attr("aria-valuenow", dict[key]).css("width", dict[key] + "%");
+
+        $(".step-number").each(function (k, v) {
+          let c = key - 1
+          let id = k + 1
+          if (k > c) {
+            v.innerHTML = '<i class="fa-solid fa-' + id + '"></i>';
+            v.setAttribute("class", "step-number rounded bg-muted")
+          } else if (k == c) {
+            v.innerHTML = '<i class="fa-solid fa-' + id + '"></i>';
+            v.setAttribute("class", "step-number rounded bg-secondary")
+          } else if (k < c) {
+            v.innerHTML = '<i class="fa-solid fa-check"></i>';
+            v.setAttribute("class", "step-number rounded-circle bg-primary")
+          }
+        });
+      });
+
+      $(document).ready(function () {
+        $("#scale_start").text($("#scale_number").attr("start_text"));
+        $("#scale_stop").text($("#scale_number").attr("stop_text"));
+
+        // SCROLL TO TOP BUTTON
+        // Create and handle scroll-to-top button
+        var back_to_top_button = ['<a href="#top" class="btn btn-outline-primary back-to-top"><i class="fa-solid fa-arrow-up me-2"></i> Back to Top</a>'].join("");
+        $("body").append(back_to_top_button)
+        $(".back-to-top").hide();
+        $(function () {
+          // --- Bestehende Scroll-Funktion ---
+          $(window).scroll(function () {
+            // 1. Button ein-/ausblenden (wie bisher)
+            if ($(this).scrollTop() > 200) {
+              $('.back-to-top').fadeIn();
+            } else {
+              $('.back-to-top').fadeOut();
+            }
+
+            // --- NEUE LOGIK: Überlappung mit dem Footer verhindern ---
+            const footer = $('footer');
+            const button = $('.back-to-top');
+
+            if (footer.length && button.length) {
+              // Die Position, an der der Footer beginnt
+              const footerTop = footer.offset().top;
+              // Die Position des unteren Bildschirmrands
+              const windowBottom = $(window).scrollTop() + $(window).height();
+              
+              // Berechnen, wie weit der Bildschirm den Footer bereits überlappt
+              const overlap = windowBottom - footerTop;
+
+              // Wenn eine Überlappung stattfindet (overlap > 0),
+              // verschiebe den Button um genau diesen Wert nach oben.
+              if (overlap > 0) {
+                // Der neue 'bottom'-Wert ist die Überlappung + der ursprüngliche Abstand von 20px
+                button.css('bottom', overlap + 20 + 'px');
+              } else {
+                // Wenn keine Überlappung, setze den Button auf seine Standardposition zurück
+                button.css('bottom', '20px');
+              }
+            }
+          });
+
+          // --- Bestehender Klick-Handler (bleibt unverändert) ---
+          $('.back-to-top').click(function () {
+            $('body,html').animate({
+              scrollTop: 0
+            }, 800);
+            return false;
+          });
+        });
+
+        // FORM: NEW STUDY
+        // Add styling to checkboxes
+        $("input[type=checkbox]").addClass("form-check-input");
+
+        // FORM NEW QUESTIONS
+        // Dynamically show options based on selected question type
+        $("#q_type").change(function () {
+          let id = $('#q_type').val();
+          console.log(id);
+          let texts = ["short_text", "long_text"];
+          let ranges = ["scale_number"];
+          let options = ["true_false", "likert_scale", "multiple_choice"];
+          if (options.includes(id)) {
+            $("#range-wrapper").addClass("visually-hidden");
+            $("#options-wrapper").removeClass("visually-hidden");
+            console.log($('#options-wrapper'));
+          } else if (texts.includes(id)) {
+            $("#range-wrapper").addClass("visually-hidden");
+            $("#options-wrapper").addClass("visually-hidden");
+          } else if (ranges.includes(id)) {
+            $("#range-wrapper").removeClass("visually-hidden");
+            $("#options-wrapper").addClass("visually-hidden");
+          } else {
+            console.log("none");
+          };
+        });
+
+        $("#scale_number").change(function () {
+          let id = $("#scale_number").val();
+          console.log(id);
+        });
+
+        // Show toast messages
+        $('.toast').toast('show')
+      });
+
+
+    </script>
+
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+    {% block scripts %}{% endblock %} 
+
+  </body>
+
+</html>

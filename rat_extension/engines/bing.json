@@ -1,0 +1,261 @@
+{
+  "manifest_version": 1,
+  "engine": {
+    "id": "bing",
+    "name": "Bing",
+    "author": "RAT System",
+    "version": "1.0",
+    "description": "Standard Scraper for Bing Search (includes Copilot Chat, Ads, and Organic)"
+  },
+  "request": {
+    "baseUrl": "https://www.bing.com/search",
+    "params": {
+      "query": "q",
+      "country": "cc",
+      "language": "setLang"
+    },
+    "features": {
+      "requiresUuleEncoding": false,
+      "urlDecodingMethod": "bing_base64"
+    },
+    "supportedCountries": [
+      {
+        "code": "au",
+        "name": "Australia"
+      },
+      {
+        "code": "at",
+        "name": "Austria"
+      },
+      {
+        "code": "be",
+        "name": "Belgium"
+      },
+      {
+        "code": "br",
+        "name": "Brazil"
+      },
+      {
+        "code": "ca",
+        "name": "Canada"
+      },
+      {
+        "code": "dk",
+        "name": "Denmark"
+      },
+      {
+        "code": "fi",
+        "name": "Finland"
+      },
+      {
+        "code": "fr",
+        "name": "France"
+      },
+      {
+        "code": "de",
+        "name": "Germany"
+      },
+      {
+        "code": "in",
+        "name": "India"
+      },
+      {
+        "code": "ie",
+        "name": "Ireland"
+      },
+      {
+        "code": "it",
+        "name": "Italy"
+      },
+      {
+        "code": "jp",
+        "name": "Japan"
+      },
+      {
+        "code": "mx",
+        "name": "Mexico"
+      },
+      {
+        "code": "nl",
+        "name": "Netherlands"
+      },
+      {
+        "code": "nz",
+        "name": "New Zealand"
+      },
+      {
+        "code": "no",
+        "name": "Norway"
+      },
+      {
+        "code": "pl",
+        "name": "Poland"
+      },
+      {
+        "code": "pt",
+        "name": "Portugal"
+      },
+      {
+        "code": "ru",
+        "name": "Russia"
+      },
+      {
+        "code": "sg",
+        "name": "Singapore"
+      },
+      {
+        "code": "es",
+        "name": "Spain"
+      },
+      {
+        "code": "se",
+        "name": "Sweden"
+      },
+      {
+        "code": "ch",
+        "name": "Switzerland"
+      },
+      {
+        "code": "gb",
+        "name": "United Kingdom"
+      },
+      {
+        "code": "us",
+        "name": "USA"
+      }
+    ],
+    "supportedLanguages": [
+      {
+        "code": "en",
+        "name": "English"
+      },
+      {
+        "code": "de",
+        "name": "German"
+      },
+      {
+        "code": "fr",
+        "name": "French"
+      },
+      {
+        "code": "it",
+        "name": "Italian"
+      },
+      {
+        "code": "es",
+        "name": "Spanish"
+      },
+      {
+        "code": "pt",
+        "name": "Portuguese"
+      },
+      {
+        "code": "nl",
+        "name": "Dutch"
+      },
+      {
+        "code": "sv",
+        "name": "Swedish"
+      },
+      {
+        "code": "no",
+        "name": "Norwegian"
+      },
+      {
+        "code": "da",
+        "name": "Danish"
+      },
+      {
+        "code": "fi",
+        "name": "Finnish"
+      },
+      {
+        "code": "pl",
+        "name": "Polish"
+      },
+      {
+        "code": "ru",
+        "name": "Russian"
+      },
+      {
+        "code": "ja",
+        "name": "Japanese"
+      }
+    ]
+  },
+  "behavior": {
+    "cookieConsentSelectors": [
+      "#bnp_btn_accept",
+      ".bnp_btn_accept"
+    ],
+    "popupDismissSelectors": [],
+    "aiExpandSelectors": [
+      ".gs_readMoreFullBtn",
+      ".cit_exp_btn"
+    ],
+    "stickyHeaderSelectors": [
+      "#b_header",
+      ".b_searchboxForm",
+      "[style*=\"position: fixed\"]",
+      "[style*=\"position: sticky\"]"
+    ]
+  },
+  "captcha": {
+    "urlIndicators": [],
+    "textIndicators": [],
+    "selectors": [
+      ".g-recaptcha",
+      "#recaptcha",
+      "iframe[src*=\"recaptcha\"]"
+    ]
+  },
+  "selectors": {
+    "pagination": {
+      "nextButton": "a.sb_pagN, a[title=\"Nächste Seite\"], a[title=\"Page suivante\"], a[title=\"Pagina successiva\"], a[title=\"Next page\"]",
+      "fallbackActiveSibling": ".sb_pagS"
+    },
+    "organic": {
+      "mainCol": "#b_results",
+      "container": "li.b_algo, li.b_algo_group",
+      "excludeContainers": [
+        ".algoSlug_icon"
+      ],
+      "title": "h2 a",
+      "url": "h2 a",
+      "snippet": {
+        "selector": ".b_caption p, .b_algoSlug, .b_algo_snippet, .b_lineclamp",
+        "minLength": 0
+      }
+    },
+    "ads": {
+      "container": "li.b_ad",
+      "title": ".tptt, h2",
+      "url": "a",
+      "snippet": {
+        "selector": ".b_ad_description, .b_lineclamp",
+        "maxLength": 200
+      }
+    },
+    "ai_overview": {
+      "container": "div.gs_h.gs_caphead",
+      "text": {
+        "selector": ".gs_text",
+        "regexClean": "^(Bilder\\s*|Videos\\s*)+"
+      },
+      "sources": [
+        {
+          "type": "attribute_based",
+          "container": ".gs_cit",
+          "titleAttribute": "data-title",
+          "urlAttribute": "data-url"
+        },
+        {
+          "type": "standard",
+          "container": ".hov-item",
+          "title": ".hov-item-ttl",
+          "url": "a"
+        }
+      ]
+    }
+  }
+}
