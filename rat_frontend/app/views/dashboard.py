@@ -1,7 +1,7 @@
 from .. import app, db, mail
 from app.models import User, Qs_Study, Study
 from ..forms import ContactForm
-from flask import render_template, request, redirect, flash, url_for, current_app
+from flask import render_template, redirect, flash, url_for, current_app
 from flask_security import login_required, current_user
 from flask_mail import Message
 

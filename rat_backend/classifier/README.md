@@ -22,7 +22,7 @@ source venv_rat_backend/bin/activate
 
 ### Step 2: Install Dependencies
 ```bash
-python -m pip install --no-cache-dir -r requirements.txt
+python -m pip install --no-cache-dir -r requirements_rat_classifier.txt
 ```
 
 
@@ -47,10 +47,10 @@ The Classifier interacts with several key tables to perform its duties:
 
 To expand the tool's capabilities, follow these steps to add a custom classifier:
 
-1.  **Create Module**: Create a new folder in `/classifiers/` named after your tool (e.g., `my_analyzer/`).
-2.  **Add Script**: Inside that folder, create `my_analyzer.py`. This script must contain a `main(classifier_id, db, helper, job_server, study_id)` function.
-3.  **Register in DB**: Add an entry to the `classifier` table in your PostgreSQL database with the internal name matching your folder name.
-4.  **Template**: Refer to `seo_score.py` for a detailed example of how to extract data and save indicators.
+1. **Check Classifier Template**: Check out the classifier_template folder to learn how to add a new classifier. The `example_classifier_result_function.py` shows a simple example, using two html files to check if the website is about RAT or not.
+2.  **Create Module**: Create a new folder in `/classifiers/` named after your tool (e.g., `my_analyzer/`) and copy the `classifier_template.py` file into it and rename it after the folder name (e.g., `my_analyzer.py`) .
+3.  **Change Code**: Change the code according to your classifier logic in `my_analyzer.py
+4.  **Register in DB**: Add an entry to the `classifier` table in your PostgreSQL database with the internal name matching your folder name.
 
 ---
 

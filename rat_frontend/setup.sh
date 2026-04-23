@@ -17,8 +17,8 @@ source venv_rat_frontend/bin/activate
 # 3. Install Dependencies
 echo "📦 Installing packages..."
 pip install --upgrade pip
-if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
+if [ -f "requirements_rat_frontend.txt" ]; then
+    pip install -r requirements_rat_frontend.txt
 else
     echo "⚠️ requirements.txt not found. Skipping package installation."
 fi

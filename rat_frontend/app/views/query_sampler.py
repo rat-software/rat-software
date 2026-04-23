@@ -12,7 +12,6 @@ from flask_security import login_required, current_user
 from .. import app, db
 from ..models import (Qs_Study, Qs_Keyword, Qs_Keyword_Idea,
                         Qs_Language_Code, Qs_Geotarget, User)
-# Annahme: Das neue Feld 'query_list' wurde zur Form hinzugefügt
 from ..forms import QuerySamplerWizardForm, ConfirmationForm, EditQsStudyForm
 
 from io import BytesIO, StringIO

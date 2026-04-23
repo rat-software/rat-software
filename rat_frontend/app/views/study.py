@@ -1,9 +1,9 @@
 from .. import app, db
 from ..forms import StudyForm, ConfirmationForm, StudySettingsForm, UploadResultsForm, ConfirmUploadForm
-from ..models import (Study, StudyType, ResultType, SearchEngine, Query, Scraper, Answer,
-                      Result, Source, Classifier, User, RangeStudy, StudyURLFilter,
-                      Country, ResultAi, ResultAiSource, ResultSource, ResultChatbot, Serp)
-from flask import Blueprint, render_template, flash, redirect, url_for, request, abort, Response, send_file, jsonify
+from ..models import (Study, Query, Answer,
+                      Result, Classifier, RangeStudy, 
+                      ResultAi, ResultAiSource, ResultSource, ResultChatbot, Serp)
+from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, send_file, jsonify
 from markupsafe import Markup
 from sqlalchemy.orm import raiseload, joinedload
 from sqlalchemy import or_, and_, text, func

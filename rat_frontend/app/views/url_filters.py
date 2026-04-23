@@ -1,5 +1,5 @@
 from .. import app, db
-from ..forms import ConfirmationForm # Wiederverwendung für einfache Formulare
+from ..forms import ConfirmationForm
 from ..models import Study, StudyURLFilter
 from flask import render_template, flash, redirect, url_for, request
 from flask_security import login_required

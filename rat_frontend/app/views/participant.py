@@ -2,7 +2,7 @@ from .. import app, db
 from app.models import (Study, Participant, Answer, Result, Question, ResultAi, 
                         ResultChatbot, ResultSource, Serp, RangeStudy)
 from ..forms import JoinForm, ParticipantLogInForm, ConfirmationForm
-from flask import Blueprint, render_template, flash, redirect, url_for, request, send_file
+from flask import render_template, flash, redirect, url_for, request, send_file
 from datetime import datetime
 from flask_login import logout_user
 import random

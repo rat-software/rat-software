@@ -1,7 +1,7 @@
 from .. import app, db
-from ..models import (Study, Scraper, Answer, Result, ResultAi, ResultSource, 
-                      Classifier, ClassifierResult, ResultAiSource, ResultType, ResultChatbot,
-                      Source, Evaluation)
+from ..models import (Scraper, Answer, Result, ResultAi, ResultSource, 
+                      ClassifierResult, ResultAiSource, ResultType, ResultChatbot)
+                      
 from sqlalchemy import func, or_, and_
 from ..helpers import percentage_calc
 import pandas as pd

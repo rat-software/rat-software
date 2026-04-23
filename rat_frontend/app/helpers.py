@@ -1,6 +1,6 @@
 from . import app, db
-from .forms import AnswerForm # Importieren, da get_options es braucht
-from app.models import Option, Question
+from .forms import AnswerForm 
+from app.models import Option
 from markupsafe import Markup
 from crontab import CronTab
 
