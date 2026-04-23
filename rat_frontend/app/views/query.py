@@ -1,7 +1,7 @@
 from .. import app, db
 from ..models import Study, Query
-from flask import Blueprint, render_template, flash, redirect, url_for, request
-from flask_security import login_required, current_user
+from flask import render_template, flash, redirect, url_for, request
+from flask_security import login_required
 from datetime import datetime
 #bp = Blueprint('query', __name__)
 

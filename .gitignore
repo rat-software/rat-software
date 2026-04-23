@@ -1,6 +1,6 @@
 **/__pycache__/
 **/__downloades_files__/
-**/downloades_files/
+**/downloaded_files/
 **/tmp/*.png
 **/.pytest_cache
 **/.ipynb_checkpoints

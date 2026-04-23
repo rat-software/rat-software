@@ -13,7 +13,7 @@ def create_webdriver():
 
     driver = Driver(
             browser="chrome",
-            wire=True,
+            wire=False,
             uc=True,
             headless2=True,
             incognito=False,
@@ -751,3 +751,7 @@ def identify_robots_txt(main):
         result = -1
 
     return result
+
+
+if __name__ == "__main__":
+    save_robot_txt("https://www.searchstudies.org/")

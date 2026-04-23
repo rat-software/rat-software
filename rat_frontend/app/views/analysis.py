@@ -1,6 +1,6 @@
 from .. import app, db
-from ..models import Study, Result
-from flask import render_template, send_file, redirect, url_for
+from ..models import Study
+from flask import render_template, redirect, url_for
 from flask_security import login_required
 from .analysis_func import (get_result_stats, get_evaluation_stats,
                            get_classifier_stats, get_top_main_domains, 

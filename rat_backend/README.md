@@ -33,7 +33,7 @@ source venv_rat_backend/bin/activate
 
 ### Step 2: Install Dependencies
 ```bash
-python -m pip install --no-cache-dir -r requirements.txt
+python -m pip install --no-cache-dir -r requirements_rat_backend.txt
 ```
 
 ### Step 3: Module-Specific System Setup

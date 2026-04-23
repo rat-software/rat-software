@@ -37,7 +37,6 @@ parentdir = os.path.dirname(parentdir)
 
 
 from libs.lib_helper import Helper
-from libs.lib_content import Content
 
 # Initialize the Helper instance
 helper = Helper()
@@ -1436,7 +1435,7 @@ class Sources:
             # Configure Driver with appropriate settings
             driver_options = {
                 "browser": "chrome",
-                "wire": True,
+                "wire": False,
                 "uc": True,
                 "headless2": headless,
                 "incognito": False,

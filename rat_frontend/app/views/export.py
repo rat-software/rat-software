@@ -1,4 +1,3 @@
-# HINWEIS: Stelle sicher, dass diese Imports am Anfang der Datei korrekt sind.
 from .. import app, db
 from app.models import (Study, Answer, Question, Result, Participant, ClassifierResult, 
                         Classifier, participant_study, Option, ResultAi, ResultChatbot, ResultAiSource)

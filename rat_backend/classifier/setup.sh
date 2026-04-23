@@ -4,14 +4,16 @@
 echo "🔧 Starting setup for RAT Classifier..."
 
 # 1. Setup Virtual Environment
-echo "🐍 Creating virtual environment (venv_classifier)..."
+echo "🐍 Creating virtual environment..."
 python3 -m venv venv_classifier
 source venv_classifier/bin/activate
 
 # 2. Install Dependencies
 echo "📦 Installing packages..."
 pip install --upgrade pip
-pip install sqlalchemy psycopg2-binary apscheduler beautifulsoup4 lxml requests psutil
+pip install -r requirements_rat_classifier.txt
+
+echo "✅ Setup complete! Use 'source venv_classifier/bin/activate' to start."
 
 echo ""
 echo "✅ Classifier Setup complete!"

@@ -1,11 +1,10 @@
 from .. import app, db
-from ..forms import QuestionForm, AnswerForm, ConfirmationForm, ImportQuestionsForm
+from ..forms import QuestionForm, ConfirmationForm, ImportQuestionsForm
 from ..models import Study, Option, QuestionType, Question
 from ..helpers import get_options
-from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, jsonify
-from flask_security import login_required, current_user
+from flask import Blueprint, render_template, flash, redirect, url_for, request, Response
+from flask_security import login_required
 import json
-import io
 from datetime import datetime
 
 @app.route("/study/<id>/questions", methods=['GET', 'POST'])

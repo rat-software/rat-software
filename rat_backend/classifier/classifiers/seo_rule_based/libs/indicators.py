@@ -13,7 +13,7 @@ def create_webdriver():
 
     driver = Driver(
             browser="chrome",
-            wire=True,
+            wire=False,
             uc=True,
             headless2=True,
             incognito=False,

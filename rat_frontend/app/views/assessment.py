@@ -1,5 +1,5 @@
 from .. import app, db, csrf
-from ..models import Study, Participant, Answer, Question, Result, StudyURLFilter, ResultAi, ResultChatbot, Source, ResultSource, Serp, RangeStudy
+from ..models import Study, Participant, Answer, Question, Result, ResultAi, ResultChatbot, ResultSource, Serp, RangeStudy
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import logout_user
 from datetime import datetime
@@ -165,12 +165,10 @@ def assessment(participant_id, study_id):
         Result.normalized_url != ""
     )
 
-    # --- RANGE FILTER WIEDER DA ---
     ranges = RangeStudy.query.filter_by(study=study.id).all()
     if ranges:
         range_filters = [and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]
         open_result_tasks_query = open_result_tasks_query.filter(or_(*range_filters))
-    # ------------------------------
 
     open_result_tasks_query = open_result_tasks_query.distinct()
 
