@@ -47,11 +47,6 @@ sources_cnf = helper.file_to_dict(os.path.join(parentdir, 'config/config_sources
 # Determine whether to run in headless mode
 headless = sources_cnf.get('headless')
 
-if headless == 1:
-    headless = True
-else:
-    headless = False
-
 # Add a timeout configuration with default of 300 seconds
 GLOBAL_TIMEOUT = sources_cnf.get('global_timeout', 300)
 
@@ -107,15 +102,15 @@ class Sources:
                 headers = {"X-API-Key": API_KEY}
                 files = {"file": (zip_filename, zip_buffer, "application/zip")}
                 
-                print(f"Versuche Upload zu: {STORAGE_URL}")
+                print(f"Trying to upload to API: {STORAGE_URL}")
                 response = requests.post(STORAGE_URL, headers=headers, files=files, timeout=30)
                 
                 if response.status_code == 200:
                     remote_filename = response.json().get("filename")
-                    print(f"Upload erfolgreich: {remote_filename}")
-                    return remote_filename # Server-Dateiname zurückgeben
+                    print(f"API upload successful: {remote_filename}")
+                    return remote_filename
                 else:
-                    print(f"API Upload fehlgeschlagen: {response.status_code} - {response.text}")
+                    print(f"API upload failed: {response.status_code} - {response.text}")
             except Exception as e:
                 print(f"API Fehler: {e}")
         

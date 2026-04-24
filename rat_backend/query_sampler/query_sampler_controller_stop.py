@@ -24,7 +24,9 @@ class KeywordController:
         processes_to_kill = [
             "job_qs.py",
             "generate_keywords.py",
-            "query_sampler_controller_start.py"
+            "query_sampler_controller_start.py",
+            "job_reset_qs.py",
+            "qs_reset.py"
         ]
 
         print("Searching for processes to terminate...")

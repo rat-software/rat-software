@@ -210,6 +210,13 @@ class ClassifierIndicator(db.Model):
     classifier_id = db.Column('classifier', db.Integer, db.ForeignKey('classifier.id'))
     classifier = db.relationship('Classifier', back_populates='indicators', lazy='select')
 
+class Country(db.Model):
+    __tablename__ = 'country'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    code = db.Column(db.String)
 
 class StudyURLFilter(db.Model):
     __tablename__ = 'study_url_filter'
@@ -324,7 +331,9 @@ class Result(db.Model):
     indicators = db.relationship('ClassifierIndicator', back_populates='result', lazy='select', cascade="all, delete-orphan")
     classifier = db.relationship('ClassifierResult', back_populates='result', lazy='select')
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
-    study = db.relationship('Study', back_populates='results', lazy='select')
+    study = db.relationship('Study', back_populates='results', lazy='select')  
+    country_id = db.Column('country', db.Integer, db.ForeignKey('country.id'), nullable=True)
+    country = db.relationship('Country', backref=db.backref('results', lazy=True))
     scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'), nullable=True)
     scraper = db.relationship('Scraper', back_populates='results', lazy='select')
     serp_id = db.Column('serp', db.Integer, db.ForeignKey('serp.id'))
@@ -472,7 +481,6 @@ class Study(db.Model):
     skippable = db.Column(db.Boolean, default=True, nullable=False)
     assess_failed = db.Column(db.Boolean, default=False, nullable=True)
     completion_text = db.Column(db.Text, nullable=True)
-    result_types = db.Column(db.String)
     assessable_result_types_text = db.Column(db.String, nullable=True)
     visible = db.Column(db.Boolean, default=True, nullable=False)
 

@@ -22,7 +22,8 @@ source venv_rat_backend/bin/activate
 
 ### Step 2: Install Dependencies
 ```bash
-python -m pip install --no-cache-dir -r requirements_rat_classifier.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements_rat_classifier.txt
 ```
 
 
