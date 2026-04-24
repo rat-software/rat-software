@@ -147,21 +147,14 @@ class SourcesScraper:
             url = source_to_scrape[1] 
             country_proxy = source_to_scrape[2] 
             country_code = source_to_scrape[3] 
-   
-            # ====================================================================
-            # NEU: SOFORTIGES EXTRAHIEREN UND SPEICHERN DER MAIN DOMAIN
-            # ====================================================================
-            # Dadurch ist die Domain immer für die Analyse-Seite verfügbar,
-            # selbst wenn der Scraper bei dieser URL komplett abstürzt!
+
             base_main = url
             base_ip = "-1"
             try:
-                # Wir nutzen die Hilfsfunktion aus lib_sources rein zum Parsen
                 base_meta = self.sources.get_result_meta(url)
                 base_main = base_meta.get("main", url)
                 base_ip = base_meta.get("ip", "-1")
                 
-                # Sofortiger DB-Eintrag!
                 self.db.update_result(result_id, base_ip, base_main, url)
             except Exception as e:
                 self.logger.write_to_log(f"Fehler beim initialen Parsen der URL {url}: {e}")

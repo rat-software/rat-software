@@ -5,6 +5,9 @@ import psycopg2
 from psycopg2.extras import execute_values
 import psycopg2.extras
 from datetime import datetime
+from pathlib import Path
+import json
+
 
 # Import Pandas to generate the downloadable keyword ideas of a study
 import pandas as pd
@@ -14,11 +17,20 @@ import warnings
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 # Credentials for the db access
-database = "your_db_name"
-user = "your_db_user"
-password = "your_db_password"
-host = "your_db_host"
-port = "your_db_port"
+# Get the current directory of the script
+currentdir = Path(__file__).resolve().parent
+
+path_db_cnf = currentdir / ".." / "config" / "config_db.ini"
+
+with open(path_db_cnf, encoding="utf-8") as f:
+    # Load the content of the file as JSON and return it as a dictionary
+    db_cred = json.load(f)
+
+database = db_cred["database"]
+user = db_cred["user"]
+password = db_cred["password"]
+host = db_cred["host"]
+port = db_cred["port"]
 
 def get_studies():
     """
@@ -276,3 +288,21 @@ def select_keywords_ideas(study_id):
         conn.close()
     
     return df
+
+
+def reset_hanging_qs_jobs():
+    """
+    Reset keywords and studies that are stuck in 'processing' state (status = 2)
+    back to 'pending' state (status = 0) so they can be picked up again by the generator.
+    """
+    conn = psycopg2.connect(database=database, user=user, password=password, host=host, port=port)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    
+    # Reset hanging keywords
+    cur.execute("UPDATE qs_keyword SET status = 0 WHERE status = 2;")
+    
+    # Reset hanging studies (if they also use status 2 for processing)
+    cur.execute("UPDATE qs_study SET status = 0 WHERE status = 2;")
+    
+    conn.commit()
+    conn.close()

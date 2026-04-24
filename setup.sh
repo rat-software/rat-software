@@ -14,4 +14,4 @@ pip install --upgrade pip
 pip install -r requirements_rat.txt
 
 echo "✅ Setup complete! Use 'source venv_rat/bin/activate' to start."
-echo "Or deploy a RAT service (see README.md)."
+echo "Next, you can deploy a RAT modules as services (see README.md)."

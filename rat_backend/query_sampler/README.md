@@ -18,7 +18,8 @@ The Query Sampler requires a verified connection to the Google Ads API.
 1.  **Install Dependencies**:
     Install all required packages for the controller and its sub-modules:
     ```bash
-    python -m pip install --no-cache-dir -r requirements.txt
+    python -m pip install --upgrade pip
+    python -m pip install -r requirements_rat_query_sampler.txt
     ```
 2.  **Google Ads Developer Token**: Obtain a developer token from the [Google Ads Center](https://developers.google.com/google-ads/api/docs/get-started/dev-token).
 3.  **OAuth Credentials**: Create "Web Application" or "Desktop App" credentials in the [Google Cloud Console](https://console.cloud.google.com).

@@ -32,9 +32,22 @@ class KeywordController:
             print(f"Starte Job: python {job_path}")
             os.system(f'python {job_path}')
 
+
+        def reset_job():
+            """
+            Internal function to stop the scheduler job.
+            This function calls the job_reset_qs.py script.
+            """
+            # Ensures that the path to the job script is correct
+            job_path = os.path.join(workingdir, "jobs", 'job_reset_qs.py')
+            print(f"Starte Job: python {job_path}")
+            os.system(f'python {job_path}')            
+
         # Creates a new thread for the start_job function and starts it
-        process = threading.Thread(target=start_job)
-        process.start()
+        process1 = threading.Thread(target=start_job)
+        process1.start()
+        process2 = threading.Thread(target=reset_job)
+        process2.start()
         print("Keyword Generation Controller launched.")
 
 

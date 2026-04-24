@@ -31,7 +31,8 @@ source venv_rat_sources/bin/activate
 
 ### Install Dependencies
 ```bash
-python -m pip install --no-cache-dir -r requirements_rat_sources.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements_rat_sources.txt
 ```
 
 ---

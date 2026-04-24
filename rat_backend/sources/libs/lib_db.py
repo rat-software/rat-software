@@ -103,7 +103,6 @@ class DB:
             conn = DB.connect_to_db(self)
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             
-            # Python berechnet die exakte Zeitgrenze (10 Minuten in der Vergangenheit)
             threshold_time = datetime.now() - timedelta(minutes=10)
             
             sql = """
@@ -116,20 +115,18 @@ class DB:
                     OR (progress IN (0, 2) AND created_at < %s)
                 )
             """
-            # Wir übergeben threshold_time an das SQL-Skript (%s)
             cur.execute(sql, (job_server, threshold_time))
             sources_failed = cur.fetchall()
             conn.commit()
             conn.close()
 
-            # Debug-Ausgabe für dein Terminal
-            print(f"Gefundene feststeckende Jobs (Counter >= 3): {len(sources_failed)}")
+            print(f"Found hanging jobs (Counter >= 3): {len(sources_failed)}")
 
             for s in sources_failed:
                 rs_id = s[0]
                 source_id = s[1]
                 
-                print(f"-> Setze ResultSource ID {rs_id} final auf progress = -1")
+                print(f"-> Reset ResultSource ID {rs_id} to progress = -1")
                 
                 conn = DB.connect_to_db(self)
                 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -236,8 +233,6 @@ class DB:
         conn = self.connect_to_db()
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
-        # Wir speichern NUR noch den file_path. 
-        # Die Spalten code und bin werden nicht mehr angefasst.
         sql = """
             UPDATE source 
             SET file_path=%s, progress=%s, content_type=%s, 
@@ -371,29 +366,15 @@ class DB:
         return scr[0]
 
     def get_sources(self, job_server):
-        """
-        Read all results with no source id (no source_code nor a screenshot)
-
-            SELECT r.id, r.url, c.name AS country_name, c.code, s.studytype 
-            FROM result r 
-            JOIN study s ON r.study = s.id 
-            LEFT JOIN country c ON r.country = c.id 
-            LEFT JOIN result_source rs ON rs.result = r.id 
-            WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3)) AND r.id > 492000
-            ORDER BY r.id ASC 
-            LIMIT 5;
-
-        """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         sql = """
-            SELECT r.id, r.url, c.name AS country_name, c.code, s.studytype 
+            SELECT r.id, r.url, c.name AS country_name, c.code
             FROM result r 
             JOIN study s ON r.study = s.id 
             LEFT JOIN country c ON r.country = c.id 
             LEFT JOIN result_source rs ON rs.result = r.id 
             WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3))
-            -- NEU: Ignoriere Studien, die im Live Link Mode sind
             AND s.live_link_mode = FALSE 
             ORDER BY r.id ASC 
             LIMIT 5;
