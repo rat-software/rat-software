@@ -17,6 +17,6 @@ source venv_rat_stoarge/bin/activate
 # 3. Install Dependencies
 echo "📦 Installing packages..."
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements_rat_storage.txt
 
 echo "✅ Setup complete! Use 'source venv_rat_stoarge/bin/activate' to start."
