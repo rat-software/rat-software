@@ -90,7 +90,7 @@ def main(
         request=request
     )
 
-    query = "Trichomonaden"
+    query = "Test"
     query = query.lower()
     query = query.replace(" ", "_")
     csv_file = query+".csv"

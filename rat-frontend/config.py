@@ -52,4 +52,3 @@ class Config(object):
     STORAGE_FOLDER = os.environ.get('STORAGE_FOLDER', '')
     API_UPLOAD_KEY = os.environ.get('API_UPLOAD_KEY', '')
     STORAGE_BASE_URL = os.environ.get('STORAGE_BASE_URL', '')
-    API_URL = os.environ.get('API_URL', '')

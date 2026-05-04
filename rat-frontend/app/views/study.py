@@ -34,6 +34,7 @@ import traceback
 def upload_to_storage(file_data, filename):
     base_url = app.config.get('STORAGE_BASE_URL')
     
+    # Determine the correct API endpoint based on the environment (local vs. live)
     if "127.0.0.1" in base_url or "localhost" in base_url:
         api_url = f"{base_url.rstrip('/')}/upload"
     else:
@@ -46,32 +47,28 @@ def upload_to_storage(file_data, filename):
     files = {'file': (filename, file_data, 'application/zip')}
     
     try:
-        response = requests.post(api_url, headers=headers, files=files, timeout=10)
+        # Increased timeout to 30 seconds to prevent large files from timing out immediately
+        response = requests.post(api_url, headers=headers, files=files, timeout=30)
+        
         if response.status_code == 200:
             return response.json().get('filename')
-    except Exception as e:
-        pass 
-        
-    try:
-        if platform.system() == "Windows":
-            local_storage_path = os.path.abspath(os.path.join(app.root_path, "..", "..", "storage", "sources"))
         else:
-            local_storage_path = app.config.get('STORAGE_FOLDER')
+            # Instead of silently ignoring the error, we print it out for debugging
+            print(f"❌ Server rejected the upload. Status: {response.status_code}")
+            print(f"Details: {response.text}")
+            return None
             
-        os.makedirs(local_storage_path, exist_ok=True)
-        local_filepath = os.path.join(local_storage_path, filename)
-        
-        with open(local_filepath, "wb") as f:
-            f.write(file_data)
-        return filename
+    except requests.exceptions.Timeout:
+        print(f"❌ Timeout error during upload of {filename}. File might be too large or connection too slow.")
+        return None
     except Exception as e:
-        print(f"Local Storage fallback failed: {e}")
+        print(f"❌ Critical error during remote upload of {filename}: {e}")
         return None
 
 TRACKING_PARAMS_TO_REMOVE = [
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
     'gclid', 'dclid', 'fbclid', '_hsenc', '_hsmi', 'mkt_tok', 'msclkid',
-    'mc_cid', 'mc_eid', 'trk', 'onwewe'
+    'mc_cid', 'mc_eid', 'trk', 'onwewe', 'srsltid'
 ]
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'tmp_uploads')

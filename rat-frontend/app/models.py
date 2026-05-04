@@ -399,12 +399,9 @@ class Scraper(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     progress = db.Column(db.Integer)
-    limit = db.Column(db.Integer)
     counter = db.Column(db.Integer)
-    error_code = db.Column(db.Integer)
     created_at = db.Column(db.DateTime)
     type = db.Column(db.Integer)
-    resulttype = db.Column(db.Integer)
     query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
     query_ = db.relationship('Query', back_populates='scrapers', lazy='select')
     searchengine_id = db.Column('searchengine', db.Integer, db.ForeignKey('searchengine.id'))

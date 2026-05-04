@@ -393,31 +393,3 @@ class DB:
         except Exception as e:
             print(f"Error checking DB connection: {e}")
             return False
-
-    def get_results_test(self):
-        """
-        Get the results for a given classifier ID.
-
-        Args:
-            classifier_id (int): ID of the classifier.
-
-        Returns:
-            list: List of results for the given classifier ID.
-        """
-        with self.connect_to_db() as conn:
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("""
-                SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
-                       result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, 
-                       result_source.source 
-                FROM result, source, result_source 
-                WHERE result_source.result = result.id AND result_source.source = source.id 
-                      AND (source.progress = 1 OR source.progress = -1)
-                      AND result.id = 63
-                      
-                ORDER BY result.created_at, result.id 
-                LIMIT 20
-            """)
-            conn.commit()
-            results = cur.fetchall()
-        return results

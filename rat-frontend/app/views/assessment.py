@@ -20,7 +20,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature
 
 def get_signed_storage_url(file_path, file_type='screenshot'):
     api_key = current_app.config.get('API_UPLOAD_KEY')
-    base_url = current_app.config.get('API_URL')
+    base_url = current_app.config.get('STORAGE_BASE_URL')
     
     serializer = URLSafeTimedSerializer(api_key)
     ticket = serializer.dumps({'filename': file_path}, salt='source-view')
@@ -340,19 +340,6 @@ def serp_image(id):
     if not serp.file_path:
         return "No file", 404
     
-    zip_path = os.path.join('/var/www/rat/storage/sources', serp.file_path)
+    signed_url = get_signed_storage_url(serp.file_path, file_type='screenshot')
     
-    if not os.path.exists(zip_path):
-        return "Not found", 404
-        
-    try:
-        import zipfile, io
-        from flask import send_file
-        with zipfile.ZipFile(zip_path, 'r') as z:
-            if 'screenshot.jpg' in z.namelist():
-                img_data = z.read('screenshot.jpg')
-                return send_file(io.BytesIO(img_data), mimetype='image/jpeg')
-    except Exception as e:
-        return str(e), 500
-        
-    return "Error", 500
+    return redirect(signed_url)

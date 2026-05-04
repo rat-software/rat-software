@@ -23,10 +23,10 @@ from urllib.parse import urlparse
 import urllib.request
 import urllib.error
 import platform
-import psutil  # You may need to install: pip install psutil
+import psutil
 import zipfile
 import io
-import requests # Für den API-Upload
+import requests
 from PIL import Image
 
 # Define the path for configurations and extensions
@@ -41,18 +41,21 @@ from libs.lib_helper import Helper
 # Initialize the Helper instance
 helper = Helper()
 
-# Load configuration from file
-sources_cnf = helper.file_to_dict(os.path.join(parentdir, 'config/config_sources.ini'))
+try:
+    # Load configuration from file
+    sources_cnf = helper.file_to_dict(os.path.join(parentdir, 'config/config_sources.ini'))
 
-# Determine whether to run in headless mode
-headless = sources_cnf.get('headless')
+    # Determine whether to run in headless mode
+    headless = sources_cnf.get('headless')
 
-# Add a timeout configuration with default of 300 seconds
-GLOBAL_TIMEOUT = sources_cnf.get('global_timeout', 300)
+    # Add a timeout configuration with default of 300 seconds
+    GLOBAL_TIMEOUT = sources_cnf.get('global_timeout', 300)
 
-API_KEY = sources_cnf.get('api-key')
-STORAGE_URL = sources_cnf.get('storage-url')
-
+    API_KEY = sources_cnf.get('api-key')
+    STORAGE_URL = sources_cnf.get('storage-url')+"/upload"
+except Exception as e:
+    print("Check your config_sources.ini file. Did you setup a storage server? Error loading configuration:", e)
+    exit()
 
 del helper
 
