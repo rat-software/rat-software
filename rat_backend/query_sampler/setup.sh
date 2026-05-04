@@ -5,7 +5,7 @@ echo "🔧 Starting setup for RAT Query Sampler..."
 
 # 1. Setup Virtual Environment
 echo "🐍 Creating virtual environment..."
-python3 -m venv venv_query_sampler
+python -m venv venv_query_sampler
 source venv_query_sampler/bin/activate
 
 # 2. Install Dependencies
