@@ -144,3 +144,9 @@ The repository provides an overview of extensions created by our developer commu
 - **App Reviews Scraper**: [GitHub - rat-extensions/app-reviews-scraper: As a part of my Bachelor thesis I developed these app reviews scrapers, that will visit designated URLs of a set of applications and export the scraped reviews and relevant information. This is to be served as an extension to the Result Assessment Tool (RAT) and explicitly for research purposes only. · GitHub](https://github.com/rat-extensions/app-reviews-scraper). Developed by Tanveer Ahmed - [https://github.com/PhilippUDE](https://github.com/tanveerx/)
 - **Visualizations of IR measures**: [GitHub - rat-extensions/ir-evaluation: Visualizations of IR measures · GitHub](https://github.com/rat-extensions/ir-evaluation). Developed by Ritu Suhas Shetkar - [ritushetkar · GitHub](https://github.com/ritushetkar)
 - **Scraping News Articles**: [GitHub - rat-extensions/NewsArticlesScraper: This Python tool retrieves the homepages of given news portals and scrapes the HTML text of the articles found. · GitHub](https://github.com/rat-extensions/NewsArticlesScraper). Developed by Esther von der Weiden - [EstherKuerbis · GitHub](https://github.com/EstherKuerbis/)
+
+---
+
+## 📜 License
+
+GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
