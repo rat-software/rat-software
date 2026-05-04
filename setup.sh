@@ -1,11 +1,11 @@
 #!/bin/bash
-# RAT Sources Scraper - Setup Script
+# RAT - Setup Script
 
 echo "🔧 Starting setup for RAT ..."
 
 # 1. Setup Virtual Environment
 echo "🐍 Creating virtual environment..."
-python3 -m venv venv_rat
+python -m venv venv_rat
 source venv_rat/bin/activate
 
 # 2. Install Dependencies
