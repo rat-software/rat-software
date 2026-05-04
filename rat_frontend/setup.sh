@@ -11,7 +11,7 @@ chmod -R 775 app/static/tmp_uploads
 
 # 2. Setup Virtual Environment
 echo "🐍 Creating virtual environment (venv_rat_frontend)..."
-python3 -m venv venv_rat_frontend
+python -m venv venv_rat_frontend
 source venv_rat_frontend/bin/activate
 
 # 3. Install Dependencies
