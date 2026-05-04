@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19453057.svg)](https://doi.org/10.5281/zenodo.14049810)
+[![DOI](zenodo.19453057.svg)](https://doi.org/10.5281/zenodo.14049810)
 
 # RAT
 
