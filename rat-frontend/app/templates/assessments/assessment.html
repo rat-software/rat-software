@@ -20,18 +20,19 @@
   .image-preview-wrapper {
       max-height: 850px;
       overflow-y: auto;
-      /* NEU: Horizontales Scrollen auch in der Vorschau erlauben! */
       overflow-x: hidden; 
       border: 1px solid #dee2e6;
       border-radius: 0.25rem;
       background-color: #e9ecef;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'%3E%3Ccircle cx='25' cy='25' r='20' fill='none' stroke='%236c757d' stroke-width='4' stroke-dasharray='90 150' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' repeatCount='indefinite' dur='1s' values='0 25 25;360 25 25'/%3E%3C/circle%3E%3C/svg%3E");
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 40px 40px;
   }
 
   .zoomable-img {
     cursor: zoom-in;
     display: block;
-    /* FIXED: Überschreibt Bootstraps img-fluid komplett! 
-       Zwingt das Bild zu 1:1 Pixel-Rendering ohne Quetschen. */
     max-width: none !important; 
     width: auto !important; 
     margin: 0 auto; 
@@ -238,11 +239,14 @@
             {% else %}
                 {# CASE 2: Extract the screenshot (PNG) from the ZIP archive #}
                 <div class="image-preview-wrapper shadow-sm">
-                    <img class="img-fluid zoomable-img" 
-                         src="{{ get_storage_url(source.file_path, 'screenshot') }}"
-                         onclick="openImageModal(this.src)" 
-                         alt="Scraped Content" 
-                         onerror="this.onerror=null; this.src='/static/img/placeholder_error.png'; console.log('Image load failed');">
+                <img class="img-fluid zoomable-img" 
+                    src="{{ get_storage_url(source.file_path, 'screenshot') }}"
+                    loading="lazy"
+                    style="opacity: 0;" 
+                    onload="this.style.opacity=''"
+                    onclick="openImageModal(this.src)" 
+                    alt="Scraped Content" 
+                    onerror="retryImage(this)">
                 </div>
                 <div class="text-center text-muted small mt-2">
                     <i class="fa-solid fa-magnifying-glass-plus"></i> Click image to enlarge (Original Size)
@@ -327,9 +331,12 @@
         <div class="image-preview-wrapper shadow-sm m-3">
           <img src="{{ get_storage_url(task_item.file_path, 'screenshot') }}"
               class="img-fluid zoomable-img"
+              loading="lazy"
+              style="opacity: 0;"
+              onload="this.style.opacity=''"
               onclick="openImageModal(this.src)" 
               alt="SERP Screenshot"
-              onerror="this.onerror=null; this.src='/static/img/placeholder_error.png'; console.log('Image load failed');">
+              onerror="retryImage(this)">
         </div>
         <div class="text-center text-muted small mt-2 mb-3"><i class="fa-solid fa-magnifying-glass-plus"></i> Click image to enlarge</div>
         {% else %}
@@ -361,6 +368,27 @@
     document.getElementById('modalImageDisplay').src = src;
     if (imageModal) imageModal.show();
   }
+
+  function retryImage(imgElement) {
+      let retries = parseInt(imgElement.getAttribute('data-retries') || '0');
+      let maxRetries = 3;
+
+      imgElement.style.opacity = '0'; 
+
+      if (retries < maxRetries) {
+          console.log("Server overloaded. Trying to load the screenshot again in 1 second.");
+          setTimeout(() => {
+              imgElement.setAttribute('data-retries', retries + 1);
+              let currentSrc = imgElement.src.split('&retry=')[0]; 
+              imgElement.src = currentSrc + '&retry=' + new Date().getTime();
+          }, 1000); 
+      } else {
+          console.log("Screenshot couldn't be loaded.");
+          imgElement.onerror = null; 
+          imgElement.src = '/static/img/placeholder_error.png';
+          imgElement.onload = function() { this.style.opacity = ''; };
+      }
+    }
 
   document.addEventListener('DOMContentLoaded', function () {
     // --- Activate tooltips ---

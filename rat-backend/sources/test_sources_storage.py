@@ -3,14 +3,35 @@ import sys
 import requests
 import time
 from itsdangerous import URLSafeTimedSerializer
+import io
+import json
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from libs.lib_sources import Sources
 
-STORAGE_BASE_URL = "your_storage_base_url_here" # Storage Base URL
-API_UPLOAD_KEY = "your_api_key_here" # Storage API Key
 
+# 1. Dynamically locate the config file relative to this script
+# Path: classifier/libs/lib_helper.py -> ../../config/config_sources.ini
+current_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(current_dir, '../config/config_sources.ini')
+config_path = os.path.normpath(config_path)
+
+# 2. Load the configuration
+try:
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config_data = json.load(f)
+    
+    # 3. Assign values from JSON to class attributes
+    API_UPLOAD_KEY = config_data.get("api-key", "default_key_if_missing")
+    STORAGE_BASE_URL = config_data.get("storage-url", "default_url_if_missing")
+    
+except FileNotFoundError:
+    print(f"Critical Error: Configuration file not found at {config_path}")
+    # Fallback values or handle error as needed
+    API_UPLOAD_KEY = None
+    STORAGE_BASE_URL = None
+    
 def generate_test_ticket(filename):
     """Generiert ein Ticket, um den geschützten Download zu testen"""
     serializer = URLSafeTimedSerializer(API_UPLOAD_KEY)
