@@ -17,7 +17,6 @@ let currentSessionId = null;
 let cachedTasks = [];
 let currentTaskFilter = "ALL";
 
-// Hält alle installierten Scraper-Engines im Arbeitsspeicher des UIs
 let availableEngines = []; 
 let currentEditingEngineId = null;
 
@@ -221,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initLocalDB(); 
 
 
-    // Zoom anwenden und Event Listener setzen
+    // Zoom
     applyZoom(currentZoom);
     document.getElementById('zoomInBtn').addEventListener('click', () => {
         currentZoom = Math.min(currentZoom + 0.1, 2.0); // Maximal auf 200% vergrößern
@@ -461,7 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- NEU: ENGINE MANAGER (VISUAL BUILDER, SANDBOX, IMPORT & EXPORT) ---
 
     // TWO-WAY BINDING: JSON -> Visual Builder
     function updateVisualBuilderFromJson() {
@@ -573,7 +571,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { }
     }
 
-    // Event Listener für die Visual Builder Inputs (mit allen neuen IDs)
     const vbInputs = [
         'vbEngineName', 'vbEngineId', 'vbBaseUrl', 'vbParamQuery', 
         'vbSelContainer', 'vbSelTitle', 'vbSelUrl', 'vbSelSnippet', 'vbSelNext',
@@ -586,7 +583,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(el) el.addEventListener('input', updateJsonFromVisualBuilder);
     });
 
-    // Event Listener für den JSON Editor
     document.getElementById('engineJsonEditor').addEventListener('input', updateVisualBuilderFromJson);
 
     // IMPORT JSON LOGIC
@@ -766,14 +762,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const existingUrls = new Set();
             
             while (collectedOrganic.length < targetResults && currentPage <= 5) {
-                // NEU: Wir injizieren das Skript bei JEDER Seite neu!
-                // Das ist überlebenswichtig für Google, weil Google bei "Next" die Seite neu lädt.
                 await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }).catch(() => {});
                 
                 logToSandbox(`📜 Page ${currentPage}: Executing human logic & scrolling...`);
                 await chrome.tabs.sendMessage(tab.id, { action: "SCROLL_AND_PREPARE", payload: { config: engineConfig } }).catch(()=>{});
                 
-                // Wichtig: Extra Wartezeit, damit AI Overviews nachladen können
                 await new Promise(r => setTimeout(r, 2500));
                 
                 logToSandbox(`🔍 Page ${currentPage}: Extracting Data using JSON selectors...`);
@@ -788,7 +781,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     collectedOrganic = collectedOrganic.concat(newOrganic);
                     collectedAds = collectedAds.concat(data.ads);
                     
-                    // --- NEUE, DETAILLIERTE LOGS FÜR AI & ADS ---
                     if (data.ai_overview && data.ai_overview.found) {
                         if (!aiOverviewData) aiOverviewData = data.ai_overview; // Für die finale Vorschau speichern
                         const sourceCount = data.ai_overview.sources ? data.ai_overview.sources.length : 0;
@@ -799,12 +791,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         logToSandbox(`📢 Extracted ${data.ads.length} Ad(s) on Page ${currentPage}.`, "#fd7e14");
                     }
 
-                    // Einheitliche Zusammenfassung
                     const aiFoundStr = (data.ai_overview && data.ai_overview.found) ? "Yes" : "No";
                     logToSandbox(`📊 Page ${currentPage} Summary: AI: ${aiFoundStr} | Ads: ${data.ads.length} | New Organic: ${newOrganic.length} (Total: ${collectedOrganic.length}/${targetResults})`);
                     // ---------------------------------------------
 
-                    // Preview des ersten Snippets NUR im Sandbox Log anzeigen
                     if (newOrganic.length > 0) {
                         const firstRes = newOrganic[0];
                         const shortSnippet = firstRes.snippet ? firstRes.snippet.substring(0, 60).replace(/\n/g, ' ') + "..." : "No snippet found";
@@ -822,7 +812,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (nav && nav.success) {
                         logToSandbox(`✅ Successfully clicked "Next/More". Moving to Page ${currentPage + 1}...`, "#155724");
                         currentPage++;
-                        // Längere Wartezeit hier, damit Google den Hard-Reload sauber durchführen kann
                         await new Promise(r => setTimeout(r, 4500)); 
                     } else {
                         logToSandbox(`⏹️ END: No "Next/More" button found or it failed. Stopping here.`, "#856404");
@@ -838,7 +827,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // --- ERGEBNISSE ANZEIGEN ---
             const previewDiv = document.getElementById('sandboxResultsPreview');
             let html = "";
             
@@ -863,7 +851,6 @@ document.addEventListener('DOMContentLoaded', () => {
             previewDiv.style.display = 'block';
             document.getElementById('sandboxPreviewLabel').style.display = 'block';
             
-            // Tab schließen nach dem Test
             chrome.tabs.remove(tab.id).catch(()=>{});
 
         } catch(err) {
@@ -1152,7 +1139,6 @@ window.deleteTask = function(index) {
     if(task) { task.status = "CANCELLED"; renderTasks(); }
 };
 
-// --- DRAG & DROP FÜR KEYWORDS ---
 function setupDragAndDropForKeywords(textareaId) {
     const textarea = document.getElementById(textareaId);
     if (!textarea) return;
