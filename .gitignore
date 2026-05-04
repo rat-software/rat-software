@@ -7,3 +7,5 @@
 *.log
 **.DS_Store
 !empty.txt
+**/node_modules/
+tests/coverage/
