@@ -1,0 +1,11 @@
+{
+  "name": "rat-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "fast-check": "^3.0.0",
+    "jest": "^29.0.0"
+  }
+}
