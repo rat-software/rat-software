@@ -8,7 +8,6 @@ The Result Assessment Tool (RAT) consists of:
 - Scrapers for various search systems
 - Classifiers for analyzing search results
 - Contributing to RAT
-- Providing Your Own Extension
 - Want to provide your own extension, either scraper or classifier? On this page, we offer everything you need to get started.
 
 #### GitHub Repository
@@ -19,14 +18,14 @@ Additional scrapers and classifiers, some not yet included in the main software,
 #### Setting Up a Classifier
 The Classifier application allows you to configure and use classifiers for various data sources. It is a flexible tool that enables you to define and manage custom classifiers using a database.
 
-For detailed instructions, see the Classifier Setup Guide: https://github.com/rat-software/rat-software/tree/main/backend/classifier
+For detailed instructions, see the Classifier Setup Guide: https://github.com/rat-software/rat-software/tree/main/rat-backend/classifier
 
 #### Setting Up a Scraper
-The Scraper application provides a framework for scraping search results from different sources. To add new scrapers, follow the provided template, as adding a new scraper can be complex.
+The Scraper application provides a browser extension for scraping search results from different sources. To add new scrapers install the extension and use the included scraper framework to add new search system scrapers.
 
-For detailed instructions, see the Scraper Setup Guide: https://github.com/rat-software/rat-software/tree/main/backend/scraper
+You can find the browser extension here: https://github.com/rat-software/rat-software/tree/main/rat-extension
 
 #### Contributing to the RAT Core
-If you want to contribute to the RAT core, please contact us at rat@searchstudies.org.
+If you want to contribute to the RAT core, please contact us at contact@rat-software.org.
 
 Join us and help advance the field of search engine research!

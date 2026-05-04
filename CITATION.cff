@@ -32,20 +32,20 @@ authors:
     email: kardelen.bilir@haw-hamburg.de
   - given-names: Bosnak
     family-names: Sophia
+    affiliation: HAW Hamburg
     email: sophia.bosnak@haw-hamburg.de
+  - given-names: Quast
+    family-names: Björn
+    affiliation: HAW Hamburg
+    email: bjoern.quast@haw-hamburg.de
 identifiers:
   - type: doi
     value: 10.5281/zenodo.14049810
-repository-code: 'https://github.com/rat-software'
+repository-code: 'https://github.com/rat-software/rat-software'
 url: 'http://rat-software.org/'
 abstract: >-
-  The Result Assessment Tool (RAT) is a software toolkit
-  that allows researchers to conduct large-scale studies
-  based on results from (commercial) search engines and
-  other information retrieval systems. It consists of
-  modules for (1) designing studies, (2) collecting data
-  from search systems, (3) collecting judgments on the
-  results, (4) downloading/analysing the results.
+  The Result Assessment Tool (RAT) is the Free Open-Source Research Toolbox for Collecting, Analyzing and Evaluating Search Results.
+  Identify search queries, collect the matching search results from various search systems, such as Google and Bing, analyze them, and have them evaluated by jurors. RAT can help you with all these tasks and more.
 keywords:
   - search engines
   - scraper
