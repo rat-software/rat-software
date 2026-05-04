@@ -10,7 +10,7 @@ sudo apt install -y chromium-browser chromium-chromedriver python3-venv psutil
 
 # 2. Setup Unified Virtual Environment
 echo "🐍 Creating virtual environment (venv_rat_backend)..."
-python3 -m venv venv_rat_backend
+python -m venv venv_rat_backend
 source venv_rat_backend/bin/activate
 
 # 3. Install All Backend Dependencies
