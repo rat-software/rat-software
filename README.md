@@ -20,16 +20,6 @@ The Result Assessment Tool (RAT) is the Free Open-Source Research Toolbox for Co
 - #### Former Frontend Developer: Nurce Yagci - https://github.com/yagci
 - #### Usability and User Experience Specialist: [Sebastian Schultheiß](https://searchstudies.org/team/schultheiss/) - https://github.com/SebastianSchultheiss
 - #### Student Assistant for Software Engineering: [Sophia Bosnak](https://searchstudies.org/team/sophia-bosnak/) - https://github.com/kyuja
-- #### Developers who created extensions for RAT: https://github.com/rat-extensions
-  - https://github.com/MnM3
-  - https://github.com/mohamedsaeed21
-  - https://github.com/g1thub-4cc0unt
-  - https://github.com/Samustafa
-  - https://github.com/PhilippUDE
-  - https://github.com/tanveerx/
-  - https://github.com/ritushetkar
-  - https://github.com/EstherKuerbis/
-
 
 ### ⚙️ Unified RAT Installation & Deployment Manual
 
