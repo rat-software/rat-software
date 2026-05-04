@@ -15,7 +15,7 @@ The Result Assessment Tool (RAT) is the Free Open-Source Research Toolbox for Co
 
 - #### Project Lead: [Professor Dirk Lewandowski](https://searchstudies.org/team/dirk-lewandowski/) - https://github.com/dirklew
 - #### Lead Software Engineer and Developer: [Sebastian Sünkler](https://searchstudies.org/team/sebastian-suenkler/) - https://github.com/sebsuenkler
-- #### Software Engineer and Developer: Björn Quast - [Björn Quast](https://github.com/bjoern-quast) - https://github.com/bjoern-quast
+- #### Software Engineer and Developer: Björn Quast - Björn Quast - https://github.com/bjoern-quast
 - #### Current Frontend Developer and Assistant: [Tuhina Kumar](https://searchstudies.org/team/tuhina-kumar/) - https://github.com/tuhinak
 - #### Former Frontend Developer: Nurce Yagci - https://github.com/yagci
 - #### Usability and User Experience Specialist: [Sebastian Schultheiß](https://searchstudies.org/team/schultheiss/) - https://github.com/SebastianSchultheiss
