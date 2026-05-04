@@ -80,11 +80,11 @@ WorkingDirectory=/path/to/rat/backend
 Environment="PATH=/path/to/rat/backend/venv_rat_backend/bin"
 
 # Launches Scraper, Classifier, and Query Sampler threads
-ExecStart=/path/to/rat/backend/venv_rat_backend/bin/python backend_controller_start.py
+ExecStart=/path/to/rat/rat-backend/venv_rat_backend/bin/python backend_controller_start.py
 
 # ONLY for full service termination. 
 # This kills all browsers and wipes pending jobs from the DB for this server.
-ExecStop=/path/to/rat/backend/venv_rat_backend/bin/python backend_controller_stop.py
+ExecStop=/path/to/rat/rat/venv_rat_backend/bin/python backend_controller_stop.py
 
 # Use a conservative restart to avoid frequent DB resets during crash loops
 Restart=on-failure
