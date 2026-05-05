@@ -49,7 +49,7 @@ Before installing the individual components, ensure your server environment is p
 Create and import the base database structure that all applications will share:
 ```bash
 createdb -T template0 dbname
-psql dbname < install_database/rat-db-install.sql
+psql dbname < install-database/rat-db-install.sql
 ```
 
 ---
