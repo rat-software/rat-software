@@ -19,6 +19,7 @@ The Result Assessment Tool (RAT) is the Free Open-Source Research Toolbox for Co
 - #### Current Frontend Developer and Assistant: [Tuhina Kumar](https://searchstudies.org/team/tuhina-kumar/) - https://github.com/tuhinak
 - #### Former Frontend Developer: Nurce Yagci - https://github.com/yagci
 - #### Usability and User Experience Specialist: [Sebastian Schultheiß](https://searchstudies.org/team/schultheiss/) - https://github.com/SebastianSchultheiss
+- #### Marketing Manager: [Oliver Koop]([https://searchstudies.org/team/schultheiss/](https://searchstudies.org/team/oliver-koop/)) - [https://github.com/SebastianSchultheiss](https://github.com/oliverkoop-haw)
 - #### Student Assistant for Software Engineering: [Sophia Bosnak](https://searchstudies.org/team/sophia-bosnak/) - https://github.com/kyuja
 
 ### ⚙️ Unified RAT Installation & Deployment Manual
