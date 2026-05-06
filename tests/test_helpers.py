@@ -23,10 +23,15 @@ _forms = types.ModuleType('app.forms')
 _forms.AnswerForm = type('AnswerForm', (), {})
 sys.modules.setdefault('app.forms', _forms)
 
-_models = types.ModuleType('app.models')
-_models.Option = type('Option', (), {})
-_models.Question = type('Question', (), {})
-sys.modules.setdefault('app.models', _models)
+# Ensure app.models exists and has the attributes helpers.py needs,
+# regardless of which test file was imported first.
+if 'app.models' not in sys.modules:
+    sys.modules['app.models'] = types.ModuleType('app.models')
+_models = sys.modules['app.models']
+if not hasattr(_models, 'Option'):
+    _models.Option = type('Option', (), {})
+if not hasattr(_models, 'Question'):
+    _models.Question = type('Question', (), {})
 
 _crontab = types.ModuleType('crontab')
 _crontab.CronTab = type('CronTab', (), {})
