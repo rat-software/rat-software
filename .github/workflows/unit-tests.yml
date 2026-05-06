@@ -52,7 +52,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install beautifulsoup4 pytest
+        run: pip install beautifulsoup4 lxml requests pytest
 
       - name: Run tests
         run: python -m pytest tests/test_helpers.py tests/test_seo_score.py -v
