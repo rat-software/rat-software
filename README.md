@@ -22,32 +22,43 @@ The Result Assessment Tool (RAT) is the Free Open-Source Research Toolbox for Co
 - #### Marketing Manager: [Oliver Koop](https://searchstudies.org/team/oliver-koop/) - https://github.com/oliverkoop-haw
 - #### Student Assistant for Software Engineering: [Sophia Bosnak](https://searchstudies.org/team/sophia-bosnak/) - https://github.com/kyuja
 
-### ⚙️ Unified RAT Installation & Deployment Manual
+Here is the polished, structurally optimized, and typo-free version of your installation manual. 
 
-The Result Assessment Tool (RAT) is a free, open-source research toolbox for collecting, analyzing, and evaluating search results from systems like Google and Bing. 
+I cleaned up the layout, fixed the broken markdown backticks and redundant headers, grouped the installation methods logically (Full vs. Component-by-Component), and put the command sequences into clean, copy-pasteable blocks.
 
-This manual provides instructions for deploying the entire RAT ecosystem. You can install all applications on a single server, or split them across multiple instances to share the workload (e.g., dedicated backend scraping servers and a separate frontend UI server).
+***
+
+# ⚙️ Unified RAT Installation & Deployment Manual
+
+The Result Assessment Tool (RAT) is a free, open-source research toolbox for collecting, analyzing, and evaluating search results from engines like Google and Bing. 
+
+This manual provides comprehensive instructions for deploying the RAT ecosystem. You can install all applications on a single server (monolithic deployment) or split them across multiple instances to distribute the workload (e.g., dedicated backend scraping servers and a separate frontend UI server).
+
+---
 
 ## 🏗️ Architecture Overview
 
-The RAT ecosystem consists of four main components:
-*   **Storage Service:** A microservice handling file uploads (HTML, PDFs, screenshots).
-*   **Frontend (Web Interface):** A Flask application for user and study management.
-*   **Backend:** A data engine managing web scraping, query sampling, and classification.
-*   **Browser Extension:** A Chrome extension for client-side search engine scraping.
+The RAT ecosystem consists of four core components:
+
+* **Storage Service:** A microservice handling file uploads (HTML, PDFs, screenshots).
+* **Frontend (Web Interface):** A Flask application for user, study, and data management.
+* **Backend Engine:** A data engine managing web scraping, query sampling, and classification.
+* **Browser Extension:** A Manifest V3 Chrome extension for client-side search engine scraping.
 
 ---
 
 ## 🛠️ 1. Global Prerequisites & Database Setup
 
-Before installing the individual components, ensure your server environment is prepared.
+Before installing individual components, ensure your server environment is properly configured.
 
-*   Install **Python 3.12+**.
-*   Install **Google Chrome / Chromium** (required for the Backend scraper).
-*   Install **PostgreSQL**, the central database where all results are stored.
+### System Requirements
+* **Python 3.12+**
+* **Google Chrome / Chromium** (required for the Backend scraper)
+* **PostgreSQL** (the central database where all results are stored)
 
-**Initialize the Database:**
-Create and import the base database structure that all applications will share:
+### Database Initialization
+Create the database and import the base schema shared by all ecosystem applications:
+
 ```bash
 createdb -T template0 dbname
 psql dbname < install-database/rat-db-install.sql
@@ -55,83 +66,165 @@ psql dbname < install-database/rat-db-install.sql
 
 ---
 
-## 📦 2. Storage Service Installation
+## 📦 2. Option A: Full Monolithic Installation
 
-The Storage Service manages all scraped data and must be accessible by the Frontend and Backend.
+If you intend to host all modules on a single server, you can configure the entire environment at once. 
 
-### Setup Steps
-*   Run the automated setup script to create the environment: `chmod +x setup.sh && ./setup.sh`.
-*   Edit `storage_service.py` to set your custom `API_KEY` and `STORAGE_FOLDER`.
-*   Edit `clean_orphans.py` with your PostgreSQL `DB_URI`.
+### Automated Setup
+Run the automated script from the root folder:
+```bash
+chmod +x setup.sh && ./setup.sh
+```
 
-### Deployment
-*   Copy the service file to your system: `sudo cp rat-storage.service /etc/systemd/system/rat-storage.service`.
-*   Enable and start the service: `sudo systemctl enable rat-storage.service` and `sudo systemctl start rat-storage.service`.
+### Manual Setup
+Alternatively, you can install the global requirements manually:
+```bash
+python -m venv venv_rat
+source venv_rat/bin/activate
+python -m pip install -r requirements_rat.txt
+```
 
----
-
-## 🖥️ 3. Frontend (Web Interface) Installation
-
-The frontend connects to your PostgreSQL database and the Storage Service to manage studies.
-
-### Environment Setup
-*   Create and activate a virtual environment: `python3 -m venv venv_rat-frontend` then `source venv_rat-frontend/bin/activate`.
-*   Install dependencies: `python -m pip install -r requirements_rat_frontend.txt`.
-
-### Configuration
-Configure your `.env` file with the following essentials:
-*   **SQLALCHEMY_DATABASE_URI:** Your PostgreSQL connection string.
-*   **STORAGE_BASE_URL / API_UPLOAD_KEY:** Must match the Storage Service URL and API key.
-*   **MAIL_SERVER / MAIL_PORT:** Essential for user registration. The environment is set up to use **Resend** by default, but any valid SMTP provider can be used. The default server is `smtp.resend.com` on port `465`. Ensure the sender email is configured via `SECURITY_EMAIL_SENDER` (e.g., `admin@yourdomain.com`).
-
-### Database Initialization & Deployment
-*   Run the database migrations: `export FLASK_APP=rat.py` then `flask db upgrade`.
-*   Create a systemd service file at `/etc/systemd/system/rat-frontend.service` using Gunicorn to run the `wsgi:app` entry point.
-*   Start the service: `sudo systemctl enable rat-frontend.service` and `sudo systemctl start rat-frontend.service`.
+> 💡 **Next Step:** After completing the global setup, navigate to the individual component directories to configure their specific environment files and systemd services as outlined below.
 
 ---
 
-## 🌐 4. Nginx Reverse Proxy & SSL Setup
+## 🧩 3. Option B: Component-by-Component Installation
 
-If running the Frontend and Storage services on the same server, use Nginx to route traffic.
+Use this approach for custom, distributed deployments or to manually configure specific layers of the monolithic setup.
 
-*   This configuration assumes your **Frontend** runs on port `5000` and your **Storage Service** runs on port `5001`.
-*   Create an Nginx configuration mapping `/` to `[http://127.0.0.1:5000](http://127.0.0.1:5000)` (Frontend).
-*   Map `/storage` to `[http://127.0.0.1:5001/](http://127.0.0.1:5001/)` (Storage Service) and increase the `client_max_body_size` to `100M` for large ZIP files.
-*   Secure the installation using Certbot: `sudo certbot --nginx -d your_domain.com`.
+### 📄 3a. Storage Service Installation
+The Storage Service manages all scraped data and must be network-accessible by both the Frontend and Backend.
 
----
+#### Setup & Configuration
+1. Run the local environment script:
+   ```bash
+   chmod +x setup.sh && ./setup.sh
+   ```
+2. Edit `storage_service.py` to define your custom `API_KEY` and `STORAGE_FOLDER`.
+3. Edit `clean_orphans.py` and supply your PostgreSQL `DB_URI`.
 
-## 🚀 5. Backend Engine Installation
+#### Systemd Deployment
+```bash
+# Copy the service file to the system directory
+sudo cp rat-storage.service /etc/systemd/system/rat-storage.service
 
-The backend handles the heavy lifting for data acquisition. It features a Unified Controller to manage the Scraper, Query Sampler, and Classifier.
-
-### Environment Setup
-*   Create and activate the environment: `python -m venv venv_rat_backend` then `source venv_rat_backend/bin/activate`.
-*   Install dependencies: `python -m pip install -r requirements_rat_backend.txt`.
-*   Ensure `chromium-chromedriver` is installed on your system path.
-
-### Configuration
-Update the templates inside the `/config` directory:
-*   **`config_db.ini`**: Set your PostgreSQL credentials.
-*   **`config_sources.ini`**: Define your job server name and storage API key.
-*   **`google-ads.yaml`**: Update with developer tokens for the Query Sampler.
-
-### Deployment
-*   Create a systemd service file (`/etc/systemd/system/rat-backend.service`) pointing `ExecStart` to `backend_controller_start.py`.
-*   Ensure `ExecStop` is mapped to `backend_controller_stop.py` to safely kill Chromium processes and clear pending jobs.
+# Enable and start the service
+sudo systemctl daemon-reload
+sudo systemctl enable --now rat-storage.service
+```
 
 ---
 
-## 🧩 6. Browser Extension Setup (Client-Side)
+### 🖥️ 3b. Frontend (Web Interface) Installation
+The web interface connects to the PostgreSQL database and the Storage Service to manage research studies.
 
-For user-driven data collection, RAT provides a high-performance, Manifest V3 Chrome extension.
+#### Environment Setup
+```bash
+python3 -m venv venv_rat-frontend
+source venv_rat-frontend/bin/activate
+python -m pip install -r requirements_rat_frontend.txt
+```
 
-*   Download the extension repository locally.
-*   Open Google Chrome and navigate to `chrome://extensions/`.
-*   Enable **Developer mode** in the top right corner.
-*   Click **Load unpacked** and select the directory containing the extension's `manifest.json` file.
-*   Click the extension icon to access the RAT Scraper sidepanel to create studies and manage proxies.
+#### Configuration (`.env`)
+Configure your `.env` file with the following required parameters:
+* `SQLALCHEMY_DATABASE_URI`: Your PostgreSQL connection string.
+* `STORAGE_BASE_URL` / `API_UPLOAD_KEY`: Must match the Storage Service URL and API key defined in step 3a.
+* `MAIL_SERVER` / `MAIL_PORT`: Essential for user registration. The environment defaults to **Resend** (`smtp.resend.com` on port `465`), but any valid SMTP provider works. Ensure the sender email is declared via `SECURITY_EMAIL_SENDER` (e.g., `admin@yourdomain.com`).
+
+#### Bypass SMTP / Manual User Creation
+If you are developing locally or do not want to configure an SMTP server, you can bypass email confirmation and create active, pre-confirmed users directly via the CLI:
+```bash
+python add_rat_user.py
+```
+
+#### Database Initialization & Production Deployment
+```bash
+# Run database migrations
+export FLASK_APP=rat.py
+flask db upgrade
+```
+
+Create a systemd service file at `/etc/systemd/system/rat-frontend.service` using **Gunicorn** to serve the `wsgi:app` entry point, then run:
+```bash
+sudo systemctl enable --now rat-frontend.service
+```
+
+---
+
+### 🌐 3c. Nginx Reverse Proxy & SSL Setup
+When running the Frontend and Storage services on the same server, use Nginx to cleanly route external traffic.
+
+* **Frontend** runs locally on port `5000`
+* **Storage Service** runs locally on port `5001`
+
+#### Nginx Configuration Block
+Configure your server block to map the locations, ensuring you increase the maximum body size to handle large payload ZIP files:
+
+```nginx
+server {
+    server_name your_domain.com;
+
+    # Frontend Web Interface
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Storage Service
+    location /storage {
+        proxy_pass http://127.0.0.1:5001/;
+        proxy_set_header Host $host;
+        client_max_body_size 100M;
+    }
+}
+```
+
+#### SSL Encryption
+Secure your web traffic using Let's Encrypt Certbot:
+```bash
+sudo certbot --nginx -d your_domain.com
+```
+
+---
+
+### 🚀 3d. Backend Engine Installation
+The backend handles heavy-lifting operations. It utilizes a Unified Controller to manage the Scraper, Query Sampler, and Classifier.
+
+#### Environment Setup
+```bash
+python -m venv venv_rat_backend
+source venv_rat_backend/bin/activate
+python -m pip install -r requirements_rat_backend.txt
+```
+> ⚠️ **Dependency Note:** Ensure that `chromium-chromedriver` is installed and explicitly available on your system's global environment path.
+
+#### Configuration
+Update the configuration templates located inside the `/config` directory:
+* **`config_db.ini`**: Set your PostgreSQL connection credentials.
+* **`config_sources.ini`**: Define your job server metadata and storage API keys.
+* **`google-ads.yaml`**: Update with developer tokens for the Query Sampler module.
+
+#### Production Deployment
+Create a systemd service file (`/etc/systemd/system/rat-backend.service`). Ensure your service directives are explicitly configured to handle process lifecycles cleanly:
+* Set `ExecStart` to point to `backend_controller_start.py`.
+* Set `ExecStop` to point to `backend_controller_stop.py` to safely terminate Chromium processes and clear orphaned backend jobs during restarts.
+
+```bash
+sudo systemctl enable --now rat-backend.service
+```
+
+---
+
+### 🧩 3e. Browser Extension Setup (Client-Side)
+For crowdsourced or user-driven data collection, RAT leverages a high-performance Manifest V3 Chrome extension.
+
+1. Download or clone the extension repository to your local machine.
+2. Open Google Chrome and navigate to `chrome://extensions/`.
+3. Toggle **Developer mode** on in the top-right corner.
+4. Click **Load unpacked** in the top-left corner.
+5. Select the root directory containing the extension's `manifest.json` file.
+6. Click the extension icon in your browser toolbar to open the RAT Scraper sidepanel to configure target studies and proxy pools.
 
 ## RAT Extensions
 
