@@ -145,6 +145,7 @@ python add_rat_user.py
 ```bash
 # Run database migrations
 export FLASK_APP=rat.py
+flask db init
 flask db upgrade
 ```
 
