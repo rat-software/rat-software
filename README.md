@@ -46,7 +46,6 @@ The RAT ecosystem consists of four core components:
 * **Browser Extension:** A Manifest V3 Chrome extension for client-side search engine scraping.
 
 ---
-
 ## 🛠️ 1. Global Prerequisites & Database Setup
 
 Before installing individual components, ensure your server environment is properly configured.
@@ -57,12 +56,17 @@ Before installing individual components, ensure your server environment is prope
 * **PostgreSQL** (the central database where all results are stored)
 
 ### Database Initialization
-Create the database and import the base schema shared by all ecosystem applications:
+Create the database and import the base schema shared by all ecosystem applications. Replace the placeholders (`<HOST>`, `<PORT>`, `<USER>`, `<DB_NAME>`) with your actual connection details:
 
 ```bash
-createdb -T template0 dbname
-psql dbname < install-database/rat-db-install.sql
+# 1. Create a new, empty database
+createdb -h <HOST> -p <PORT> -U <USER> <DB_NAME>
+
+# 2. Import the base schema
+psql -h <HOST> -p <PORT> -U <USER> -d <DB_NAME> -f install-database/rat-db-install.sql
 ```
+
+> 💡 **Tip for Windows Users:** If the `createdb` or `psql` commands are not recognized in your command prompt or PowerShell, you need to provide the full path to your PostgreSQL installation (e.g., `"C:\Program Files\PostgreSQL\17\bin\psql.exe"`).
 
 ---
 
