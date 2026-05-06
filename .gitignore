@@ -9,3 +9,4 @@
 !empty.txt
 **/node_modules/
 tests/coverage/
+.vscode/settings.json
