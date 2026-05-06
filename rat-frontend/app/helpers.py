@@ -98,6 +98,8 @@ def percentage_calc(value, total_value, type):
             result = ratio  # Return as float percentage
         elif type == "str":
             result = f"{round(ratio * 100)} %"  # Return as string with percentage sign
+        else:
+            raise ValueError(f"Unknown type: {type!r}")
     else:
         result = "-"  # Return "-" if total value is 0
 
