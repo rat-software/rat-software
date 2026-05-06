@@ -84,6 +84,13 @@ Configure your `.env` file with the following essentials:
 *   **STORAGE_BASE_URL / API_UPLOAD_KEY:** Must match the Storage Service URL and API key.
 *   **MAIL_SERVER / MAIL_PORT:** Essential for user registration. The environment is set up to use **Resend** by default, but any valid SMTP provider can be used. The default server is `smtp.resend.com` on port `465`. Ensure the sender email is configured via `SECURITY_EMAIL_SENDER` (e.g., `admin@yourdomain.com`).
 
+### Alternative: Adding Users Without E-Mail Setup
+If you cannot or do not want to configure an SMTP server (e.g., for local development), you can manually add pre-confirmed, active users directly via the command line using the provided script. This bypasses the email confirmation requirement completely:
+
+```bash
+python add_rat_user.py
+```
+
 ### Database Initialization & Deployment
 *   Run the database migrations: `export FLASK_APP=rat.py` then `flask db upgrade`.
 *   Create a systemd service file at `/etc/systemd/system/rat-frontend.service` using Gunicorn to run the `wsgi:app` entry point.
