@@ -7,8 +7,8 @@ on:
     branches: ["**"]
 
 jobs:
-  test:
-    name: Run Unit Tests
+  test-js:
+    name: JS Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -34,6 +34,25 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-report-js
           path: tests/coverage/
           retention-days: 14
+
+  test-python:
+    name: Python Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install beautifulsoup4 pytest
+
+      - name: Run tests
+        run: python -m pytest tests/test_helpers.py tests/test_seo_score.py -v
