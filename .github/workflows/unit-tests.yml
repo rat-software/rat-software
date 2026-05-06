@@ -55,4 +55,4 @@ jobs:
         run: pip install beautifulsoup4 lxml requests pytest
 
       - name: Run tests
-        run: python -m pytest tests/test_helpers.py tests/test_seo_score.py -v
+        run: python -m pytest tests/ -v
