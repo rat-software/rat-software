@@ -408,17 +408,21 @@
     </div>
       
     <div class="row">
-      <button id="createSessionBtn" class="btn-primary" style="flex: 2;">+ New Study Session</button>
-      <button id="manageEnginesBtn" class="btn-info" style="flex: 1; padding: 8px 4px; font-size: 11px;">⚙️ Scrapers</button>
+      <button id="createSessionBtn" class="btn-primary" style="flex: 2;">+ New Study Session <span class="tooltip" data-tip="Create a brand new query campaign with custom keywords and configurations.">?</span></button>
+      <button id="importDesignBtn" class="btn-secondary" style="flex: 1; padding: 8px 4px; font-size: 11px; background-color: #6c757d; color: white;">📥 Import <span class="tooltip" data-tip="Import a study design blueprint file (.zip) containing only keywords and settings.">?</span></button>
+      <button id="manageEnginesBtn" class="btn-info" style="flex: 1; padding: 8px 4px; font-size: 11px;">⚙️ Scrapers <span class="tooltip" data-tip="Manage and test search engine scraping templates and CSS selectors.">?</span></button>
     </div>
+    
+    <input type="file" id="importDesignInput" accept=".zip" style="display: none;">
+
 
     <div style="margin-top:15px; font-size:12px; font-weight:bold; color:#666; margin-bottom:5px">Your Sessions</div>
     <div id="sessionList"></div>
     
     <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
     <div class="row">
-      <button id="exportAllBtn" class="btn-secondary" style="font-size:11px">Backup All</button>
-      <button id="importBtn" class="btn-secondary" style="font-size:11px">Restore</button>
+      <button id="exportAllBtn" class="btn-secondary" style="font-size:11px">Backup All <span class="tooltip" data-tip="Create a complete database backup (.zip) containing all studies, results, scraping templates, and logs.">?</span></button>
+      <button id="importBtn" class="btn-secondary" style="font-size:11px">Restore <span class="tooltip" data-tip="Restore a full backup archive (.zip). Warning: This will overwrite your current database and settings.">?</span></button>
     </div>
     <input type="file" id="importFile" style="display:none">
   </div>
@@ -604,7 +608,12 @@
       <button id="stopBtn" class="btn-danger">Delete</button>
     </div>
 
-    <button id="downloadBtn" class="btn-info" style="margin-top:8px">Download Results (ZIP)</button>
+
+    <button id="exportDesignBtn" class="btn-primary" style="margin-top:8px; background-color: #6f42c1; color: white;">
+      <i class="fa fa-upload"></i> Export Study Design (Job File) <span class="tooltip" data-tip="Export only the keywords and configuration of this study as a lightweight package for the server.">?</span>
+    </button>
+
+    <button id="downloadBtn" class="btn-info" style="margin-top:8px">Download Results (ZIP) <span class="tooltip" data-tip="Download the full scraped dataset including HTML source pages, screenshots, and structured CSV data.">?</span></button>
 
     <label style="margin-top:12px">Activity Log</label>
     <div id="logContainer"></div>

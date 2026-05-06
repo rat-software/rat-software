@@ -136,6 +136,109 @@ async function performFullBackup() {
     }
 }
 
+
+async function performExportStudyDesign(sessionId) {
+    try {
+        // 1. Hole nur die Metadaten der Studie aus der lokalen DB
+        const tx = dbLocal.transaction(STORE_SESSIONS, "readonly");
+        const store = tx.objectStore(STORE_SESSIONS);
+        const request = store.get(sessionId);
+
+        request.onsuccess = async () => {
+            const sessionData = request.result;
+            if (!sessionData) {
+                alert("Study not found!");
+                return;
+            }
+
+            sessionData.status = "PAUSED"; 
+            sessionData.progress = 0;
+
+            const zip = new JSZip();
+            
+            zip.file("study_design.json", JSON.stringify(sessionData, null, 2));
+
+            const blob = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(blob);
+            
+            chrome.downloads.download({
+                url: url,
+                filename: `rat_job_${sessionId}.zip`,
+                saveAs: true // Lässt dich den Speicherort wählen
+            });
+        };
+    } catch (e) {
+        console.error("Error exporting study design:", e);
+    }
+}
+
+// --- Event listener for the hidden file input field ---
+document.getElementById('importDesignInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        performImportStudyDesign(file);
+    }
+});
+
+// --- Core Import Function ---
+async function performImportStudyDesign(file) {
+    try {
+        // 1. Load the ZIP file using the JSZip library
+        const zip = await JSZip.loadAsync(file);
+        const configFile = zip.file("study_design.json");
+
+        // Security check
+        if (!configFile) {
+            alert("Error: No 'study_design.json' found in the archive! Are you sure this is a Study Design file?");
+            return;
+        }
+
+        // 2. Read and parse the JSON
+        const jsonString = await configFile.async("string");
+        const sessionData = JSON.parse(jsonString);
+
+        // 3. Reset the status for a fresh run
+        sessionData.status = "PAUSED";
+        sessionData.progress = 0;
+
+        // 4. Save the parsed data into your local IndexedDB using dbLocal
+        const tx = dbLocal.transaction(STORE_SESSIONS, "readwrite");
+        const store = tx.objectStore(STORE_SESSIONS);
+        
+        store.put(sessionData);
+
+        // 5. Success callback
+        tx.oncomplete = async () => {
+            alert("Study Design successfully imported!");
+            
+            // CRITICAL FIX: Inform the background script about the database change
+            // This ensures the worker process knows the new session exists
+            chrome.runtime.sendMessage({ 
+                action: "REFRESH_SESSIONS" 
+            });
+
+            // CRITICAL FIX: Manually reload and re-render the list immediately in the UI
+            if (typeof localGetAllSessions === 'function' && typeof renderList === 'function') {
+                const updatedSessions = await localGetAllSessions();
+                renderList(updatedSessions);
+            }
+            
+            // Reset the input value so the same file can be imported again if needed
+            document.getElementById('importDesignInput').value = ""; 
+        };
+
+        // 6. Error callback
+        tx.onerror = (err) => {
+            console.error("Database error during import:", err);
+            alert("Error saving the study design to the local database.");
+        };
+
+    } catch (e) {
+        console.error("Import Error:", e);
+        alert("Error importing and extracting the design. Check the console for details.");
+    }
+}
+
 async function performExportDataAsZip(sessionId) {
     if (!dbLocal) await initLocalDB();
     alert("Generation of export started. Please wait. Do not close this panel!");
@@ -335,7 +438,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     });
 
-    // --- DIRECT IMPORT/EXPORT BINDS ---
+// --- DIRECT IMPORT/EXPORT BINDS ---
+    document.getElementById('exportDesignBtn').addEventListener('click', () => {
+        if(currentSessionId) performExportStudyDesign(currentSessionId);
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        if(currentSessionId) performExportDataAsZip(currentSessionId);
+    });
+    
     document.getElementById('downloadBtn').addEventListener('click', () => {
         if(currentSessionId) performExportDataAsZip(currentSessionId);
     });
@@ -1179,3 +1290,8 @@ function setupDragAndDropForKeywords(textareaId) {
         }
     });
 }
+
+// Trigger the hidden file input when the real button is clicked
+document.getElementById('importDesignBtn').addEventListener('click', () => {
+    document.getElementById('importDesignInput').click();
+});
