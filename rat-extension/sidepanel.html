@@ -402,8 +402,8 @@
       
       <div style="display:flex; align-items:center; gap: 5px;">
         <label style="margin: 0;">Zoom</label>
-        <button id="zoomOutBtn" class="btn-secondary btn-sm" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift verkleinern">-</button>
-        <button id="zoomInBtn" class="btn-secondary btn-sm" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift vergrößern">+</button>
+        <button id="zoomOutBtn" class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom in">-</button>
+        <button id="zoomInBtn" class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom out">+</button>
       </div>  
     </div>
       
@@ -467,6 +467,10 @@
             <input type="checkbox" id="saveSerp" style="width:auto; margin-right:8px;">
             <span style="font-size:12px;">Save SERP (Screenshot & HTML Source)</span>
         </div>
+        <div id="serpLimitContainer" style="display:none; margin-top:10px; background: #fff3cd; padding: 8px; border: 1px solid #ffeeba; border-radius: 4px;">
+            <label style="margin-top:0; color: #856404;">Limit for SERP saving (Max: 50)</label>
+            <input type="number" id="sessSerpLimit" value="50" min="1" max="50">
+        </div>
     </div>
     
     <details style="margin-top:15px">
@@ -499,17 +503,23 @@
   
 
   <div id="statusView" class="view">
-    <h2 id="statusTitle">Session Name</h2>
-    
-    <div style="background:white; padding:12px; border:1px solid #eee; border-radius:4px">
-      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px">
-        <span>Status: <strong id="statusState">...</strong></span>
-        <span id="progressText">0 / 0</span>
-      </div>
-      <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
-      <div style="font-size:11px; color:#666; margin-top:6px">Processing: <span id="currentQuery" style="font-family:monospace; font-weight:bold">...</span></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #e9ecef; margin-bottom: 10px; padding-bottom: 8px;">
+        <h2 id="statusTitle" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Session Name</h2>
+        <div style="display:flex; align-items:center; gap: 5px;">
+            <label style="margin: 0;">Zoom</label>
+            <button class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift verkleinern">-</button>
+            <button class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift vergrößern">+</button>
+        </div>
     </div>
 
+    <div style="margin-bottom: 15px; padding: 10px; background: #fff; border: 1px solid #dee2e6; border-radius: 4px;">
+        <div style="font-size: 12px; margin-bottom: 4px;">Status: <span id="statusState" style="font-weight:bold;"></span></div>
+        <div style="font-size: 11px; color: #555; margin-bottom: 4px;">Current Task: <span id="currentQuery" style="font-weight:bold;"></span></div>
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div id="progressText" style="font-size: 10px; text-align: right; color: #666; font-weight: bold;"></div>
+    </div>
     <div id="sessionManagement" style="margin-top:10px;">
         
         <label style="margin-top:15px">Search Engines & Limits <span class="tooltip" data-tip="Change quotas or add new search engines to the running session.">?</span></label>
@@ -548,12 +558,18 @@
                 <input type="checkbox" id="editSaveSerp" style="width:auto; margin-right:8px;">
                 <span style="font-size:12px;">Save SERP (Screenshot & HTML Source)</span>
             </div>
+            <div id="editSerpLimitContainer" style="display:none; margin-top:10px; margin-bottom:10px; background: #fff3cd; padding: 8px; border: 1px solid #ffeeba; border-radius: 4px;">
+                <label style="margin-top:0; color: #856404;">Limit for SERP saving (Max: 50)</label>
+                <input type="number" id="editSessSerpLimit" value="50" min="1" max="50">
+            </div>
             <button id="saveStorageSettingsBtn" class="btn-primary btn-sm" style="margin-top:5px;">Update Storage Rules</button>
         </div>
 
         <details id="queriesAndTasksDetails" style="margin-top:15px">
-            <summary>🔍 Queries (<span id="totalQueriesCount">0</span>) <span class="tooltip" data-tip="View specific tasks or add new queries to the queue.">?</span></summary>
-            <div style="background:white; border-radius: 0 0 4px 4px;">
+          <summary>
+              🔍 Queries (<span id="totalQueriesCount">0</span>) 
+              <span class="tooltip" data-tip="Click ↻ on FAILED tasks to retry them individually. Adding new queries below will create tasks for ALL active search engines.">?</span>
+          </summary>            <div style="background:white; border-radius: 0 0 4px 4px;">
                 <div class="row">
                     <button id="refreshTasksBtn" class="btn-secondary btn-sm" style="margin:0; width:auto;">↻ Refresh List</button>
                     <span style="font-size:10px; color:#888; margin-left:auto;">Showing <span id="taskCountDisplay">0</span> tasks</span>
@@ -573,7 +589,7 @@
                 <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
 
                 <label style="margin-top:0">Add New Queries (one per line)</label>
-                <textarea id="addQueryInput" placeholder="query 3&#10;query 4"></textarea>
+                <textarea id="addQueryInput" placeholder="query 1&#10;query 2 (Or simply drag and drop your CSV/TXT file here)"></textarea>
                 <div id="addQueryErrorMsg" style="color: #dc3545; font-size: 11px; font-weight: bold; margin-top: 5px; display: none; background: #fff5f5; padding: 6px; border: 1px solid #ffcccc; border-radius: 4px;"></div>
                 <button id="submitNewQueries" class="btn-info btn-sm" style="margin-top:8px;">Add to Queue</button>
             </div>

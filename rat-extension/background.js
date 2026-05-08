@@ -298,7 +298,9 @@ async function handleMessage(msg) {
         case "GET_ENGINES": broadcastEngines(); break;
         case "SAVE_ENGINE": saveEngine(msg.payload).then(() => broadcastEngines()); break;
         case "DELETE_ENGINE": deleteEngine(msg.payload.id).then(() => broadcastEngines()); break;
-
+        case "RESET_TASK": 
+            if (msg.payload.sessionId) resetSingleTask(msg.payload); 
+            break;
     }
 }
 
@@ -500,6 +502,26 @@ async function addItemsToSession(payload) {
     }
 }
 
+async function resetSingleTask(payload) {
+    const { sessionId, taskIndex } = payload;
+    const session = await getSession(sessionId);
+    if (!session) return;
+
+    const task = session.tasks[taskIndex];
+    if (task) {
+        task.status = "OPEN";         // Re-enable the task
+        task.retryCount = 0;          // Reset its attempt counter
+        task.pages = [];              // Optional: Clear any partial data from previous fails
+        task.totalOrganic = 0;        // Reset count for a clean start
+        
+        await saveSession(session);   // Persist change to database
+        logToSession(sessionId, `🔄 Task Reset: "${task.term}" is back in the queue.`);
+        
+        // Refresh the UI counts
+        broadcastSessionStatus(sessionId);
+    }
+}
+
 async function removeConfigFromSession(payload) {
     const { sessionId, configIndex } = payload;
     const session = await getSession(sessionId);
@@ -682,7 +704,13 @@ async function processQueue(sessionId) {
 
             if (await isPaused(sessionId)) break;
 
-            const shouldSaveSerp = session.settings && (session.settings.saveSerp || session.settings.saveScreenshots || session.settings.saveHtml);
+            // Determine the limit (default to 50 if it's missing)
+            const serpLimit = session.settings && session.settings.serpLimit ? session.settings.serpLimit : 50;
+
+            // Only save the SERP if the toggle is on AND we haven't hit the limit for this task yet
+            const shouldSaveSerp = session.settings && 
+                                (session.settings.saveSerp || session.settings.saveScreenshots || session.settings.saveHtml) && 
+                                (currentTask.pages.length < serpLimit);
 
             let screenshotData = null;
             if (shouldSaveSerp) {
@@ -766,7 +794,7 @@ async function processQueue(sessionId) {
 
     } catch (error) {
         logToSession(sessionId, `❌ ERROR: ${error.message}`, "ERROR");
-        await handleRetry(sessionId, currentTask, error.message);
+        await handleRetry(sessionId, session, currentTask, error.message);
     } finally {
         const check = await getSession(sessionId);
         if (tabId && (!check || check.status !== "PAUSED_CAPTCHA")) {
@@ -859,17 +887,22 @@ function waitForTabSmart(tabId) {
     });
 }
 
-async function handleRetry(sessionId, task, errorMsg) {
+async function handleRetry(sessionId, session, task, errorMsg) {
     if (await isPaused(sessionId)) return;
+
     task.retryCount++;
+    
     if (task.retryCount > 3) {
         task.status = "FAILED";
-        logToSession(sessionId, `💀 FAILED: Abandoning after 3 retries.`);
+        logToSession(sessionId, `💀 FAILED: Abandoning after 3 retries. Error: ${errorMsg}`, "ERROR");
     } else {
-        logToSession(sessionId, `⚠️ RETRY ${task.retryCount}/3 in 5s...`);
+        logToSession(sessionId, `⚠️ RETRY ${task.retryCount}/3 in 5s... Reason: ${errorMsg}`, "WARN");
         task.status = "OPEN";
-        await sleep(5000);
     }
+
+    // CRITICAL FIX: The database must be updated here!
+    await saveSession(session); 
+    await sleep(5000);
 }
 
 async function broadcastSessionList() {
@@ -937,16 +970,17 @@ async function updateSessionLimit(payload) {
 }
 
 async function updateSessionStorageSettings(payload) {
-    const { sessionId, saveSerp } = payload;
+    const { sessionId, saveSerp, serpLimit } = payload;
     const session = await getSession(sessionId);
     if (!session) return;
 
     if (!session.settings) session.settings = {};
     session.settings.saveSerp = !!saveSerp;
+    if (serpLimit !== undefined) session.settings.serpLimit = serpLimit; // NEW: Save the limit
     session.settings.saveScreenshots = false; 
     session.settings.saveHtml = false;
 
     await saveSession(session);
-    logToSession(sessionId, `💾 Storage Settings updated. Save SERP: ${!!saveSerp}`);
+    logToSession(sessionId, `💾 Storage Settings updated. Save SERP: ${!!saveSerp}, Limit: ${session.settings.serpLimit}`);
     broadcastSessionStatus(sessionId);
 }
