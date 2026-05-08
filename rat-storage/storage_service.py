@@ -12,12 +12,17 @@ import os, zipfile, io
 from werkzeug.utils import secure_filename
 from itsdangerous import URLSafeTimedSerializer
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 app = Flask(__name__)
 
 # Configuration constants
 # Note: These values must remain synchronized with the main scraper service
-API_KEY = "your_api_key_here" # Add your own safe API-Key
-STORAGE_FOLDER = "your_storage_folder" # Define your STORAGE Folder on your web server
+API_UPLOAD_KEY = os.getenv('API_UPLOAD_KEY') # Add your own safe API-Key
+STORAGE_FOLDER = os.getenv('STORAGE_FOLDER') # Define your STORAGE Folder on your web server
 
 app.config['SESSION_COOKIE_NAME'] = 'rat_storage_session' # Set unique SESSION COOKIE NAME
 app.config['SESSION_COOKIE_PATH'] = '/storage' # Set unique SESSION COOKIE PATH
@@ -32,7 +37,7 @@ def upload():
     Handle file uploads from the scraper.
     """
     # API Key check
-    if request.headers.get('X-API-Key') != API_KEY:
+    if request.headers.get('X-API-Key') != API_UPLOAD_KEY:
         return {"error": "Unauthorized"}, 401
     
     if 'file' not in request.files:
@@ -56,7 +61,7 @@ def view(filename, file_type):
         return "Missing ticket", 401
 
     # Secure ticket validation
-    serializer = URLSafeTimedSerializer(API_KEY)
+    serializer = URLSafeTimedSerializer(API_UPLOAD_KEY)
     
     try:
         data = serializer.loads(ticket, salt='source-view', max_age=14400)

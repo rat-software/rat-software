@@ -15,50 +15,93 @@ A dedicated Flask-based microservice designed to store, manage, and serve scrape
 
 * `storage_service.py`: The main Flask application (Storage API).
 * `clean_orphans.py`: Maintenance utility to sync physical storage with the database.
-* `rat-storage.service`: Systemd configuration file for Linux deployment.
+* 
+`rat-storage.service`: Systemd configuration file for Linux deployment.
+
+
 * `setup.sh`: Automated environment setup script.
+* 
+`.env`: Centralized configuration file for all environment variables.
+
+
+* 
+`requirements_rat_storage.txt`: Python dependency list.
+
+
 
 ---
 
 ## 📦 1. Installation & Configuration
 
 ### Automated Setup
+
 First, run the setup script to create the directory structure and the Python virtual environment:
+
 ```bash
 chmod +x setup.sh
 ./setup.sh
+
 ```
 
-### Configuration
-Before starting, you **must** update the following files with your server-specific details:
+### Configuration (.env)
 
-1.  **`storage_service.py`**: Set your `API_KEY` and `STORAGE_FOLDER`.
-2.  **`clean_orphans.py`**: Set your `DB_URI` (PostgreSQL connection) and `STORAGE_DIR`.
-3.  **`rat-storage.service`**: Update the `User`, `Group`, `WorkingDirectory`, and `ExecStart` paths to match your server's username and project location.
+The service now uses a `.env` file for all critical settings. Create a file named `.env` in the root directory and fill in your server-specific details:
 
----
+```bash
+# Database (used by clean_orphans.py)
+SQLALCHEMY_DATABASE_URI=postgresql://user:password@localhost:5432/db 
+
+# Storage Service Configuration
+STORAGE_BASE_URL=http://localhost:5001 
+API_UPLOAD_KEY=your-secure-key-here 
+STORAGE_FOLDER=/var/www/rat/storage 
+
+```
 
 ## ⚙️ 2. Deployment (Linux Service)
 
-To ensure the app starts automatically on boot and restarts if it crashes, configure it as a **systemd** service.
+To ensure the app starts automatically on boot and restarts if it crashes, configure it as a **systemd** service using the provided configuration.
 
-### Step 1: Install the Service File
-Copy the provided service file to the system directory:
+### Step 1: Change the User and the paths to the WorkingDirectory, Environment and ExecStarts according to your system and install the Service File 
+
+For Example
+```bash
+[Unit]
+Description=Gunicorn instance to serve RAT Storage Service
+After=network.target
+
+[Service]
+User=test
+Group=www-data
+WorkingDirectory=/home/test/rat-storage
+Environment="PATH=/home/test/rat-storage/venv_rat_storage/bin"
+ExecStart=/home/test/rat-storage/venv_rat_storage/bin/gunicorn --workers 3 --bind 0.0.0.0:5001 storage_service:app
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Copy the service file to the system directory:
+
 ```bash
 sudo cp rat-storage.service /etc/systemd/system/rat-storage.service
+
 ```
 
 ### Step 2: Enable and Start
-Run the following commands to reload the system manager and start your service:
+
+Run the following to recognize the new file and start the service:
+
 ```bash
-# Reload systemd to recognize the new file
+# Reload systemd
 sudo systemctl daemon-reload
 
-# Enable the service to start on boot
+# Enable on boot
 sudo systemctl enable rat-storage.service
 
-# Start the service now
+# Start now
 sudo systemctl start rat-storage.service
+
 ```
 
 ---
@@ -66,52 +109,60 @@ sudo systemctl start rat-storage.service
 ## 🛠 3. Management & Monitoring
 
 ### Check Service Status
-To see if the app is running correctly:
+
+Verify the service is active and running:
+
 ```bash
 sudo systemctl status rat-storage.service
+
 ```
 
-### Viewing Logs
-If the app isn't behaving as expected, check the live logs:
+### Viewing Live Logs
+
+Monitor incoming requests or errors in real-time:
+
 ```bash
-# View the last few lines and follow new output
 sudo journalctl -u rat-storage.service -f
-```
 
-### Restarting/Stopping
-```bash
-sudo systemctl restart rat-storage.service
-sudo systemctl stop rat-storage.service
 ```
 
 ---
 
 ## 🧹 4. Maintenance (Orphan Cleanup)
 
-Over time, files may exist on disk that are no longer referenced in your database. To keep the server clean, run the maintenance utility:
+Use the cleanup utility to remove files from the storage folder that are no longer referenced in the database:
 
-1.  **Manual Run**:
-    ```bash
-    source venv/bin/activate
-    python clean_orphans.py
-    ```
-2.  **Automated (Cron)**: 
-    You can schedule this script to run weekly. Open your crontab (`crontab -e`) and add:
-    ```bash
-    0 3 * * 1 /path/to/project/venv/bin/python /path/to/project/clean_orphans.py >> /var/log/rat-cleanup.log 2>&1
-    ```
-    *This runs the cleanup every Monday at 3:00 AM.*
+1. **Manual Run**:
+```bash
+source venv_rat_storage/bin/activate
+python3 clean_orphans.py
+
+```
+
+
+2. **Automated (Cron)**:
+Add this to your crontab (`crontab -e`) to run every Monday at 3:00 AM:
+```bash
+0 3 * * 1 /home/test/rat-storage/venv_rat_storage/bin/python3 /home/test/rat-storage/clean_orphans.py >> /var/log/rat-cleanup.log 2>&1
+
+```
+
+
 
 ---
 
 ## 🧪 5. Testing the Deployment
 
 Once the service is active, run the test script to ensure the API is reachable and the security tokens are working:
+
 ```bash
-python test_api.py
+python3 test_api.py
+
 ```
 
 ---
 
 ## 📜 License
+
 GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
+

@@ -12,12 +12,18 @@ import io
 import zipfile
 from itsdangerous import URLSafeTimedSerializer
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # ==========================================
 # CONFIGURATION
 # ==========================================
-# Ensure the BASE_URL matches your actual server deployment
-BASE_URL = "" # Base URL of the Storage Service
-API_KEY = ""  # Must match the STORAGE_SERVICE API_KEY
+# Ensure the STORAGE_BASE_URL matches your actual server deployment
+STORAGE_BASE_URL = os.getenv('STORAGE_BASE_URL') # Base URL of the Storage Service
+API_UPLOAD_KEY = os.getenv('API_UPLOAD_KEY')  # Must match the STORAGE_SERVICE API_UPLOAD_KEY
 FILENAME = "full_cycle_test.zip" # Test File Name
 # ==========================================
 
@@ -48,8 +54,8 @@ def run_test():
     
     # Note: Ensure the endpoint path matches your Flask route configuration
     up_res = requests.post(
-        f"{BASE_URL}/upload", 
-        headers={'X-API-Key': API_KEY}, 
+        f"{STORAGE_BASE_URL}/upload", 
+        headers={'X-API-Key': API_UPLOAD_KEY}, 
         files=files
     )
     
@@ -61,11 +67,11 @@ def run_test():
         print(f"\n🔍 Step 2: Validating View route...")
         
         # Generate a secure timed ticket for the specific filename
-        serializer = URLSafeTimedSerializer(API_KEY)
+        serializer = URLSafeTimedSerializer(API_UPLOAD_KEY)
         ticket = serializer.dumps({'filename': server_file}, salt='source-view')
         
         # Request the HTML content from the uploaded ZIP
-        view_url = f"{BASE_URL}/view/{server_file}/html"
+        view_url = f"{STORAGE_BASE_URL}/view/{server_file}/html"
         down_res = requests.get(view_url, params={'ticket': ticket})
         
         if down_res.status_code == 200:

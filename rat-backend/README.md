@@ -7,16 +7,16 @@ The **RAT Backend** is a multi-service engine responsible for data acquisition a
 | Module | Role | Key Technology |
 | :--- | :--- | :--- |
 | **Sources Scraper** | Web content and screenshot capture. | Selenium / Chromium |
-| **Query Sampler** | Google Ads API keyword discovery. | Google Ads Python Client |
+| **Query Sampler** | Google Ads API keyword discovery. | Google Ads python3 Client |
 | **Classifier** | Data analysis and SEO scoring. | BeautifulSoup / SQL |
-| **Unified Controller** | Master management and process cleanup. | Python Threading / psutil |
+| **Unified Controller** | Master management and process cleanup. | python3 Threading / psutil |
 
 ---
 
 ## 🛠️ 1. Prerequisites
 
 Before installing the backend, ensure your server has the following:
-* **Python 3.12+**
+* **python3 3.12+**
 * **Google Chrome / Chromium**: Required for the Sources Scraper.
 * [cite_start]**PostgreSQL**: The central database where all results are stored[cite: 1].
 
@@ -25,23 +25,23 @@ Before installing the backend, ensure your server has the following:
 ## 🚀 2. Installation Steps
 
 ### Step 1: Prepare the Environment
-Transfer the backend files to your server and set up a Python virtual environment:
+Transfer the backend files to your server and set up a python3 virtual environment:
 ```bash
-python -m venv venv_rat_backend
+python3 -m venv venv_rat_backend
 source venv_rat_backend/bin/activate
 ```
 
 ### Step 2: Install Dependencies
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements_rat_backend.txt
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements_rat_backend.txt
 ```
 
 ### Step 3: Module-Specific System Setup
 * **Sources Scraper**: Ensure `chromium-chromedriver` is installed on your system path.
 * **Query Sampler**: You must generate your refresh token before the first run:
     ```bash
-    python query_sampler/generate_user_credentials.py --client_secrets_path=client.json
+    python3 query_sampler/generate_user_credentials.py --client_secrets_path=client.json
     ```
 
 ---
@@ -80,11 +80,11 @@ WorkingDirectory=/path/to/rat/backend
 Environment="PATH=/path/to/rat/backend/venv_rat_backend/bin"
 
 # Launches Scraper, Classifier, and Query Sampler threads
-ExecStart=/path/to/rat/rat-backend/venv_rat_backend/bin/python backend_controller_start.py
+ExecStart=/path/to/rat/rat-backend/venv_rat_backend/bin/python3 backend_controller_start.py
 
 # ONLY for full service termination. 
 # This kills all browsers and wipes pending jobs from the DB for this server.
-ExecStop=/path/to/rat/rat/venv_rat_backend/bin/python backend_controller_stop.py
+ExecStop=/path/to/rat/rat/venv_rat_backend/bin/python3 backend_controller_stop.py
 
 # Use a conservative restart to avoid frequent DB resets during crash loops
 Restart=on-failure
