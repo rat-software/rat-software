@@ -418,6 +418,8 @@ class SourcesScraper:
                         self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) 
 
 if __name__ == "__main__":
+    import requests # Required for the Pre-Flight Check
+
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
@@ -430,20 +432,52 @@ if __name__ == "__main__":
     db_cnf = helper.file_to_dict(path_db_cnf)
     sources_cnf = helper.file_to_dict(path_sources_cnf)
 
-    job_server = sources_cnf['job_server']
-    refresh_time = sources_cnf['refresh_time']
-    country = sources_cnf['country']
+    job_server = sources_cnf.get('job_server', 'unknown_server')
+    refresh_time = sources_cnf.get('refresh_time', 48)
+    country = sources_cnf.get('country', 'Germany')
 
+    # Initialize logger early so we can log aborts immediately
+    logger = Logger()
+
+    # =========================================================
+    # PRE-FLIGHT CHECK: STORAGE SERVER
+    # =========================================================
+    storage_url = sources_cnf.get('storage-url')
+    
+    if not storage_url:
+        msg = "CRITICAL ERROR: 'storage-url' missing in config_sources.ini! Production scraping aborted."
+        print(msg)
+        logger.write_to_log(msg)
+        sys.exit(1)
+        
+    try:
+        # Extract the base URL (in case '/upload' was accidentally included in the config)
+        base_url = storage_url.replace('/upload', '').rstrip('/')
+        print(f"Pinging Storage Server at {base_url}...")
+        
+        # Short test call to the root route of the Flask server ("RAT Storage Service is running!")
+        response = requests.get(base_url, timeout=10)
+        if response.status_code != 200:
+            raise Exception(f"Server returned status {response.status_code}")
+        print("✅ Storage Server is online and ready.")
+    except Exception as e:
+        msg = f"CRITICAL ERROR: Storage Server at {base_url} is unreachable. Scraping aborted! ({e})"
+        print(msg)
+        logger.write_to_log(msg)
+        sys.exit(1)
+    # =========================================================
+
+    # Initialize database
     try:
         db = DB(db_cnf, job_server, refresh_time)
         if not db.check_db_connection():
-            print("Datenbankverbindung konnte nicht hergestellt werden. Beende...")
+            print("Could not establish database connection. Exiting...")
+            logger.write_to_log("CRITICAL ERROR: Database connection failed.")
             sys.exit(1)
     except Exception as e:
-        print(f"Fehler bei der Initialisierung der Datenbankverbindung: {str(e)}")
+        print(f"Error initializing database connection: {str(e)}")
         sys.exit(1)
 
-    logger = Logger()
     sources = Sources()
 
     try:
@@ -486,8 +520,6 @@ if __name__ == "__main__":
 
     runtime = time.time() - start_time
     logger.write_to_log(f"Total runtime: {runtime:.2f}s for {len(get_sources)} sources")
-
-    currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
     del logger
     del helper
