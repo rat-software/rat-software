@@ -11,6 +11,13 @@ The Classifier is the analytical heart of the RAT backend. It processes the data
 
 ---
 
+## 🛠️ 0. Prerequisites
+
+Before installing the backend, ensure your server has the following:
+* **python3 3.12**
+
+---
+
 ## 🛠 1. Installation & Setup
 
 ### Step 1: Prepare the Environment

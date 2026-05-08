@@ -10,6 +10,13 @@ This folder serves as the central settings hub for the RAT Backend applications.
 
 ---
 
+## 🛠️ 0. Prerequisites
+
+Before installing the backend, ensure your server has the following:
+* **python3 3.12**
+
+---
+
 ## 🗄️ 1. Database Configuration (`config_db.ini`)
 
 This file enables backend workers to communicate with your PostgreSQL database.
