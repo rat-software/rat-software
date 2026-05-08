@@ -27,8 +27,6 @@ A dedicated Flask-based microservice designed to store, manage, and serve scrape
 * 
 `requirements_rat_storage.txt`: Python dependency list.
 
-
-
 ---
 
 ## 📦 1. Installation & Configuration

@@ -46,12 +46,13 @@ The RAT ecosystem consists of four core components:
 * **Browser Extension:** A Manifest V3 Chrome extension for client-side search engine scraping.
 
 ---
+
 ## 🛠️ 1. Global Prerequisites & Database Setup
 
 Before installing individual components, ensure your server environment is properly configured.
 
 ### System Requirements
-* **python3 3.12+**
+* **python3 3.12**
 * **Google Chrome / Chromium** (required for the Backend scraper)
 * **PostgreSQL** (the central database where all results are stored)
 
@@ -100,21 +101,73 @@ Use this approach for custom, distributed deployments or to manually configure s
 The Storage Service manages all scraped data and must be network-accessible by both the Frontend and Backend.
 
 #### Setup & Configuration
-1. Run the local environment script:
-   ```bash
-   chmod +x setup.sh && ./setup.sh
-   ```
-2. Edit `storage_service.py` to define your custom `API_KEY` and `STORAGE_FOLDER`.
-3. Edit `clean_orphans.py` and supply your PostgreSQL `DB_URI`.
+irst, run the setup script to create the directory structure and the Python virtual environment:
 
-#### Systemd Deployment
 ```bash
-# Copy the service file to the system directory
+chmod +x setup.sh
+./setup.sh
+
+```
+
+### Configuration (.env)
+
+The service now uses a `.env` file for all critical settings. Create a file named `.env` in the root directory and fill in your server-specific details:
+
+```bash
+# Database (used by clean_orphans.py)
+SQLALCHEMY_DATABASE_URI=postgresql://user:password@localhost:5432/db 
+
+# Storage Service Configuration
+STORAGE_BASE_URL=http://localhost:5001 
+API_UPLOAD_KEY=your-secure-key-here 
+STORAGE_FOLDER=/var/www/rat/storage 
+
+```
+
+## ⚙️ Deployment (Linux Service)
+
+To ensure the app starts automatically on boot and restarts if it crashes, configure it as a **systemd** service using the provided configuration.
+
+### Step 1: Change the User and the paths to the WorkingDirectory, Environment and ExecStarts according to your system and install the Service File 
+
+For Example
+```bash
+[Unit]
+Description=Gunicorn instance to serve RAT Storage Service
+After=network.target
+
+[Service]
+User=test
+Group=www-data
+WorkingDirectory=/home/test/rat-storage
+Environment="PATH=/home/test/rat-storage/venv_rat_storage/bin"
+ExecStart=/home/test/rat-storage/venv_rat_storage/bin/gunicorn --workers 3 --bind 0.0.0.0:5001 storage_service:app
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Copy the service file to the system directory:
+
+```bash
 sudo cp rat-storage.service /etc/systemd/system/rat-storage.service
 
-# Enable and start the service
+```
+
+### Enable and Start
+
+Run the following to recognize the new file and start the service:
+
+```bash
+# Reload systemd
 sudo systemctl daemon-reload
-sudo systemctl enable --now rat-storage.service
+
+# Enable on boot
+sudo systemctl enable rat-storage.service
+
+# Start now
+sudo systemctl start rat-storage.service
+
 ```
 
 ---

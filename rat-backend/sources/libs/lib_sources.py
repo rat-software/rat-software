@@ -46,17 +46,28 @@ try:
     sources_cnf = helper.file_to_dict(os.path.join(parentdir, 'config/config_sources.ini'))
 
     # Determine whether to run in headless mode
-    headless = sources_cnf.get('headless')
+    headless = sources_cnf.get('headless', True)
 
     # Add a timeout configuration with default of 300 seconds
     GLOBAL_TIMEOUT = sources_cnf.get('global_timeout', 300)
 
-    API_KEY = sources_cnf.get('api-key')
-    STORAGE_URL = sources_cnf.get('storage-url')+"/upload"
-except Exception as e:
-    print("Check your config_sources.ini file. Did you setup a storage server? Error loading configuration:", e)
-    exit()
+    API_KEY = sources_cnf.get('api-key', '')
+    
+    # Safely construct STORAGE_URL
+    base_storage_url = sources_cnf.get('storage-url')
+    if base_storage_url:
+        STORAGE_URL = base_storage_url.rstrip('/') + "/upload"
+    else:
+        STORAGE_URL = None
 
+except Exception as e:
+    print(f"Notice: config_sources.ini missing or incomplete (if you want to use RAT in production you need to setup a rat-storage-server). Running in standalone mode. ({e})")
+    # Set safe defaults for testing
+    headless = True
+    GLOBAL_TIMEOUT = 300
+    API_KEY = ""
+    STORAGE_URL = None
+    sources_cnf = {}
 del helper
 
 class Sources:
@@ -120,7 +131,14 @@ class Sources:
         # CASE B: No API or upload failed -> Save locally
         try:
             local_storage_path = "/var/www/rat/storage/sources/" 
-            os.makedirs(local_storage_path, exist_ok=True)
+            
+            # Try main path, fallback to project tmp folder if permission denied
+            try:
+                os.makedirs(local_storage_path, exist_ok=True)
+            except PermissionError:
+                local_storage_path = os.path.join(parentdir, "tmp", "local_storage")
+                os.makedirs(local_storage_path, exist_ok=True)
+                print(f"Notice: No access to /var/www/. Saving fallback to {local_storage_path}")
             
             local_filepath = os.path.join(local_storage_path, zip_filename)
             
@@ -129,6 +147,7 @@ class Sources:
             with open(local_filepath, "wb") as f:
                 f.write(zip_buffer.read())
             
+            print(f"Saved locally: {local_filepath}")
             return zip_filename
             
         except Exception as e:

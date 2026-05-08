@@ -13,16 +13,16 @@ The **RAT Backend** is a multi-service engine responsible for data acquisition a
 
 ---
 
-## 🛠️ 1. Prerequisites
+## 🛠️ 0. Prerequisites
 
 Before installing the backend, ensure your server has the following:
-* **python3 3.12+**
+* **python3 3.12**
 * **Google Chrome / Chromium**: Required for the Sources Scraper.
-* [cite_start]**PostgreSQL**: The central database where all results are stored[cite: 1].
+* **PostgreSQL**: The central database where all results are stored[cite: 1].
 
 ---
 
-## 🚀 2. Installation Steps
+## 🚀 1. Installation Steps
 
 ### Step 1: Prepare the Environment
 Transfer the backend files to your server and set up a python3 virtual environment:
@@ -46,7 +46,7 @@ python3 -m pip install -r requirements_rat_backend.txt
 
 ---
 
-## ⚙️ 3. Configuration
+## ⚙️ 2. Configuration
 
 All backend components share a central `/config` directory. Update these templates with your credentials:
 
@@ -56,7 +56,7 @@ All backend components share a central `/config` directory. Update these templat
 
 ---
 
-## 🖥️ 4. Deployment & Operation
+## 🖥️ 3. Deployment & Operation
 
 The backend uses a two-tier approach to reliability: **Individual Resets** for runtime errors and **Controller Stops** for service termination.
 
@@ -96,7 +96,7 @@ WantedBy=multi-user.target
 
 ---
 
-## 🧹 5. Maintenance Notes
+## 🧹 4. Maintenance Notes
 * **Full Stop (The "Nuclear" Option)**: Running `backend_controller_stop.py` is a heavy operation. It kills all `chromium`, `chrome`, and `uc_driver` processes and deletes "in-progress" entries from the `result_source` table for the current `job_server`.
 * **Zombie Processes**: If server RAM usage is unexpectedly high and the service is **stopped**, run the stop controller manually to ensure no detached browser instances remain.
 * **Safety Buffer**: The stop script includes a 60-second wait period to ensure browser processes have fully exited before the final database cleanup occurs.
