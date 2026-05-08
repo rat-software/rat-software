@@ -20,6 +20,9 @@ let currentTaskFilter = "ALL";
 let availableEngines = []; 
 let currentEditingEngineId = null;
 
+let currentTaskPage = 1;
+const TASKS_PER_PAGE = 50;
+
 
 // --- ZOOM LOGIC ---
 let currentZoom = parseFloat(localStorage.getItem('rat_ui_zoom')) || 1.0;
@@ -325,13 +328,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Zoom
     applyZoom(currentZoom);
-    document.getElementById('zoomInBtn').addEventListener('click', () => {
-        currentZoom = Math.min(currentZoom + 0.1, 2.0); // Maximal auf 200% vergrößern
-        applyZoom(currentZoom);
+    document.querySelectorAll('.zoom-in-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentZoom = Math.min(currentZoom + 0.1, 2.0); 
+            applyZoom(currentZoom);
+        });
     });
-    document.getElementById('zoomOutBtn').addEventListener('click', () => {
-        currentZoom = Math.max(currentZoom - 0.1, 0.8); // Minimal auf 80% verkleinern
-        applyZoom(currentZoom);
+    document.querySelectorAll('.zoom-out-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentZoom = Math.max(currentZoom - 0.1, 0.8); 
+            applyZoom(currentZoom);
+        });
     });
 
     
@@ -365,6 +372,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('engineFormContainer').style.display = 'none';
         document.getElementById('showEngineFormBtn').style.display = 'block';
     });
+
+    // Serp Limit
+    document.getElementById('editSaveSerp').addEventListener('change', (e) => {
+            const limitContainer = document.getElementById('editSerpLimitContainer');
+            if (e.target.checked) {
+                alert("⚠️ WARNING: Saving SERPs (Screenshots & HTML) consumes massive amounts of storage and can slow down the extension. Please ensure you set a reasonable limit!");
+                limitContainer.style.display = 'block';
+            } else {
+                limitContainer.style.display = 'none';
+            }
+        });
+
+
 
     // Add Task Config to Session Build
     document.getElementById('addConfigBtn').addEventListener('click', () => {
@@ -402,6 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const useProxies = document.getElementById('useProxies').checked;
         const proxyListStr = document.getElementById('proxyList').value;
         const saveSerp = document.getElementById('saveSerp').checked;
+        
+        const serpLimit = document.getElementById('sessSerpLimit') ? parseInt(document.getElementById('sessSerpLimit').value) : 50;
+
         const errorDiv = document.getElementById('createErrorMsg');
         
         errorDiv.style.display = 'none'; 
@@ -419,7 +442,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         min: parseInt(document.getElementById('sessMin').value) * 1000, 
                         max: parseInt(document.getElementById('sessMax').value) * 1000 
                     },
-                    saveSerp, useProxies, proxyListStr
+                    saveSerp,
+                    serpLimit, // NEW: Pass it to the background worker
+                    useProxies, proxyListStr
                 }
             });
         }
@@ -447,9 +472,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(currentSessionId) performExportDataAsZip(currentSessionId);
     });
     
-    document.getElementById('downloadBtn').addEventListener('click', () => {
-        if(currentSessionId) performExportDataAsZip(currentSessionId);
-    });
     
     document.getElementById('exportAllBtn').addEventListener('click', () => { performFullBackup(); });
     document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
@@ -543,11 +565,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveStorageSettingsBtn').addEventListener('click', () => {
         const saveSerp = document.getElementById('editSaveSerp').checked;
+        const serpLimit = document.getElementById('editSessSerpLimit') ? parseInt(document.getElementById('editSessSerpLimit').value) : 50;
+        
         if(currentSessionId) {
-            chrome.runtime.sendMessage({ action: "UPDATE_STORAGE_SETTINGS", payload: { sessionId: currentSessionId, saveSerp } });
+            chrome.runtime.sendMessage({ 
+                action: "UPDATE_STORAGE_SETTINGS", 
+                payload: { sessionId: currentSessionId, saveSerp, serpLimit } 
+            });
             alert("Storage settings updated.");
         }
     });
+
+
+    document.getElementById('saveSerp').addEventListener('change', (e) => {
+            const limitContainer = document.getElementById('serpLimitContainer');
+            if (e.target.checked) {
+                alert("⚠️ WARNING: Saving SERPs (Screenshots & HTML) consumes massive amounts of storage and can slow down the extension. Please ensure you set a reasonable limit!");
+                limitContainer.style.display = 'block';
+            } else {
+                limitContainer.style.display = 'none';
+            }
+        });
+
 
     document.getElementById('refreshTasksBtn').addEventListener('click', () => {
         if(currentSessionId) {
@@ -555,6 +594,19 @@ document.addEventListener('DOMContentLoaded', () => {
             chrome.runtime.sendMessage({ action: "GET_TASKS", payload: { sessionId: currentSessionId } });
         }
     });
+
+    const taskContainer = document.getElementById('taskListContainer');
+        taskContainer.addEventListener('click', (e) => {
+            const target = e.target;
+            const action = target.dataset.action; // From your updated renderTasks HTML
+            const index = parseInt(target.dataset.index);
+
+            if (action === 'retry') retryTask(index);
+            else if (action === 'delete') deleteTask(index);
+            else if (action === 'prev') changeTaskPage(-1);
+            else if (action === 'next') changeTaskPage(1);
+        });
+
 
     document.getElementById('queriesAndTasksDetails').addEventListener('toggle', (e) => {
         if (e.target.open && currentSessionId) {
@@ -567,10 +619,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             currentTaskFilter = e.target.getAttribute('data-filter');
+            currentTaskPage = 1; // NEW: Reset to page 1
             renderTasks();
         });
     });
-
 
     // TWO-WAY BINDING: JSON -> Visual Builder
     function updateVisualBuilderFromJson() {
@@ -1149,6 +1201,11 @@ function updateStatus(data) {
          
          document.getElementById('editSaveSerp').checked = data.settings.saveSerp || data.settings.saveScreenshots || false;
          
+         if (data.settings.serpLimit) {
+             document.getElementById('editSessSerpLimit').value = data.settings.serpLimit;
+         }
+         document.getElementById('editSerpLimitContainer').style.display = document.getElementById('editSaveSerp').checked ? 'block' : 'none';
+         
          setSettingBadge('badgeProxies', data.settings.useProxies);
     }
 
@@ -1197,6 +1254,8 @@ function resetCreateForm() {
     document.getElementById('sessName').value = ""; 
     document.getElementById('sessQueries').value = ""; 
     document.getElementById('saveSerp').checked = false;
+    document.getElementById('serpLimitContainer').style.display = 'none'; // + ADD THIS
+    document.getElementById('sessSerpLimit').value = "50";              // + ADD THIS
     document.getElementById('useProxies').checked = false;
     document.getElementById('proxyList').value = "";
     document.getElementById('proxyList').disabled = true;
@@ -1211,7 +1270,9 @@ function renderTasks() {
     const countDisplay = document.getElementById('taskCountDisplay');
     
     let filtered = cachedTasks;
-    if (currentTaskFilter !== "ALL") filtered = cachedTasks.filter(t => t.status === currentTaskFilter);
+    if (currentTaskFilter !== "ALL") {
+        filtered = cachedTasks.filter(t => t.status === currentTaskFilter);
+    }
 
     countDisplay.innerText = filtered.length;
 
@@ -1220,35 +1281,84 @@ function renderTasks() {
         return;
     }
 
+    // --- NEW: Pagination Logic ---
+    const totalPages = Math.ceil(filtered.length / TASKS_PER_PAGE);
+    
+    // Safety checks to keep the page in bounds
+    if (currentTaskPage > totalPages) currentTaskPage = totalPages;
+    if (currentTaskPage < 1) currentTaskPage = 1;
+
+    const startIndex = (currentTaskPage - 1) * TASKS_PER_PAGE;
+    const endIndex = startIndex + TASKS_PER_PAGE;
+    const paginatedTasks = filtered.slice(startIndex, endIndex);
+
     let html = "";
-    filtered.forEach(t => {
+    paginatedTasks.forEach(t => {
         const statusClass = `st-${t.status}`;
         const showDelete = (t.status === "OPEN" || t.status === "FAILED") ? "visible" : "hidden";
-        
-        const safeCountry = (t.country || 'US').toUpperCase();
+        const showRetry = (t.status === "FAILED") ? "inline-block" : "none";
         
         html += `
         <div class="task-item">
             <div style="flex:1; overflow:hidden;">
                 <div style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${t.term}">${t.term}</div>
-                <div style="color:#888; font-size:10px;"><strong>${t.engine}</strong> | ${safeCountry} - ${t.lang || 'Auto'}</div>
+                <div style="color:#888; font-size:10px;"><strong>${t.engine}</strong> | ${t.country}</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
+                <span class="btn-secondary btn-sm" 
+                    style="display:${showRetry}; padding:1px 4px; cursor:pointer;" 
+                    data-action="retry" data-index="${t.index}" 
+                    title="Reset this specific task">↻</span>
+                
                 <span class="status-badge ${statusClass}">${t.status}</span>
-                <span class="del-task-btn" style="visibility:${showDelete}" onclick="deleteTask(${t.index})">&times;</span>
+                
+                <span class="del-task-btn" 
+                    style="visibility:${showDelete}" 
+                    data-action="delete" data-index="${t.index}">&times;</span>
             </div>
         </div>`;
     });
 
+    // Update Pagination buttons similarly
+    if (totalPages > 1) {
+        html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; background: #f8f9fa; border-top: 1px solid #eee;">
+            <button class="btn-secondary btn-sm" data-action="prev" ${currentTaskPage === 1 ? 'disabled' : ''}>◀ Prev</button>
+            <span style="font-size:11px; color:#555;">Page ${currentTaskPage} of ${totalPages}</span>
+            <button class="btn-secondary btn-sm" data-action="next" ${currentTaskPage === totalPages ? 'disabled' : ''}>Next ▶</button>
+        </div>`;
+    }
     container.innerHTML = html;
 }
 
-window.deleteTask = function(index) {
-    if(!currentSessionId) return;
+function changeTaskPage(direction) {
+    currentTaskPage += direction;
+    renderTasks();
+}
+
+function deleteTask(index) {
+    if (!currentSessionId) return;
     chrome.runtime.sendMessage({ action: "REMOVE_TASK", payload: { sessionId: currentSessionId, taskIndex: index } });
     const task = cachedTasks.find(t => t.index === index);
-    if(task) { task.status = "CANCELLED"; renderTasks(); }
-};
+    if (task) { 
+        task.status = "CANCELLED";
+        renderTasks();
+    }
+}
+
+function retryTask(index) {
+    if (!currentSessionId) return;
+    chrome.runtime.sendMessage({ 
+        action: "RESET_TASK", 
+        payload: { sessionId: currentSessionId, taskIndex: index } 
+    });
+    const task = cachedTasks.find(t => t.index === index);
+    if (task) { 
+        task.status = "OPEN"; 
+        task.retryCount = 0; 
+        renderTasks(); 
+    }
+}
 
 function setupDragAndDropForKeywords(textareaId) {
     const textarea = document.getElementById(textareaId);
