@@ -51,7 +51,7 @@ The RAT ecosystem consists of four core components:
 Before installing individual components, ensure your server environment is properly configured.
 
 ### System Requirements
-* **Python 3.12+**
+* **python3 3.12+**
 * **Google Chrome / Chromium** (required for the Backend scraper)
 * **PostgreSQL** (the central database where all results are stored)
 
@@ -83,9 +83,9 @@ chmod +x setup.sh && ./setup.sh
 ### Manual Setup
 Alternatively, you can install the global requirements manually:
 ```bash
-python -m venv venv_rat
+python3 -m venv venv_rat
 source venv_rat/bin/activate
-python -m pip install -r requirements_rat.txt
+python3 -m pip install -r requirements_rat.txt
 ```
 
 > 💡 **Next Step:** After completing the global setup, navigate to the individual component directories to configure their specific environment files and systemd services as outlined below.
@@ -126,7 +126,7 @@ The web interface connects to the PostgreSQL database and the Storage Service to
 ```bash
 python3 -m venv venv_rat-frontend
 source venv_rat-frontend/bin/activate
-python -m pip install -r requirements_rat_frontend.txt
+python3 -m pip install -r requirements_rat_frontend.txt
 ```
 
 #### Configuration (`.env`)
@@ -138,7 +138,7 @@ Configure your `.env` file with the following required parameters:
 #### Bypass SMTP / Manual User Creation
 If you are developing locally or do not want to configure an SMTP server, you can bypass email confirmation and create active, pre-confirmed users directly via the CLI:
 ```bash
-python add_rat_user.py
+python3 add_rat_user.py
 ```
 
 #### Database Initialization & Production Deployment
@@ -198,9 +198,9 @@ The backend handles heavy-lifting operations. It utilizes a Unified Controller t
 
 #### Environment Setup
 ```bash
-python -m venv venv_rat_backend
+python3 -m venv venv_rat_backend
 source venv_rat_backend/bin/activate
-python -m pip install -r requirements_rat_backend.txt
+python3 -m pip install -r requirements_rat_backend.txt
 ```
 > ⚠️ **Dependency Note:** Ensure that `chromium-chromedriver` is installed and explicitly available on your system's global environment path.
 
@@ -236,13 +236,13 @@ For crowdsourced or user-driven data collection, RAT leverages a high-performanc
 The repository provides an overview of extensions created by our developer community: [rat-extensions (RAT extensions) · GitHub](https://github.com/rat-extensions)
 
 - **Imprint Crawler**: A web crawler that is able to automatically extract legal notice information from websites while taking German legal aspects into account: [GitHub - rat-extensions/imprint-crawler · GitHub](https://github.com/rat-extensions/imprint-crawler). Developed by Marius Messer - [MnM3 · GitHub](https://github.com/MnM3)
-- **Readability Score**: A Python tool that extracts the main text content of a web document and analyzes its readability: [GitHub - rat-extensions/readability-score: A python tool that extracts the main text content of a web document and analysis it readability. · GitHub](https://github.com/rat-extensions/readability-score). Developey by Mohamed Elnaggar - [mohamedsaeed21 · GitHub](https://github.com/mohamedsaeed21)
+- **Readability Score**: A python3 tool that extracts the main text content of a web document and analyzes its readability: [GitHub - rat-extensions/readability-score: A python3 tool that extracts the main text content of a web document and analysis it readability. · GitHub](https://github.com/rat-extensions/readability-score). Developey by Mohamed Elnaggar - [mohamedsaeed21 · GitHub](https://github.com/mohamedsaeed21)
 - **Forum Scraper**: An extension to extract comments from German online news services: [https://github.com/rat-software/forum-scraper](https://github.com/rat-extensions/forum-scraper). Developed by Paul Kirch - [g1thub-4cc0unt · GitHub](https://github.com/g1thub-4cc0unt)
 - **EI_Logger_BA**: A browser extension for conducting interactive information retrieval studies. With this extension, study participants can work on search tasks with search engines of their choice and both the search queries and the clicks on search results are saved: [GitHub - rat-extensions/EI_Logger_BA · GitHub](https://github.com/rat-extensions/EI_Logger_BA). Developed by Hossam Al Mustafa - [Samustafa (Hossam Al Mustafa) · GitHub](https://github.com/Samustafa)
-- **Identifying affiliate links in webpages**: [GitHub - rat-extensions/Identifying-affiliate-links-in-webpages: A python tool that extracts all affiliate links of a web document and scores this webpage according to its number and prominence of affiliate links. Database: · GitHub](https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages). Developed by Philipp Krueger - [PhilippUDE · GitHub](https://github.com/PhilippUDE)
+- **Identifying affiliate links in webpages**: [GitHub - rat-extensions/Identifying-affiliate-links-in-webpages: A python3 tool that extracts all affiliate links of a web document and scores this webpage according to its number and prominence of affiliate links. Database: · GitHub](https://github.com/rat-extensions/Identifying-affiliate-links-in-webpages). Developed by Philipp Krueger - [PhilippUDE · GitHub](https://github.com/PhilippUDE)
 - **App Reviews Scraper**: [GitHub - rat-extensions/app-reviews-scraper: As a part of my Bachelor thesis I developed these app reviews scrapers, that will visit designated URLs of a set of applications and export the scraped reviews and relevant information. This is to be served as an extension to the Result Assessment Tool (RAT) and explicitly for research purposes only. · GitHub](https://github.com/rat-extensions/app-reviews-scraper). Developed by Tanveer Ahmed - [https://github.com/PhilippUDE](https://github.com/tanveerx/)
 - **Visualizations of IR measures**: [GitHub - rat-extensions/ir-evaluation: Visualizations of IR measures · GitHub](https://github.com/rat-extensions/ir-evaluation). Developed by Ritu Suhas Shetkar - [ritushetkar · GitHub](https://github.com/ritushetkar)
-- **Scraping News Articles**: [GitHub - rat-extensions/NewsArticlesScraper: This Python tool retrieves the homepages of given news portals and scrapes the HTML text of the articles found. · GitHub](https://github.com/rat-extensions/NewsArticlesScraper). Developed by Esther von der Weiden - [EstherKuerbis · GitHub](https://github.com/EstherKuerbis/)
+- **Scraping News Articles**: [GitHub - rat-extensions/NewsArticlesScraper: This python3 tool retrieves the homepages of given news portals and scrapes the HTML text of the articles found. · GitHub](https://github.com/rat-extensions/NewsArticlesScraper). Developed by Esther von der Weiden - [EstherKuerbis · GitHub](https://github.com/EstherKuerbis/)
 
 ---
 

@@ -18,14 +18,14 @@ The Query Sampler requires a verified connection to the Google Ads API.
 1.  **Install Dependencies**:
     Install all required packages for the controller and its sub-modules:
     ```bash
-    python -m pip install --upgrade pip
-    python -m pip install -r requirements_rat_query_sampler.txt
+    python3 -m pip install --upgrade pip
+    python3 -m pip install -r requirements_rat_query_sampler.txt
     ```
 2.  **Google Ads Developer Token**: Obtain a developer token from the [Google Ads Center](https://developers.google.com/google-ads/api/docs/get-started/dev-token).
 3.  **OAuth Credentials**: Create "Web Application" or "Desktop App" credentials in the [Google Cloud Console](https://console.cloud.google.com).
 4.  **Generate Refresh Token**: Run the utility script to authorize your account and generate a refresh token:
     ```bash
-    python generate_user_credentials.py --client_secrets_path=your_client_secret.json
+    python3 generate_user_credentials.py --client_secrets_path=your_client_secret.json
     ```
 5.  **Client Configuration**: Update your `google-ads.yaml` file (details below).
 
@@ -50,8 +50,8 @@ The Query Sampler expects this file to be located in the `query_sampler/` direct
 
 ### Individual Operation
 If you are running the Query Sampler on a dedicated server:
-* **Start**: `python query_sampler_controller_start.py`. This launches the background scheduler.
-* **Stop**: `python query_sampler_controller_stop.py`. This script identifies and terminates all associated Python processes using `psutil`.
+* **Start**: `python3 query_sampler_controller_start.py`. This launches the background scheduler.
+* **Stop**: `python3 query_sampler_controller_stop.py`. This script identifies and terminates all associated python3 processes using `psutil`.
 
 ---
 
