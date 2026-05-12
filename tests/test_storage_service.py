@@ -46,12 +46,18 @@ class _Base(unittest.TestCase):
     """Sets up a temp storage dir and resets module constants before each test."""
 
     def setUp(self):
-        _mod.API_KEY = TEST_API_KEY
         self.tmpdir = tempfile.mkdtemp()
-        _mod.STORAGE_FOLDER = self.tmpdir
+        self._patches = [
+            patch.object(_mod, 'API_KEY', TEST_API_KEY),
+            patch.object(_mod, 'STORAGE_FOLDER', self.tmpdir),
+        ]
+        for p in self._patches:
+            p.start()
         self.client = app.test_client()
 
     def tearDown(self):
+        for p in self._patches:
+            p.stop()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
 
