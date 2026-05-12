@@ -20,8 +20,8 @@ searchengine = data["searchengine"]
 searchengine_title = data["title"] 
 searchengine_description = data["description"] 
 ip = data["ip"] 
-code = helper.decode_code(data["code"]) 
-picture = helper.decode_picture(data["bin"]) 
+code = helper.decode_code(data["file_path"])
+picture = helper.decode_picture(data["file_path"])
 content_type = data["content_type"] 
 error_code = data["error_code"] 
 status_code = data["status_code"] 
@@ -144,7 +144,7 @@ def main(classifier_id, db, helper, job_server, study_id):
                 print("already processed by another instance")
                 continue # Skip if already processed by another instance
 
-            code = helper.decode_code(data["code"])
+            code = helper.decode_code(data["file_path"])
             error_code = data["error_code"]
             status_code = data["status_code"]
 

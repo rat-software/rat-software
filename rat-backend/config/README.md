@@ -10,6 +10,13 @@ This folder serves as the central settings hub for the RAT Backend applications.
 
 ---
 
+## 🛠️ 0. Prerequisites
+
+Before installing the backend, ensure your server has the following:
+* **python3 3.12**
+
+---
+
 ## 🗄️ 1. Database Configuration (`config_db.ini`)
 
 This file enables backend workers to communicate with your PostgreSQL database.
@@ -28,10 +35,11 @@ This file enables backend workers to communicate with your PostgreSQL database.
 
 This file configures the behavior of the Selenium-based scraper and its connection to the storage microservice.
 
-* **`job_server`**: A unique name for this scraper instance (e.g., `your_server`).
+* **`job_server`**: A unique name for this scraper instance.
 * **`wait_time`**: Seconds the browser waits to ensure full page rendering.
 * **`api-key`**: Your secret key for authenticating with the **RAT Storage Service**.
-* **`storage-url`**: The full upload endpoint (e.g., `your_storage_url`).
+* **`storage-url`**: The full upload endpoint.
+* **`local-storage-path`**: Path to your local storage folder, if there is no external storage defined.
 
 ---
 

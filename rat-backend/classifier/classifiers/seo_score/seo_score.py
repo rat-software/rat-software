@@ -1,3 +1,35 @@
+"""
+The `main` function orchestrates the classification process for a classifier by checking for
+duplicates, classifying results, and updating the database with classification information.
+
+:param classifier_id: The `classifier_id` is a unique identifier for a specific classifier. It is
+used to retrieve and classify results associated with that particular classifier in the database.
+:param db: The `db` parameter refers to a Database connection object. This object is used to interact 
+with the database where the classification results are stored. It allows performing operations such as
+querying for results, inserting classification results, updating records, and checking for duplicates 
+in the database.
+:param helper: The `helper` parameter is an object that provides additional functionality to the classifier. 
+It likely contains methods or attributes that assist in decoding data, handling specific operations, or 
+performing other tasks that are necessary for the classification process.
+
+Available data for the classifiers: 
+url = data["url"] 
+main = data["main"] 
+position = data["position"] 
+searchengine = data["searchengine"] 
+searchengine_title = data["title"] 
+searchengine_description = data["description"] 
+ip = data["ip"] 
+code = helper.decode_code(result["file_path"])
+picture = helper.decode_picture(data["file_path"])
+content_type = data["content_type"] 
+error_code = data["error_code"] 
+status_code = data["status_code"] 
+final_url = data["final_url"] 
+query = data["query"]
+
+"""
+
 import requests
 import os
 import inspect
@@ -528,7 +560,7 @@ def process_result(result, helper):
     try:
         url = result["url"]
         main = result["main"]
-        code = helper.decode_code(result["code"])
+        code = helper.decode_code(result["file_path"])
         error_code = result["error_code"]
         status_code = result["status_code"]
         query = result["query"]
@@ -650,16 +682,22 @@ def classify_results(results, classifier_id, db, job_server, scorer, helper):
         print(result_id)
 
         try:
-            # Versuche das Result einzufügen
-            insert_success = db.insert_classification_result(classifier_id, "in process", result_id, job_server)
+            
+            # 1. Check if the result is already fully processed (has a final score)
+            if db.check_classification_result_not_in_process(classifier_id, result_id):
+                print(f"Result {result_id} is already finished.")
+                continue
 
-            # Wenn insert_success None ist (kein Ergebnis zurückgegeben wurde),
-            # bedeutet das, dass der Eintrag bereits existiert
-            if not insert_success:
+            # 2. Check if another server is currently processing it (has "in process" status)
+            if db.check_classification_result(classifier_id, result_id):
                 print(f"Result {result_id} is already being processed by another server")
                 continue
 
-            # Wenn wir hier sind, war das Insert erfolgreich und wir können weiter verarbeiten
+            # 3. If neither applies, claim the result by inserting "in process"
+            db.insert_classification_result(classifier_id, "in process", result_id, job_server)
+            
+            # ---------------------------------------------------------
+
             try:
                 indicators = process_result(data, helper)
 

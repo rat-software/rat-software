@@ -2,6 +2,15 @@
 
 The primary user interface for managing studies, participants, and search engine analysis. This Flask application connects to a PostgreSQL database and interacts with the RAT Storage Service for file management.
 
+---
+
+## 🛠️ 0. Prerequisites
+
+Before installing the backend, ensure your server has the following:
+* **python3 3.12**
+
+---
+
 ## 🛠 1. Installation & Environment
 
 ### Step 1: Create Virtual Environment

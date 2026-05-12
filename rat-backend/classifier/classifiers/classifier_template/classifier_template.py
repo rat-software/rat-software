@@ -2,15 +2,11 @@
 The `main` function orchestrates the classification process for a classifier by checking for
 duplicates, classifying results, and updating the database with classification information.
 
-:param classifier_id: The `classifier_id` is a unique identifier for a specific classifier. It is
-used to retrieve and classify results associated with that particular classifier in the database.
-:param db: The `db` parameter refers to a Database connection object. This object is used to interact 
-with the database where the classification results are stored. It allows performing operations such as
-querying for results, inserting classification results, updating records, and checking for duplicates 
-in the database.
-:param helper: The `helper` parameter is an object that provides additional functionality to the classifier. 
-It likely contains methods or attributes that assist in decoding data, handling specific operations, or 
-performing other tasks that are necessary for the classification process.
+:param classifier_id: The `classifier_id` is a unique identifier for a specific classifier.
+:param db: The `db` parameter refers to a Database connection object.
+:param helper: The `helper` parameter provides additional functionality to decode data.
+:param job_server: Identifier for the current server instance.
+:param study_id: The ID of the current study.
 
 Available data for the classifiers: 
 url = data["url"] 
@@ -20,38 +16,23 @@ searchengine = data["searchengine"]
 searchengine_title = data["title"] 
 searchengine_description = data["description"] 
 ip = data["ip"] 
-code = helper.decode_code(data["code"]) 
-picture = helper.decode_picture(data["bin"]) 
+code = helper.decode_code(data["file_path"])
+picture = helper.decode_picture(data["file_path"])
 content_type = data["content_type"] 
 error_code = data["error_code"] 
 status_code = data["status_code"] 
 final_url = data["final_url"] 
 query = data["query"]
-
 """
 
-def main(classifier_id, db, helper, job_server):
+def main(classifier_id, db, helper, job_server, study_id):
     """
     Main function responsible for classifying results using a specified classifier.
-
-    Args:
-        classifier_id (int): The ID of the classifier to use for classification.
-        db (DB): The database object used for database operations.
-        helper (Helper): Helper object for additional functionality.
-
-    Returns:
-        None
     """
     
-    def check_for_duplicates(check_dup):
+    def check_for_duplicates(check_dup, source_id): # source_id als Parameter benötigt
         """
         Check for duplicate classification results and update the database accordingly.
-
-        Args:
-            check_dup (list): List of items to check for duplicates.
-
-        Returns:
-            bool: True if no duplicates found, False otherwise.
         """
         # Check if the list of duplicates is too large to handle in bulk
         if len(check_dup) > 1000:
@@ -71,17 +52,13 @@ def main(classifier_id, db, helper, job_server):
 
                     # Insert classification result if not already present
                     if not db.check_classification_result(classifier_id, rs):
-                        db.insert_classification_result(classifier_id, insert_classification, rs)
+                        db.insert_classification_result(classifier_id, insert_classification, rs, job_server)
 
                     # Insert indicators if they don't exist
                     for ri in result_indicators:
                         indicator, value = ri[1], ri[2]
-                        if not db.check_indicator_result(classifier_id, rs) and indicator and value:
+                        if not db.check_indicator_result(classifier_id, rs, indicator, value) and indicator and value:
                             db.insert_indicator(indicator, value, classifier_id, rs, job_server)
-
-            # Update classification result in the database if necessary
-            if insert_classification:
-                db.update_classification_result(classifier_id, insert_classification, result_id)
 
             return False
         else:
@@ -90,23 +67,10 @@ def main(classifier_id, db, helper, job_server):
     def classify_results(results):
         """
         Classify results obtained from the database using a specific classifier.
-
-        Args:
-            results (list): List of results to classify.
-
-        Returns:
-            None
         """
-        def write_indicators_to_db(indicators, result):
+        def write_indicators_to_db(indicators, result_id):
             """
             Write indicators to the database for a specific result.
-
-            Args:
-                indicators (dict): Dictionary of indicators to write.
-                result (dict): The result to associate the indicators with.
-
-            Returns:
-                None
             """
             for key, ind in indicators.items():
                 indicator = key
@@ -117,34 +81,61 @@ def main(classifier_id, db, helper, job_server):
                     insert_result = str(ind)
 
                 # Insert indicator into the database
-                db.insert_indicator(indicator, insert_result, classifier_id, result, job_server)
+                db.insert_indicator(indicator, insert_result, classifier_id, result_id, job_server)
 
         for result in results:
-            result_id = result['id']
-            # Mark the result as "in process" in the database
-            db.insert_classification_result(classifier_id, "in process", result_id)
-            source_id = result["source"]
+            # Daten sauber entpacken
+            data = {k: v for k, v in result.items()}
+            result_id = data['id']
+            source_id = data.get("source")
+
+            # ---------------------------------------------------------
+            # CONCURRENCY CHECKS (Wichtig für Multi-Server Setups!)
+            # ---------------------------------------------------------
+            # 1. Check if the result is already fully processed
+            if db.check_classification_result_not_in_process(classifier_id, result_id):
+                print(f"Result {result_id} is already finished.")
+                continue
+
+            # 2. Check if another server is currently processing it
+            if db.check_classification_result(classifier_id, result_id):
+                print(f"Result {result_id} is already being processed by another server")
+                continue
+
+            # 3. Claim the result by inserting "in process"
+            db.insert_classification_result(classifier_id, "in process", result_id, job_server)
+            # ---------------------------------------------------------
 
             # Check for duplicates before proceeding
-            check_dup = db.check_source_dup(source_id)
-            if check_for_duplicates(check_dup):
+            check_dup = db.check_source_duplicates(source_id) # Richtiger Methodenname laut lib_db.py
+            if check_for_duplicates(check_dup, source_id):
                 classification_result = ''
                 indicators = {}
 
-                # Start your custom code here for calculating indicators and classifying a result
+                # =========================================================
+                # Start your custom code here
+                # =========================================================
+                
+                # Load the code/picture securely
+                # code = helper.decode_code(data.get("file_path"))
+                # picture = helper.decode_picture(data.get("file_path"))
 
-                # Example of custom code:
                 # classification_result = custom_classify(result, helper)
                 # indicators = calculate_indicators(result, helper)
 
+                # =========================================================
                 # End of your custom code
+                # =========================================================
 
                 # Write calculated indicators to the database
-                write_indicators_to_db(indicators, result)
-                # Update the classification result in the database
-                db.update_classification_result(classifier_id, classification_result, result_id)
+                write_indicators_to_db(indicators, result_id)
+                
+                # Update the classification result in the database 
+                # (Reihenfolge: Wert, Result_ID, Classifier_ID)
+                db.update_classification_result(classification_result, result_id, classifier_id)
 
-    # Retrieve results to be classified from the database using the classifier ID
-    results = db.get_results(classifier_id)
+    # Retrieve results to be classified from the database using the classifier ID and study ID
+    results = db.get_results(classifier_id, study_id)
+    
     # Process and classify the retrieved results
     classify_results(results)

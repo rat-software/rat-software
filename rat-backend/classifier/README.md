@@ -11,19 +11,26 @@ The Classifier is the analytical heart of the RAT backend. It processes the data
 
 ---
 
+## 🛠️ 0. Prerequisites
+
+Before installing the backend, ensure your server has the following:
+* **python3 3.12**
+
+---
+
 ## 🛠 1. Installation & Setup
 
 ### Step 1: Prepare the Environment
 Transfer the backend files to your server and set up a Python virtual environment:
 ```bash
-python -m venv venv_rat_classifier
+python3 -m venv venv_rat_classifier
 source venv_rat_backend/bin/activate
 ```
 
 ### Step 2: Install Dependencies
 ```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements_rat_classifier.txt
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements_rat_classifier.txt
 ```
 
 ### Configuration
@@ -174,13 +181,13 @@ Once your code is ready, log into your PostgreSQL database and add an entry to t
 
 ### Standing on Its Own
 If you prefer to run the Classifier independently of the other backend modules:
-* **Start**: `nohup python classifier_controller_start.py &`.
-* **Stop**: `python classifier_controller_stop.py`.
+* **Start**: `nohup python3 classifier_controller_start.py &`.
+* **Stop**: `python3 classifier_controller_stop.py`.
 
 ### Unified Backend Control
 When using the master controller from the backend root directory:
-* **Start All**: `python backend_controller_start.py` (This launches the Classifier in its own thread).
-* **Stop & Reset**: `python backend_controller_stop.py` (Terminates the classifier and resets stuck jobs).
+* **Start All**: `python3 backend_controller_start.py` (This launches the Classifier in its own thread).
+* **Stop & Reset**: `python3 backend_controller_stop.py` (Terminates the classifier and resets stuck jobs).
 
 ---
 

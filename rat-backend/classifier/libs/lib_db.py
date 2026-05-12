@@ -115,7 +115,7 @@ class DB:
             cur = conn.cursor(cursor_factory=RealDictCursor)
             cur.execute("""
                 SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
-                       result.final_url, source.code, source.bin, source.content_type, source.error_code, source.status_code, 
+                       result.final_url, source.file_path, source.content_type, source.error_code, source.status_code, 
                        result_source.source, classifier_study.classifier
                 FROM result, source, result_source, classifier_study
                 WHERE result_source.result = result.id AND result_source.source = source.id AND classifier_study.classifier = %s AND result.study = %s
