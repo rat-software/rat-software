@@ -5,7 +5,7 @@ echo "🔧 Starting setup for RAT Classifier..."
 
 # 1. Setup Virtual Environment
 echo "🐍 Creating virtual environment..."
-python -m venv venv_classifier
+python3 -m venv venv_classifier
 source venv_classifier/bin/activate
 
 # 2. Install Dependencies

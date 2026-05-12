@@ -1,2 +1,19 @@
-# Auto detect text files and perform LF normalization
+# Handle line endings automatically for files detected as text
 * text=auto
+
+# Explicitly declare that all shell scripts must use LF (Linux) endings
+*.sh text eol=lf
+
+# Ensure Python files use LF endings (standard for cross-platform dev)
+*.py text eol=lf
+
+# Ensure JavaScript/TypeScript/CSS (Frontend) use LF
+*.js text eol=lf
+*.ts text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+
+# Keep binary files (images, icons) as they are
+*.png binary
+*.jpg binary
+*.ico binary
