@@ -52,7 +52,6 @@ try:
     GLOBAL_TIMEOUT = sources_cnf.get('global_timeout', 300)
 
     API_KEY = sources_cnf.get('api-key', '')
-    
     # Safely construct STORAGE_URL
     base_storage_url = sources_cnf.get('storage-url')
     if base_storage_url:
@@ -67,6 +66,7 @@ except Exception as e:
     GLOBAL_TIMEOUT = 300
     API_KEY = ""
     STORAGE_URL = None
+    LOCAL_STORAGE_PATH = sources_cnf.get('local-storage-path', None)
     sources_cnf = {}
 del helper
 
@@ -130,7 +130,7 @@ class Sources:
         
         # CASE B: No API or upload failed -> Save locally
         try:
-            local_storage_path = "/var/www/rat/storage/sources/" 
+            local_storage_path = LOCAL_STORAGE_PATH
             
             # Try main path, fallback to project tmp folder if permission denied
             try:
@@ -409,7 +409,7 @@ class Sources:
             # Set socket timeout
             import socket
             original_timeout = socket.getdefaulttimeout()
-            socket.setdefaulttimeout(30)  # 10 seconds timeout
+            socket.setdefaulttimeout(30)  # 30 seconds timeout
             
             try:
                 parsed_url = urlparse(url)
@@ -1491,7 +1491,9 @@ class Sources:
                         driver = future_driver.result(timeout=MAX_DRIVER_INIT_TIME)
                         driver_instance["driver"] = driver  # Store in the shared dict for watchdog access
                     except Exception as e:
-                        error_codes += f"Driver initialization timeout after {time.time() - driver_init_start:.2f}s: {str(e)}; "
+                        error_name = type(e).__name__
+                        error_msg = str(e) if str(e) else "Time limit exceeded."
+                        error_codes += f"Driver initialization timeout after {time.time() - driver_init_start:.2f}s: [{error_name}] {error_msg}; "
                         return {"code": "error", "bin_data": "error", "request": dict_request, "final_url": url, 
                             "meta": meta, "error_codes": error_codes, "content_dict": content_dict}
 
@@ -1667,9 +1669,7 @@ class Sources:
                                     except Exception as e:
                                         error_codes += f"Emergency screenshot failed: {str(e)}; "
                                     
-                                    code = code
                                     dict_request["content_type"] = "html"
-                                    # Critical for ensuring progress=1
                                     dict_request["status_code"] = 200
                                     dict_request["recovered"] = True
                                     error_codes += f"Partial content saved: {message}; "

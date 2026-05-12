@@ -38,12 +38,15 @@ class Helper:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
 
-    def decode_code(self, filename):
-        """Retrieves the source.html with automatic retry on 403."""
-        if not filename or filename == "error" or not self.serializer:
+    def decode_code(self, filename_from_db):
+        """
+        Requests the source.html from the RAT Storage Service.
+        The storage service handles the ZIP extraction natively and returns the raw HTML string.
+        """
+        if not filename_from_db or filename_from_db == "error" or not self.serializer:
             return ""
             
-        filename = str(filename).strip()
+        filename = str(filename_from_db).strip()
             
         ticket = self.serializer.dumps({'filename': filename}, salt='source-view')
         url = f"{self.base_url}/view/{filename}/html?ticket={ticket}"
@@ -54,25 +57,27 @@ class Helper:
                 
                 if response.status_code == 200:
                     return response.text
+                        
                 elif response.status_code == 403:
-                    print(f"Warning: 403 for {filename}. Attempt {attempt + 1}/3. Retrying...")
+                    print(f"Warning: 403 Forbidden for ID {file_id}. Attempt {attempt + 1}/3. Retrying...")
                     time.sleep(1) 
+                    
                 else:
-                    print(f"Error: Server responded with status code {response.status_code} for {filename}")
+                    print(f"Error: Storage server responded with status code {response.status_code} for ID {file_id}")
                     break 
                     
-            except Exception as e:
-                print(f"Connection error retrieving source code: {e}")
+            except requests.exceptions.RequestException as e:
+                print(f"Connection error retrieving source code for ID {file_id}: {e}")
                 time.sleep(1)
                 
         return ""
 
-    def decode_picture(self, filename):
+    def decode_picture(self, filename_from_db):
         """Retrieves the screenshot with automatic retry on 403."""
-        if not filename or filename == "error" or not self.serializer:
+        if not filename_from_db or filename_from_db == "error" or not self.serializer:
             return None
             
-        filename = str(filename).strip()
+        filename = str(filename_from_db).strip()
         ticket = self.serializer.dumps({'filename': filename}, salt='source-view')
         url = f"{self.base_url}/view/{filename}/screenshot?ticket={ticket}"
         
