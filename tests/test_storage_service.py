@@ -46,9 +46,9 @@ class _Base(unittest.TestCase):
     """Sets up a temp storage dir and resets module constants before each test."""
 
     def setUp(self):
-        _mod.API_KEY = TEST_API_KEY
         self.tmpdir = tempfile.mkdtemp()
-        _mod.STORAGE_FOLDER = self.tmpdir
+        app.config['API_KEY'] = TEST_API_KEY
+        app.config['STORAGE_FOLDER'] = self.tmpdir
         self.client = app.test_client()
 
     def tearDown(self):
@@ -283,8 +283,9 @@ class TestViewInvalidTickets(_Base):
 
     def test_tampered_ticket_returns_403(self):
         ticket = _make_ticket('file.zip')
-        # Flip the last character to break the signature
-        tampered = ticket[:-1] + ('A' if ticket[-1] != 'A' else 'B')
+        # Flip the second-to-last character: it holds 6 real data bits (no padding),
+        # so changing it always corrupts the HMAC regardless of token value.
+        tampered = ticket[:-2] + ('A' if ticket[-2] != 'A' else 'B') + ticket[-1]
         resp = self.client.get(f'/view/file.zip/html?ticket={tampered}')
         self.assertEqual(resp.status_code, 403)
 

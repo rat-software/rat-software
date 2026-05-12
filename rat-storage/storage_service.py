@@ -19,13 +19,11 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configuration constants
 # Note: These values must remain synchronized with the main scraper service
-API_UPLOAD_KEY = os.getenv('API_UPLOAD_KEY') # Add your own safe API-Key
-STORAGE_FOLDER = os.getenv('STORAGE_FOLDER') # Define your STORAGE Folder on your web server
-
-app.config['SESSION_COOKIE_NAME'] = 'rat_storage_session' # Set unique SESSION COOKIE NAME
-app.config['SESSION_COOKIE_PATH'] = '/storage' # Set unique SESSION COOKIE PATH
+app.config['API_KEY'] = os.getenv('API_UPLOAD_KEY', 'your_api_key_here')  # Add your own safe API-Key
+app.config['STORAGE_FOLDER'] = os.getenv('STORAGE_FOLDER', 'your_storage_folder')  # Define your STORAGE Folder on your web server
+app.config['SESSION_COOKIE_NAME'] = 'rat_storage_session'
+app.config['SESSION_COOKIE_PATH'] = '/storage'
 
 @app.route('/')
 def index():
@@ -37,7 +35,7 @@ def upload():
     Handle file uploads from the scraper.
     """
     # API Key check
-    if request.headers.get('X-API-Key') != API_UPLOAD_KEY:
+    if request.headers.get('X-API-Key') != app.config['API_KEY']:
         return {"error": "Unauthorized"}, 401
     
     if 'file' not in request.files:
@@ -46,8 +44,8 @@ def upload():
     file = request.files['file']
     filename = secure_filename(file.filename)
     
-    os.makedirs(STORAGE_FOLDER, exist_ok=True)
-    file.save(os.path.join(STORAGE_FOLDER, filename))
+    os.makedirs(app.config['STORAGE_FOLDER'], exist_ok=True)
+    file.save(os.path.join(app.config['STORAGE_FOLDER'], filename))
     
     return {"message": "Upload OK", "filename": filename}, 200
 
@@ -61,7 +59,7 @@ def view(filename, file_type):
         return "Missing ticket", 401
 
     # Secure ticket validation
-    serializer = URLSafeTimedSerializer(API_UPLOAD_KEY)
+    serializer = URLSafeTimedSerializer(app.config['API_KEY'])
     
     try:
         data = serializer.loads(ticket, salt='source-view', max_age=14400)
@@ -70,7 +68,7 @@ def view(filename, file_type):
     except Exception as e:
         return f"Access denied (Error: {type(e).__name__} - {str(e)})", 403
 
-    zip_path = os.path.join(STORAGE_FOLDER, secure_filename(filename))
+    zip_path = os.path.join(app.config['STORAGE_FOLDER'], secure_filename(filename))
     if not os.path.exists(zip_path):
         return "File not found", 404
 
