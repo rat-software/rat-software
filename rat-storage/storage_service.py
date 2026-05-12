@@ -15,8 +15,8 @@ from itsdangerous import URLSafeTimedSerializer
 app = Flask(__name__)
 
 # Note: These values must remain synchronized with the main scraper service
-app.config['API_KEY'] = "your_api_key_here"  # Add your own safe API-Key
-app.config['STORAGE_FOLDER'] = "your_storage_folder"  # Define your STORAGE Folder on your web server
+app.config['API_KEY'] = os.getenv('API_UPLOAD_KEY', 'your_api_key_here')  # Add your own safe API-Key
+app.config['STORAGE_FOLDER'] = os.getenv('STORAGE_FOLDER', 'your_storage_folder')  # Define your STORAGE Folder on your web server
 app.config['SESSION_COOKIE_NAME'] = 'rat_storage_session'
 app.config['SESSION_COOKIE_PATH'] = '/storage'
 
