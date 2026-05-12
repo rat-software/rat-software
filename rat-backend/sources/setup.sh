@@ -5,7 +5,7 @@ echo "🔧 Starting setup for RAT Sources Scraper..."
 
 # 1. Setup Virtual Environment
 echo "🐍 Creating virtual environment..."
-python -m venv venv_sources
+python3 -m venv venv_sources
 source venv_sources/bin/activate
 
 # 2. Install Dependencies
