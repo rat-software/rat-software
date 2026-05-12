@@ -47,17 +47,11 @@ class _Base(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self._patches = [
-            patch.object(_mod, 'API_KEY', TEST_API_KEY, create=True),
-            patch.object(_mod, 'STORAGE_FOLDER', self.tmpdir, create=True),
-        ]
-        for p in self._patches:
-            p.start()
+        app.config['API_KEY'] = TEST_API_KEY
+        app.config['STORAGE_FOLDER'] = self.tmpdir
         self.client = app.test_client()
 
     def tearDown(self):
-        for p in self._patches:
-            p.stop()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
 
