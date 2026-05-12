@@ -48,8 +48,8 @@ class _Base(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         self._patches = [
-            patch.object(_mod, 'API_KEY', TEST_API_KEY),
-            patch.object(_mod, 'STORAGE_FOLDER', self.tmpdir),
+            patch.object(_mod, 'API_KEY', TEST_API_KEY, create=True),
+            patch.object(_mod, 'STORAGE_FOLDER', self.tmpdir, create=True),
         ]
         for p in self._patches:
             p.start()
@@ -289,8 +289,9 @@ class TestViewInvalidTickets(_Base):
 
     def test_tampered_ticket_returns_403(self):
         ticket = _make_ticket('file.zip')
-        # Flip the last character to break the signature
-        tampered = ticket[:-1] + ('A' if ticket[-1] != 'A' else 'B')
+        # Flip the second-to-last character: it holds 6 real data bits (no padding),
+        # so changing it always corrupts the HMAC regardless of token value.
+        tampered = ticket[:-2] + ('A' if ticket[-2] != 'A' else 'B') + ticket[-1]
         resp = self.client.get(f'/view/file.zip/html?ticket={tampered}')
         self.assertEqual(resp.status_code, 403)
 
