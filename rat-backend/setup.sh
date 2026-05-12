@@ -6,11 +6,11 @@ echo "🔧 Starting setup for the RAT Unified Backend..."
 # 1. System Dependencies (mostly for the Scraper)
 echo "📦 Installing system dependencies..."
 sudo apt update
-sudo apt install -y chromium-browser chromium-chromedriver python3-venv psutil
+sudo apt install -y chromium-browser chromium-chromedriver python3-venv python3-psutil
 
 # 2. Setup Unified Virtual Environment
 echo "🐍 Creating virtual environment (venv_rat_backend)..."
-python -m venv venv_rat_backend
+python3 -m venv venv_rat_backend
 source venv_rat_backend/bin/activate
 
 # 3. Install All Backend Dependencies

@@ -12,6 +12,11 @@ import os, zipfile, io
 from werkzeug.utils import secure_filename
 from itsdangerous import URLSafeTimedSerializer
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 app = Flask(__name__)
 
 # Note: These values must remain synchronized with the main scraper service

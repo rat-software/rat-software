@@ -8,10 +8,15 @@ that are no longer referenced in the 'serp' or 'source' database tables.
 import os
 from sqlalchemy import create_engine, text
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # --- CONFIGURATION ---
 # Database connection URI and local storage path
-DB_URI = 'your_db_uri_here' # Your DB URI e. g. 'postgresql://user:password@ip/dbname'
-STORAGE_DIR = 'your_storage_folder' # Define your STORAGE Folder on your web server
+DB_URI = os.getenv('SQLALCHEMY_DATABASE_URI') # Your DB URI e. g. 'postgresql://user:password@ip/dbname'
+STORAGE_FOLDER = os.getenv('STORAGE_FOLDER') # Define your STORAGE Folder on your web server
 # ---------------------
 
 def clean_orphans():
@@ -19,11 +24,11 @@ def clean_orphans():
     Scans the storage directory and compares contents with database records.
     Prompts the user to delete files that exist on disk but not in the DB.
     """
-    print(f"Starting cleanup in: {STORAGE_DIR}")
+    print(f"Starting cleanup in: {STORAGE_FOLDER}")
     
     # Check if the storage directory exists before proceeding
-    if not os.path.exists(STORAGE_DIR):
-        print(f"ERROR: Directory {STORAGE_DIR} not found.")
+    if not os.path.exists(STORAGE_FOLDER):
+        print(f"ERROR: Directory {STORAGE_FOLDER} not found.")
         return
 
     try:
@@ -45,7 +50,7 @@ def clean_orphans():
     print(f"-> {len(db_files)} files registered in the database.")
 
     # Scan physical files on the storage drive
-    physical_files = os.listdir(STORAGE_DIR)
+    physical_files = os.listdir(STORAGE_FOLDER)
     orphans = []
 
     for f in physical_files:
@@ -73,7 +78,7 @@ def clean_orphans():
         count = 0
         for o in orphans:
             try:
-                os.remove(os.path.join(STORAGE_DIR, o))
+                os.remove(os.path.join(STORAGE_FOLDER, o))
                 count += 1
             except Exception:
                 # Silently skip files that cannot be deleted (e.g., permission issues)
