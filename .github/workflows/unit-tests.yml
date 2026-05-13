@@ -52,7 +52,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install beautifulsoup4 lxml requests flask flask-wtf itsdangerous werkzeug pandas sqlalchemy psycopg2-binary pytest python-dotenv
+        run: pip install beautifulsoup4 lxml requests flask flask-wtf itsdangerous werkzeug pandas sqlalchemy psycopg2-binary pytest python-dotenv psutil langdetect textstat
 
       - name: Run tests
         run: python -m pytest tests/ -v
