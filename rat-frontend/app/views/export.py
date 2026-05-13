@@ -179,6 +179,7 @@ def export(id):
         """ Formats the top-level domain DataFrames for export. """
         if not domain_data or data_key not in domain_data: return pd.DataFrame()
         df = pd.DataFrame(domain_data[data_key])
+        if df.empty: return pd.DataFrame()
         df['percentage'] = df['percentage'].apply(lambda x: f"{x:.2f}%")
         if 'avg_position' in df.columns:
             df['avg_position'] = df['avg_position'].apply(lambda x: f"{x:.2f}" if x is not None else 'N/A')
