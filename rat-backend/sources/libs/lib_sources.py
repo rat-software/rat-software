@@ -28,13 +28,22 @@ import zipfile
 import io
 import requests
 from PIL import Image
+import json
 
 # Define the path for configurations and extensions
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 
+rules_path = os.path.abspath(os.path.join(parentdir, "config", "rules.json"))
 
+try:
+    with open(rules_path, 'r', encoding='utf-8') as f:
+        cookie_rules = json.load(f)
+        print(f"{len(cookie_rules)} cookie rules loaded from '{rules_path}'")
+except Exception as e:
+    print(f"Warning: rules.json could not be loaded from '{rules_path}' Use the global heuristics. Error: {e}")
+    cookie_rules = []
 
 from libs.lib_helper import Helper
 
@@ -241,18 +250,15 @@ class Sources:
         status_code = -1
 
         try:
-            # Extrahieren der Hauptdomain für die Filterung
             try:
                 meta = self.get_result_meta(url)
                 main = meta["main"]
             except Exception:
                 main = url
 
-            # Aktivieren des CDP Netzwerk-Monitorings
             try:
                 driver.execute_cdp_cmd("Network.enable", {})
                 
-                # NEU: Blockiere bekannte Cookie-Consent-Provider direkt auf Netzwerkebene
                 driver.execute_cdp_cmd('Network.setBlockedURLs', {
                     "urls": [
                         "*cdn.cookielaw.org*",      # OneTrust
@@ -271,7 +277,6 @@ class Sources:
             except Exception as e:
                 print(f"CDP Network enable/block failed: {e}")
 
-            # Sammeln der Netzwerkantworten
             driver.execute_script("""
                 window._networkResponses = [];
                 
@@ -770,11 +775,167 @@ class Sources:
         return None
 
 
+    def bypass_cookie_banners(self, driver):
+        """
+        Hybrid Cookie Bypass: Uses domain-specific rules from rules.json (if applicable)
+        AND global IDCAC heuristics (Shadow-DOM piercing, Nuke CSS).
+        """
+        current_url = driver.current_url
+        domain = urlparse(current_url).hostname
+        if not domain:
+            domain = ""
+            
+        domain = domain.replace("www.", "")
+
+        # 1. Search for specific rules for this domain in the rules.json
+        specific_css = ""
+        specific_click_selectors = []
+        
+        if hasattr(self, 'cookie_rules'):
+            for rule in self.cookie_rules:
+                urls = rule.get('urls', [])
+                # Check if the current domain is part of the rule's URLs
+                if any(domain in u for u in urls):
+                    if 'css' in rule:
+                        # Append a comma so it merges cleanly with our Nuke CSS
+                        specific_css = rule['css'] + ", " 
+                    
+                    if 'sel' in rule:
+                        # The 'sel' list in IDCAC contains objects like {"c": ".button-class", "ac": "click"}
+                        for action in rule['sel']:
+                            if 'c' in action and action.get('ac') == 'click':
+                                specific_click_selectors.append(action['c'])
+                    break # Rule found, stop searching
+
+        # Convert the Python list into a JS array string for the script
+        js_specific_clicks = json.dumps(specific_click_selectors)
+
+        # 2. Assemble the JS payload
+        js_payload = f"""
+            // ==========================================
+            // 1. STORAGE FORGERY (Global)
+            // ==========================================
+            const fakeConsent = {{
+                'cookieconsent_status': 'dismiss', 'sp_message_open': 'false', 'sp_consent': 'true',
+                'OptanonAlertBoxClosed': new Date().toISOString(),
+                'CookieConsent': '{{stamp:%27'+new Date().toISOString()+'%27%2Cnecessary%3Atrue%2Cpreferences%3Atrue%2Cstatistics%3Atrue%2Cmarketing%3Atrue%2Cmethod%3A%27implied%27%2Cver%3A1%2Cutc%3A1600000000000%2Cregion%3A%27de%27}}',
+                'usercentrics': '{{"consents":[]}}'
+            }};
+            try {{
+                for (let key in fakeConsent) {{
+                    window.localStorage.setItem(key, fakeConsent[key]);
+                    window.sessionStorage.setItem(key, fakeConsent[key]);
+                }}
+            }} catch(e) {{}}
+
+            // ==========================================
+            // 2. HYBRID CSS (Domain-specific + Global Nuke)
+            // ==========================================
+            const style = document.createElement('style');
+            style.type = 'text/css';
+            style.innerHTML = `
+                /* DOMAIN-SPECIFIC RULES FROM JSON: */
+                {specific_css}
+                
+                /* GLOBAL RULES: */
+                [class^="cmpwelcome"], [class^="cmp-"], [id^="cmp-"], .cmpboxcontainer, .cmpboxinner,
+                [id^="cmpbox"], [class^="cmpbox"], [class^="cmpwelcome"], .cmpboxinner, .cmpboxbtns,
+                #cookie, .cookie, #cookies, .cookies, #gdpr, .gdpr, #gdpr-modal, .gdpr-modal, #GDPR, .GDPR,
+                #consent, .consent, .elementor-popup-modal, #cookie-consent, .cookie-consent,
+                #privacy, .privacy, #cookie-modal, .cookie-modal, #cnil, .cnil, #CNIL,
+                #privacy-policy, .privacy-policy, [class*="ccm-modal"], [class*="ccm-widget"],
+                #cookies-modal, .cookies-modal, #modal-cookie, .modal-cookie, #modal-cookies,
+                .cc_container, .cookie-container, .cookies-wrapper, .cookie-box, .cookie__wrap, .consent-container,
+                [id^="sp_message_container"], iframe[id^="sp_message_iframe"], [id^="sp_message_"],
+                #usercentrics-root, #cookiebanner, #cookie-notice, [id^="cmpbox"], #BorlabsCookieBox,
+                #onetrust-consent-sdk, #onetrust-banner-sdk, .onetrust-pc-dark-filter,
+                #didomi-host, #didomi-popup, .didomi-popup-backdrop, .didomi-notice-popup,
+                #tarteaucitronRoot, #tarteaucitronAlertBig, #CybotCookiebotDialog,
+                [id*="cookie" i], [class*="cookie" i], 
+                [id*="consent" i], [class*="consent" i], 
+                [id*="gdpr" i], [class*="gdpr" i],
+                [id*="cmp" i], [class*="cmp" i],
+                [class*="ccm-"], [id*="ccm-"],
+                .modal-backdrop, .ui-widget-overlay, .reveal-modal-bg, .cdk-overlay-container, .optin__backdrop {{ 
+                    display: none !important; visibility: hidden !important; opacity: 0 !important; 
+                    pointer-events: none !important; z-index: -9999 !important; height: 0 !important; width: 0 !important;
+                }}
+                /* Scroll Restoration */
+                html, body, html.noscroll, body.modal-open, body.sp-message-open, body[style*="overflow"] {{
+                    overflow: auto !important; overflow-y: auto !important; overflow-x: hidden !important;
+                    position: static !important; height: auto !important; padding: 0 !important; margin: 0 !important;
+                }}
+            `;
+            document.head.appendChild(style);
+
+            // ==========================================
+            // 3. TARGETED CLICKS & HEURISTICS
+            // ==========================================
+            // A) First, execute exact clicks from rules.json (Highest Priority)
+            const specificSelectors = {js_specific_clicks};
+            specificSelectors.forEach(sel => {{
+                try {{
+                    const el = document.querySelector(sel);
+                    if (el) {{
+                        el.click();
+                        el.dispatchEvent(new MouseEvent('click', {{ view: window, bubbles: true, cancelable: true }}));
+                    }}
+                }} catch(e) {{}}
+            }});
+
+            // B) Fallback: Our global Shadow-DOM & Heuristics clicker
+            const acceptRegex = /(akzeptieren|alles akzeptieren|alle akzeptieren|verstanden|zustimmen|ok|okay|zulassen|alle zulassen|alles zulassen|einverstanden|accept|accept all|allow|allow all|got it|agree|i agree|consent|accepter|tout accepter|j'accepte|compris|aceptar|aceptar todo|estoy de acuerdo|entendido|accetta|accetta tutto|acconsento|capito|accepteren|alles accepteren|akkoord|begrepen|akceptuj|zaakceptuj wszystko|zgadzam się|rozumiem|alles klar)/i;
+            const negativeRegex = /(ablehnen|manage|settings|einstellungen|anpassen|configure|customize|reject|deny|decline|refuse|options|optionen|mehr|more|read|lesen)/i;
+            
+            function findAndClick(rootElement) {{
+                if (!rootElement) return false;
+                
+                // Shadow-DOM iteration
+                const allNodes = rootElement.querySelectorAll('*');
+                for (let i = 0; i < allNodes.length; i++) {{
+                    if (allNodes[i].shadowRoot) {{
+                        if (findAndClick(allNodes[i].shadowRoot)) return true;
+                    }}
+                }}
+                
+                const clickables = rootElement.querySelectorAll('button, a, input[type="button"], input[type="submit"], div[role="button"], span[role="button"], div[class*="accept"], span[class*="accept"]');
+                for (let el of clickables) {{
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) continue; 
+                    
+                    let text = (el.innerText || el.value || el.getAttribute('aria-label') || el.title || '').trim().replace(/\\n/g, ' ');
+                    if (!text || text.length > 35) continue; 
+                    
+                    if (el.tagName.toLowerCase() === 'a' && el.href && !el.href.startsWith('javascript:') && !el.href.includes('#')) continue; 
+                    if (negativeRegex.test(text)) continue;
+                    
+                    // Match text or data-full-consent attribute
+                    if (acceptRegex.test(text) || text.toLowerCase() === 'alle' || text.toLowerCase() === 'all' || el.getAttribute('data-full-consent') === 'true') {{
+                        el.click();
+                        el.dispatchEvent(new MouseEvent('click', {{ view: window, bubbles: true, cancelable: true }}));
+                        return true;
+                    }}
+                }}
+                return false;
+            }}
+            
+            // Loop up to 4 times to catch slow-loading or async banners
+            let attempts = 0;
+            const searchInterval = setInterval(() => {{
+                attempts++;
+                if (findAndClick(document) || attempts >= 4) {{
+                    clearInterval(searchInterval);
+                }}
+            }}, 1000);
+        """
+        try:
+            driver.execute_script(js_payload)
+            driver.sleep(2) 
+        except Exception as e:
+            print(f"Warning: Cookie heuristics failed: {e}")
+    
 
     def take_screenshot(self, driver):
-        """
-        Optimierte Screenshot-Funktion basierend auf dem erfolgreichen Standalone-Test.
-        """
         screenshot_folder = os.path.join(parentdir, "tmp")
         screenshot_file = os.path.join(screenshot_folder, f"{uuid.uuid1()}")
         temp_png = screenshot_file + ".png"
@@ -794,88 +955,6 @@ class Sources:
 
         try:
            
-            try:
-                driver.execute_script("""
-                    // 1. Storage Forgery (Prevents multiple banners from spawning)
-                    const fakeConsentData = {
-                        'cookieconsent_status': 'dismiss',
-                        'sp_message_open': 'false', 
-                        'sp_consent': 'true',
-                        'OptanonAlertBoxClosed': new Date().toISOString()
-                    };
-                    for (const [key, value] of Object.entries(fakeConsentData)) {
-                        try { window.localStorage.setItem(key, value); } catch(e) {}
-                        try { window.sessionStorage.setItem(key, value); } catch(e) {}
-                    }
-
-                    // 2. THE RULES.JS CSS INJECTION (Hides banners and forces scrolling)
-                    const style = document.createElement('style');
-                    style.type = 'text/css';
-                    style.innerHTML = `
-                        /* Aus der commons Liste extrahierte und gebündelte Selektoren */
-                        #cookie, .cookie, #cookies, .cookies, #gdpr, .gdpr, #gdpr-modal, .gdpr-modal, #GDPR, .GDPR,
-                        #consent, .consent, .elementor-popup-modal, #cookie-consent, .cookie-consent,
-                        #privacy, .privacy, #cookie-modal, .cookie-modal, #cnil, .cnil, #CNIL,
-                        #privacy-policy, .privacy-policy, #privacyPolicy, .privacyPolicy,
-                        #cookies-modal, .cookies-modal, #modal-cookie, .modal-cookie, #modal-cookies, .modal-cookies,
-                        .cc_container, .cookie-container, .cookies-wrapper, .cookie-box, .cookie__wrap, .consent-container,
-                        [id^="sp_message_container"], iframe[id^="sp_message_iframe"], [id^="sp_message_"],
-                        #usercentrics-root, #cookiebanner, #cookie-notice, [id^="cmpbox"], #BorlabsCookieBox,
-                        #onetrust-consent-sdk, #onetrust-banner-sdk, .onetrust-pc-dark-filter,
-                        #didomi-host, #didomi-popup, .didomi-popup-backdrop, .didomi-notice-popup,
-                        #tarteaucitronRoot, #tarteaucitronAlertBig,
-                        /* Overlays and backdrops that block clicks */
-                        .modal-backdrop, .ui-widget-overlay, .reveal-modal-bg, .cdk-overlay-container, .optin__backdrop
-                        { 
-                            display: none !important; 
-                            visibility: hidden !important; 
-                            opacity: 0 !important; 
-                            pointer-events: none !important; 
-                            width: 0 !important; 
-                            height: 0 !important; 
-                            z-index: -9999 !important;
-                        }
-
-                        /* Key points from Commons Rules 2, 14, and 85: Scrolling must be restored! */
-                        html, body, html.noscroll, body.modal-open, body.sp-message-open, body[style*="overflow"] {
-                            overflow: auto !important;
-                            overflow-y: auto !important;
-                            position: static !important;
-                            height: auto !important;
-                            padding-right: 0px !important;
-                        }
-                    `;
-                    document.head.appendChild(style);
-
-                    // 3. IDCAC CLICKER (In case making an element invisible on a page breaks the layout)
-                    const acceptRegex = /(akzeptieren|alles akzeptieren|alle akzeptieren|verstanden|zustimmen|ok|okay|zulassen|alle zulassen|alles zulassen|einverstanden|accept|accept all|allow|allow all|got it|agree|i agree|consent|accepter|tout accepter|j'accepte|compris|aceptar|aceptar todo|estoy de acuerdo|entendido|accetta|accetta tutto|acconsento|capito|accepteren|alles accepteren|akkoord|begrepen|akceptuj|zaakceptuj wszystko|zgadzam się|rozumiem)/i;
-                    const negativeRegex = /(ablehnen|manage|settings|einstellungen|anpassen|configure|customize|reject|deny|decline|refuse|options|optionen|mehr|more|read|lesen)/i;
-                    
-                    const elements = document.querySelectorAll('button, a, input[type="button"], input[type="submit"], div[role="button"], span[role="button"]');
-                    
-                    for (let el of elements) {
-                        const rect = el.getBoundingClientRect();
-                        if (rect.width === 0 || rect.height === 0) continue;
-                        
-                        let text = (el.innerText || el.value || el.getAttribute('aria-label') || el.title || '').trim().replace(/\\n/g, ' ');
-                        if (!text || text.length > 35) continue; // 
-                        
-                        if (el.tagName.toLowerCase() === 'a' && el.href && !el.href.startsWith('javascript:') && !el.href.includes('#')) continue; 
-                        if (negativeRegex.test(text)) continue;
-
-                        if (acceptRegex.test(text) || text.toLowerCase() === 'alle' || text.toLowerCase() === 'all') {
-                            const mouseEvent = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
-                            el.dispatchEvent(mouseEvent);
-                            break;
-                        }
-                    }
-                """)
-                time.sleep(3)
-            except Exception as e:
-                print(f"Errors in cookie heuristics: {e}")
-
-            time.sleep(3)
-
             def simulate_scrolling(driver, required_height):
                 """
                 Scrolls the webpage to the specified height.
@@ -1076,7 +1155,6 @@ class Sources:
         return -1, "Content quality check failed"
 
 
-    
 
     def save_code(self, url, proxy=None, country_code=None, timeout=None):
         """
@@ -1545,6 +1623,8 @@ class Sources:
                     nonlocal driver
                     try:
                         driver.get(url)
+                        self.bypass_cookie_banners(driver)
+                        time.sleep(2)
                         return True
                     except TimeoutException:
                         # If we hit a timeout during page load, check if we got useful content
