@@ -48,11 +48,11 @@ python3 -m pip install -r requirements_rat_backend.txt
 
 ## ⚙️ 2. Configuration
 
-All backend components share a central `/config` directory. Update these templates with your credentials:
+All backend components share a central `/config` directory. Copy the respective .ini.tpl files to just .ini and update these templates with your credentials:
 
 1.  **`config_db.ini`**: Set your PostgreSQL connection details.
 2.  **`config_sources.ini`**: Define your `job_server` name, storage API key, and scraping timeouts.
-3.  **`google-ads.yaml`**: Update with your developer token and OAuth2 credentials in the `query_sampler/` folder.
+3.  **`google-ads.yaml`**: Copy .yaml.tpl to just .yaml and update with your developer token and OAuth2 credentials in the `query_sampler/` folder.
 
 ---
 
