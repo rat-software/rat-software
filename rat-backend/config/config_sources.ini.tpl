@@ -1,0 +1,17 @@
+{
+    "wait_time": 5,
+    "debug_screenshots": 0,
+    "timeout": 300,
+    "headless": true,
+    "job_server": "your_server",
+    "refresh_time": 48,
+    "max-height": 10000,
+    "max-width": 1280,
+    "block-size": 500,
+    "scroll-time": 2,
+    "country": "Germany",
+    "counter": 5,
+    "api-key": "your_api_key",
+    "storage-url": "your_storage_url",
+    "local-storage-path": "your_local_storage_path"
+}

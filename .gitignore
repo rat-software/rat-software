@@ -10,3 +10,7 @@
 **/node_modules/
 tests/coverage/
 .vscode/settings.json
+rat-backend/config/config_db.ini
+rat-backend/config/config_sources.ini
+rat-frontend/.env
+rat-storage/.env
