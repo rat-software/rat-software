@@ -21,7 +21,28 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-header">
-            <h5 class="mb-0 font-weight-bold text-dark">Version 1.4 <span class="badge bg-success ms-2">Current</span></h5>
+            <h5 class="mb-0 font-weight-bold text-dark">Version 1.5 <span class="badge bg-success ms-2">Current</span></h5>
+          </div>
+          <div class="card-body">
+            <h6 class="card-title">New Features:</h6>
+            <ul class="list-group list-group-flush">
+              <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Major change to the scraping infrastructure. The backend scraper is now deprecated. We have developed a new Chrome extension to scrape search engines.</li> 
+                        <li class="list-group-item">Major change to the storage implementation. Implementation of a dedicated Flask service app for storing screenshots and source code from URLs.</li>
+                        <li class="list-group-item">Major change to the study design interface. All options are now available on a single page. Uploading results from the new Chrome extension is now mandatory before designing the study.</li>
+                </ul>
+              <!-- <li class="list-group-item"><strong>Additions to the study design interface for selecting the search engines: </strong> Possibility to select search engines according to a list of search engine result types.</li>-->
+            </ul>
+          </div>
+          <div class="card-footer text-muted">
+            Released on: April 7, 2026
+          </div>
+        </div>        
+
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-header">
+            <h5 class="mb-0 font-weight-bold text-dark">Version 1.4<span class="badge bg-warning ms-2">Deprecated</span></h5>
           </div>
           <div class="card-body">
             <h6 class="card-title">New Features:</h6>
@@ -46,7 +67,7 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-header">
-            <h5 class="mb-0 font-weight-bold text-dark">Version 1.3</h5>
+            <h5 class="mb-0 font-weight-bold text-dark">Version 1.3<span class="badge bg-warning ms-2">Deprecated</span></h5>
           </div>
           <div class="card-body">
             <h6 class="card-title">Key New Features:</h6>
@@ -70,7 +91,7 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-header">
-            <h5 class="mb-0 font-weight-bold text-secondary">Version 1.2</h5>
+            <h5 class="mb-0 font-weight-bold text-secondary">Version 1.2<span class="badge bg-warning ms-2">Deprecated</span></h5>
           </div>
           <div class="card-body">
             <h6 class="card-title">New Features:</h6>
@@ -95,7 +116,7 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-header">
-            <h5 class="mb-0 font-weight-bold text-secondary">Version 1.1</h5>
+            <h5 class="mb-0 font-weight-bold text-secondary">Version 1.1<span class="badge bg-warning ms-2">Deprecated</span></h5>
           </div>
           <div class="card-body">
             <h6 class="card-title">New Features:</h6>
@@ -115,7 +136,7 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-header">
-            <h5 class="mb-0 font-weight-bold text-secondary">Version 1.0</h5>
+            <h5 class="mb-0 font-weight-bold text-secondary">Version 1.0<span class="badge bg-warning ms-2">Deprecated</span></h5>
           </div>
           <div class="card-body">
             <h6 class="card-title">Features:</h6>
@@ -158,9 +179,6 @@
           <div class="card-body">
             <h6 class="card-title">Planned Features:</h6>
             <ul class="list-group list-group-flush">
-              <li class="list-group-item">Scraper for AI Overviews in Google</li>
-              <li class="list-group-item">Task-based evaluations in TREC style</li>
-              <li class="list-group-item">A new scraping scheduler will allow you to set up recurring data collection, making it easy to conduct long-term monitoring studies without manual intervention.</li>
               <li class="list-group-item">Analyzing module to calculate standard Information Retrieval metrics and create visualizations</li>
             </ul>
           </div>
