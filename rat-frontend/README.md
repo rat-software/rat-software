@@ -31,7 +31,7 @@ python -m pip install -r requirements_rat_frontend.txt
 
 ## ⚙️ 2. Configuration
 
-You must configure the application by editing `.env`. Use the table below as a guide:
+You must configure the application by copying `.env.tpl` to `.env`, then editing the file. Use the table below as a guide:
 
 | Setting | Description | Example Value |
 | :--- | :--- | :--- |
