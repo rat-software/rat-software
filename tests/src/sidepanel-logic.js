@@ -86,7 +86,9 @@ function getExportFilename(sessionName) {
 // --- Zoom ---
 
 function clampZoom(current, delta) {
-    return Math.max(0.8, Math.min(2.0, current + delta));
+    const safeCurrent = Number.isFinite(current) ? current : 1.0;
+    const safeDelta   = Number.isFinite(delta)   ? delta   : 0;
+    return Math.max(0.8, Math.min(2.0, safeCurrent + safeDelta));
 }
 
 // --- Query / Keyword Parsing ---
