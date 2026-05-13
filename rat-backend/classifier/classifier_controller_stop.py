@@ -40,6 +40,10 @@ class ClassifierController:
         Returns:
             None
         """
+        browsers   = args[0]
+        db         = args[1]
+        job_server = args[2]
+
         # List of processes related to the classifier to be killed
         processes_to_kill = [
             "job_classifier.py", "classifier.py",
@@ -60,7 +64,7 @@ class ClassifierController:
 
                 # Kill browser processes specified in the arguments
                 if kill_browser:
-                    for browser in args[0]:
+                    for browser in browsers:
                         if browser in proc.info['name'] or browser in proc.info['cmdline']:
                             proc.kill()
 
