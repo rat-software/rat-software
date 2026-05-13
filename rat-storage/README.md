@@ -21,7 +21,7 @@ A dedicated Flask-based microservice designed to store, manage, and serve scrape
 
 * `setup.sh`: Automated environment setup script.
 * 
-`.env`: Centralized configuration file for all environment variables.
+`.env`: Centralized configuration file for all environment variables (if necessary, copy from `.env.tpl`).
 
 
 * 
@@ -43,7 +43,7 @@ chmod +x setup.sh
 
 ### Configuration (.env)
 
-The service now uses a `.env` file for all critical settings. Create a file named `.env` in the root directory and fill in your server-specific details:
+The service uses a `.env` file for all critical settings. Copy the file named `.tpl.env` to `.env` in the root directory and fill in your server-specific details:
 
 ```bash
 # Database (used by clean_orphans.py)
