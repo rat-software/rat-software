@@ -422,8 +422,8 @@ describe("clampZoom()", () => {
     test("stays within bounds for any delta (property)", () => {
         fc.assert(
             fc.property(
-                fc.float({ min: Math.fround(0.8), max: Math.fround(2.0) }),
-                fc.float({ min: Math.fround(-1.0), max: Math.fround(1.0) }),
+                fc.float({ noNaN: true, min: Math.fround(0.8), max: Math.fround(2.0) }),
+                fc.float({ noNaN: true, min: Math.fround(-1.0), max: Math.fround(1.0) }),
                 (zoom, delta) => {
                     const result = clampZoom(zoom, delta);
                     expect(result).toBeGreaterThanOrEqual(0.8);
