@@ -60,6 +60,7 @@ When a CAPTCHA is detected, the extension will:
 1. Open the Scrapers button in the Extension.
 2. Click on Create New Scraper and add the base url of the search engine and the CSS-tags for the elements.
 3. You can also download your scraper and import it into another instance of your exension.
+4. Add the new scraper to the `/engines/index.json`
 
 ---
 

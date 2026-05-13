@@ -25,13 +25,6 @@ let activeCaptchaListeners = {};
 let db;                               
 let currentProxyAuth = null;          
 
-
-const DEFAULT_ENGINE_FILES = [
-    "google.json",
-    "bing.json",
-    "duckduckgo.json"
-];
-
 chrome.webRequest.onAuthRequired.addListener(
     (details) => {
         if (currentProxyAuth) {
@@ -118,7 +111,7 @@ async function initDB() {
         request.onsuccess = async (event) => {
             db = event.target.result;
             
-            await loadDefaultEnginesIfEmpty();
+            await syncDefaultEngines();
             
             resolve();
         };
@@ -131,45 +124,57 @@ async function initDB() {
 }
 
 // --- HELPER FUNCTION ---
-async function loadDefaultEnginesIfEmpty() {
-    // 1. Check whether the Engines table is empty (with NO open transactions at all)
-    const isEmpty = await new Promise((resolve) => {
+async function syncDefaultEngines() {
+    // 1. Retrieve a list of all engine IDs currently in the database
+    const existingEngineIds = await new Promise((resolve) => {
         const tx = db.transaction(STORE_ENGINES, "readonly");
-        const store = tx.objectStore(STORE_ENGINES);
-        const countRequest = store.count();
-        
-        countRequest.onsuccess = () => resolve(countRequest.result === 0);
-        countRequest.onerror = () => resolve(false);
+        const req = tx.objectStore(STORE_ENGINES).getAllKeys();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
     });
 
-    if (!isEmpty) return; // Engines already exist, so do nothing
+    let engineFilesToLoad = [];
+    
+    // 2. Load the table of contents (index.json) from the folder
+    try {
+        const indexUrl = chrome.runtime.getURL('engines/index.json');
+        const indexResponse = await fetch(indexUrl);
+        if (!indexResponse.ok) throw new Error("index.json not found");
+        engineFilesToLoad = await indexResponse.json();
+    } catch (err) {
+        console.error("❌ Could not load engines/index.json:", err);
+        return; // Abort if the index file is missing
+    }
 
-    console.log("💿 No engines found in DB. Fetching default JSONs...");
     const enginesToSave = [];
 
-    // 2. Load each default engine JSON, parse it, and prepare it for saving
-    for (const fileName of DEFAULT_ENGINE_FILES) {
+    // 3. Load all JSONs based on the index file
+    for (const fileName of engineFilesToLoad) {
         try {
             const url = chrome.runtime.getURL(`engines/${fileName}`);
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const engineJson = await response.json();
-            enginesToSave.push(engineJson);
+            
+            // Check if the engine is already in the DB
+            if (!existingEngineIds.includes(engineJson.engine.id)) {
+                enginesToSave.push(engineJson);
+            }
         } catch (err) {
-            console.error(`❌ Failed to load default engine ${fileName}:`, err);
+            console.error(`❌ Error loading ${fileName}:`, err);
         }
     }
 
-    if (enginesToSave.length === 0) return;
+    if (enginesToSave.length === 0) return; // Nothing new to add!
 
-    // 3. Save all loaded engines to the database in a single transaction
+    // 4. Save ONLY the new engines to the database
     return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_ENGINES, "readwrite");
         const store = tx.objectStore(STORE_ENGINES);
         
         enginesToSave.forEach(engine => {
             store.put(engine);
-            console.log(`✅ Saved default engine to DB: ${engine.engine.name}`);
+            console.log(`✅ Synced new engine via index.json: ${engine.engine.name}`);
         });
 
         tx.oncomplete = () => resolve();
