@@ -1,0 +1,367 @@
+{
+  "manifest_version": 1,
+  "engine": {
+    "id": "google_not_personalized",
+    "name": "Google (not personalized)",
+    "author": "RAT System",
+    "version": "1.1",
+    "description": "Scraper for Google Search showing not personalized results"
+  },
+  "request": {
+    "baseUrl": "https://{domain}/search?peek_pws=0",
+    "params": {
+      "query": "q",
+      "country": "gl",
+      "language": "hl",
+      "location": "uule"
+    },
+    "features": {
+      "requiresUuleEncoding": true,
+      "urlDecodingMethod": "none"
+    },
+    "supportedCountries": [
+      {
+        "code": "au",
+        "name": "Australia",
+        "domain": "www.google.com.au"
+      },
+      {
+        "code": "at",
+        "name": "Austria",
+        "domain": "www.google.at"
+      },
+      {
+        "code": "be",
+        "name": "Belgium",
+        "domain": "www.google.be"
+      },
+      {
+        "code": "br",
+        "name": "Brazil",
+        "domain": "www.google.com.br"
+      },
+      {
+        "code": "ca",
+        "name": "Canada",
+        "domain": "www.google.ca"
+      },
+      {
+        "code": "dk",
+        "name": "Denmark",
+        "domain": "www.google.dk"
+      },
+      {
+        "code": "fi",
+        "name": "Finland",
+        "domain": "www.google.fi"
+      },
+      {
+        "code": "fr",
+        "name": "France",
+        "domain": "www.google.fr"
+      },
+      {
+        "code": "de",
+        "name": "Germany",
+        "domain": "www.google.de"
+      },
+      {
+        "code": "in",
+        "name": "India",
+        "domain": "www.google.co.in"
+      },
+      {
+        "code": "ie",
+        "name": "Ireland",
+        "domain": "www.google.ie"
+      },
+      {
+        "code": "it",
+        "name": "Italy",
+        "domain": "www.google.it"
+      },
+      {
+        "code": "jp",
+        "name": "Japan",
+        "domain": "www.google.co.jp"
+      },
+      {
+        "code": "mx",
+        "name": "Mexico",
+        "domain": "www.google.com.mx"
+      },
+      {
+        "code": "nl",
+        "name": "Netherlands",
+        "domain": "www.google.nl"
+      },
+      {
+        "code": "nz",
+        "name": "New Zealand",
+        "domain": "www.google.co.nz"
+      },
+      {
+        "code": "no",
+        "name": "Norway",
+        "domain": "www.google.no"
+      },
+      {
+        "code": "pl",
+        "name": "Poland",
+        "domain": "www.google.pl"
+      },
+      {
+        "code": "pt",
+        "name": "Portugal",
+        "domain": "www.google.pt"
+      },
+      {
+        "code": "ru",
+        "name": "Russia",
+        "domain": "www.google.ru"
+      },
+      {
+        "code": "sg",
+        "name": "Singapore",
+        "domain": "www.google.com.sg"
+      },
+      {
+        "code": "es",
+        "name": "Spain",
+        "domain": "www.google.es"
+      },
+      {
+        "code": "se",
+        "name": "Sweden",
+        "domain": "www.google.se"
+      },
+      {
+        "code": "ch",
+        "name": "Switzerland",
+        "domain": "www.google.ch"
+      },
+      {
+        "code": "gb",
+        "name": "United Kingdom",
+        "domain": "www.google.co.uk"
+      },
+      {
+        "code": "us",
+        "name": "USA",
+        "domain": "www.google.com"
+      }
+    ],
+    "supportedLanguages": [
+      {
+        "code": "en",
+        "name": "English"
+      },
+      {
+        "code": "de",
+        "name": "German"
+      },
+      {
+        "code": "fr",
+        "name": "French"
+      },
+      {
+        "code": "it",
+        "name": "Italian"
+      },
+      {
+        "code": "es",
+        "name": "Spanish"
+      },
+      {
+        "code": "pt",
+        "name": "Portuguese"
+      },
+      {
+        "code": "nl",
+        "name": "Dutch"
+      },
+      {
+        "code": "sv",
+        "name": "Swedish"
+      },
+      {
+        "code": "no",
+        "name": "Norwegian"
+      },
+      {
+        "code": "da",
+        "name": "Danish"
+      },
+      {
+        "code": "fi",
+        "name": "Finnish"
+      },
+      {
+        "code": "pl",
+        "name": "Polish"
+      },
+      {
+        "code": "ru",
+        "name": "Russian"
+      },
+      {
+        "code": "ja",
+        "name": "Japanese"
+      }
+    ]
+  },
+  "behavior": {
+    "cookieConsentSelectors": [
+      "#L2AGLb",
+      "#W0wltc"
+    ],
+    "popupDismissSelectors": [
+      ".mcPPZ",
+      ".qk7LXc",
+      "minor-moment-dialog",
+      "[role=\"dialog\"]"
+    ],
+    "popupDismissKeywords": [
+      "ok",
+      "confirm",
+      "accept",
+      "agree",
+      "continue",
+      "not now",
+      "no thanks",
+      "later",
+      "reject",
+      "bestätigen",
+      "akzeptieren",
+      "zustimmen",
+      "fortfahren",
+      "nicht jetzt",
+      "nein danke",
+      "später",
+      "ablehnen",
+      "pas maintenant"
+    ],
+    "aiExpandSelectors": [
+      ".in7vHe[role=\"button\"]",
+      "div[role=\"button\"]",
+      "button",
+      "span[role=\"button\"]"
+    ],
+    "aiExpandKeywords": [
+      "Mehr anzeigen",
+      "Show more",
+      "Mostrar más",
+      "Afficher plus",
+      "Mostra altro",
+      "Meer weergeven",
+      "Mostrar mais",
+      "Mehr Quellen",
+      "Alle anzeigen",
+      "Show all",
+      "Ver todo",
+      "Tout afficher",
+      "Visualizza tutto",
+      "Alles weergeven",
+      "Ver tudo",
+      "ähnliche",
+      "view related",
+      "quellen",
+      "sources",
+      "weitere",
+      "more",
+      "fuentes",
+      "fonti",
+      "bronnen"
+    ],
+    "stickyHeaderSelectors": [
+      "#searchform",
+      ".sfbg",
+      "header",
+      "[style*=\"position: fixed\"]",
+      "[style*=\"position: sticky\"]",
+      ".LHJvCe",
+      ".yg51vc",
+      ".t2051c"
+    ]
+  },
+  "captcha": {
+    "urlIndicators": [
+      "/sorry/"
+    ],
+    "textIndicators": [
+      "unusual traffic",
+      "ungewöhnlicher datenverkehr",
+      "not a robot",
+      "kein roboter"
+    ],
+    "selectors": [
+      "form[action*=\"Captcha\"]",
+      ".g-recaptcha",
+      "#recaptcha",
+      "iframe[src*=\"recaptcha\"]"
+    ]
+  },
+  "selectors": {
+    "pagination": {
+      "nextButton": "#pnnext",
+      "fallbackUrlMath": "start=(\\d+)"
+    },
+    "organic": {
+      "mainCol": "#rso",
+      "container": ".tF2Cxc, .g",
+      "excludeContainers": [
+        ".related-question-pair",
+        ".wQiwMc",
+        "[jsname=\"yEVEwb\"]"
+      ],
+      "title": "h3",
+      "url": "a",
+      "snippet": {
+        "selector": ".VwiC3b, .Uroaid, div[data-sncf=\"1\"], .s3v9rd",
+        "minLength": 0
+      }
+    },
+    "ads": {
+      "container": "[data-text-ad=\"1\"], .uEierd, .vdQmEd",
+      "title": "[role=\"heading\"], h3",
+      "url": "a",
+      "snippet": {
+        "selector": ".MUxGbd, .vsiJxb",
+        "maxLength": 200
+      }
+    },
+    "ai_overview": {
+      "container": ".LT6XE",
+      "text": {
+        "selector": ".LT6XE",
+        "elementsToRemove": [
+          ".wDa0n",
+          ".MFrAxb",
+          ".bTFeG",
+          ".Q2WBBe",
+          ".agYtEe",
+          ".fG8Fp",
+          "[role=\"button\"]",
+          "button",
+          "script",
+          "style",
+          "svg",
+          "img",
+          ".LLtSOc",
+          ".CyMdWb",
+          "[role=\"listitem\"]",
+          "a.KEVENd",
+          "a.NDNGvf"
+        ]
+      },
+      "sources": [
+        {
+          "type": "standard",
+          "container": ".LLtSOc, .CyMdWb, .LT6XE [role=\"listitem\"]",
+          "title": ".mNme1d, .Nn35F",
+          "url": "a.KEVENd, a.NDNGvf, a"
+        }
+      ]
+    }
+  }
+}

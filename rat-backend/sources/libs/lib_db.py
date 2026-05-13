@@ -369,15 +369,21 @@ class DB:
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         sql = """
-            SELECT r.id, r.url, c.name AS country_name, c.code
-            FROM result r 
-            JOIN study s ON r.study = s.id 
-            LEFT JOIN country c ON r.country = c.id 
-            LEFT JOIN result_source rs ON rs.result = r.id 
-            WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3))
-            AND s.live_link_mode = FALSE 
-            ORDER BY r.id ASC 
-            LIMIT 5;
+            WITH RankedSources AS (
+                SELECT 
+                    r.id, r.url, c.name AS country_name, c.code, s.created_at as study_date,
+                    ROW_NUMBER() OVER(PARTITION BY r.study ORDER BY r.id ASC) as rank_within_study
+                FROM result r 
+                JOIN study s ON r.study = s.id 
+                LEFT JOIN country c ON r.country = c.id 
+                LEFT JOIN result_source rs ON rs.result = r.id 
+                WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3))
+                AND s.live_link_mode = FALSE
+            )
+            SELECT id, url, country_name, code
+            FROM RankedSources
+            ORDER BY rank_within_study ASC, study_date DESC
+            LIMIT 20;
         """
         cur.execute(sql)
         conn.commit()
