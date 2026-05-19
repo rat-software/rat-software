@@ -68,6 +68,8 @@ try:
     else:
         STORAGE_URL = None
 
+    LOCAL_STORAGE_PATH = sources_cnf.get('local-storage-path', None)
+
 except Exception as e:
     print(f"Notice: config_sources.ini missing or incomplete (if you want to use RAT in production you need to setup a rat-storage-server). Running in standalone mode. ({e})")
     # Set safe defaults for testing
@@ -75,7 +77,7 @@ except Exception as e:
     GLOBAL_TIMEOUT = 300
     API_KEY = ""
     STORAGE_URL = None
-    LOCAL_STORAGE_PATH = sources_cnf.get('local-storage-path', None)
+    LOCAL_STORAGE_PATH = None
     sources_cnf = {}
 del helper
 
