@@ -39,10 +39,24 @@ for _sname in ('psutil', 'psycopg2', 'psycopg2.extras'):
         _m.__path__ = []
         sys.modules[_sname] = _m
 
+# psutil — full stub so later test files can patch process_iter and raise
+# exception instances with keyword arguments (pid=..., name=..., etc.)
+def _psutil_exc(name):
+    return type(name, (Exception,), {'__init__': lambda self, *a, **kw: Exception.__init__(self, *a)})
+
+_psutil = sys.modules['psutil']
+_psutil.process_iter  = MagicMock(return_value=[])
+_psutil.NoSuchProcess = _psutil_exc('NoSuchProcess')
+_psutil.AccessDenied  = _psutil_exc('AccessDenied')
+_psutil.ZombieProcess = _psutil_exc('ZombieProcess')
+
+# psycopg2 — add all symbols other test files need
 _psycopg2 = sys.modules['psycopg2']
+_psycopg2.OperationalError = type('OperationalError', (Exception,), {})
 _psycopg2_extras = sys.modules['psycopg2.extras']
 _psycopg2_extras.DictCursor     = type('DictCursor',     (), {})
 _psycopg2_extras.RealDictCursor = type('RealDictCursor', (), {})
+_psycopg2_extras.execute_values = MagicMock()
 setattr(_psycopg2, 'extras', _psycopg2_extras)
 setattr(_psycopg2, 'connect', MagicMock())
 
