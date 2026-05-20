@@ -92,8 +92,8 @@ def delete_query(query_id):
     # 1. Check if any results exist for this query across all result types
     organic_count = db.session.query(Result).filter_by(query=query_obj.id).count()
     serp_count = db.session.query(Serp).filter_by(query=query_obj.id).count()
-    ai_count = db.session.query(ResultAi).filter_by(query=query_obj.id).count()
-    chatbot_count = db.session.query(ResultChatbot).filter_by(query=query_obj.id).count()
+    ai_count = db.session.query(ResultAi).filter_by(query_id=query_obj.id).count()
+    chatbot_count = db.session.query(ResultChatbot).filter_by(query_id=query_obj.id).count()
     
     total_results = organic_count + serp_count + ai_count + chatbot_count
     
