@@ -24,7 +24,7 @@ Before installing the backend, ensure your server has the following:
 Transfer the backend files to your server and set up a Python virtual environment:
 ```bash
 python3 -m venv venv_rat_classifier
-source venv_rat_backend/bin/activate
+source venv_rat_classifier/bin/activate
 ```
 
 ### Step 2: Install Dependencies
