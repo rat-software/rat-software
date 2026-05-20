@@ -1,8 +1,21 @@
 from . import app, db
-from .forms import AnswerForm 
+from .forms import AnswerForm
 from app.models import Option
 from markupsafe import Markup
 from crontab import CronTab
+from urllib.parse import urlparse
+
+def clean_filter_string(url_filter: str) -> str:
+    try:
+        if '://' not in url_filter:
+            url_filter = 'http://' + url_filter
+        netloc = urlparse(url_filter).netloc.lower()
+        if netloc.startswith('www.'):
+            return netloc[4:]
+        return netloc
+    except:
+        return url_filter.lower()
+
 
 def configure_form_options(form_instance, question):
     """

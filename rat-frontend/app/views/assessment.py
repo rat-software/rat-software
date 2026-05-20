@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func, or_, and_
 from flask_wtf import FlaskForm
-from urllib.parse import urlparse
+from ..helpers import clean_filter_string
 
 from flask import current_app
 
@@ -27,16 +27,6 @@ def get_signed_storage_url(file_path, file_type='screenshot'):
     
     return f"{base_url}/view/{file_path}/{file_type}?ticket={ticket}"
 
-def clean_filter_string(url_filter: str) -> str:
-    try:
-        if '://' not in url_filter:
-            url_filter = 'http://' + url_filter
-        netloc = urlparse(url_filter).netloc.lower()
-        if netloc.startswith('www.'):
-            return netloc[4:]
-        return netloc
-    except:
-        return url_filter.lower()
 
 @app.context_processor
 def inject_storage_urls():

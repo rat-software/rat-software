@@ -9,18 +9,8 @@ import random
 from io import BytesIO
 import sqlalchemy
 from sqlalchemy import func, update, or_, and_, literal_column
-from urllib.parse import urlparse
+from ..helpers import clean_filter_string
 
-def clean_filter_string(url_filter: str) -> str:
-    try:
-        if '://' not in url_filter:
-            url_filter = 'http://' + url_filter
-        netloc = urlparse(url_filter).netloc.lower()
-        if netloc.startswith('www.'):
-            return netloc[4:]
-        return netloc
-    except:
-        return url_filter.lower()
 
 @app.route('/study/<id>/participants')
 def participants(id):

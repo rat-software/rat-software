@@ -15,3 +15,11 @@ rat-backend/config/config_sources.ini
 rat-frontend/.env
 rat-storage/.env
 rat-backend/query_sampler/google-ads.yaml
+.claude
+
+# Virtuelle Umgebungen (lokal, nicht versionieren)
+venv_rat/
+**/venv_rat_storage/
+**/venv_rat_frontend/
+**/venv_rat_backend/
+
