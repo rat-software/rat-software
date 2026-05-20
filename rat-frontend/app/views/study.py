@@ -481,7 +481,7 @@ def study_progress(id):
 @roles_accepted('Admin')
 def studies():
     page = request.args.get('page', 1, type=int)
-    pagination = db.session.query(Study).order_by(Study.id.desc()).paginate(page, per_page=10)
+    pagination = db.session.query(Study).order_by(Study.id.desc()).paginate(page=page, per_page=10)
     return render_template('studies/studies.html', pagination=pagination)
 
 @app.route('/study/<id>', methods=['GET'])
