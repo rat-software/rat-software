@@ -30,7 +30,7 @@ if 'flask_security' not in sys.modules:
 
 # ── forms.py laden ───────────────────────────────────────────────────────────
 _FORMS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-frontend', 'app', 'forms.py',
 )
 _spec = importlib.util.spec_from_file_location('app_forms', _FORMS_PATH)
