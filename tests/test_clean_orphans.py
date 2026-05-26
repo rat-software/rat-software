@@ -26,7 +26,7 @@ from unittest.mock import MagicMock, patch
 
 # ── Load module ───────────────────────────────────────────────────────────────
 _LIB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     'rat-storage', 'clean_orphans.py',
 )
 _spec = importlib.util.spec_from_file_location('clean_orphans', _LIB_PATH)
