@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 # Add the seo_score package directory to sys.path so seo_score.py can be imported
 # from this tests/ directory, regardless of where pytest is invoked from.
 _SEO_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend', 'classifier', 'classifiers', 'seo_score',
 )
 sys.path.insert(0, _SEO_DIR)

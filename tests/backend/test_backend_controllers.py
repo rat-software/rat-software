@@ -28,7 +28,7 @@ from unittest.mock import MagicMock, patch, call, mock_open
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 _BACKEND_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend',
 )
 
