@@ -45,7 +45,7 @@ if 'markupsafe' not in sys.modules:
 
 # Load helpers.py directly from its file path
 _HELPERS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-frontend', 'app', 'helpers.py',
 )
 _spec = importlib.util.spec_from_file_location('app.helpers', _HELPERS_PATH)

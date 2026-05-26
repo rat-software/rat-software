@@ -25,7 +25,7 @@ TEST_API_KEY = 'test-key-for-unit-tests'
 
 # ── Load module ───────────────────────────────────────────────────────────────
 _LIB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-storage', 'storage_service.py',
 )
 _spec = importlib.util.spec_from_file_location('storage_service', _LIB_PATH)

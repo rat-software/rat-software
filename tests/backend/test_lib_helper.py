@@ -16,7 +16,7 @@ import unittest
 
 # Load lib_helper.py directly so no package setup is required
 _LIB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend', 'sources', 'libs', 'lib_helper.py',
 )
 _spec = importlib.util.spec_from_file_location('lib_helper', _LIB_PATH)
