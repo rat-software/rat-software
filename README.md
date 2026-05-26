@@ -22,9 +22,6 @@ The Result Assessment Tool (RAT) is the Free Open-Source Research Toolbox for Co
 - #### Marketing Manager: [Oliver Koop](https://searchstudies.org/team/oliver-koop/) - https://github.com/oliverkoop-haw
 - #### Student Assistant for Software Engineering: [Sophia Bosnak](https://searchstudies.org/team/sophia-bosnak/) - https://github.com/kyuja
 
-Here is the polished, structurally optimized, and typo-free version of your installation manual. 
-
-I cleaned up the layout, fixed the broken markdown backticks and redundant headers, grouped the installation methods logically (Full vs. Component-by-Component), and put the command sequences into clean, copy-pasteable blocks.
 
 ***
 
