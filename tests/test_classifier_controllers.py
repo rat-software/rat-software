@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch, call
 
 # ── Path setup ───────────────────────────────────────────────────────────────
 _CLASSIFIER_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     'rat-backend', 'classifier',
 )
 sys.path.insert(0, _CLASSIFIER_DIR)

@@ -20,7 +20,7 @@ import requests
 
 # ── Load module and register it so patch() strings resolve correctly ──────────
 _LIB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     'rat-backend', 'sources', 'libs', 'lib_proxy_checker.py',
 )
 _spec = importlib.util.spec_from_file_location('lib_proxy_checker', _LIB_PATH)
