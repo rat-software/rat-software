@@ -1,6 +1,8 @@
 const fc = require("fast-check");
 const { generateUule, buildSearchUrl, getRandomDelay, parseProxyLine,
-        parseProxyList, buildProxyConfig, selectRandomProxy, getRetryDelay } = require('./src/utils');
+        parseProxyList, buildProxyConfig, selectRandomProxy, getRetryDelay,
+        buildTaskMatrix, isSessionPaused, applyRetry, applyCancelTask,
+        applyTaskReset, cancelTasksForConfig, buildSessionStatusPayload } = require('./src/utils');
 const { openDB, saveSession, getSession, getAllSessions, deleteSession,
         savePageContent, getPageContent } = require('./src/db');
 const { IDBFactory } = require('fake-indexeddb');
@@ -742,5 +744,488 @@ describe("IndexedDB — Page-Content-Persistenz", () => {
         await savePageContent(db, "sess_1", 0, 1, { html: null, screenshot });
         const result = await getPageContent(db, "sess_1", 0, 1);
         expect(result.screenshot).toBe(screenshot);
+    });
+});
+
+// ─────────────────────────────────────────────
+// buildTaskMatrix — queries × configs cross-product
+// ─────────────────────────────────────────────
+
+describe("buildTaskMatrix() — task generation", () => {
+    const q2 = ["climate change", "AI tools"];
+    const c2 = [
+        { engineId: "google", engineName: "Google", countryCode: "US", langCode: "en", domain: "com" },
+        { engineId: "bing",   engineName: "Bing",   countryCode: "DE", langCode: "de", domain: "de"  },
+    ];
+
+    test("2 queries × 2 configs produces 4 tasks", () => {
+        expect(buildTaskMatrix(q2, c2)).toHaveLength(4);
+    });
+
+    test("every task has status OPEN", () => {
+        buildTaskMatrix(q2, c2).forEach(t => expect(t.status).toBe("OPEN"));
+    });
+
+    test("every task starts with retryCount 0", () => {
+        buildTaskMatrix(q2, c2).forEach(t => expect(t.retryCount).toBe(0));
+    });
+
+    test("every task starts with empty pages array", () => {
+        buildTaskMatrix(q2, c2).forEach(t => expect(t.pages).toEqual([]));
+    });
+
+    test("every task starts with totalOrganic 0", () => {
+        buildTaskMatrix(q2, c2).forEach(t => expect(t.totalOrganic).toBe(0));
+    });
+
+    test("each query appears in exactly (configs.length) tasks", () => {
+        const tasks = buildTaskMatrix(q2, c2);
+        q2.forEach(q => {
+            expect(tasks.filter(t => t.term === q)).toHaveLength(c2.length);
+        });
+    });
+
+    test("each config appears in exactly (queries.length) tasks", () => {
+        const tasks = buildTaskMatrix(q2, c2);
+        c2.forEach(conf => {
+            expect(tasks.filter(t => t.config.engineId === conf.engineId)).toHaveLength(q2.length);
+        });
+    });
+
+    test("0 queries → 0 tasks", () => {
+        expect(buildTaskMatrix([], c2)).toHaveLength(0);
+    });
+
+    test("0 configs → 0 tasks", () => {
+        expect(buildTaskMatrix(q2, [])).toHaveLength(0);
+    });
+
+    test("1 query × 1 config → 1 task with correct term and config", () => {
+        const tasks = buildTaskMatrix(["seo"], [c2[0]]);
+        expect(tasks).toHaveLength(1);
+        expect(tasks[0].term).toBe("seo");
+        expect(tasks[0].config.engineId).toBe("google");
+    });
+
+    test("property: task count always equals queries.length × configs.length", () => {
+        fc.assert(
+            fc.property(
+                fc.array(fc.string({ minLength: 1 }), { minLength: 0, maxLength: 10 }),
+                fc.array(fc.record({ engineId: fc.string(), engineName: fc.string(),
+                                     countryCode: fc.string(), langCode: fc.string(), domain: fc.string() }),
+                         { minLength: 0, maxLength: 5 }),
+                (queries, configs) => {
+                    expect(buildTaskMatrix(queries, configs)).toHaveLength(queries.length * configs.length);
+                }
+            ),
+            { numRuns: 300 }
+        );
+    });
+
+    test("property: every generated task always has status OPEN", () => {
+        fc.assert(
+            fc.property(
+                fc.array(fc.string({ minLength: 1 }), { minLength: 1, maxLength: 5 }),
+                fc.array(fc.record({ engineId: fc.string(), engineName: fc.string(),
+                                     countryCode: fc.string(), langCode: fc.string(), domain: fc.string() }),
+                         { minLength: 1, maxLength: 3 }),
+                (queries, configs) => {
+                    buildTaskMatrix(queries, configs).forEach(t => expect(t.status).toBe("OPEN"));
+                }
+            ),
+            { numRuns: 200 }
+        );
+    });
+});
+
+// ─────────────────────────────────────────────
+// isSessionPaused — session status guard
+// ─────────────────────────────────────────────
+
+describe("isSessionPaused() — session status guard", () => {
+    test("null session → paused", () => {
+        expect(isSessionPaused(null)).toBe(true);
+    });
+
+    test("undefined session → paused", () => {
+        expect(isSessionPaused(undefined)).toBe(true);
+    });
+
+    test("status RUNNING → not paused", () => {
+        expect(isSessionPaused({ status: "RUNNING" })).toBe(false);
+    });
+
+    test("status PAUSED → paused", () => {
+        expect(isSessionPaused({ status: "PAUSED" })).toBe(true);
+    });
+
+    test("status OPEN → paused", () => {
+        expect(isSessionPaused({ status: "OPEN" })).toBe(true);
+    });
+
+    test("status DONE → paused", () => {
+        expect(isSessionPaused({ status: "DONE" })).toBe(true);
+    });
+
+    test("status PAUSED_CAPTCHA → paused", () => {
+        expect(isSessionPaused({ status: "PAUSED_CAPTCHA" })).toBe(true);
+    });
+
+    test("property: only RUNNING ever returns false", () => {
+        const NON_RUNNING = ["OPEN", "PAUSED", "DONE", "PAUSED_CAPTCHA", "FAILED", "CANCELLED"];
+        NON_RUNNING.forEach(s => expect(isSessionPaused({ status: s })).toBe(true));
+    });
+});
+
+// ─────────────────────────────────────────────
+// applyRetry — retry logic & failure threshold
+// ─────────────────────────────────────────────
+
+describe("applyRetry() — retry count and failure threshold", () => {
+    function makeTask(retryCount = 0) {
+        return { term: "test", status: "OPEN", retryCount, pages: [], totalOrganic: 0 };
+    }
+
+    test("increments retryCount by 1", () => {
+        const task = makeTask(0);
+        applyRetry(task);
+        expect(task.retryCount).toBe(1);
+    });
+
+    test("returns RETRY and keeps status OPEN on first attempt", () => {
+        const task = makeTask(0);
+        expect(applyRetry(task)).toBe("RETRY");
+        expect(task.status).toBe("OPEN");
+    });
+
+    test("returns RETRY on second attempt", () => {
+        const task = makeTask(1);
+        expect(applyRetry(task)).toBe("RETRY");
+    });
+
+    test("returns RETRY on third attempt (retryCount becomes 3, not yet > 3)", () => {
+        const task = makeTask(2);
+        expect(applyRetry(task)).toBe("RETRY");
+        expect(task.retryCount).toBe(3);
+        expect(task.status).toBe("OPEN");
+    });
+
+    test("returns FAILED and sets status to FAILED on fourth attempt (retryCount > 3)", () => {
+        const task = makeTask(3);
+        expect(applyRetry(task)).toBe("FAILED");
+        expect(task.status).toBe("FAILED");
+        expect(task.retryCount).toBe(4);
+    });
+
+    test("returns FAILED for any retryCount already beyond maxRetries", () => {
+        const task = makeTask(10);
+        expect(applyRetry(task)).toBe("FAILED");
+        expect(task.status).toBe("FAILED");
+    });
+
+    test("custom maxRetries=1: fails on second attempt", () => {
+        const task = makeTask(1);
+        expect(applyRetry(task, 1)).toBe("FAILED");
+        expect(task.status).toBe("FAILED");
+    });
+
+    test("custom maxRetries=1: retries on first attempt", () => {
+        const task = makeTask(0);
+        expect(applyRetry(task, 1)).toBe("RETRY");
+        expect(task.status).toBe("OPEN");
+    });
+
+    test("mutates the task object passed in", () => {
+        const task = makeTask(0);
+        const before = task.retryCount;
+        applyRetry(task);
+        expect(task.retryCount).toBe(before + 1);
+    });
+
+    test("property: result is always RETRY or FAILED, never anything else", () => {
+        fc.assert(
+            fc.property(fc.integer({ min: 0, max: 20 }), (startCount) => {
+                const task = makeTask(startCount);
+                const result = applyRetry(task);
+                expect(["RETRY", "FAILED"]).toContain(result);
+            }),
+            { numRuns: 200 }
+        );
+    });
+
+    test("property: FAILED result always coincides with status FAILED on the task", () => {
+        fc.assert(
+            fc.property(fc.integer({ min: 0, max: 20 }), (startCount) => {
+                const task = makeTask(startCount);
+                const result = applyRetry(task);
+                if (result === "FAILED") expect(task.status).toBe("FAILED");
+                if (result === "RETRY")  expect(task.status).toBe("OPEN");
+            }),
+            { numRuns: 200 }
+        );
+    });
+});
+
+// ─────────────────────────────────────────────
+// applyCancelTask — cancel a non-DONE task
+// ─────────────────────────────────────────────
+
+describe("applyCancelTask() — task cancellation guard", () => {
+    function makeTask(status) {
+        return { term: "test", status, retryCount: 0 };
+    }
+
+    test("OPEN task is cancelled and returns true", () => {
+        const task = makeTask("OPEN");
+        expect(applyCancelTask(task)).toBe(true);
+        expect(task.status).toBe("CANCELLED");
+    });
+
+    test("FAILED task is cancelled and returns true", () => {
+        const task = makeTask("FAILED");
+        expect(applyCancelTask(task)).toBe(true);
+        expect(task.status).toBe("CANCELLED");
+    });
+
+    test("DONE task is NOT cancelled and returns false", () => {
+        const task = makeTask("DONE");
+        expect(applyCancelTask(task)).toBe(false);
+        expect(task.status).toBe("DONE");
+    });
+
+    test("already CANCELLED task is set to CANCELLED and returns true", () => {
+        const task = makeTask("CANCELLED");
+        expect(applyCancelTask(task)).toBe(true);
+        expect(task.status).toBe("CANCELLED");
+    });
+
+    test("DONE task status is never mutated", () => {
+        const task = makeTask("DONE");
+        applyCancelTask(task);
+        expect(task.status).toBe("DONE");
+    });
+});
+
+// ─────────────────────────────────────────────
+// applyTaskReset — reset task to initial state
+// ─────────────────────────────────────────────
+
+describe("applyTaskReset() — task reset to OPEN", () => {
+    function makeTask(overrides = {}) {
+        return { term: "test", status: "FAILED", retryCount: 3,
+                 pages: [{ pageNumber: 1 }], totalOrganic: 12, ...overrides };
+    }
+
+    test("sets status to OPEN", () => {
+        expect(applyTaskReset(makeTask()).status).toBe("OPEN");
+    });
+
+    test("resets retryCount to 0", () => {
+        expect(applyTaskReset(makeTask()).retryCount).toBe(0);
+    });
+
+    test("clears pages array", () => {
+        expect(applyTaskReset(makeTask()).pages).toEqual([]);
+    });
+
+    test("resets totalOrganic to 0", () => {
+        expect(applyTaskReset(makeTask()).totalOrganic).toBe(0);
+    });
+
+    test("returns the same task object (mutates in place)", () => {
+        const task = makeTask();
+        expect(applyTaskReset(task)).toBe(task);
+    });
+
+    test("preserves the term field", () => {
+        const task = makeTask({ term: "my query" });
+        applyTaskReset(task);
+        expect(task.term).toBe("my query");
+    });
+
+    test("works regardless of prior status", () => {
+        ["FAILED", "DONE", "CANCELLED", "PAUSED_CAPTCHA"].forEach(status => {
+            const task = makeTask({ status });
+            applyTaskReset(task);
+            expect(task.status).toBe("OPEN");
+        });
+    });
+});
+
+// ─────────────────────────────────────────────
+// cancelTasksForConfig — remove an engine config from a session
+// ─────────────────────────────────────────────
+
+describe("cancelTasksForConfig() — engine config removal", () => {
+    const targetConf = { countryCode: "DE", langCode: "de", domain: "de" };
+    const otherConf  = { countryCode: "US", langCode: "en", domain: "com" };
+
+    function makeTask(conf, status) {
+        return { term: "test", config: conf, status };
+    }
+
+    test("cancels OPEN tasks matching the config", () => {
+        const tasks = [makeTask(targetConf, "OPEN")];
+        cancelTasksForConfig(tasks, targetConf);
+        expect(tasks[0].status).toBe("CANCELLED");
+    });
+
+    test("cancels FAILED tasks matching the config", () => {
+        const tasks = [makeTask(targetConf, "FAILED")];
+        cancelTasksForConfig(tasks, targetConf);
+        expect(tasks[0].status).toBe("CANCELLED");
+    });
+
+    test("does NOT cancel DONE tasks even if config matches", () => {
+        const tasks = [makeTask(targetConf, "DONE")];
+        cancelTasksForConfig(tasks, targetConf);
+        expect(tasks[0].status).toBe("DONE");
+    });
+
+    test("does NOT cancel tasks with a different config", () => {
+        const tasks = [makeTask(otherConf, "OPEN")];
+        cancelTasksForConfig(tasks, targetConf);
+        expect(tasks[0].status).toBe("OPEN");
+    });
+
+    test("returns the correct cancelled count", () => {
+        const tasks = [
+            makeTask(targetConf, "OPEN"),
+            makeTask(targetConf, "FAILED"),
+            makeTask(targetConf, "DONE"),
+            makeTask(otherConf,  "OPEN"),
+        ];
+        expect(cancelTasksForConfig(tasks, targetConf)).toBe(2);
+    });
+
+    test("returns 0 when no tasks match", () => {
+        const tasks = [makeTask(otherConf, "OPEN"), makeTask(otherConf, "FAILED")];
+        expect(cancelTasksForConfig(tasks, targetConf)).toBe(0);
+    });
+
+    test("returns 0 for an empty task list", () => {
+        expect(cancelTasksForConfig([], targetConf)).toBe(0);
+    });
+
+    test("mixed tasks: only matching OPEN/FAILED are cancelled", () => {
+        const tasks = [
+            makeTask(targetConf, "OPEN"),
+            makeTask(targetConf, "DONE"),
+            makeTask(targetConf, "FAILED"),
+            makeTask(otherConf,  "OPEN"),
+        ];
+        cancelTasksForConfig(tasks, targetConf);
+        expect(tasks[0].status).toBe("CANCELLED");
+        expect(tasks[1].status).toBe("DONE");
+        expect(tasks[2].status).toBe("CANCELLED");
+        expect(tasks[3].status).toBe("OPEN");
+    });
+
+    test("matching is exact: different countryCode is not affected", () => {
+        const almostTarget = { countryCode: "AT", langCode: "de", domain: "de" };
+        const tasks = [makeTask(almostTarget, "OPEN")];
+        cancelTasksForConfig(tasks, targetConf);
+        expect(tasks[0].status).toBe("OPEN");
+    });
+
+    test("matching is exact: different domain is not affected", () => {
+        const almostTarget = { countryCode: "DE", langCode: "de", domain: "at" };
+        const tasks = [makeTask(almostTarget, "OPEN")];
+        cancelTasksForConfig(tasks, targetConf);
+        expect(tasks[0].status).toBe("OPEN");
+    });
+});
+
+// ─────────────────────────────────────────────
+// buildSessionStatusPayload — broadcast payload shape
+// ─────────────────────────────────────────────
+
+describe("buildSessionStatusPayload() — status broadcast shape", () => {
+    function makeTask(status, term = "query", engineName = "Google") {
+        return { term, config: { engineName }, status, pages: [], totalOrganic: 0, retryCount: 0 };
+    }
+
+    function makeSession(overrides = {}) {
+        return {
+            id: "sess_1", name: "My Study", status: "RUNNING",
+            tasks: [], currentIndex: 0,
+            globalCount: 50,
+            delays: { min: 3000, max: 8000 },
+            settings: { saveSerp: false, useProxies: false },
+            originalConfigs: [],
+            originalQueries: [],
+            ...overrides,
+        };
+    }
+
+    test("payload contains all required keys", () => {
+        const payload = buildSessionStatusPayload(makeSession(), []);
+        const keys = ["sessionId", "name", "status", "progress", "currentQuery",
+                      "logs", "delays", "originalConfigs", "originalQueries", "settings", "globalCount"];
+        keys.forEach(k => expect(payload).toHaveProperty(k));
+    });
+
+    test("sessionId matches session.id", () => {
+        expect(buildSessionStatusPayload(makeSession({ id: "sess_abc" }), []).sessionId).toBe("sess_abc");
+    });
+
+    test("progress.done counts DONE tasks correctly", () => {
+        const tasks = [makeTask("DONE"), makeTask("DONE"), makeTask("OPEN"), makeTask("FAILED")];
+        const { progress } = buildSessionStatusPayload(makeSession({ tasks }), []);
+        expect(progress.done).toBe(2);
+        expect(progress.total).toBe(4);
+    });
+
+    test("progress.total is the full task count regardless of status", () => {
+        const tasks = [makeTask("OPEN"), makeTask("CANCELLED"), makeTask("RUNNING")];
+        expect(buildSessionStatusPayload(makeSession({ tasks }), []).progress.total).toBe(3);
+    });
+
+    test("progress.done is 0 when no tasks are DONE", () => {
+        const tasks = [makeTask("OPEN"), makeTask("FAILED")];
+        expect(buildSessionStatusPayload(makeSession({ tasks }), []).progress.done).toBe(0);
+    });
+
+    test("currentQuery shows 'term (engineName)' for the current task", () => {
+        const tasks = [makeTask("OPEN", "climate change", "Bing")];
+        const payload = buildSessionStatusPayload(makeSession({ tasks, currentIndex: 0 }), []);
+        expect(payload.currentQuery).toBe("climate change (Bing)");
+    });
+
+    test("currentQuery is 'Done' when currentIndex points to undefined", () => {
+        const session = makeSession({ tasks: [], currentIndex: 0 });
+        expect(buildSessionStatusPayload(session, []).currentQuery).toBe("Done");
+    });
+
+    test("logs defaults to empty array when null is passed", () => {
+        expect(buildSessionStatusPayload(makeSession(), null).logs).toEqual([]);
+    });
+
+    test("logs are passed through unchanged", () => {
+        const logs = [{ msg: "started", level: "INFO" }];
+        expect(buildSessionStatusPayload(makeSession(), logs).logs).toBe(logs);
+    });
+
+    test("globalCount is forwarded from the session", () => {
+        expect(buildSessionStatusPayload(makeSession({ globalCount: 100 }), []).globalCount).toBe(100);
+    });
+
+    test("property: progress.done never exceeds progress.total", () => {
+        fc.assert(
+            fc.property(
+                fc.array(
+                    fc.record({ status: fc.constantFrom("OPEN", "DONE", "FAILED", "CANCELLED") }),
+                    { minLength: 0, maxLength: 20 }
+                ),
+                (rawTasks) => {
+                    const tasks = rawTasks.map((t, i) => ({ ...makeTask(t.status), index: i }));
+                    const { progress } = buildSessionStatusPayload(
+                        makeSession({ tasks, currentIndex: 0 }), []
+                    );
+                    expect(progress.done).toBeLessThanOrEqual(progress.total);
+                }
+            ),
+            { numRuns: 300 }
+        );
     });
 });
