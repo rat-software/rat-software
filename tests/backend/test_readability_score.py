@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 # ── Path setup ───────────────────────────────────────────────────────────────
 _CLASSIFIER_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend', 'classifier', 'classifiers', 'readability_score',
 )
 _LIBS_DIR = os.path.join(_CLASSIFIER_DIR, 'libs')

@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 
 # ── Path / db stub ────────────────────────────────────────────────────────────
 _QS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend', 'query_sampler',
 )
 _RESET_PATH = os.path.join(_QS_DIR, 'query_sampler_reset.py')

@@ -42,7 +42,7 @@ sys.modules.setdefault('warnings', sys.modules.get('warnings', types.ModuleType(
 # ── Load db.py via importlib so we can patch the config-file open() ──────────
 
 _DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend', 'query_sampler', 'db.py',
 )
 

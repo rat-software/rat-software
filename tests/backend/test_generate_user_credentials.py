@@ -26,7 +26,7 @@ from unittest.mock import MagicMock, call, patch
 
 # ── Path ──────────────────────────────────────────────────────────────────────
 _QS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend', 'query_sampler',
 )
 _GUC_PATH = os.path.join(_QS_DIR, 'generate_user_credentials.py')

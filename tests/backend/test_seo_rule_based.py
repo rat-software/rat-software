@@ -17,7 +17,7 @@ sys.modules.setdefault('seleniumbase', _sb)
 
 # ── Path setup ───────────────────────────────────────────────────────────────
 _CLASSIFIER_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     'rat-backend', 'classifier', 'classifiers', 'seo_rule_based',
 )
 _LIBS_DIR = os.path.join(_CLASSIFIER_DIR, 'libs')
