@@ -48,7 +48,7 @@ _helpers_mod.percentage_calc = _pct
 sys.modules.setdefault('app.helpers', _helpers_mod)
 
 _PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     'rat-frontend', 'app', 'views', 'analysis_func.py',
 )
 _spec = importlib.util.spec_from_file_location('app.views.analysis_func', _PATH)
