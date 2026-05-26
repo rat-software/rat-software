@@ -1,7 +1,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ENGINES_DIR = path.resolve(__dirname, '../../rat-extension/engines');
+const ENGINES_DIR = path.resolve(__dirname, '../rat-extension/engines');
 const INDEX_PATH  = path.join(ENGINES_DIR, 'index.json');
 
 const VALID_DECODE_METHODS = new Set(['none', 'bing_base64']);

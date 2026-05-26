@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch, call
 
 # ── Shared path / libs stub ───────────────────────────────────────────────────
 _SOURCES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     'rat-backend', 'sources',
 )
 
