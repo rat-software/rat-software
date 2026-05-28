@@ -429,7 +429,15 @@
 
 
   <div id="createView" class="view">
-    <h2>Create RAT Session</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #e9ecef; margin-bottom: 10px; padding-bottom: 8px;">
+        <h2 style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Create RAT Session</h2>
+        <div style="display:flex; align-items:center; gap: 5px;">
+            <label style="margin: 0;">Zoom</label>
+            <button class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom out">-</button>
+            <button class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom in">+</button>
+        </div>
+    </div>
+    
     <label>Session Name</label>
     <input type="text" id="sessName" placeholder="e.g. Research Study 1">
     
@@ -439,8 +447,14 @@
     <label style="margin-top:15px">Search Engines<span class="tooltip" data-tip="Configure target quota and add your search engines here.">?</span></label>
     <div class="config-box">
       
-      <label style="margin-top:0">Target Results <span class="tooltip" data-tip="The number of organic search results to collect per query on each engine.">?</span></label>
-      <input type="number" id="sessLimit" value="10" style="margin-bottom: 15px;">
+	<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Choose whether to stop after extracting a specific number of organic results OR after extracting a specific number of search pages.">?</span></label>
+      <div class="row" style="margin-bottom: 15px;">
+          <select id="sessLimitType" style="flex:1;">
+              <option value="RESULTS">Total Organic Results</option>
+              <option value="PAGES">Total Pages (SERPs)</option>
+          </select>
+          <input type="number" id="sessLimit" value="10" style="flex:1;">
+      </div>
 
       <label style="margin-top:0">Configured Engines</label>
       <ul id="addedConfigsList" class="config-list" style="margin-bottom:8px;"></ul>
@@ -524,10 +538,14 @@
         
         <label style="margin-top:15px">Search Engines & Limits <span class="tooltip" data-tip="Change quotas or add new search engines to the running session.">?</span></label>
         <div class="config-box">
-          <label style="margin-top:0">Target Results <span class="tooltip" data-tip="Change the required organic count for all remaining tasks in this session.">?</span></label>
+		<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Change the quota type or target number for all remaining tasks in this session.">?</span></label>
           <div class="row" style="margin-bottom:15px;">
+            <select id="liveLimitType" style="flex:1; padding:6px;">
+                <option value="RESULTS">Results</option>
+                <option value="PAGES">Pages</option>
+            </select>
             <input type="number" id="liveLimit" style="flex:1; padding:6px;" placeholder="Ex: 10">
-            <button id="applyLimitBtn" class="btn-secondary btn-sm" style="width:auto; margin:0">Update Limit</button>
+            <button id="applyLimitBtn" class="btn-secondary btn-sm" style="width:auto; margin:0">Update</button>
           </div>
 
           <label style="margin-top:0">Active Search Engines</label>
@@ -639,9 +657,16 @@
 
 
   <div id="engineView" class="view">
-    <div style="display:flex; justify-content:space-between; align-items:center">
-        <h2>Scraper Sandbox</h2>
-        <button id="backToMainFromEnginesBtn" class="btn-secondary btn-sm" style="width:auto; margin:0; padding:4px 8px;">Back</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #e9ecef; margin-bottom: 10px; padding-bottom: 8px;">
+        <h2 style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Scraper Sandbox</h2>
+        <div style="display:flex; align-items:center; gap: 10px;">
+            <div style="display:flex; align-items:center; gap: 5px;">
+                <label style="margin: 0;">Zoom</label>
+                <button class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom out">-</button>
+                <button class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom in">+</button>
+            </div>
+            <button id="backToMainFromEnginesBtn" class="btn-secondary btn-sm" style="width:auto; margin:0; padding:4px 8px;">Back</button>
+        </div>
     </div>
     
     <div id="engineListView">

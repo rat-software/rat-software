@@ -32,6 +32,28 @@ function applyZoom(zoomLevel) {
     localStorage.setItem('rat_ui_zoom', zoomLevel);
 }
 
+// --- DYNAMIC SCRAPE LIMIT DEFAULTS ---
+    // For the "Create Session" view
+    document.getElementById('sessLimitType').addEventListener('change', (e) => {
+        const limitInput = document.getElementById('sessLimit');
+        if (e.target.value === 'PAGES') {
+            limitInput.value = 1;
+        } else {
+            limitInput.value = 10;
+        }
+    });
+
+    // For the "Live Status" edit view
+    document.getElementById('liveLimitType').addEventListener('change', (e) => {
+        const liveLimitInput = document.getElementById('liveLimit');
+        if (e.target.value === 'PAGES') {
+            liveLimitInput.value = 1;
+            liveLimitInput.placeholder = "Ex: 1";
+        } else {
+            liveLimitInput.value = 10;
+            liveLimitInput.placeholder = "Ex: 10";
+        }
+    });
 
 // --- 1. LOCAL DATABASE HELPERS FOR HEAVY LIFTING ---
 async function initLocalDB() {
@@ -433,17 +455,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentConfigs.length === 0) { errorDiv.innerText = "⚠️ Please add at least one Search Engine configuration."; errorDiv.style.display = 'block'; return; }
 
         if (name && q.length > 0 && currentConfigs.length > 0) {
-            chrome.runtime.sendMessage({
+			chrome.runtime.sendMessage({
                 action: "CREATE_SESSION",
                 payload: { 
                     name, queries: q, configs: currentConfigs, 
                     resultsLimit: parseInt(document.getElementById('sessLimit').value), 
+                    limitType: document.getElementById('sessLimitType').value, // <--- ADD THIS LINE
                     delays: { 
                         min: parseInt(document.getElementById('sessMin').value) * 1000, 
                         max: parseInt(document.getElementById('sessMax').value) * 1000 
                     },
                     saveSerp,
-                    serpLimit, // NEW: Pass it to the background worker
+                    serpLimit,
                     useProxies, proxyListStr
                 }
             });
@@ -489,11 +512,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(currentSessionId && min && max) chrome.runtime.sendMessage({ action: "UPDATE_DELAY", payload: { sessionId: currentSessionId, min, max }});
     });
 
-    document.getElementById('applyLimitBtn').addEventListener('click', () => {
+	document.getElementById('applyLimitBtn').addEventListener('click', () => {
         const limit = parseInt(document.getElementById('liveLimit').value);
+        const limitType = document.getElementById('liveLimitType').value; // <--- ADD THIS LINE
         if(currentSessionId && limit) {
-            chrome.runtime.sendMessage({ action: "UPDATE_LIMIT", payload: { sessionId: currentSessionId, limit: limit }});
-            alert(`Target Result Quota updated to ${limit}.`);
+            // Include limitType in payload
+            chrome.runtime.sendMessage({ action: "UPDATE_LIMIT", payload: { sessionId: currentSessionId, limit: limit, limitType: limitType }});
+            alert(`Target Quota updated to ${limit} ${limitType.toLowerCase()}.`);
         }
     });
 
@@ -1217,7 +1242,9 @@ function updateStatus(data) {
     }
 
     const limitInput = document.getElementById('liveLimit');
+    const limitTypeInput = document.getElementById('liveLimitType');
     if (data.globalCount && document.activeElement !== limitInput) limitInput.value = data.globalCount;
+    if (data.limitType && document.activeElement !== limitTypeInput) limitTypeInput.value = data.limitType;
 }
 
 function setSettingBadge(id, isActive) {
