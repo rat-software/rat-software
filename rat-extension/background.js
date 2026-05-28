@@ -582,7 +582,7 @@ async function updateSessionProxies(payload) {
 }
 
 async function createNewSession(payload) {
-    const { name, queries, configs, resultsLimit, delays, saveSerp, useProxies, proxyListStr } = payload;
+    const { name, queries, configs, resultsLimit, limitType, delays, saveSerp, useProxies, proxyListStr } = payload;
     
     let proxyList = [];
     if (useProxies && proxyListStr) {
@@ -594,14 +594,12 @@ async function createNewSession(payload) {
         term: q, config: conf, status: "OPEN", pages: [], totalOrganic: 0, retryCount: 0
     })));
     
-    const settings = {
-        saveSerp: !!saveSerp,
-        useProxies: !!useProxies,
-        proxyList: proxyList
-    };
+    const settings = { saveSerp: !!saveSerp, useProxies: !!useProxies, proxyList: proxyList };
 
     const session = { 
-        id, name, status: "OPEN", tasks, currentIndex: 0, globalCount: resultsLimit, delays, settings, originalConfigs: configs, originalQueries: queries
+        id, name, status: "OPEN", tasks, currentIndex: 0, globalCount: resultsLimit, 
+        limitType: limitType || "RESULTS", // <--- ADDED
+        delays, settings, originalConfigs: configs, originalQueries: queries
     };
     
     await saveSession(session);
@@ -684,7 +682,14 @@ async function processQueue(sessionId) {
         const tab = await new Promise(r => chrome.tabs.create({ url, active: true }, r));
         tabId = tab.id;
 
-        while (collectedOrganic < session.globalCount && currentPage <= MAX_PAGES) {
+        const limitMode = session.limitType || "RESULTS";
+        
+        let shouldContinue = () => {
+            if (limitMode === "PAGES") return currentPage <= session.globalCount && currentPage <= MAX_PAGES;
+            return collectedOrganic < session.globalCount && currentPage <= MAX_PAGES;
+        };
+
+        while (shouldContinue()) {
 
             if (await isPaused(sessionId)) break;
 
@@ -738,8 +743,12 @@ async function processQueue(sessionId) {
                 const newOrganic = data.organic.filter(r => !existingUrls.has(r.url));
                 newOrganic.forEach(r => existingUrls.add(r.url));
 
-                const remainingQuota = session.globalCount - collectedOrganic;
-                const finalOrganicForPage = newOrganic.slice(0, Math.max(0, remainingQuota));
+                let finalOrganicForPage = newOrganic;
+                
+                if (limitMode === "RESULTS") {
+                    const remainingQuota = session.globalCount - collectedOrganic;
+                    finalOrganicForPage = newOrganic.slice(0, Math.max(0, remainingQuota));
+                }
                 data.organic = finalOrganicForPage;
 
                 const aiFound = (data.ai_overview && data.ai_overview.found) ? "YES" : "NO";
@@ -760,8 +769,13 @@ async function processQueue(sessionId) {
 
                 await saveSession(session);
 
-                if (collectedOrganic >= session.globalCount) {
-                    logToSession(sessionId, `✅ TARGET MET: Collected ${collectedOrganic}.`);
+                if (limitMode === "RESULTS" && collectedOrganic >= session.globalCount) {
+                    logToSession(sessionId, `✅ TARGET MET: Collected ${collectedOrganic} results.`);
+                    break;
+                }
+
+                if (limitMode === "PAGES" && currentPage >= session.globalCount) {
+                    logToSession(sessionId, `✅ TARGET MET: Scraped ${session.globalCount} pages.`);
                     break;
                 }
 
@@ -946,7 +960,8 @@ async function broadcastSessionStatus(id) {
             originalConfigs: s.originalConfigs,
             originalQueries: s.originalQueries,
             settings: s.settings,
-            globalCount: s.globalCount
+            globalCount: s.globalCount,
+			limitType: s.limitType || "RESULTS"
         }
     }).catch(() => { });
 }
@@ -968,8 +983,9 @@ async function updateSessionLimit(payload) {
     const s = await getSession(payload.sessionId);
     if (s) {
         s.globalCount = parseInt(payload.limit);
+        if (payload.limitType) s.limitType = payload.limitType; // <--- ADDED
         await saveSession(s);
-        logToSession(payload.sessionId, `🎯 Target Results updated to ${s.globalCount}`);
+        logToSession(payload.sessionId, `🎯 Limit updated to ${s.globalCount} ${s.limitType === 'PAGES' ? 'Pages' : 'Results'}`);
         broadcastSessionStatus(payload.sessionId);
     }
 }

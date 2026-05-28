@@ -1,5 +1,5 @@
 /**
- * @file content.js - Version 2.4 (CSP Bugfix & Smart URLs)
+ * @file content.js - Version 2.5 (Smart Plain Text Formatter)
  * Content script for the Result Assessment Tool (RAT).
  * Injected into SERPs to automate interactions and extract data
  * based on dynamic JSON configurations (Plugins).
@@ -194,6 +194,45 @@ if (!window.ratListenerAdded) {
         return rankOffset;
     }
 
+    /**
+     * NEW: Converts search engine HTML into clean plain text for CSV.
+     * Preserves paragraphs and uses • for list items.
+     */
+    function extractFormattedPlainText(rawHtml) {
+        if (!rawHtml) return "";
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawHtml, 'text/html');
+        let text = "";
+
+        function walkDOM(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                text += node.textContent.replace(/\s+/g, ' ');
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tag = node.tagName.toUpperCase();
+                
+                // Add bullet point marker for list items
+                if (tag === 'LI') text += '\n• ';
+
+                node.childNodes.forEach(child => walkDOM(child));
+
+                // Add double line breaks for block elements
+                if (['P', 'H1', 'H2', 'H3', 'H4', 'BR', 'UL', 'OL', 'DIV'].includes(tag)) {
+                    text += '\n\n';
+                }
+            }
+        }
+
+        doc.body.childNodes.forEach(child => walkDOM(child));
+        
+        // --- CLEANUP PHASE ---
+        // 1. Remove dangling/empty bullet points (a bullet followed immediately by nothing or a new line)
+        text = text.replace(/•[ \t]*(?=\n|$)/g, '');
+        // 2. Clean up excessive newlines (max 2)
+        text = text.replace(/\n{3,}/g, '\n\n');
+        // 3. Trim outer whitespace
+        return text.trim();
+    }
+
     // --- GENERIC SCRAPER ---
     function scrapeGenericData(config) {
         const result = { organic: [], ads: [], ai_overview: { found: false, text_full: "", sources: [] } };
@@ -214,7 +253,9 @@ if (!window.ratListenerAdded) {
                 if (textConfig.elementsToRemove) {
                     clone.querySelectorAll(textConfig.elementsToRemove.join(', ')).forEach(el => el.remove());
                 }
-                cleanText = clone.innerText.replace(/\r\n|\r|\n/g, '\r\n').replace(/(\r\n){4,}/g, '\r\n\r\n\r\n').trim();
+                
+                // --- NEW PLAIN TEXT FORMATTER INTEGRATION ---
+                cleanText = extractFormattedPlainText(clone.innerHTML);
                 
                 if (textConfig.regexClean) {
                     cleanText = cleanText.replace(new RegExp(textConfig.regexClean, 'g'), '').trim();
