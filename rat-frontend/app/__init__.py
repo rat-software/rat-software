@@ -9,7 +9,6 @@ from flask_mail import Mail
 from app.forms import ExtendedRegisterForm, ExtendedSendConfirmationForm, ExtendedForgotPasswordForm
 from flask_wtf.csrf import CSRFProtect
 
-
 import markdown
 from markupsafe import Markup
 

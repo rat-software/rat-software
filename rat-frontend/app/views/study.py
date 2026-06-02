@@ -275,9 +275,9 @@ def process_upload_file(study_id, filepath):
 
                 # 2. ONLY if content is found do we create the SERP record
                 if has_content:
-                    serp = db.session.query(Serp).filter_by(study_id=study.id, query=query_id, page=page_num, engine_text=engine_str).first()
+                    serp = db.session.query(Serp).filter_by(study_id=study.id, query_id=query_id, page=page_num, engine_text=engine_str).first()
                     if not serp:
-                        serp = Serp(study_id=study.id, query=query_id, page=page_num, created_at=datetime.now(), progress=0, engine_text=engine_str, result_type_text="serp")
+                        serp = Serp(study_id=study.id, query_id=query_id, page=page_num, created_at=datetime.now(), progress=0, engine_text=engine_str, result_type_text="serp")
                         db.session.add(serp)
                         db.session.flush()
                     
@@ -598,8 +598,29 @@ def update_study_settings(id):
         study.show_ai_sources = form.show_ai_sources.data
         study.assess_failed = form.assess_failed.data
 
+        # --- 3. WORKLOAD & ASSIGNMENT LIMITS ---
+        
+        limit_by_query = 'limit_by_query' in request.form
+        
+        if limit_by_query:
+            val = request.form.get('max_queries_per_participant', '').strip()
+            try:
+                study.max_queries_per_participant = int(val) if val else 0
+            except ValueError:
+                study.max_queries_per_participant = 0
+        else:
+            # -1 bedeutet für uns intern: Checkbox ist AUS!
+            study.max_queries_per_participant = -1
+
+        # 2. Speichere das absolute Item-Limit
         study.limit_per_participant = form.limit_per_participant.data
-        study.max_results_per_participant = form.max_results_per_participant.data if form.limit_per_participant.data else None
+        if study.limit_per_participant:
+            study.max_results_per_participant = form.max_results_per_participant.data
+        else:
+            study.max_results_per_participant = 0
+            
+
+        # --- 4. CLASSIFIERS & RANGES ---
         study.classifier = [Classifier.query.get(cid) for cid in form.classifiers.data]
         
         RangeStudy.query.filter_by(study=study.id).delete()
@@ -613,8 +634,14 @@ def update_study_settings(id):
         check_and_update_status(study)
         
         flash('Configuration saved.', 'success')
-    else: 
-        flash('There was an error with saving the configuration.', 'danger')
+    else:
+        # Fehler ausgeben, damit wir wissen, was kaputt ist!
+        error_msg = 'There was an error with saving the configuration.'
+        if form.errors:
+            error_msg += f" Errors: {form.errors}"
+        flash(error_msg, 'danger')
+        print(f"FORM ERRORS: {form.errors}") # Wird in der Konsole angezeigt
+        
     return redirect(url_for('study', id=id))
 
 @app.route('/study/new', methods=['GET'])

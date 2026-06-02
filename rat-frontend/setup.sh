@@ -3,18 +3,29 @@
 
 echo "🔧 Starting setup for RAT Frontend..."
 
-# 1. Create temporary upload directory
+# 1. Check if Python 3.12 is installed
+if ! command -v python3.12 &> /dev/null; then
+    echo "❌ Python 3.12 is not installed."
+    echo "Please install it first."
+    echo "On Ubuntu/Debian, you can typically use:"
+    echo "  sudo apt update && sudo apt install python3.12 python3.12-venv"
+    exit 1
+else
+    echo "✅ Python 3.12 found."
+fi
+
+# 2. Create temporary upload directory
 # This matches the path used in study.py for CSV/ZIP processing
 echo "📁 Preparing temporary upload directories..."
 mkdir -p app/static/tmp_uploads
 chmod -R 775 app/static/tmp_uploads
 
-# 2. Setup Virtual Environment
+# 3. Setup Virtual Environment
 echo "🐍 Creating virtual environment (venv_rat_frontend)..."
-python3 -m venv venv_rat_frontend
+python3.12 -m venv venv_rat_frontend
 source venv_rat_frontend/bin/activate
 
-# 3. Install Dependencies
+# 4. Install Dependencies
 echo "📦 Installing packages..."
 pip install --upgrade pip
 if [ -f "requirements_rat_frontend.txt" ]; then

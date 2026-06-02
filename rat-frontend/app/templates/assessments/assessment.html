@@ -117,13 +117,13 @@
       <div class="card-body">
         {% set query_text = '' %}
         {% if task_type == 'result' and task_item.query_ %}
-        {% set query_text = task_item.query_.query %}
-        {% elif task_type == 'result_ai' and task_item.query %}
-        {% set query_text = task_item.query.query %}
-        {% elif task_type == 'result_chatbot' and task_item.query %}
-        {% set query_text = task_item.query.query %}
-        {% elif task_type == 'serp' and task_item.scraper.query_ %}
-        {% set query_text = task_item.scraper.query_.query %}
+            {% set query_text = task_item.query_.query %}
+        {% elif task_type == 'result_ai' and task_item.query_ %}
+            {% set query_text = task_item.query_.query %}
+        {% elif task_type == 'result_chatbot' and task_item.query_ %}
+            {% set query_text = task_item.query_.query %}
+        {% elif task_type == 'serp' and task_item.query_ %}
+            {% set query_text = task_item.query_.query %}
         {% endif %}
         <div class="card-text">{{ task_item.study.task | replace('[QUERY]', '<strong>'~query_text~'</strong>') | markdown }}</div>
       </div>
@@ -273,13 +273,13 @@
             </div>
         {% endif %}
 
-    {% elif task_type == 'result_ai' %}
+	{% elif task_type == 'result_ai' %}
     <div class="card shadow-sm mb-4">
       <div class="card-header">
         <b>AI Generated Answer</b>
       </div>
-      <div class="card-body">
-        {{ task_item.answer_html | safe }}
+      <div class="card-body" style="white-space: pre-wrap; word-wrap: break-word;">
+        {{ task_item.answer_html | safe if task_item.answer_html else task_item.answer }}
       </div>
     </div>
 
@@ -311,13 +311,13 @@
     </div>
     {% endif %}
 
-    {% elif task_type == 'result_chatbot' %}
+	{% elif task_type == 'result_chatbot' %}
     <div class="card shadow-sm">
       <div class="card-header">
         <b>Chatbot Generated Answer</b>
       </div>
-      <div class="card-body">
-        {{ task_item.answer_html | safe }}
+      <div class="card-body" style="white-space: pre-wrap; word-wrap: break-word;">
+        {{ task_item.answer_html | safe if task_item.answer_html else task_item.answer }}
       </div>
     </div>
 

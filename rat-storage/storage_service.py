@@ -1,27 +1,15 @@
-"""
-Main storage Flask application to manage scraped URLs and search engine result pages.
-
-This service stores screenshots, HTML source code, and PDFs. It provides endpoints 
-to upload files and securely retrieve content from within ZIP archives.
-
-Ensure that the user running the Flask app has read/write permissions for your STORAGE FOLDER.
-"""
-
 from flask import Flask, request, send_file
-import os, zipfile, io
+import os, zipfile, io, time  # <--- Added time import here
 from werkzeug.utils import secure_filename
-from itsdangerous import URLSafeTimedSerializer
-
+from itsdangerous import URLSafeSerializer, BadSignature
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 
-# Note: These values must remain synchronized with the main scraper service
-app.config['API_KEY'] = os.getenv('API_UPLOAD_KEY', 'your_api_key_here')  # Add your own safe API-Key
-app.config['STORAGE_FOLDER'] = os.getenv('STORAGE_FOLDER', 'your_storage_folder')  # Define your STORAGE Folder on your web server
+app.config['API_KEY'] = os.getenv('API_UPLOAD_KEY', 'your_api_key_here')  
+app.config['STORAGE_FOLDER'] = os.getenv('STORAGE_FOLDER', 'your_storage_folder')  
 app.config['SESSION_COOKIE_NAME'] = 'rat_storage_session'
 app.config['SESSION_COOKIE_PATH'] = '/storage'
 
@@ -31,10 +19,6 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    """
-    Handle file uploads from the scraper.
-    """
-    # API Key check
     if request.headers.get('X-API-Key') != app.config['API_KEY']:
         return {"error": "Unauthorized"}, 401
     
@@ -52,41 +36,48 @@ def upload():
 @app.route('/view/<filename>/<file_type>')
 def view(filename, file_type):
     """
-    Retrieve and serve specific content from stored files.
+    Retrieve and serve specific content from stored files using an explicit expiration timestamp.
     """
     ticket = request.args.get('ticket')
     if not ticket:
         return "Missing ticket", 401
 
-    # Secure ticket validation
-    serializer = URLSafeTimedSerializer(app.config['API_KEY'])
+    serializer = URLSafeSerializer(app.config['API_KEY'])
     
     try:
-        data = serializer.loads(ticket, salt='source-view', max_age=14400)
+        # 1. Decrypt ticket and verify cryptographic signature
+        data = serializer.loads(ticket, salt='source-view')
+        
+        # 2. Prevent parameter tampering (verify filename matches)
         if data.get('filename') != filename:
             return "Access denied (Ticket mismatch)", 403
+            
+        # 3. Manually verify expiration using timezone-agnostic Unix Epoch time
+        current_time = int(time.time())
+        if current_time > data.get('expires_at', 0):
+            return "Access denied (Ticket expired)", 403
+            
+    except BadSignature:
+        return "Access denied (Invalid token or signature)", 403
     except Exception as e:
-        return f"Access denied (Error: {type(e).__name__} - {str(e)})", 403
+        return f"Access denied (Error: {type(e).__name__})", 403
 
+    # Build absolute path to the archive file
     zip_path = os.path.join(app.config['STORAGE_FOLDER'], secure_filename(filename))
     if not os.path.exists(zip_path):
         return "File not found", 404
 
-    # CASE 1: PDF Files - Serve directly (falls alte Scrapes direkt als .pdf gespeichert wurden)
     if filename.lower().endswith('.pdf'):
         return send_file(zip_path, mimetype='application/pdf')
 
-    # CASE 2: ZIP Files
     try:
         with zipfile.ZipFile(zip_path, 'r') as z:
             files_in_zip = z.namelist()
             
-           
             if file_type == 'screenshot':
                 target = 'screenshot.jpg'
                 mime = 'image/jpeg'
             else:
-                # CASE 3: HTML Files
                 if 'source.pdf' in files_in_zip:
                     target = 'source.pdf'
                     mime = 'application/pdf'
@@ -110,6 +101,7 @@ def view(filename, file_type):
                 response.headers['Content-Type'] = 'text/html; charset=utf-8'
                 
             return response
+            
     except Exception as e:
         return f"Error processing file: {str(e)}", 500
 

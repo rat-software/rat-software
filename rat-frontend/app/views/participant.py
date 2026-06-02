@@ -1,6 +1,6 @@
 from .. import app, db
 from app.models import (Study, Participant, Answer, Result, Question, ResultAi, 
-                        ResultChatbot, ResultSource, Serp, RangeStudy)
+                        ResultChatbot, ResultSource, Serp, RangeStudy, ResultType)
 from ..forms import JoinForm, ParticipantLogInForm, ConfirmationForm
 from flask import render_template, flash, redirect, url_for, request, send_file
 from datetime import datetime
@@ -148,23 +148,30 @@ def new_participant(study_id):
     participant.studies.append(study)
     db.session.add(participant)
 
-    # FIXED: Sicheres Bereinigen der Types (Leerzeichen entfernen, Lowercase)
+    # --- TASK ASSIGNMENT BLOCK (participant.py) ---
     selected_types = [t.strip().lower() for t in study.assessable_result_types_text.split(',')] if study.assessable_result_types_text else []
-    
-    tasks_pool = []
-    final_tasks = []
+        
+    # Get limits
+
+    max_items = study.max_results_per_participant if (study.limit_per_participant and study.max_results_per_participant) else 99999
+
+    # Memory Safe Limit: Only pull what we reasonably need for shuffling (e.g., 3x the max_items)
+    fetch_limit = max_items * 3 
+
+    all_available_tasks = []
 
     if selected_types:
+        # 1. Fetch Organic Results
         org_q = db.session.query(Result).join(Result.source_associations).filter(
             Result.study_id == study.id,
             Result.result_type_text.in_(selected_types)
         )
-        
         if study.assess_failed:
             org_q = org_q.filter(or_(ResultSource.progress == 1, ResultSource.progress == -1))
         else:
             org_q = org_q.filter(ResultSource.progress == 1)
 
+        # Apply Range and URL filters
         ranges = RangeStudy.query.filter_by(study=study.id).all()
         if ranges:
             range_filters = [and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]
@@ -178,64 +185,152 @@ def new_participant(study_id):
         if exclude_filters:
             org_q = org_q.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
 
-        tasks_pool.extend(org_q.all())
+        # CHANGED: Append to master list
+        org_tasks = org_q.order_by(Result.assignment_count.asc()).limit(fetch_limit).all()
+        all_available_tasks.extend(org_tasks)
 
-        query_ai_results = db.session.query(ResultAi).filter(
-            ResultAi.study_id == study.id, 
-            ResultAi.result_type_text.in_(selected_types)
-        )
-        tasks_pool.extend(query_ai_results.all())
+        # 2. Fetch AI Overviews
+        ai_tasks = db.session.query(ResultAi).filter(
+            ResultAi.study_id == study.id, ResultAi.result_type_text.in_(selected_types)
+        ).order_by(ResultAi.assignment_count.asc()).limit(fetch_limit).all()
+        all_available_tasks.extend(ai_tasks)
 
-        query_chatbot_results = db.session.query(ResultChatbot).filter(
-            ResultChatbot.study_id == study.id, 
-            ResultChatbot.result_type_text.in_(selected_types)
-        )
-        tasks_pool.extend(query_chatbot_results.all())
+        # 3. Fetch Chatbots
+        chat_tasks = db.session.query(ResultChatbot).filter(
+            ResultChatbot.study_id == study.id, ResultChatbot.result_type_text.in_(selected_types)
+        ).order_by(ResultChatbot.assignment_count.asc()).limit(fetch_limit).all()
+        all_available_tasks.extend(chat_tasks)
             
+        # 4. Fetch SERPs
         if "serp" in selected_types:
-            # FIXED: Den Check auf "file_path.isnot(None)" komplett entfernt. 
-            # Selbst wenn der Upload des Bildes schiefging, wird der Task vergeben, 
-            # und das Frontend zeigt die Info "Kein Screenshot vorhanden" an.
-            query_serp_results = db.session.query(Serp).filter(
+            serp_tasks = db.session.query(Serp).filter(
                 Serp.study_id == study.id
-            )
-            tasks_pool.extend(query_serp_results.all())
+            ).order_by(Serp.assignment_count.asc()).limit(fetch_limit).all()
+            all_available_tasks.extend(serp_tasks)
 
-    random.shuffle(tasks_pool)
-    tasks_pool.sort(key=lambda task: task.assignment_count if task.assignment_count is not None else 0)
+    final_tasks = []
+    
+    # Sort EVERYTHING by assignment count so the least-rated items are always first
+    all_available_tasks.sort(key=lambda x: (x.assignment_count or 0, random.random()))
+    
+    # ---------------------------------------------------------
+     # MODE A: QUERY PRIORITY QUEUE (Limit by Query & Items)
+    # ---------------------------------------------------------
+    db_query_limit = getattr(study, 'max_queries_per_participant', -1)
+    
+    if db_query_limit != -1:
+        max_queries = db_query_limit if db_query_limit > 0 else 99999
+        
+        tasks_by_query = {}
+        for task in all_available_tasks:
+            q_obj = getattr(task, 'query_', None)
+            if not q_obj: continue
+            
+            if q_obj not in tasks_by_query:
+                tasks_by_query[q_obj] = {'org': [], 'ai': [], 'chat': [], 'serp': []}
+            
+            if isinstance(task, Result): tasks_by_query[q_obj]['org'].append(task)
+            elif isinstance(task, ResultAi): tasks_by_query[q_obj]['ai'].append(task)
+            elif isinstance(task, ResultChatbot): tasks_by_query[q_obj]['chat'].append(task)
+            elif isinstance(task, Serp): tasks_by_query[q_obj]['serp'].append(task)
 
-    if study.limit_per_participant and study.max_results_per_participant is not None:
-        final_tasks = tasks_pool[:study.max_results_per_participant]
+        # Sort queries by assignment count (Least assigned first)
+        sorted_queries = sorted(list(tasks_by_query.keys()), key=lambda q: (q.assignment_count or 0, random.random()))
+
+        added_queries_count = 0
+        
+        for q_obj in sorted_queries:
+            if added_queries_count >= max_queries: break
+            
+            q_cluster = tasks_by_query[q_obj]
+            
+            # 1. Nimm ALLE Elemente dieser Query (über alle Suchmaschinen hinweg!)
+            cluster_tasks = []
+            cluster_tasks.extend(q_cluster['ai'])
+            cluster_tasks.extend(q_cluster['serp'])
+            cluster_tasks.extend(q_cluster['chat'])
+            cluster_tasks.extend(q_cluster['org'])
+            
+            if not cluster_tasks: continue
+
+            # WICHTIG: Die Query wird nur als GANZES Paket zugewiesen.
+            # Wenn das Hinzufügen dieser Query das Item-Limit des Teilnehmers sprengen würde,
+            # weisen wir sie nicht mehr zu (außer es ist seine allererste Query).
+            if len(final_tasks) > 0 and (len(final_tasks) + len(cluster_tasks) > max_items):
+                break 
+                
+            # 2. RANDOMISIERUNG (Gegen Reihenfolge-Bias)
+            # Mischt Google, Bing, SERPs und organische Ergebnisse dieser Query bunt durch.
+            random.shuffle(cluster_tasks)
+            
+            final_tasks.extend(cluster_tasks)
+            added_queries_count += 1
+            
+            # Increment the Query Priority Counter
+            if getattr(q_obj, 'assignment_count', None) is None:
+                q_obj.assignment_count = 0
+            q_obj.assignment_count += 1
+
+    # ---------------------------------------------------------
+    # MODE B: STRATIFIED RANDOM (Limit by Items Only)
+    # ---------------------------------------------------------
     else:
-        final_tasks = tasks_pool
+        # Group the already-sorted items into pools
+        pools = {'org': [], 'ai': [], 'chat': [], 'serp': []}
+        for task in all_available_tasks:
+            if isinstance(task, Result): pools['org'].append(task)
+            elif isinstance(task, ResultAi): pools['ai'].append(task)
+            elif isinstance(task, ResultChatbot): pools['chat'].append(task)
+            elif isinstance(task, Serp): pools['serp'].append(task)
+
+        while len(final_tasks) < max_items:
+            added = 0
+            for key in ['org', 'ai', 'chat', 'serp']:
+                if pools[key]:
+                    # Pulls the absolute lowest assignment_count item of this type
+                    final_tasks.append(pools[key].pop(0))
+                    added += 1
+                if len(final_tasks) >= max_items: break
+            if added == 0: break
+            
+        # RANDOMIZE the presentation order so it isn't strictly Org -> AI -> Chat -> Serp
+        random.shuffle(final_tasks)
+
+    # --- ANSWER CREATION & RESULTTYPE MAPPING ---
+    res_types_map = {rt.name.strip().lower(): rt.id for rt in db.session.query(ResultType).all()}
 
     for task in final_tasks:
+        # Resolve the string name
+        task_type_text = "serp"
+        if isinstance(task, Result): task_type_text = getattr(task, 'result_type_text', 'organic')
+        elif isinstance(task, ResultAi): task_type_text = getattr(task, 'result_type_text', 'ai overview')
+        elif isinstance(task, ResultChatbot): task_type_text = getattr(task, 'result_type_text', 'chatbot')
+
+        task_type_text = str(task_type_text).strip().lower()
+        # Resolve the database ID
+        resolved_type_id = res_types_map.get(task_type_text, 1)
+
+        # Increment the item assignment counter ONCE per task (not per question)
+        if getattr(task, 'assignment_count', None) is None: 
+            task.assignment_count = 0
+        task.assignment_count += 1
+
         for question in study.questions:
             answer = Answer(
                 study_id=study.id,
                 question_id=question.id,
                 participant_id=participant.id,
                 status=0,
-                created_at=datetime.now()
+                created_at=datetime.now(),
+                resulttype=resolved_type_id,
+                result_type_text=task_type_text
             )
             
-            if getattr(task, 'result_type_text', None):
-                answer.result_type_text = task.result_type_text 
-            
-            if isinstance(task, Result):
-                answer.result = task
-            elif isinstance(task, ResultAi):
-                answer.result_ai = task
-            elif isinstance(task, ResultChatbot):
-                answer.result_chatbot = task
-            elif isinstance(task, Serp):
-                answer.result_serp = task
-                answer.result_type_text = "serp"
+            if isinstance(task, Result): answer.result = task
+            elif isinstance(task, ResultAi): answer.result_ai = task
+            elif isinstance(task, ResultChatbot): answer.result_chatbot = task
+            elif isinstance(task, Serp): answer.result_serp = task
                 
-            if getattr(task, 'assignment_count', None) is None: 
-                task.assignment_count = 0
-            task.assignment_count += 1
-            
             db.session.add(answer)
 
     db.session.commit()

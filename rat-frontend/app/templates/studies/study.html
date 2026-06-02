@@ -412,33 +412,68 @@
             </div>
 
 
-            <div class="row g-4 mb-4">
-              <div class="col-md-6">
-                <div class="form-check form-switch mb-2">
-                  {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
-                  <label class="form-check-label fw-bold" for="limit_checkbox">
-                    Limit workload per user
-                  </label>
-                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Set a maximum number of search results each participant has to evaluate. This helps to distribute the workload evenly across multiple users."></i>
-                </div>
-                <div class="ms-4 mt-2" id="max_results_container" style="display: none;">
-                  {{ settings_form.max_results_per_participant(
-                      class="form-control form-control-sm border-secondary", 
-                      style="max-width: 150px;", 
-                      placeholder="Max. items", 
-                      value=settings_form.max_results_per_participant.data or 10
-                  ) }}
+			<div class="row mb-4">
+              <div class="col-12">
+                <div class="card border-primary shadow-sm bg-light">
+                  <div class="card-body p-4">
+					<h6 class="fw-bold text-dark mb-3">
+					  <i class="fa-solid fa-list-check me-2 text-primary"></i> Workload & Assignment Limits
+					  <i class="fa-solid fa-circle-question tooltip-icon text-muted ms-1 fs-6" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure how tasks are distributed among participants. Set limits on queries or individual items to balance the workload and prevent survey fatigue."></i>
+					</h6>                    
+                    <div class="row g-4">
+						<div class="col-md-6 border-end">
+						  
+						  <div class="form-check form-switch mb-2">
+							<input class="form-check-input" type="checkbox" id="limit_by_query" name="limit_by_query" {% if study.max_queries_per_participant != -1 %}checked{% endif %}>
+							<label class="form-check-label text-dark fw-bold" for="limit_by_query">
+							  Group tasks by Search Query (Recommended)
+							  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" title="If checked, participants evaluate full queries together. If unchecked, pure random mix."></i>
+							</label>
+						  </div>
+
+							<div class="mt-3 mb-4 ps-2 border-start border-3 border-primary" id="query_limit_container">
+								<label for="max_queries_per_participant" class="form-label mb-1">
+									Max Queries per Participant
+									<i class="fa-solid fa-circle-question tooltip-icon text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Define how many complete search queries a user must evaluate. Leave this field empty (or enter 99999) to assign all available queries until the 'Total individual items' limit is reached."></i>
+								</label>
+								<input type="number" class="form-control form-control-sm border-secondary w-50" id="max_queries_per_participant" name="max_queries_per_participant" placeholder="Leave empty for ALL" value="{{ study.max_queries_per_participant if study.max_queries_per_participant and study.max_queries_per_participant > 0 else '' }}">
+							  </div>
+
+						  <hr class="w-75">
+
+						  <div class="form-check form-switch mb-3">
+							{{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
+							<label class="form-check-label fw-bold" for="limit_checkbox">
+							  Limit total individual items per user
+							</label>
+						  </div>
+						  
+						  <div id="item_limit_container" class="ms-4 ps-2 border-start border-3 border-secondary">
+							<label for="max_results_per_participant" class="form-label mb-1">
+								Max Individual Items
+							</label>
+							{{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary w-50") }}
+						  </div>
+
+						</div>
+
+                    </div>
+
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div class="col-md-6">
+
+            <div class="row g-4 mb-4">
+              <div class="col-md-12">
                 <label class="form-label fw-bold mb-2">
                     Result Ranges (Optional)
                     <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Define specific ranking sections to assess (e.g., only ranks 1-3 and 8-10). If left empty, all available results will be distributed."></i>
                 </label>
                 <div id="ranges-wrapper">
                   {% for range_entry in settings_form.ranges %}
-                  <div class="row g-2 mb-2 range-row align-items-center">
+                  <div class="row g-2 mb-2 range-row align-items-center" style="max-width: 500px;">
                     <div class="col-4">{{ range_entry.start_range(class="form-control form-control-sm border-secondary", placeholder="Start") }}</div>
                     <div class="col-1 text-center fw-bold text-dark">-</div>
                     <div class="col-4">{{ range_entry.end_range(class="form-control form-control-sm border-secondary", placeholder="End") }}</div>
@@ -696,17 +731,37 @@
         }
     });
 
-    // --- Limit Per Participant Toggle ---
+    // --- Limit Per Participant & Mode Toggle Logic ---
     const limitCheckbox = document.getElementById('limit_checkbox');
-    const maxResultsContainer = document.getElementById('max_results_container');
-
-    if (limitCheckbox && maxResultsContainer) {
-      function toggleMaxResults() {
-        maxResultsContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
+    const workloadOptionsContainer = document.getElementById('workload_options_container');
+    const limitByQueryCheckbox = document.getElementById('limit_by_query');
+    const queryLimitContainer = document.getElementById('query_limit_container');
+    
+    // Function to handle the Master "Limit Workload" toggle
+    if (limitCheckbox && workloadOptionsContainer) {
+      function toggleWorkloadOptions() {
+        workloadOptionsContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
       }
-      limitCheckbox.addEventListener('change', toggleMaxResults);
-      toggleMaxResults(); 
+      limitCheckbox.addEventListener('change', toggleWorkloadOptions);
+      toggleWorkloadOptions(); 
     }
+
+    // Function to handle highlighting the active limit mode
+    if (limitByQueryCheckbox && queryLimitContainer) {
+        const itemLimitContainer = document.getElementById('item_limit_container');
+        function toggleLimitModeUI() {
+            if (limitByQueryCheckbox.checked) {
+                queryLimitContainer.style.opacity = '1';
+                itemLimitContainer.style.opacity = '0.6';
+            } else {
+                queryLimitContainer.style.opacity = '0.3';
+                itemLimitContainer.style.opacity = '1';
+            }
+        }
+        limitByQueryCheckbox.addEventListener('change', toggleLimitModeUI);
+        toggleLimitModeUI();
+    }
+
 
     // --- Dynamic Ranges Logic ---
     const rangesWrapper = document.getElementById('ranges-wrapper');
@@ -717,6 +772,7 @@
         const index = rangesWrapper.children.length;
         const newRow = document.createElement('div');
         newRow.className = 'row g-2 mb-2 range-row align-items-center';
+        newRow.style.maxWidth = '500px';
         newRow.innerHTML = `
             <div class="col-4"><input class="form-control form-control-sm border-secondary" name="ranges-${index}-start_range" type="number" min="1" placeholder="Start"></div>
             <div class="col-1 text-center fw-bold text-dark">-</div>

@@ -1,5 +1,5 @@
 from .. import app, db, csrf
-from ..models import Study, Participant, Answer, Question, Result, ResultAi, ResultChatbot, ResultSource, Serp, RangeStudy
+from ..models import Study, Participant, Answer, Question, Result, ResultAi, ResultChatbot, ResultSource, Serp, RangeStudy, Query
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import logout_user
 from datetime import datetime
@@ -16,14 +16,21 @@ import io
 from flask import send_file
 
 from werkzeug.utils import secure_filename
-from itsdangerous import URLSafeTimedSerializer, BadSignature
+from itsdangerous import URLSafeSerializer, BadSignature
+import time # Ensure time is imported!
 
 def get_signed_storage_url(file_path, file_type='screenshot'):
     api_key = current_app.config.get('API_UPLOAD_KEY')
     base_url = current_app.config.get('STORAGE_BASE_URL')
     
-    serializer = URLSafeTimedSerializer(api_key)
-    ticket = serializer.dumps({'filename': file_path}, salt='source-view')
+    # 1. Switch to the standard URLSafeSerializer
+    serializer = URLSafeSerializer(api_key)
+    
+    # 2. Manually calculate expiration (e.g., +300 seconds / 5 mins)
+    expires_at = int(time.time()) + 300
+    
+    # 3. Add the expires_at timestamp into the payload dictionary
+    ticket = serializer.dumps({'filename': file_path, 'expires_at': expires_at}, salt='source-view')
     
     return f"{base_url}/view/{file_path}/{file_type}?ticket={ticket}"
 
@@ -37,99 +44,114 @@ def assessments(study_id, participant_id):
     logout_user()
     study = Study.query.get_or_404(study_id)
     participant = Participant.query.get_or_404(participant_id)
-
-    query = db.session.query(Answer).filter(
-        Answer.participant == participant,
-        Answer.study == study
-    )
     
-    questions_count = len(study.questions)
-    
-    if questions_count > 0:
-        all_tasks_count = query.count() // questions_count
-        closed_tasks_count = query.filter(Answer.status == 1).count() // questions_count
-        skipped_tasks_count = query.filter(Answer.status == 2).count() // questions_count
-    else:
-        all_tasks_count = 0
-        closed_tasks_count = 0
-        skipped_tasks_count = 0
+    # 1. Fetch current active task for this participant
+    answers_for_item = Answer.query.filter_by(
+        participant_id=participant_id, 
+        study_id=study_id, 
+        status=0
+    ).order_by(Answer.id).all()
 
-    if all_tasks_count > 0:
-        pct = round((closed_tasks_count + skipped_tasks_count) / all_tasks_count * 100)
-    else:
-        pct = 0
+    # 2. Redirect safely if the queue is empty
+    if not answers_for_item:
+        flash('You have completed all your assigned assessments. Thank you!', 'success')
+        # Redirects them to a safe place (you can change this to index/home if you prefer)
+        return redirect(url_for('returning_participant', study_id=study_id)) 
 
-    answer = query.filter(Answer.status == 0).first()
+    # 3. Identify the current task properties
+    task_item = None
+    task_type = None
+    resulttype_id = answers_for_item[0].resulttype
 
-    if answer:
-        task_type = answer.result_type_text.replace('_', ' ').title() if answer.result_type_text else 'Unknown'
+    if answers_for_item[0].result_id:
+        task_item = answers_for_item[0].result
+        task_type = 'result'
+    elif answers_for_item[0].result_ai_id:
+        task_item = answers_for_item[0].result_ai
+        task_type = 'ai'
+    elif answers_for_item[0].result_chatbot_id:
+        task_item = answers_for_item[0].result_chatbot
+        task_type = 'chatbot'
+    elif answers_for_item[0].result_serp:
+        task_item = answers_for_item[0].result_serp
+        task_type = 'serp'
 
-        task_item = None
-        if answer.result_id:
-            task_item = answer.result
-        elif answer.result_ai_id:
-            task_item = answer.result_ai
-        elif answer.result_chatbot_id:
-            task_item = answer.result_chatbot
-        elif answer.result_serp_id:
-            task_item = answer.result_serp
-            
-        if not task_item:
-            flash('Error loading task item.', 'danger')
-            return redirect(url_for('participant', id=participant_id))
-            
-        answers_for_item = []
-        if answer.result_id:
-            answers_for_item = query.filter(Answer.result_id == task_item.id).all()
-        elif answer.result_ai_id:
-            answers_for_item = query.filter(Answer.result_ai_id == task_item.id).all()
-        elif answer.result_chatbot_id:
-            answers_for_item = query.filter(Answer.result_chatbot_id == task_item.id).all()
-        elif answer.result_serp_id:
-            answers_for_item = query.filter(Answer.result_serp_id == task_item.id).all()
-
-        form = FlaskForm()
-
-        if request.method == 'POST':
-            errors = {}
-            for ans in answers_for_item:
-                field_name = f'question_{ans.question.id}'
+    # 4. Handle the Submission
+    if request.method == "POST":
+        submitted_values = {}
+        
+        # Save answers for the current item
+        for answer in answers_for_item:
+            val = request.form.get(str(answer.question_id))
+            if isinstance(val, list): 
+                val = ",".join(val) # For multi-select fields
                 
-                if ans.question.questiontype.display == 'checkbox':
-                    selected_options = request.form.getlist(field_name)
-                    if not selected_options:
-                        errors[ans.question.id] = 'Please select at least one option.'
-                    else:
-                        ans.value = ','.join(selected_options)
-                        ans.status = 1
-                else:
-                    ans.value = request.form.get(field_name)
-                    if not ans.value and ans.question.questiontype.display != 'info':
-                        errors[ans.question.id] = 'This field is required.'
-                    else:
-                        ans.status = 1
+            if val:
+                answer.value = val
+                answer.status = 1
+                answer.created_at = datetime.now()
+                submitted_values[answer.question_id] = val
+        
+        # --- QUERY-AWARE AUTO-MIRRORING HOOK ---
+        if task_type == 'result' and hasattr(task_item, 'normalized_url') and task_item.normalized_url:
+            q_obj = getattr(task_item, 'query_', None) # FIX: Use query_
+            
+            if q_obj:
+                # Find matching results with same normalized_url AND same batch timestamp
+                duplicates = Result.query.join(Query).filter(
+                    Result.study_id == study_id,
+                    Result.normalized_url == task_item.normalized_url,
+                    Query.created_at == q_obj.created_at,
+                    Result.id != task_item.id
+                ).all()
+                
+                if duplicates:
+                    dup_ids = [d.id for d in duplicates]
+                    
+                    # Find any pending mirrored answers assigned to this specific participant
+                    dup_answers = Answer.query.filter(
+                        Answer.participant_id == participant_id,
+                        Answer.status == 0,
+                        Answer.result_id.in_(dup_ids)
+                    ).all()
+                    
+                    # Mirror the values quietly
+                    for dup in dup_answers:
+                        if dup.question_id in submitted_values:
+                            dup.value = submitted_values[dup.question_id]
+                            dup.status = 1
+                            dup.created_at = datetime.now()
+                            if resulttype_id: 
+                                dup.resulttype = resulttype_id
 
-            if not errors:
-                db.session.commit()
-                next_answer = query.filter(Answer.status == 0).first()
-                if next_answer:
-                    return redirect(url_for('assessments', study_id=study.id, participant_id=participant.id))
-                else:
-                    return redirect(url_for('participant', id=participant.id))
+        db.session.commit()
+        flash('Assessment saved successfully.', 'success')
+        return redirect(url_for('assessments', participant_id=participant_id, study_id=study_id))
 
-            return render_template('assessments/assessment.html',
-                                   form=form, answers=answers_for_item, task_item=task_item, task_type=task_type,
-                                   all=all_tasks_count, closed=closed_tasks_count, pct=pct,
-                                   show_urls=study.show_urls, study=study, errors=errors, submitted_data=request.form)
+    # 5. Calculate Progress Statistics for the template
+    # Because Answer rows are generated per-question, we divide by questions to get "tasks"
+    questions_count = len(study.questions) if study.questions else 1
+    
+    total_answer_rows = Answer.query.filter_by(participant_id=participant_id, study_id=study_id).count()
+    closed_answer_rows = Answer.query.filter_by(participant_id=participant_id, study_id=study_id, status=1).count()
+    
+    all_tasks_count = total_answer_rows // questions_count
+    closed_tasks_count = closed_answer_rows // questions_count
+    pct = (closed_tasks_count / all_tasks_count) * 100 if all_tasks_count > 0 else 0
+    
+    return render_template('assessments/assessment.html', 
+                           answers=answers_for_item, 
+                           task_item=task_item, 
+                           task_type=task_type,
+                           all=all_tasks_count, 
+                           closed=closed_tasks_count, 
+                           pct=round(pct), 
+                           show_urls=study.show_urls, 
+                           study=study, 
+                           errors={}, 
+                           submitted_data={})
 
-        return render_template('assessments/assessment.html', form=form, answers=answers_for_item,
-                               task_item=task_item, task_type=task_type, all=all_tasks_count,
-                               closed=closed_tasks_count, pct=pct, show_urls=study.show_urls,
-                               study=study, errors={}, submitted_data={})
 
-    else:
-        flash('Assessment completed!', 'success')
-        return redirect(url_for('participant', id=participant.id))
 
 @app.route('/assessment/<participant_id>/<study_id>', methods=["GET", "POST"])
 def assessment(participant_id, study_id):
@@ -211,27 +233,51 @@ def assessment(participant_id, study_id):
         task_type = 'result'
         task_item = db.session.get(Result, next_answer.result_id)
         if task_item:
+            # --- QUERY-AWARE DUPLICATE DETECTION ---
+            q_obj = getattr(task_item, 'query_', None)
+            
+            all_duplicate_result_ids = set()
+            # Filter strictly by the query's batch timestamp
+            if q_obj and task_item.normalized_url:
+                # FIX: Find items with the same URL, in the same upload batch (timestamp)
+                duplicates = Result.query.join(Query).filter(
+                    Result.study_id == study_id,
+                    Result.normalized_url == task_item.normalized_url,
+                    Query.created_at == q_obj.created_at,
+                    Result.id != task_item.id
+                ).all()
+                all_duplicate_result_ids = {d.id for d in duplicates}
+
             has_source = (task_item.sources and task_item.sources[0] and task_item.sources[0].file_path)
+            
             if not has_source and not study.assess_failed:
-                all_duplicate_result_ids = {r.id for r in db.session.query(Result.id).filter(
-                    Result.normalized_url == task_item.normalized_url, Result.study_id == study_id)}
-                answers_to_skip = db.session.query(Answer).filter(
-                    Answer.participant_id == participant.id, Answer.result_id.in_(all_duplicate_result_ids)).all()
-                
-                for answer in answers_to_skip:
-                    answer.status = 2
-                    answer.created_at = datetime.now()
-                
-                db.session.commit()
+                if all_duplicate_result_ids:
+                    answers_to_skip = db.session.query(Answer).filter(
+                        Answer.participant_id == participant.id, Answer.result_id.in_(all_duplicate_result_ids)).all()
+                    
+                    for answer in answers_to_skip:
+                        answer.status = 2
+                        answer.created_at = datetime.now()
+                    
+                    db.session.commit()
                 return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
 
-            all_duplicate_result_ids = {r.id for r in db.session.query(Result.id).filter(
-                Result.normalized_url == task_item.normalized_url, Result.study_id == study_id)}
             answers_for_item = db.session.query(Answer).filter(
                 Answer.result_id == task_item.id, Answer.participant_id == participant.id
             ).join(Question).options(joinedload(Answer.question)).order_by(Question.position).all()
-            answers_to_update = db.session.query(Answer).filter(
-                Answer.participant_id == participant.id, Answer.result_id.in_(all_duplicate_result_ids)).all()
+            
+            # 1. Define the full set of IDs to update (Current + Duplicates)
+            target_ids = all_duplicate_result_ids.union({task_item.id})
+            
+            # 2. Safely query for updates
+            if target_ids:
+                answers_to_update = db.session.query(Answer).filter(
+                    Answer.participant_id == participant.id, 
+                    Answer.result_id.in_(target_ids)
+                ).all()
+            else:
+                # Fallback for safety (though with the union, target_ids should never be empty)
+                answers_to_update = answers_for_item
 
     elif next_answer.result_ai_id:
         task_type = 'result_ai'
