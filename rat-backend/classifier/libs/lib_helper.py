@@ -6,7 +6,7 @@ import json
 import time
 
 from werkzeug.utils import secure_filename
-from itsdangerous import URLSafeTimedSerializer, BadSignature
+from itsdangerous import URLSafeSerializer, BadSignature
 
 class Helper:
     def __init__(self):
@@ -32,7 +32,7 @@ class Helper:
             self.api_key = None
             self.base_url = None
 
-        self.serializer = URLSafeTimedSerializer(self.api_key) if self.api_key else None
+        self.serializer = URLSafeSerializer(self.api_key) if self.api_key else None
         
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -48,7 +48,11 @@ class Helper:
             
         filename = str(filename_from_db).strip()
             
-        ticket = self.serializer.dumps({'filename': filename}, salt='source-view')
+        # FIX: Calculate a future Unix expiration timestamp (e.g., +300 seconds)
+        expires_at = int(time.time()) + 300
+        
+        # FIX: Append 'expires_at' to the ticket payload
+        ticket = self.serializer.dumps({'filename': filename, 'expires_at': expires_at}, salt='source-view')
         url = f"{self.base_url}/view/{filename}/html?ticket={ticket}"
         
         for attempt in range(3):
@@ -59,26 +63,31 @@ class Helper:
                     return response.text
                         
                 elif response.status_code == 403:
-                    print(f"Warning: 403 Forbidden for ID {file_id}. Attempt {attempt + 1}/3. Retrying...")
+                    print(f"Warning: 403 Forbidden for ID {filename}. Attempt {attempt + 1}/3. Retrying...")
                     time.sleep(1) 
                     
                 else:
-                    print(f"Error: Storage server responded with status code {response.status_code} for ID {file_id}")
+                    print(f"Error: Storage server responded with status code {response.status_code} for ID {filename}")
                     break 
                     
             except requests.exceptions.RequestException as e:
-                print(f"Connection error retrieving source code for ID {file_id}: {e}")
+                print(f"Connection error retrieving source code for ID {filename}: {e}")
                 time.sleep(1)
                 
         return ""
-
+        
     def decode_picture(self, filename_from_db):
         """Retrieves the screenshot with automatic retry on 403."""
         if not filename_from_db or filename_from_db == "error" or not self.serializer:
             return None
             
         filename = str(filename_from_db).strip()
-        ticket = self.serializer.dumps({'filename': filename}, salt='source-view')
+        
+        # FIX: Calculate a future Unix expiration timestamp (e.g., +300 seconds)
+        expires_at = int(time.time()) + 300
+        
+        # FIX: Append 'expires_at' to the ticket payload
+        ticket = self.serializer.dumps({'filename': filename, 'expires_at': expires_at}, salt='source-view')
         url = f"{self.base_url}/view/{filename}/screenshot?ticket={ticket}"
         
         for attempt in range(3):

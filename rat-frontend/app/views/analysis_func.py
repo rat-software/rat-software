@@ -2,12 +2,14 @@ from .. import app, db
 from ..models import (Scraper, Answer, Result, ResultAi, ResultSource, 
                       ClassifierResult, ResultAiSource, ResultType, ResultChatbot)
                       
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, text
 from ..helpers import percentage_calc
 import pandas as pd
 from itertools import combinations
 
 def get_result_stats(study):
+    from ..models import Serp  # Import Serp model inline to ensure no circular import flags
+    
     scrapers_all = db.session.query(Scraper.id).filter(Scraper.study_id == study.id).count()
     scrapers_done = db.session.query(Scraper.id).filter(
         Scraper.study_id == study.id,
@@ -39,7 +41,6 @@ def get_result_stats(study):
                 
         collection_status_display = f"{round(collection_status_percent)}%"
 
-
     search_engines_count = db.session.query(Result.engine_text).filter(
         Result.study_id == study.id, 
         Result.engine_text.isnot(None)
@@ -69,6 +70,11 @@ def get_result_stats(study):
             if processed_results_count > 0 or failed_results_count > 0:
                 result_stats["Results with Processed Source"] = processed_results_count
                 result_stats["Results with Failed Source"] = failed_results_count
+
+    # --- ADDED: SERP Layout Pages Count Metric ---
+    serp_results_count = db.session.query(Serp).filter(Serp.study_id == study.id).count()
+    if serp_results_count > 0:
+        result_stats["SERP Pages Collected"] = serp_results_count
 
     ai_results_count = db.session.query(ResultAi).filter(ResultAi.study_id == study.id).count()
     if ai_results_count > 0:
@@ -269,24 +275,24 @@ def get_answer_stats(study):
             "by_type": {} 
         }
         
-        # Query the Answers
+        # --- FIX: Using text() literal expressions drops implicit table entity loading ---
         q_base = db.session.query(
             Answer.value, 
             ResultType.display, 
             Result.position,
             Answer.result_id,
             Answer.result_ai_id,
-            Answer.result_chatbot_id
-        ).select_from(Answer).join(
-            ResultType, Answer.resulttype == ResultType.id
-        ).outerjoin(
-            Result, Answer.result_id == Result.id
-        ).filter(
+            Answer.result_chatbot_id,
+            text("answer.result_serp")  # Bypasses the Serp entity model class resolution completely
+        ).select_from(Answer)\
+         .outerjoin(ResultType, Answer.resulttype == ResultType.id)\
+         .outerjoin(Result, Answer.result_id == Result.id)\
+         .filter(
             Answer.study_id == study.id,
             Answer.question_id == question.id,
             Answer.status == 1,
             Answer.value.isnot(None)
-        )
+         )
 
         if study.participants:
             q_base = q_base.filter(Answer.participant_id.isnot(None))
@@ -298,11 +304,22 @@ def get_answer_stats(study):
         grouped_data = {} 
 
         # Group by result type
-        for val, type_name, pos, r_id, ai_id, chat_id in results:
+        for val, type_name, pos, r_id, ai_id, chat_id, serp_id in results:
             if limit_val and pos is not None and pos > limit_val:
                 continue 
             
-            t_name = type_name if type_name else "Unknown"
+            # Formulates dynamic labels cleanly for the dashboard UI tabs
+            if type_name:
+                t_name = type_name
+            elif serp_id:
+                t_name = "SERP Results"
+            elif chat_id:
+                t_name = "Chatbots"
+            elif ai_id:
+                t_name = "AI Overviews"
+            else:
+                t_name = "Organic Results"
+                
             if t_name not in grouped_data:
                 grouped_data[t_name] = []
             
@@ -353,7 +370,6 @@ def get_answer_stats(study):
                     type_stats['raw_values'] = nums
             
             # 3. Text/Comment Questions (Scrollable List)
-            # If it's not a chartable question, we assume it's text/comments
             else:
                 text_answers = [str(v).strip() for v in values if v and str(v).strip()]
                 if text_answers:
@@ -365,7 +381,7 @@ def get_answer_stats(study):
             all_question_stats.append(stats)
             
     return all_question_stats if all_question_stats else None
-
+    
 def convert_answer_stats_to_df(answer_stats_data):
     if not answer_stats_data:
         return pd.DataFrame()

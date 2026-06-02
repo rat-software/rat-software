@@ -31,14 +31,16 @@
             {% if available_data.evaluation_stats %}
             <li class="list-group-item">Evaluation Stats</li>
             {% endif %}
+            
+            {% if available_data.evaluation_breakdown %}
+            <li class="list-group-item">Evaluation Breakdown</li>
+            {% endif %}
+            
             {% if available_data.answer_stats %}
             <li class="list-group-item">Answer Stats</li>
             {% endif %}
             {% if available_data.classifier_stats %}
             <li class="list-group-item">Classifier Stats</li>
-            {% endif %}
-            {% if available_data.overlap_stats %}
-            <li class="list-group-item">Overlap Analysis</li>
             {% endif %}
             {% if available_data.top_domains_standard %}
             <li class="list-group-item">All Domains (Standard)</li>
@@ -50,12 +52,21 @@
 
           <h6 class="mt-3 text-secondary">RAW DATA</h6>
           <ul class="list-group">
+            {% if available_data.questions %}
+            <li class="list-group-item">Questions</li>
+            {% endif %}
+            
             {% if available_data.assessments %}
             <li class="list-group-item">Assessments</li>
             {% endif %}
             {% if available_data.search_results %}
             <li class="list-group-item">Search Results</li>
             {% endif %}
+            
+            {% if available_data.serp_results_master %}
+            <li class="list-group-item">SERP Results</li>
+            {% endif %}
+            
             {% if available_data.ai_results %}
             <li class="list-group-item">AI Overview Results</li>
             {% endif %}
@@ -64,6 +75,13 @@
             {% endif %}
             {% if available_data.chatbot_results %}
             <li class="list-group-item">Chatbot Results</li>
+            {% endif %}
+            
+            {% if available_data.classifier_results %}
+            <li class="list-group-item">Classifier Results</li>
+            {% endif %}
+            {% if available_data.classifier_indicators %}
+            <li class="list-group-item">Classifier Indicators</li>
             {% endif %}
           </ul>
         </div>

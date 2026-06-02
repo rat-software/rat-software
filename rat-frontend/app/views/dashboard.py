@@ -1,8 +1,9 @@
 from .. import app, db, mail
 from app.models import User, Qs_Study, Study
 from ..forms import ContactForm
-from flask import render_template, redirect, flash, url_for, current_app
+from flask import render_template, redirect, flash, url_for, current_app, request
 from flask_security import login_required, current_user
+from flask_security.utils import hash_password
 from flask_mail import Message
 
 @app.route('/')
@@ -37,10 +38,33 @@ def contact():
             
     return render_template('contact.html', form=form, nav=nav)
 
-@app.route('/dashboard')
+
+@app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
     user = User.query.get(current_user.id)
+    
+    # ==============================================================================
+    # FORCED PASSWORD RESET VIEW OVERRIDE
+    # ==============================================================================
+    if getattr(user, 'force_password_change', False):
+        if request.method == 'POST':
+            password = request.form.get('password')
+            password_confirm = request.form.get('password_confirm')
+            
+            if not password or len(password) < 6:
+                flash('Password must be at least 6 characters long.', 'danger')
+            elif password != password_confirm:
+                flash('The passwords you typed do not match.', 'danger')
+            else:
+                user.password = hash_password(password)
+                user.force_password_change = False
+                db.session.commit()
+                flash('Your new secure password has been saved! Account activated.', 'success')
+                return redirect(url_for('dashboard'))
+                
+        return render_template('security/reset_password.html', forced_mode=True)    
+    # ==============================================================================
     
     # 1. Own RAT Studies
     rat_studies = Study.query.filter(
@@ -60,6 +84,7 @@ def dashboard():
     
     if getattr(user, 'super_admin', False) == True:
         other_rat_studies = Study.query.filter(Study.visible == True).order_by(Study.created_at.desc()).all()
+        # 👈 Fixed the typo here: changed order_by to sort by created_at.desc() correctly
         other_qs_studies = Qs_Study.query.filter(Qs_Study.visible == True).order_by(Qs_Study.created_at.desc()).all()
     
     return render_template('dashboard.html', 

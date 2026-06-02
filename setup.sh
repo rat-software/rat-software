@@ -3,12 +3,23 @@
 
 echo "🔧 Starting setup for RAT ..."
 
-# 1. Setup Virtual Environment
+# 1. Check if Python 3.12 is installed
+if ! command -v python3.12 &> /dev/null; then
+    echo "❌ Python 3.12 is not installed."
+    echo "Please install it first."
+    echo "On Ubuntu/Debian, you can typically use:"
+    echo "  sudo apt update && sudo apt install python3.12 python3.12-venv"
+    exit 1
+else
+    echo "✅ Python 3.12 found."
+fi
+
+# 2. Setup Virtual Environment
 echo "🐍 Creating virtual environment..."
-python3 -m venv venv_rat
+python3.12 -m venv venv_rat
 source venv_rat/bin/activate
 
-# 2. Install Dependencies
+# 3. Install Dependencies
 echo "📦 Installing packages..."
 pip install --upgrade pip
 pip install -r requirements_rat.txt

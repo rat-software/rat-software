@@ -2,7 +2,7 @@ body {
   padding-top: 100px;
   /*padding-bottom: 100px;*/
   background-color: #f8f9fa !important;
-  font-size: 1rem; /* KORRIGIERT: Vorher 0.9rem (zu klein) */
+  font-size: 1rem;
 }
 
 .bg-blue {
@@ -39,7 +39,6 @@ ul li {
   padding-top: 15%;
 }
 
-/* KORRIGIERT: Lesbarere kleine Texte */
 .text-small {
   font-size: 0.9rem; 
 }
@@ -266,10 +265,6 @@ button:hover .hover-text {
   min-height: 110vh;
   overflow: visible;
   max-width: 100%;
-}
-
-img {
-  image-rendering: crisp-edges !important;
 }
 
 .back-to-top {

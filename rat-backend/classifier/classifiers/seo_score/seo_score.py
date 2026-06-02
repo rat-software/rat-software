@@ -758,6 +758,7 @@ def main(classifier_id, db, helper, job_server, study_id):
 
     # Get results and start classification
     results = db.get_results(classifier_id, study_id)
+    print(results)
     print(f"Processing {len(results)} results for classifier {classifier_id}")
     classify_results(results, classifier_id, db, job_server, scorer, helper)
 

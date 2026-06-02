@@ -192,10 +192,12 @@ class ClassifierResult(db.Model):
     classifier_id = db.Column("classifier", db.Integer, db.ForeignKey('classifier.id'))
     result_id = db.Column("result", db.Integer, db.ForeignKey('result.id'))
     value = db.Column('value', db.String)
+    job_server = db.Column('job_server', db.String)
     created_at = db.Column(db.DateTime)
     classifier = db.relationship("Classifier", back_populates="results")
     result = db.relationship("Result", back_populates="classifier")
-
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
+    study = db.relationship('Study', back_populates='classifier_results', lazy='select')
 
 class ClassifierIndicator(db.Model):
     __tablename__ = 'classifier_indicator'
@@ -204,9 +206,12 @@ class ClassifierIndicator(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     indicator = db.Column('indicator', db.String)
     value = db.Column('value', db.String)
+    job_server = db.Column('job_server', db.String)
     created_at = db.Column(db.DateTime)
     result_id = db.Column('result', db.Integer, db.ForeignKey('result.id', ondelete='CASCADE'), index=True)
     result = db.relationship('Result', back_populates='indicators', lazy='select')
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
+    study = db.relationship('Study', back_populates='classifier_indicators', lazy='select')
     classifier_id = db.Column('classifier', db.Integer, db.ForeignKey('classifier.id'))
     classifier = db.relationship('Classifier', back_populates='indicators', lazy='select')
 
@@ -267,7 +272,8 @@ class Query(db.Model):
     study = db.relationship('Study', back_populates='queries', lazy='select')
     source_type = db.Column(db.String(50), default='manual')
     scrapers = db.relationship('Scraper', back_populates='query_', lazy='select')
-    results = db.relationship('Result', back_populates='query_', lazy='select') 
+    results = db.relationship('Result', back_populates='query_', lazy='select')
+    assignment_count = db.Column(db.Integer, default=0)    
 
 
 class Question(db.Model):
@@ -354,8 +360,13 @@ class ResultSource(db.Model):
     including processing metadata like progress and counters.
     """
     __tablename__ = 'result_source'
-    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'), primary_key=True)
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'), primary_key=False)
     source_id = db.Column('source', db.Integer, db.ForeignKey('source.id'), nullable=True)
+    created_at = db.Column(db.DateTime)
+    error_code = db.Column(db.String)
+    job_server = db.Column(db.String)
     
     progress = db.Column(db.Integer, default=0, nullable=False)
     counter = db.Column(db.Integer, default=0, nullable=False)
@@ -433,6 +444,8 @@ class Serp(db.Model):
     created_at = db.Column(db.DateTime)
     scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
     scraper = db.relationship('Scraper', back_populates='serps', lazy='select')
+    query_id = db.Column('query', db.Integer, db.ForeignKey('query.id', ondelete='CASCADE'), index=True)
+    query_ = db.relationship('Query', backref=db.backref('serps', lazy=True))
     results = db.relationship('Result', back_populates='serp', lazy='select')
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', backref=db.backref('serps', lazy=True, cascade="all, delete-orphan"))
@@ -452,6 +465,9 @@ class Source(db.Model):
     progress = db.Column(db.Integer)
     content_type = db.Column(db.String)
     error_code = db.Column(db.String)
+    country = db.Column(db.String)
+    job_server = db.Column(db.String)
+    content_dict = db.Column(db.String)
     status_code = db.Column(db.Integer)
     created_at = db.Column(db.DateTime)
 
@@ -480,6 +496,12 @@ class Study(db.Model):
     completion_text = db.Column(db.Text, nullable=True)
     assessable_result_types_text = db.Column(db.String, nullable=True)
     visible = db.Column(db.Boolean, default=True, nullable=False)
+    group_by_query = db.Column(db.Boolean, default=True)
+    
+    
+    limit_by_query = db.Column(db.Boolean, default=True) 
+    
+    max_queries_per_participant = db.Column(db.Integer)
 
     assessment_result_types = db.relationship('ResultType', secondary='study_resulttype', lazy='subquery', backref=db.backref('studies', lazy=True))
     answers = db.relationship('Answer', back_populates='study', lazy='select', cascade="all, delete-orphan")
@@ -492,6 +514,8 @@ class Study(db.Model):
     users = db.relationship('User', secondary=study_user, back_populates='studies', lazy='select')
     participants = db.relationship('Participant', secondary=participant_study, back_populates='studies', lazy='select')
     classifier = db.relationship('Classifier', secondary=classifier_study, back_populates='studies', lazy='select')
+    classifier_results = db.relationship('ClassifierResult', back_populates='study', cascade="all, delete-orphan")
+    classifier_indicators = db.relationship('ClassifierIndicator', back_populates='study', cascade="all, delete-orphan")
 
 
 
@@ -522,6 +546,7 @@ class User(db.Model, UserMixin):
     us_phone_number = db.Column(db.String)
     newsletter_opt_in = db.Column(db.Boolean, default=False)
     super_admin = db.Column(db.Boolean, default=False)
+    force_password_change = db.Column(db.Boolean, default=False, nullable=False)
 
     roles = db.relationship('Role', secondary=user_role, back_populates='users', lazy='select')
     studies = db.relationship('Study', secondary=study_user, back_populates='users', lazy='select')
@@ -545,7 +570,7 @@ class ResultAi(db.Model):
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', backref=db.backref('result_ais', lazy=True, cascade="all, delete-orphan"))
     query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
-    query = db.relationship('Query', backref=db.backref('result_ais', lazy=True))
+    query_ = db.relationship('Query', backref=db.backref('result_ais', lazy=True))
     sources = db.relationship('ResultAiSource', back_populates='result_ai', lazy='select')
     result_type_text = db.Column(db.String(50), nullable=True)
     engine_text = db.Column(db.String(100), nullable=True)
@@ -600,7 +625,7 @@ class ResultChatbot(db.Model):
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', backref=db.backref('result_chatbots', lazy=True, cascade="all, delete-orphan"))
     query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
-    query = db.relationship('Query', backref=db.backref('result_chatbots', lazy=True))
+    query_ = db.relationship('Query', backref=db.backref('result_chatbots', lazy=True))
     answers = db.relationship('Answer', back_populates='result_chatbot', lazy='select')
     result_type_text = db.Column(db.String(50), nullable=True)
     engine_text = db.Column(db.String(100), nullable=True)

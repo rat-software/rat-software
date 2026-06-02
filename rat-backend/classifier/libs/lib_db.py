@@ -49,14 +49,18 @@ class DB:
 
     def get_classifiers(self):
         """
-        Get the classifiers from the database.
-
-        Returns:
-            list: List of classifiers with their IDs and names.
+        Get the classifiers from the database, newest studies first.
         """
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("SELECT classifier.id, classifier.name, classifier_study.study FROM classifier, classifier_study where classifier.id = classifier_study.classifier")
+            
+            cur.execute("""
+                SELECT classifier.id, classifier.name, classifier_study.study 
+                FROM classifier
+                JOIN classifier_study ON classifier.id = classifier_study.classifier
+                ORDER BY classifier_study.study DESC
+            """)
+            
             conn.commit()
             classifiers = cur.fetchall()
         return classifiers
@@ -104,29 +108,33 @@ class DB:
     def get_results(self, classifier_id, study_id):     
         """
         Get the results for a given classifier ID.
-
-        Args:
-            classifier_id (int): ID of the classifier.
-
-        Returns:
-            list: List of results for the given classifier ID.
         """
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # NEU: DISTINCT ON (result.id) sorgt dafür, dass keine ID doppelt vorkommt!
+            # WICHTIG: Bei DISTINCT ON muss die Spalte (result.id) als erstes im ORDER BY stehen.
             cur.execute("""
-                SELECT result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
+                SELECT DISTINCT ON (result.id)
+                       result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
                        result.final_url, source.file_path, source.content_type, source.error_code, source.status_code, 
                        result_source.source, classifier_study.classifier
-                FROM result, source, result_source, classifier_study
-                WHERE result_source.result = result.id AND result_source.source = source.id AND classifier_study.classifier = %s AND result.study = %s
-                      AND (source.progress = 1 OR source.progress = -1) 
-                      AND result.study = classifier_study.study
-                      AND result.id NOT IN (SELECT classifier_result.result FROM classifier_result WHERE classifier_result.classifier = %s)
-                ORDER BY result.created_at, result.id
-                LIMIT 2
-            """, (classifier_id, study_id, classifier_id))
+                FROM result
+                JOIN result_source ON result_source.result = result.id
+                JOIN source ON result_source.source = source.id
+                JOIN classifier_study ON result.study = classifier_study.study
+                LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = %s
+                WHERE classifier_study.classifier = %s 
+                  AND result.study = %s
+                  AND (source.progress = 1 OR source.progress = -1) 
+                  AND (cr.id IS NULL OR cr.value IN ('error', 'classifier_error', 'in process'))
+                ORDER BY result.id, result.created_at
+                LIMIT 10
+            """, (classifier_id, classifier_id, study_id))
+            
             conn.commit()
             results = cur.fetchall()
+            
         results = self.get_search_engines(results)
         results = self.get_queries(results)
         return results
@@ -215,7 +223,7 @@ class DB:
             cur = conn.cursor(cursor_factory=DictCursor)
             cur.execute("DELETE FROM classifier_indicator WHERE result = %s", (result,))
             cur.execute("DELETE FROM classifier_result WHERE result = %s", (result,))
-            cur.execute("DELETE FROM classifier_result WHERE value = 'in process'", (result,))
+            cur.execute("DELETE FROM classifier_result WHERE value = 'in process' AND result = %s", (result,))
             conn.commit()
 
     def reset(self, job_server):
