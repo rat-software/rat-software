@@ -21,34 +21,11 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
---
--- TOC entry 3825 (class 1262 OID 18501)
--- Name: rat-install; Type: DATABASE; Schema: -; Owner: -
---
-
-CREATE DATABASE "rat-install" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'C.UTF-8';
+CREATE SCHEMA public;
 
 
-\unrestrict rgL1bLjBkJQ47Cdp1amRwQJFzJyh0Y730pAkhOdI7xcUMAhdtbgn1czMa6ItWk2
-\encoding SQL_ASCII
-\connect -reuse-previous=on "dbname='rat-install'"
-\restrict rgL1bLjBkJQ47Cdp1amRwQJFzJyh0Y730pAkhOdI7xcUMAhdtbgn1czMa6ItWk2
+ALTER SCHEMA public OWNER TO pg_database_owner;
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
 
 --
 -- TOC entry 219 (class 1259 OID 17085)
