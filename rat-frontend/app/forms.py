@@ -67,6 +67,13 @@ class StudySettingsForm(FlaskForm):
     classifiers = MultiCheckboxField("Select Classifiers", coerce=int)
     
     submit_settings = SubmitField("Save Configuration")
+    
+    # Onboarding
+    show_description_after_join = BooleanField("View the study description after joining", default=False)
+    participant_description = TextAreaField("Welcome Message / Study Description")
+    pre_survey_json = TextAreaField("Pre-Survey JSON")
+    post_survey_json = TextAreaField("Post-Survey JSON")
+    completion_text = TextAreaField("Completion Text / Goodbye Message")
 
 class AnswerOptions(FlaskForm):
     value = StringField("Value")

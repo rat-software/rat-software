@@ -13,23 +13,19 @@ from flask import current_app
 import os
 import zipfile
 import io
+import json
 from flask import send_file
 
 from werkzeug.utils import secure_filename
 from itsdangerous import URLSafeSerializer, BadSignature
-import time # Ensure time is imported!
+import time 
 
 def get_signed_storage_url(file_path, file_type='screenshot'):
     api_key = current_app.config.get('API_UPLOAD_KEY')
     base_url = current_app.config.get('STORAGE_BASE_URL')
     
-    # 1. Switch to the standard URLSafeSerializer
     serializer = URLSafeSerializer(api_key)
-    
-    # 2. Manually calculate expiration (e.g., +300 seconds / 5 mins)
     expires_at = int(time.time()) + 300
-    
-    # 3. Add the expires_at timestamp into the payload dictionary
     ticket = serializer.dumps({'filename': file_path, 'expires_at': expires_at}, salt='source-view')
     
     return f"{base_url}/view/{file_path}/{file_type}?ticket={ticket}"
@@ -39,120 +35,40 @@ def get_signed_storage_url(file_path, file_type='screenshot'):
 def inject_storage_urls():
     return dict(get_storage_url=get_signed_storage_url)
 
+# ==========================================================
+# --- FORTSCHRITTS- UND ABSCHLUSS-SEITE ---
+# ==========================================================
 @app.route('/study/<study_id>/assessments/<participant_id>', methods=["GET", "POST"])
 def assessments(study_id, participant_id):
     logout_user()
     study = Study.query.get_or_404(study_id)
     participant = Participant.query.get_or_404(participant_id)
     
-    # 1. Fetch current active task for this participant
-    answers_for_item = Answer.query.filter_by(
-        participant_id=participant_id, 
-        study_id=study_id, 
-        status=0
-    ).order_by(Answer.id).all()
-
-    # 2. Redirect safely if the queue is empty
-    if not answers_for_item:
-        flash('You have completed all your assigned assessments. Thank you!', 'success')
-        # Redirects them to a safe place (you can change this to index/home if you prefer)
-        return redirect(url_for('returning_participant', study_id=study_id)) 
-
-    # 3. Identify the current task properties
-    task_item = None
-    task_type = None
-    resulttype_id = answers_for_item[0].resulttype
-
-    if answers_for_item[0].result_id:
-        task_item = answers_for_item[0].result
-        task_type = 'result'
-    elif answers_for_item[0].result_ai_id:
-        task_item = answers_for_item[0].result_ai
-        task_type = 'ai'
-    elif answers_for_item[0].result_chatbot_id:
-        task_item = answers_for_item[0].result_chatbot
-        task_type = 'chatbot'
-    elif answers_for_item[0].result_serp:
-        task_item = answers_for_item[0].result_serp
-        task_type = 'serp'
-
-    # 4. Handle the Submission
-    if request.method == "POST":
-        submitted_values = {}
-        
-        # Save answers for the current item
-        for answer in answers_for_item:
-            val = request.form.get(str(answer.question_id))
-            if isinstance(val, list): 
-                val = ",".join(val) # For multi-select fields
-                
-            if val:
-                answer.value = val
-                answer.status = 1
-                answer.created_at = datetime.now()
-                submitted_values[answer.question_id] = val
-        
-        # --- QUERY-AWARE AUTO-MIRRORING HOOK ---
-        if task_type == 'result' and hasattr(task_item, 'normalized_url') and task_item.normalized_url:
-            q_obj = getattr(task_item, 'query_', None) # FIX: Use query_
-            
-            if q_obj:
-                # Find matching results with same normalized_url AND same batch timestamp
-                duplicates = Result.query.join(Query).filter(
-                    Result.study_id == study_id,
-                    Result.normalized_url == task_item.normalized_url,
-                    Query.created_at == q_obj.created_at,
-                    Result.id != task_item.id
-                ).all()
-                
-                if duplicates:
-                    dup_ids = [d.id for d in duplicates]
-                    
-                    # Find any pending mirrored answers assigned to this specific participant
-                    dup_answers = Answer.query.filter(
-                        Answer.participant_id == participant_id,
-                        Answer.status == 0,
-                        Answer.result_id.in_(dup_ids)
-                    ).all()
-                    
-                    # Mirror the values quietly
-                    for dup in dup_answers:
-                        if dup.question_id in submitted_values:
-                            dup.value = submitted_values[dup.question_id]
-                            dup.status = 1
-                            dup.created_at = datetime.now()
-                            if resulttype_id: 
-                                dup.resulttype = resulttype_id
-
-        db.session.commit()
-        flash('Assessment saved successfully.', 'success')
-        return redirect(url_for('assessments', participant_id=participant_id, study_id=study_id))
-
-    # 5. Calculate Progress Statistics for the template
-    # Because Answer rows are generated per-question, we divide by questions to get "tasks"
     questions_count = len(study.questions) if study.questions else 1
     
+    # Berechnet den echten Fortschritt
     total_answer_rows = Answer.query.filter_by(participant_id=participant_id, study_id=study_id).count()
-    closed_answer_rows = Answer.query.filter_by(participant_id=participant_id, study_id=study_id, status=1).count()
+    closed_answer_rows = Answer.query.filter(
+        Answer.participant_id == participant_id, 
+        Answer.study_id == study_id, 
+        Answer.status.in_([1, 2])
+    ).count()
     
-    all_tasks_count = total_answer_rows // questions_count
-    closed_tasks_count = closed_answer_rows // questions_count
-    pct = (closed_tasks_count / all_tasks_count) * 100 if all_tasks_count > 0 else 0
+    answers_all = total_answer_rows // questions_count
+    answers_closed = closed_answer_rows // questions_count
+    pct = round((answers_closed / answers_all) * 100) if answers_all > 0 else 0
     
-    return render_template('assessments/assessment.html', 
-                           answers=answers_for_item, 
-                           task_item=task_item, 
-                           task_type=task_type,
-                           all=all_tasks_count, 
-                           closed=closed_tasks_count, 
-                           pct=round(pct), 
-                           show_urls=study.show_urls, 
+    # Lädt das Template assessments.html -> Hier wird dein Completion Text angezeigt!
+    return render_template('assessments/assessments.html', 
                            study=study, 
-                           errors={}, 
-                           submitted_data={})
+                           participant=participant,
+                           answers_all=answers_all, 
+                           answers_closed=answers_closed, 
+                           pct=pct)
 
-
-
+# ==========================================================
+# --- HAUPT-AUFGABEN-SCHLEIFE (ROUTING) ---
+# ==========================================================
 @app.route('/assessment/<participant_id>/<study_id>', methods=["GET", "POST"])
 def assessment(participant_id, study_id):
     logout_user()
@@ -160,6 +76,26 @@ def assessment(participant_id, study_id):
     study = Study.query.get_or_404(study_id)
     db.session.expire_all()
 
+    # --- ONBOARDING & PRE-SURVEY INTERCEPTION ---
+    total_answers = Answer.query.filter_by(participant_id=participant.id, study_id=study.id, status=1).count()
+    
+    pre_answers_dict = {}
+    if participant.pre_survey_answers:
+        try: pre_answers_dict = json.loads(participant.pre_survey_answers)
+        except: pass
+    
+    has_pre_answers = str(study.id) in pre_answers_dict
+    
+    if study.show_description_after_join and not has_pre_answers and total_answers == 0:
+        if not request.args.get('seen_welcome'):
+            next_url = url_for('assessment', participant_id=participant.id, study_id=study.id, seen_welcome=1)
+            return render_template('surveys/welcome.html', study=study, participant=participant, next_url=next_url)
+
+    if study.pre_survey_json and study.pre_survey_json.strip() not in ['', '[]']:
+        if not has_pre_answers:
+            return redirect(url_for('dynamic_survey', study_id=study.id, survey_type='pre', participant_id=participant.id))
+
+    # --- RESULT QUERY LOGIC ---
     open_res_q = db.session.query(Answer.result_id).filter(
         Answer.participant_id == participant.id,
         Answer.study_id == study.id,
@@ -224,7 +160,18 @@ def assessment(participant_id, study_id):
     ).order_by(Answer.id).first()
 
     if not next_answer:
-        flash('Congratulations, you have completed all available assessments!', 'success')
+        # --- POST-SURVEY INTERCEPTION ---
+        if study.post_survey_json and study.post_survey_json.strip() not in ['', '[]']:
+            post_answers_dict = {}
+            if participant.post_survey_answers:
+                try: post_answers_dict = json.loads(participant.post_survey_answers)
+                except: pass
+            
+            if str(study.id) not in post_answers_dict:
+                return redirect(url_for('dynamic_survey', study_id=study.id, survey_type='post', participant_id=participant.id))
+
+        # --- FERTIG! LEITE ZUR ABSCHLUSSSEITE WEITER ---
+        # Keine flash-Message mehr, das macht die UI jetzt schöner
         return redirect(url_for("assessments", participant_id=participant.id, study_id=study_id))
 
     task_item, task_type, answers_for_item, answers_to_update = None, None, [], []
@@ -233,13 +180,10 @@ def assessment(participant_id, study_id):
         task_type = 'result'
         task_item = db.session.get(Result, next_answer.result_id)
         if task_item:
-            # --- QUERY-AWARE DUPLICATE DETECTION ---
             q_obj = getattr(task_item, 'query_', None)
             
             all_duplicate_result_ids = set()
-            # Filter strictly by the query's batch timestamp
             if q_obj and task_item.normalized_url:
-                # FIX: Find items with the same URL, in the same upload batch (timestamp)
                 duplicates = Result.query.join(Query).filter(
                     Result.study_id == study_id,
                     Result.normalized_url == task_item.normalized_url,
@@ -266,17 +210,14 @@ def assessment(participant_id, study_id):
                 Answer.result_id == task_item.id, Answer.participant_id == participant.id
             ).join(Question).options(joinedload(Answer.question)).order_by(Question.position).all()
             
-            # 1. Define the full set of IDs to update (Current + Duplicates)
             target_ids = all_duplicate_result_ids.union({task_item.id})
             
-            # 2. Safely query for updates
             if target_ids:
                 answers_to_update = db.session.query(Answer).filter(
                     Answer.participant_id == participant.id, 
                     Answer.result_id.in_(target_ids)
                 ).all()
             else:
-                # Fallback for safety (though with the union, target_ids should never be empty)
                 answers_to_update = answers_for_item
 
     elif next_answer.result_ai_id:
@@ -356,7 +297,7 @@ def assessment(participant_id, study_id):
                     answer.status = 1; answer.created_at = datetime.now()
                     if resulttype_id: answer.resulttype = resulttype_id
                 db.session.commit()
-                flash('Your assessments have been saved.', 'success')
+                # Flash message entfernt für einen flüssigeren Übergang ohne störende Banner
                 return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
             else:
                 flash("Please complete all required fields.", "danger")
@@ -375,7 +316,59 @@ def serp_image(id):
     serp = Serp.query.get_or_404(id)
     if not serp.file_path:
         return "No file", 404
-    
     signed_url = get_signed_storage_url(serp.file_path, file_type='screenshot')
-    
     return redirect(signed_url)
+
+
+# ==============================================================================
+# DYNAMIC SURVEY ROUTING (PRE- AND POST-SURVEYS)
+# ==============================================================================
+@app.route('/study/<study_id>/survey/<survey_type>/<participant_id>', methods=['GET', 'POST'])
+def dynamic_survey(study_id, survey_type, participant_id):
+    logout_user()
+    study = Study.query.get_or_404(study_id)
+    participant = Participant.query.get_or_404(participant_id)
+    
+    if survey_type == 'pre':
+        json_data = study.pre_survey_json
+        title = "Pre-Assessment Questionnaire"
+        description = "Please answer the following questions before starting the evaluation."
+    else:
+        json_data = study.post_survey_json
+        title = "Post-Assessment Questionnaire"
+        description = "Thank you for your evaluations! Please answer these final questions."
+        
+    questions = []
+    if json_data:
+        try:
+            questions = json.loads(json_data)
+        except Exception as e:
+            flash(f"Error loading survey format: {e}", "danger")
+            
+    if request.method == 'POST':
+        submitted = {}
+        for q in questions:
+            q_id = q['id']
+            if q['type'] == 'multiple_choice':
+                val = request.form.getlist(q_id)
+                submitted[q_id] = val
+            else:
+                submitted[q_id] = request.form.get(q_id, '')
+                
+        db_field = participant.pre_survey_answers if survey_type == 'pre' else participant.post_survey_answers
+        ans_dict = {}
+        if db_field:
+            try: ans_dict = json.loads(db_field)
+            except: pass
+            
+        ans_dict[str(study.id)] = submitted
+        
+        if survey_type == 'pre':
+            participant.pre_survey_answers = json.dumps(ans_dict)
+        else:
+            participant.post_survey_answers = json.dumps(ans_dict)
+            
+        db.session.commit()
+        return redirect(url_for('assessment', participant_id=participant.id, study_id=study.id))
+        
+    return render_template('surveys/survey.html', title=title, description=description, questions=questions, study=study)
