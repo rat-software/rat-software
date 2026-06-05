@@ -257,6 +257,8 @@ class Participant(db.Model):
     updated_at = db.Column(db.DateTime)
     answers = db.relationship('Answer', back_populates='participant', lazy='select')
     studies = db.relationship('Study', secondary=participant_study, back_populates='participants', lazy='select')
+    pre_survey_answers = db.Column(db.Text, nullable=True)  
+    post_survey_answers = db.Column(db.Text, nullable=True)
 
 
 class Query(db.Model):
@@ -516,6 +518,13 @@ class Study(db.Model):
     classifier = db.relationship('Classifier', secondary=classifier_study, back_populates='studies', lazy='select')
     classifier_results = db.relationship('ClassifierResult', back_populates='study', cascade="all, delete-orphan")
     classifier_indicators = db.relationship('ClassifierIndicator', back_populates='study', cascade="all, delete-orphan")
+    
+    participant_description = db.Column(db.Text, nullable=True)
+
+    show_description_after_join = db.Column(db.Boolean, default=False, nullable=False)
+    pre_survey_json = db.Column(db.Text, nullable=True)
+    post_survey_json = db.Column(db.Text, nullable=True)    
+    
 
 
 

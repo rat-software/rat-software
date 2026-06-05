@@ -37,10 +37,10 @@
         <h4 class="text-success mb-3 fw-bold"><i class="fas fa-check-circle me-2"></i>Assessment Complete!</h4>
         <p class="mb-0 text-dark fs-5">Thank you for your participation.</p>
         
-        {% if study.completion_text %}
+		{% if study.completion_text %}
         <hr class="my-4">
-        <div class="text-start text-dark">
-            {{ study.completion_text | safe }}
+        <div class="text-start text-dark" style="font-size: 1.1rem; line-height: 1.6;">
+            {{ study.completion_text | markdown }}
         </div>
         {% endif %}
         

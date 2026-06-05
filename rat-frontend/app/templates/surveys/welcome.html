@@ -1,0 +1,32 @@
+{% extends "master.html" %}
+
+{% block title %}Study Introduction{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">Study Introduction</h1>
+
+<div class="row mt-4">
+  <div class="col-lg-8 offset-lg-2">
+    <div class="card shadow-sm border-primary">
+      <div class="card-header bg-white border-bottom py-3">
+        <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-circle-info text-primary me-2"></i> Welcome to the Study</h4>
+      </div>
+      <div class="card-body p-4">
+        
+        <div class="text-dark" style="font-size: 1.1rem; line-height: 1.6;">
+            {{ study.participant_description | markdown }}
+        </div>
+
+        <hr class="my-4 text-secondary">
+        
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a href="{{ next_url }}" class="btn btn-primary btn-lg fw-bold px-5">
+                Continue <i class="fa-solid fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
