@@ -4,7 +4,7 @@ from flask_security.utils import hash_password
 
 # Wrap everything inside the application context
 with app.app_context():
-    user = User.query.filter_by(email="sebastian.suenkler@gmx.de").first()
+    user = User.query.filter_by(email="user@mail.com").first()
 
     if user:
         user.password = hash_password("TemporaryPassword123!")
