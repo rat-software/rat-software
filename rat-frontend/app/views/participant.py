@@ -216,9 +216,9 @@ def new_participant(study_id):
     # ---------------------------------------------------------
      # MODE A: QUERY PRIORITY QUEUE (Limit by Query & Items)
     # ---------------------------------------------------------
-    db_query_limit = getattr(study, 'max_queries_per_participant', -1)
-    
-    if db_query_limit != -1:
+    db_query_limit = study.max_queries_per_participant
+
+    if db_query_limit is not None and db_query_limit != -1:
         max_queries = db_query_limit if db_query_limit > 0 else 99999
         
         tasks_by_query = {}
