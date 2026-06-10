@@ -19,7 +19,7 @@ import unittest
 import zipfile
 from unittest.mock import patch
 
-from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import URLSafeSerializer
 
 TEST_API_KEY = 'test-key-for-unit-tests'
 
@@ -38,8 +38,9 @@ app.config['TESTING'] = True
 
 
 def _make_ticket(filename, key=TEST_API_KEY):
-    s = URLSafeTimedSerializer(key)
-    return s.dumps({'filename': filename}, salt='source-view')
+    s = URLSafeSerializer(key)
+    expires_at = int(time_mod.time()) + 4 * 3600
+    return s.dumps({'filename': filename, 'expires_at': expires_at}, salt='source-view')
 
 
 class _Base(unittest.TestCase):
