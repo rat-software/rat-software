@@ -1,0 +1,176 @@
+{% extends "master.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">{{ title }}</h1>
+
+<div class="row mt-4 mb-5">
+  <div class="col-lg-8 offset-lg-2">
+    <div class="card shadow-sm border-secondary">
+      <div class="card-header bg-light border-bottom py-3">
+        <h4 class="mb-0 fw-bold text-dark">{{ title }}</h4>
+        {% if description %}
+        <p class="text-secondary mb-0 mt-1">{{ description }}</p>
+        {% endif %}
+      </div>
+      
+      <div class="card-body p-4">
+        
+        <form method="POST" id="dynamic-survey-form" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            {% for q in questions %}
+            <div class="mb-4 survey-question-block" data-mandatory="{{ 'true' if q.mandatory else 'false' }}" data-qid="{{ q.id }}">
+                
+                <label class="form-label fw-bold text-dark mb-2" style="font-size: 1.05rem;">
+                    {{ q.title }}
+                    {% if q.mandatory %}<span class="text-danger ms-1" title="Required">*</span>{% endif %}
+                </label>
+
+				{% if q.type == 'short_text' %}
+                    <input type="text" class="form-control" name="{{ q.id }}" {% if q.mandatory %}required{% endif %}>
+                
+                {% elif q.type == 'long_text' %}
+                    <textarea class="form-control" name="{{ q.id }}" rows="3" {% if q.mandatory %}required{% endif %}></textarea>
+                
+                {% elif q.type == 'single_choice' %}
+                    <div class="d-flex flex-column gap-2 mt-2">
+                    {% for opt in q.options %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="{{ q.id }}" id="{{ q.id }}_{{ loop.index }}" value="{{ opt.value }}" {% if q.mandatory %}required{% endif %}>
+                            <label class="form-check-label" for="{{ q.id }}_{{ loop.index }}">{{ opt.label | default(opt.value) }}</label>
+                        </div>
+                    {% endfor %}
+                    </div>
+
+                {% elif q.type == 'multiple_choice' %}
+                    <div class="d-flex flex-column gap-2 mt-2">
+                    {% for opt in q.options %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="{{ q.id }}" id="{{ q.id }}_{{ loop.index }}" value="{{ opt.value }}">
+                            <label class="form-check-label" for="{{ q.id }}_{{ loop.index }}">{{ opt.label | default(opt.value) }}</label>
+                        </div>
+                    {% endfor %}
+                    </div>
+                
+                {% elif q.type == 'likert_scale' %}
+                    {% if q.orientation == 'vertical' %}
+                        <div class="d-flex flex-column gap-2 mt-2">
+                        {% for opt in q.options %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="{{ q.id }}" id="{{ q.id }}_{{ loop.index }}" value="{{ opt.value }}" {% if q.mandatory %}required{% endif %}>
+                                <label class="form-check-label" for="{{ q.id }}_{{ loop.index }}">
+                                    {% if opt.label %}{{ opt.label }}{% else %}{{ opt.value }}{% endif %}
+                                </label>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="table-responsive mt-2">
+                            <table class="table table-borderless text-center align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                    {% for opt in q.options %}
+                                        <th style="font-weight: normal; font-size: 0.9rem; width: {{ 100 / q.options|length }}%;">
+                                            {% if opt.label %}{{ opt.label }}{% else %}{{ opt.value }}{% endif %}
+                                        </th>
+                                    {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                    {% for opt in q.options %}
+                                        <td>
+                                            <input class="form-check-input" style="transform: scale(1.2);" type="radio" name="{{ q.id }}" value="{{ opt.value }}" {% if q.mandatory %}required{% endif %}>
+                                        </td>
+                                    {% endfor %}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+
+                {% elif q.type == 'scale_number' %}
+                    <div class="px-2 mt-2">
+                        {% set s_min = q.min | default('1') %}
+                        {% set s_max = q.max | default('5') %}
+                        {% set s_step = q.step | default('1') %}
+                        {% set s_val = ((s_min | float) + (s_max | float)) / 2 %}
+                        
+                        <input type="range" class="form-range" name="{{ q.id }}" min="{{ s_min }}" max="{{ s_max }}" step="{{ s_step }}" value="{{ s_val }}" {% if q.mandatory %}required{% endif %}>
+                        
+                        <div class="d-flex justify-content-between text-muted small mt-1 fw-bold">
+                            <span>{{ q.min_label | default(s_min) }}</span>
+                            <span>{{ q.max_label | default(s_max) }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="invalid-feedback fw-bold mt-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> This field is required.</div>
+            </div>
+            {% endfor %}
+
+            <hr class="my-4 text-secondary">
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary btn-lg fw-bold px-5" id="submit-survey-btn">
+                    Submit Answers <i class="fa-solid fa-check ms-2"></i>
+                </button>
+            </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Client-side validation to ensure all mandatory fields are filled out
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('dynamic-survey-form');
+    
+    form.addEventListener('submit', function(event) {
+        let isValid = true;
+        const questionBlocks = document.querySelectorAll('.survey-question-block');
+        
+        questionBlocks.forEach(block => {
+            const isMandatory = block.dataset.mandatory === 'true';
+            if (!isMandatory) return; // Skip validation if not required
+            
+            const inputs = block.querySelectorAll('input, textarea');
+            let answered = false;
+            
+            inputs.forEach(input => {
+                if (input.type === 'radio' || input.type === 'checkbox') {
+                    if (input.checked) answered = true;
+                } else if (input.type === 'range') {
+                    answered = true; // Range sliders always have a value
+                } else {
+                    if (input.value.trim() !== '') answered = true;
+                }
+            });
+            
+            if (!answered) {
+                isValid = false;
+                block.querySelector('.form-label').classList.add('text-danger');
+                inputs.forEach(i => i.classList.add('is-invalid'));
+                block.querySelector('.invalid-feedback').style.display = 'block';
+            } else {
+                block.querySelector('.form-label').classList.remove('text-danger');
+                inputs.forEach(i => i.classList.remove('is-invalid'));
+                const feedback = block.querySelector('.invalid-feedback');
+                if(feedback) feedback.style.display = 'none';
+            }
+        });
+        
+        if (!isValid) {
+            event.preventDefault();
+            // Scroll to the first error
+            const firstError = document.querySelector('.is-invalid');
+            if (firstError) firstError.scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
+    });
+});
+</script>
+{% endblock %}

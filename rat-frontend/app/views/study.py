@@ -609,10 +609,10 @@ def update_study_settings(id):
             except ValueError:
                 study.max_queries_per_participant = 0
         else:
-            # -1 bedeutet für uns intern: Checkbox ist AUS!
+            # -1 Checkbox deactivated
             study.max_queries_per_participant = -1
 
-        # 2. Speichere das absolute Item-Limit
+        # 2. Item-Limit
         study.limit_per_participant = form.limit_per_participant.data
         if study.limit_per_participant:
             study.max_results_per_participant = form.max_results_per_participant.data
@@ -627,6 +627,13 @@ def update_study_settings(id):
         for r_data in form.ranges.data:
             if r_data['start_range'] and r_data['end_range']:
                 db.session.add(RangeStudy(study=study.id, range_start=r_data['start_range'], range_end=r_data['end_range']))
+                
+        # --- 5. ONBOARDING
+        study.show_description_after_join = form.show_description_after_join.data
+        study.participant_description = form.participant_description.data
+        study.pre_survey_json = form.pre_survey_json.data
+        study.post_survey_json = form.post_survey_json.data
+        study.completion_text = form.completion_text.data
         
         study.updated_at = datetime.now()
         db.session.commit()

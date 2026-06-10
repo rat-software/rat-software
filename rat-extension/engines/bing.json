@@ -183,23 +183,23 @@
       }
     ]
   },
-  "behavior": {
-    "cookieConsentSelectors": [
-      "#bnp_btn_accept",
-      ".bnp_btn_accept"
-    ],
-    "popupDismissSelectors": [],
-    "aiExpandSelectors": [
-      ".gs_readMoreFullBtn",
-      ".cit_exp_btn"
-    ],
-    "stickyHeaderSelectors": [
-      "#b_header",
-      ".b_searchboxForm",
-      "[style*=\"position: fixed\"]",
-      "[style*=\"position: sticky\"]"
-    ]
-  },
+	"behavior": {
+		"cookieConsentSelectors": [
+		  "#bnp_btn_accept",
+		  ".bnp_btn_accept"
+		],
+		"popupDismissSelectors": [],
+		"aiExpandSelectors": [
+		  ".commoncontrols-compact-expansion-button button",
+		  ".cht_cit_exp"
+		],
+		"stickyHeaderSelectors": [
+		  "#b_header",
+		  ".b_searchboxForm",
+		  "[style*=\"position: fixed\"]",
+		  "[style*=\"position: sticky\"]"
+		]
+	  },
   "captcha": {
     "urlIndicators": [],
     "textIndicators": [],
@@ -236,26 +236,20 @@
         "maxLength": 200
       }
     },
-    "ai_overview": {
-      "container": "div.gs_h.gs_caphead",
-      "text": {
-        "selector": ".gs_text",
-        "regexClean": "^(Bilder\\s*|Videos\\s*)+"
-      },
-      "sources": [
-        {
-          "type": "attribute_based",
-          "container": ".gs_cit",
-          "titleAttribute": "data-title",
-          "urlAttribute": "data-url"
-        },
-        {
-          "type": "standard",
-          "container": ".hov-item",
-          "title": ".hov-item-ttl",
-          "url": "a"
-        }
-      ]
-    }
+	"ai_overview": {
+		  "container": "#copans_container",
+		  "text": {
+			"selector": ".cht_mdroot",
+			"regexClean": "^((Bilder|Videos|Images|Vidéos|Imágenes|Immagini|Video|Imagens|Vídeos|Afbeeldingen|Video's|Videor|Videoer|Billeder|Kuvat|Videot|Obrazy|Wideo|Картинки|Изображения|Видео|画像|ビデオ)\\s*)+"
+		  },
+		  "sources": [
+			{
+			  "type": "standard",
+			  "container": ".cht_cit",
+			  "title": ".cht_cit_title_text",
+			  "url": "a"
+			}
+		  ]
+		}
   }
 }

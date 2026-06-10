@@ -16,6 +16,7 @@ rat-frontend/.env
 rat-storage/.env
 rat-backend/query_sampler/google-ads.yaml
 .claude
+.extension_downloads.csv
 
 # Virtuelle Umgebungen (lokal, nicht versionieren)
 venv_rat/

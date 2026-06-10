@@ -94,18 +94,17 @@
       cursor: pointer;
   }
 
-.floating-save-warning {
+  .floating-save-warning {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 9999; /* Bleibt immer im Vordergrund */
+      z-index: 9999;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
       width: 90%;
       max-width: 600px;
       margin: 0 !important;
   }
-
 </style>
 {% endblock %}
 
@@ -122,7 +121,7 @@
       </a>
     </div>
 
-    <div class="card shadow-sm mb-4 border-0">
+    <div class="card shadow-sm mb-4 border-secondary">
       <div class="card-body d-flex justify-content-between align-items-start p-4 bg-white rounded">
         <div>
           <h2 class="h4 mb-1 fw-bold text-dark">
@@ -145,9 +144,9 @@
       </div>
     </div>
 
-    <div class="card mb-4 border-primary shadow-sm">
-      <div class="card-header bg-white border-primary text-primary fw-bold d-flex align-items-center py-3">
-        <i class="fa-solid fa-cloud-arrow-up me-2"></i> Data Collection & Status
+    <div class="card mb-4 border-secondary shadow-sm">
+      <div class="card-header bg-white border-bottom text-dark fw-bold d-flex align-items-center py-3">
+        <i class="fa-solid fa-cloud-arrow-up me-2 text-secondary"></i> Data Collection & Status
       </div>
       <div class="card-body p-4">
         
@@ -167,9 +166,9 @@
               <a href="#" class="btn btn-outline-primary btn-sm me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#installGuideModal">
                 <i class="fa-solid fa-circle-question me-1"></i> Guide
               </a>
-                <a href="{{ url_for('download_extension') }}" class="btn btn-primary btn-sm fw-bold">
-                    <i class="fa-solid fa-download me-1"></i> Download
-                </a>
+              <a href="{{ url_for('download_extension') }}" class="btn btn-primary btn-sm fw-bold">
+                <i class="fa-solid fa-download me-1"></i> Download
+              </a>
             </div>
           </div>
         </div>
@@ -257,9 +256,8 @@
                 </div>
               </div>
               {% endif %}
-              </div>
+            </div>
 
-            
             <div class="col-md-4 text-end">
                 {% if study.status != 4 and has_any_data %}
                 <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#closeStudy">
@@ -276,9 +274,7 @@
     </div>
 
     {% if has_any_data %}
-    <h5 class="mt-5 mb-3 text-secondary fw-bold"><i class="fa-solid fa-sliders me-2 text-secondary"></i> Configuration</h5>
-    
-
+    <h5 class="mt-5 mb-3 text-secondary fw-bold"><i class="fa-solid fa-sliders me-2"></i> Configuration</h5>
     
     <form id="study-settings-form" action="{{ url_for('update_study_settings', id=study.id) }}" method="POST">
       {{ settings_form.hidden_tag() }}
@@ -299,10 +295,10 @@
         </div>
       </div>
 
-      <div class="card mb-4 shadow-sm border-0">
+      <div class="card mb-4 shadow-sm border-secondary">
         <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseAssessment" aria-expanded="false" aria-controls="collapseAssessment">
           <span class="fw-bold text-dark">
-              <i class="fa-solid fa-users-viewfinder me-2 text-warning"></i> Human Assessment
+              <i class="fa-solid fa-users-viewfinder me-2 text-secondary"></i> Human Assessment
               <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure the environment and rules for human participants evaluating the results."></i>
           </span>
           <i class="fa-solid fa-chevron-down text-secondary"></i>
@@ -311,21 +307,23 @@
         <div id="collapseAssessment" class="collapse">
           <div class="card-body bg-light border-top p-4">
 
-          <div class="mb-4">
-            <label class="form-label fw-bold">
-                Participant Task Description
-                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This text is shown prominently at the top of the assessment interface. Use [QUERY] to automatically insert the current search query. Markdown formatting (e.g., **bold**, *italic*, - lists) is supported!"></i>
-            </label>
-            <textarea name="task_description" class="form-control font-monospace text-dark" rows="5" placeholder="e.g. Please evaluate the results for the query [QUERY].">{{ study.task or '' }}</textarea>
-            <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown for formatting.</div>
-          </div>
+            <div class="card border-secondary shadow-sm mb-4 bg-white">
+              <div class="card-body p-4">
+                <label class="form-label fw-bold text-dark">
+                    Task Description
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="This text is shown prominently at the top of the assessment interface."></i>
+                </label>
+                <textarea name="task_description" class="form-control font-monospace text-dark" rows="5" placeholder="e.g. Please evaluate the results for the query [QUERY].">{{ study.task or '' }}</textarea>
+                <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown formatting for paragraphs, lists, and bold text.</div>
+              </div>
+            </div>
 
-            <div class="row mb-4 g-3">
+            <div class="row mb-4 g-3 align-items-stretch">
               <div class="col-md-6">
-                <div class="card h-100 border-secondary shadow-sm">
+                <div class="card h-100 border-secondary shadow-sm bg-white">
                   <div class="card-body p-4 d-flex flex-column">
                     <h6 class="fw-bold text-dark">
-                        <i class="fa-solid fa-clipboard-list me-2 text-primary"></i> Questionnaire
+                        <i class="fa-solid fa-clipboard-list me-2 text-secondary"></i> Questionnaire
                         <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create and manage the questions that human participants will answer for each search result."></i>
                     </h6>
                     <div class="text-secondary mb-3 small">
@@ -342,12 +340,12 @@
                   </div>
                 </div>
               </div>
-
+              
               <div class="col-md-6">
-                <div class="card h-100 border-secondary shadow-sm">
+                <div class="card h-100 border-secondary shadow-sm bg-white">
                   <div class="card-body p-4 d-flex flex-column">
                     <h6 class="fw-bold text-dark">
-                        <i class="fa-solid fa-users me-2 text-success"></i> Participants
+                        <i class="fa-solid fa-users me-2 text-secondary"></i> Participants
                         <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Track who has joined the study and view their individual progress."></i>
                     </h6>
                     <div class="text-secondary mb-3 small">
@@ -388,158 +386,264 @@
                                 {% endif %}
                               </div>
                             </div>
-
                         {% endif %}
                     </div>
-                    
                   </div>
                 </div>
               </div>
             </div>
-
-            <div class="mb-4">
-              <div class="card border-secondary shadow-sm">
-                <div class="card-body p-3 d-flex justify-content-between align-items-center">
-                  <div>
-                    <span class="fw-bold text-dark">
-                        <i class="fa-solid fa-filter me-2 text-secondary"></i> Domain Filtering
-                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create rules to automatically exclude results from specific domains (e.g., youtube.com) from being shown to human assessors."></i>
-                    </span>
-                  </div>
-                  <a href="{{ url_for('url_filters', id=study.id) }}" class="btn btn-outline-secondary btn-sm fw-bold">Manage Filters</a>
-                </div>
-              </div>
-            </div>
-
-
-			<div class="row mb-4">
-              <div class="col-12">
-                <div class="card border-primary shadow-sm bg-light">
-                  <div class="card-body p-4">
-					<h6 class="fw-bold text-dark mb-3">
-					  <i class="fa-solid fa-list-check me-2 text-primary"></i> Workload & Assignment Limits
-					  <i class="fa-solid fa-circle-question tooltip-icon text-muted ms-1 fs-6" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure how tasks are distributed among participants. Set limits on queries or individual items to balance the workload and prevent survey fatigue."></i>
-					</h6>                    
-                    <div class="row g-4">
-						<div class="col-md-6 border-end">
-						  
-						  <div class="form-check form-switch mb-2">
-							<input class="form-check-input" type="checkbox" id="limit_by_query" name="limit_by_query" {% if study.max_queries_per_participant != -1 %}checked{% endif %}>
-							<label class="form-check-label text-dark fw-bold" for="limit_by_query">
-							  Group tasks by Search Query (Recommended)
-							  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" title="If checked, participants evaluate full queries together. If unchecked, pure random mix."></i>
-							</label>
-						  </div>
-
-							<div class="mt-3 mb-4 ps-2 border-start border-3 border-primary" id="query_limit_container">
-								<label for="max_queries_per_participant" class="form-label mb-1">
-									Max Queries per Participant
-									<i class="fa-solid fa-circle-question tooltip-icon text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Define how many complete search queries a user must evaluate. Leave this field empty (or enter 99999) to assign all available queries until the 'Total individual items' limit is reached."></i>
-								</label>
-								<input type="number" class="form-control form-control-sm border-secondary w-50" id="max_queries_per_participant" name="max_queries_per_participant" placeholder="Leave empty for ALL" value="{{ study.max_queries_per_participant if study.max_queries_per_participant and study.max_queries_per_participant > 0 else '' }}">
-							  </div>
-
-						  <hr class="w-75">
-
-						  <div class="form-check form-switch mb-3">
-							{{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
-							<label class="form-check-label fw-bold" for="limit_checkbox">
-							  Limit total individual items per user
-							</label>
-						  </div>
-						  
-						  <div id="item_limit_container" class="ms-4 ps-2 border-start border-3 border-secondary">
-							<label for="max_results_per_participant" class="form-label mb-1">
-								Max Individual Items
-							</label>
-							{{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary w-50") }}
-						  </div>
-
-						</div>
-
-                    </div>
-
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-            <div class="row g-4 mb-4">
+              
+            <div class="row mb-4">
               <div class="col-md-12">
-                <label class="form-label fw-bold mb-2">
-                    Result Ranges (Optional)
-                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Define specific ranking sections to assess (e.g., only ranks 1-3 and 8-10). If left empty, all available results will be distributed."></i>
-                </label>
-                <div id="ranges-wrapper">
-                  {% for range_entry in settings_form.ranges %}
-                  <div class="row g-2 mb-2 range-row align-items-center" style="max-width: 500px;">
-                    <div class="col-4">{{ range_entry.start_range(class="form-control form-control-sm border-secondary", placeholder="Start") }}</div>
-                    <div class="col-1 text-center fw-bold text-dark">-</div>
-                    <div class="col-4">{{ range_entry.end_range(class="form-control form-control-sm border-secondary", placeholder="End") }}</div>
-                    <div class="col-3">
-                      <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-range" tabindex="-1">
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
+                <div class="card border-secondary shadow-sm bg-white">
+                  <div class="card-body p-4">
+                    <h6 class="fw-bold text-dark mb-3">
+                      <i class="fa-solid fa-user-gear me-2 text-secondary"></i> Participant Onboarding & Surveys
+                      <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Manage what participants see and must answer before and after evaluating the search results."></i>
+                    </h6>
+
+                    <div class="form-check form-switch mb-3">
+                      {{ settings_form.show_description_after_join(class="form-check-input border-secondary", id="show_introduction_checkbox") }}
+                      <label class="form-check-label text-dark fw-bold" for="show_introduction_checkbox">
+                        Show a study description / introduction to participants
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Enable this to show participants a welcome page with explanations immediately after they join the study."></i>
+                      </label>
                     </div>
+
+                    <div class="ps-3 border-start border-3 border-primary mb-4" id="introduction_text_container" style="display: none;">
+                      <label class="form-label mb-1 small fw-bold text-dark">Introduction Text for Participants</label>
+                      {{ settings_form.participant_description(class="form-control font-monospace text-dark", rows="4", placeholder="Welcome to the study! In this experiment, you will evaluate...") }}
+                      <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown formatting for paragraphs, lists, and bold text.</div>
+                    </div>
+
+                    <hr class="text-secondary my-4">
+
+                    {{ settings_form.pre_survey_json(id="pre_survey_hidden", class="d-none") }}
+                    {{ settings_form.post_survey_json(id="post_survey_hidden", class="d-none") }}
+
+                    <div class="mb-3">
+                      <div class="fw-bold text-dark small mb-2">
+                        <i class="fa-solid fa-arrow-right-to-bracket text-secondary me-1"></i> Pre-Survey (Initial Questionnaire):
+                      </div>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="btn-add-presurvey" data-bs-toggle="tooltip" data-bs-title="Opens the visual editor to create questions presented before the assessment starts.">
+                          <i class="fa-solid fa-plus me-1"></i> Edit Pre-Survey
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-import-presurvey" data-bs-toggle="tooltip" data-bs-title="Import an existing pre-survey from a JSON file.">
+                          <i class="fa-solid fa-file-import me-1"></i> Import
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btn-export-presurvey" data-bs-toggle="tooltip" data-bs-title="Export this pre-survey as a JSON file to use in other studies.">
+                          <i class="fa-solid fa-file-export me-1"></i> Export
+                        </button>
+                        <span id="presurvey-badge" class="badge bg-light text-secondary border align-self-center px-2 py-1.5 small">0 Questions</span>
+                      </div>
+                    </div>
+
+                    <div class="mb-2">
+                      <div class="fw-bold text-dark small mb-2">
+                        <i class="fa-solid fa-arrow-right-from-bracket text-secondary me-1"></i> Post-Survey (Exit Questionnaire):
+                      </div>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="btn-add-postsurvey" data-bs-toggle="tooltip" data-bs-title="Opens the visual editor to create questions presented after all tasks are completed.">
+                          <i class="fa-solid fa-plus me-1"></i> Edit Post-Survey
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-import-postsurvey" data-bs-toggle="tooltip" data-bs-title="Import an existing post-survey from a JSON file.">
+                          <i class="fa-solid fa-file-import me-1"></i> Import
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btn-export-postsurvey" data-bs-toggle="tooltip" data-bs-title="Export this post-survey as a JSON file to use in other studies.">
+                          <i class="fa-solid fa-file-export me-1"></i> Export
+                        </button>
+                        <span id="postsurvey-badge" class="badge bg-light text-secondary border align-self-center px-2 py-1.5 small">0 Questions</span>
+                      </div>
+                    </div>
+					
+					<hr class="text-secondary my-4">
+                    <div class="mb-3">
+                      <label class="form-label mb-1 small fw-bold text-dark">
+                          Completion Text (Goodbye Message)
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="This text will be shown to participants after they complete all tasks and surveys. You can use it to provide further instructions, contact details, or course credit codes."></i>
+                      </label>
+                      {{ settings_form.completion_text(class="form-control font-monospace text-dark", rows="4", placeholder="Thank you for participating! Your responses have been successfully recorded...") }}
+                      <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown formatting for paragraphs, lists, and bold text.</div>
+                    </div>
+					
                   </div>
-                  {% endfor %}
                 </div>
-                <button type="button" class="btn btn-outline-secondary btn-sm mt-1 fw-bold" id="add-range-btn">
-                  <i class="fa-solid fa-plus me-1"></i> Add Range
-                </button>
               </div>
             </div>
             
-            <div class="row mt-4">
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">
-                    Assessable Types
-                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select which types of content should be shown and evaluated by participants."></i>
-                </label>
-                <div class="card card-body bg-white border-secondary p-3" style="max-height: 180px; overflow-y: auto;">
-                  {{ settings_form.assessment_result_types(class="list-unstyled mb-0 text-dark") }}
+            <div class="row mb-4 g-3 align-items-stretch">
+              <div class="col-md-6">
+                <div class="card border-secondary shadow-sm h-100 bg-white">
+                  <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <h6 class="fw-bold text-dark mb-2">
+                        <i class="fa-solid fa-filter me-2 text-secondary"></i> Domain Filtering
+                      </h6>
+                      <p class="text-secondary small mb-3">
+                        Create rules to automatically exclude results from specific domains (e.g., youtube.com) from being shown to human assessors.
+                      </p>
+                    </div>
+                    <div class="mt-auto">
+                      <a href="{{ url_for('url_filters', id=study.id) }}" class="btn btn-outline-secondary btn-sm fw-bold w-100">Manage Filters</a>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">Interface Visibility</label>
-                <div class="d-flex flex-column gap-3 mt-2">
+
+              <div class="col-md-6">
+                <div class="card border-secondary shadow-sm h-100 bg-white">
+                  <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0">
+                          <i class="fa-solid fa-sliders me-2 text-secondary"></i> Result Ranges (Optional)
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Define specific ranking sections to assess. If left empty, all available results will be distributed."></i>
+                        </h6>
+                        <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" id="add-range-btn">
+                          <i class="fa-solid fa-plus me-1"></i> Add
+                        </button>
+                      </div>
+
+                      <div id="ranges-wrapper">
+                        {% for range_entry in settings_form.ranges %}
+                        <div class="row g-2 align-items-center mb-2">
+                          <div class="col-4">
+                            {{ range_entry.start_range(class="form-control form-control-sm border-secondary", placeholder="Start") }}
+                          </div>
+                          <div class="col-1 text-center fw-bold text-dark">-</div>
+                          <div class="col-4">
+                            {{ range_entry.end_range(class="form-control form-control-sm border-secondary", placeholder="End") }}
+                          </div>
+                          <div class="col-3">
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-range" tabindex="-1">
+                              <i class="fa-solid fa-xmark"></i>
+                            </button>
+                          </div>
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-12">
+                <div class="card border-secondary shadow-sm bg-white">
+                  <div class="card-body p-4">
+                    <h6 class="fw-bold text-dark mb-3">
+                      <i class="fa-solid fa-list-check me-2 text-secondary"></i> Workload & Assignment Limits
+                      <i class="fa-solid fa-circle-question tooltip-icon text-muted ms-1 fs-6" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure how tasks are distributed among participants. Set limits on queries or individual items to balance the workload and prevent survey fatigue."></i>
+                    </h6>                   
                     
-                    <div class="form-check form-switch">
-                      {{ settings_form.show_urls(class="form-check-input border-secondary", id="show_urls_checkbox") }}
-                      <label class="form-check-label text-dark" for="show_urls_checkbox">
-                          Show URLs to participants
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, participants will only see the page title and content, but not the original domain/URL."></i>
-                          <span id="show_urls_badge" class="badge bg-light text-secondary border ms-2 d-none"><i class="fa-solid fa-lock"></i> Forced by Live Mode</span>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="limit_by_query" name="limit_by_query" {% if study.max_queries_per_participant != -1 %}checked{% endif %}>
+                      <label class="form-check-label text-dark fw-bold" for="limit_by_query">
+                        Group tasks by Search Query (Recommended)
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" title="If checked, participants evaluate full queries together. If unchecked, pure random mix."></i>
                       </label>
                     </div>
 
-                    <div class="form-check form-switch">
-                      {{ settings_form.show_ai_sources(class="form-check-input border-secondary") }}
-                      <label class="form-check-label text-dark">
-                          Show AI Overviews sources
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, citations and source links embedded within AI Overviews will be hidden from participants."></i>
+                    <div class="mt-3 mb-4 ps-2 border-start border-3 border-primary" id="query_limit_container">
+                      <label for="max_queries_per_participant" class="form-label mb-1">
+                        Max Queries per Participant
+                        <i class="fa-solid fa-circle-question tooltip-icon text-muted ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Define how many complete search queries a user must evaluate. Leave empty for all."></i>
+                      </label>
+                      <input type="number" class="form-control form-control-sm border-secondary w-50" id="max_queries_per_participant" name="max_queries_per_participant" placeholder="Leave empty for ALL" value="{{ study.max_queries_per_participant if study.max_queries_per_participant and study.max_queries_per_participant > 0 else '' }}">
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                      {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
+                      <label class="form-check-label fw-bold" for="limit_checkbox">
+                        Limit total individual items per user
                       </label>
                     </div>
-                    <div class="form-check form-switch">
-                      {{ settings_form.assess_failed(class="form-check-input border-secondary") }}
-                      <label class="form-check-label text-dark">
-                          Allow assessment of failed downloads
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, participants can still answer questions even if a website could not be scraped/loaded properly by the background worker."></i>
+                    
+                    <div id="item_limit_container" class="ms-4 ps-2 border-start border-3 border-secondary">
+                      <label for="max_results_per_participant" class="form-label mb-1">
+                        Max Individual Items
                       </label>
+                      {{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary w-50") }}
                     </div>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <div class="row mt-4 g-3 align-items-stretch">
+              
+              <div class="col-md-6">
+                <div class="card border-secondary shadow-sm h-100 bg-white">
+                  <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <h6 class="fw-bold text-dark mb-2">
+                        <i class="fa-solid fa-list-check me-2 text-secondary"></i> Assessable Types
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select which types of content should be shown and evaluated by participants. Only checked types will appear in their assignment queue."></i>
+                      </h6>
+                      <p class="text-secondary small mb-3">
+                        Choose the data formats that require human grading in this study loop.
+                      </p>
+                      <div class="p-3 border rounded bg-light" style="max-height: 180px; overflow-y: auto;">
+                        {{ settings_form.assessment_result_types(class="list-unstyled mb-0 text-dark") }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="card border-secondary shadow-sm h-100 bg-white">
+                  <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <h6 class="fw-bold text-dark mb-3">
+                        <i class="fa-solid fa-eye me-2 text-secondary"></i> Interface Visibility
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Control what information is visible to participants on their evaluation screens. Toggling these options helps prevent bias during human testing."></i>
+                      </h6>
+                      
+                      <div class="d-flex flex-column gap-3 mt-2">
+                        <div class="form-check form-switch">
+                          {{ settings_form.show_urls(class="form-check-input border-secondary", id="show_urls_checkbox") }}
+                          <label class="form-check-label text-dark fw-bold" for="show_urls_checkbox">
+                            Show URLs to participants
+                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, participants will only see the page title and content, but not the original domain/URL."></i>
+                            <span id="show_urls_badge" class="badge bg-light text-secondary border ms-2 d-none"><i class="fa-solid fa-lock"></i> Forced by Live Mode</span>
+                          </label>
+                        </div>
+
+                        <div class="form-check form-switch">
+                          {{ settings_form.show_ai_sources(class="form-check-input border-secondary", id="show_ai_sources_checkbox") }}
+                          <label class="form-check-label text-dark fw-bold" for="show_ai_sources_checkbox">
+                            Show AI Overviews sources
+                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If disabled, citations and source links embedded within AI Overviews will be hidden from participants."></i>
+                          </label>
+                        </div>
+                        
+                        <div class="form-check form-switch">
+                          {{ settings_form.assess_failed(class="form-check-input border-secondary", id="assess_failed_checkbox") }}
+                          <label class="form-check-label text-dark fw-bold" for="assess_failed_checkbox">
+                            Allow assessment of failed downloads
+                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If enabled, participants can still answer questions even if a website could not be scraped/loaded properly by the background worker."></i>
+                          </label>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
           </div>
         </div>
       </div>
 
-      <div class="card mb-4 shadow-sm border-0" id="classifiers-card">
+      <div class="card mb-4 shadow-sm border-secondary" id="classifiers-card">
         <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseClassifiers" aria-expanded="false" aria-controls="collapseClassifiers">
           <span class="fw-bold text-dark">
-              <i class="fa-solid fa-robot me-2 text-info"></i> Automated Classifiers
+              <i class="fa-solid fa-robot me-2 text-secondary"></i> Automated Classifiers
               <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select algorithms to automatically analyze and score the collected HTML in the background."></i>
           </span>
           <i class="fa-solid fa-chevron-down text-secondary"></i>
@@ -571,9 +675,9 @@
 
     </form>
 
-    <div class="card mb-5 border-primary shadow-sm">
-      <div class="card-header bg-white border-primary text-primary fw-bold d-flex align-items-center py-3">
-        <i class="fa-solid fa-chart-line me-2"></i> Results & Export
+    <div class="card mb-5 border-secondary shadow-sm">
+      <div class="card-header bg-white border-bottom text-dark fw-bold d-flex align-items-center py-3">
+        <i class="fa-solid fa-chart-line me-2 text-secondary"></i> Results & Export
       </div>
       <div class="card-body p-4">
         
@@ -593,6 +697,7 @@
               </div>
             </div>
           </div>
+          
           <div class="col-sm-6">
             <div class="card h-100 shadow-sm border-secondary">
               <div class="card-body text-center p-4">
@@ -612,7 +717,7 @@
 
       </div>
     </div>
-{% endif %}
+    {% endif %}
   </div>
 </div>
 
@@ -694,15 +799,64 @@
   </div>
 </div>
 
+<div class="modal fade" id="surveyBuilderModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="surveyBuilderTitle">Edit questionnaire</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body bg-light">
+        
+        <div id="survey-questions-container" class="mb-4"></div>
+
+        <div class="d-grid">
+          <button type="button" class="btn btn-outline-primary fw-bold" onclick="addNewSurveyQuestion()">
+            <i class="fa-solid fa-plus me-1"></i> Add a new question
+          </button>
+        </div>
+
+      </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary fw-bold" onclick="saveSurveyBuilder()">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Update Survey (Save later)
+            </button>
+        </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  let currentSurveyType = ''; 
+  let surveyModal;
+
   document.addEventListener('DOMContentLoaded', function () {
     const studyId = "{{ study.id }}";
 
-    // --- INIT TOOLTIPS ---
+    // --- 1. INITIALIZE TOOLTIPS SAFELY ---
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl)
     });
+
+    // --- 2. INITIALIZE SURVEY BUILDER MODAL ---
+    surveyModal = new bootstrap.Modal(document.getElementById('surveyBuilderModal'));
+    document.getElementById('btn-add-presurvey')?.addEventListener('click', () => openSurveyBuilder('pre'));
+    document.getElementById('btn-add-postsurvey')?.addEventListener('click', () => openSurveyBuilder('post'));
+    updateSurveyBadges();
+
+    // --- 3. TOGGLE LOGIC FOR INTRODUCTION TEXT ---
+    const showIntroCheckbox = document.getElementById('show_introduction_checkbox');
+    const introTextContainer = document.getElementById('introduction_text_container');
+
+    if (showIntroCheckbox && introTextContainer) {
+        function toggleIntroductionUI() {
+            introTextContainer.style.display = showIntroCheckbox.checked ? 'block' : 'none';
+        }
+        showIntroCheckbox.addEventListener('change', toggleIntroductionUI);
+        toggleIntroductionUI();
+    }
 
     // --- Chevron Animation for Collapses ---
     const collapseElements = document.querySelectorAll('.collapse');
@@ -737,7 +891,6 @@
     const limitByQueryCheckbox = document.getElementById('limit_by_query');
     const queryLimitContainer = document.getElementById('query_limit_container');
     
-    // Function to handle the Master "Limit Workload" toggle
     if (limitCheckbox && workloadOptionsContainer) {
       function toggleWorkloadOptions() {
         workloadOptionsContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
@@ -746,7 +899,6 @@
       toggleWorkloadOptions(); 
     }
 
-    // Function to handle highlighting the active limit mode
     if (limitByQueryCheckbox && queryLimitContainer) {
         const itemLimitContainer = document.getElementById('item_limit_container');
         function toggleLimitModeUI() {
@@ -762,7 +914,6 @@
         toggleLimitModeUI();
     }
 
-
     // --- Dynamic Ranges Logic ---
     const rangesWrapper = document.getElementById('ranges-wrapper');
     const addRangeBtn = document.getElementById('add-range-btn');
@@ -774,10 +925,10 @@
         newRow.className = 'row g-2 mb-2 range-row align-items-center';
         newRow.style.maxWidth = '500px';
         newRow.innerHTML = `
-            <div class="col-4"><input class="form-control form-control-sm border-secondary" name="ranges-${index}-start_range" type="number" min="1" placeholder="Start"></div>
+            <div class="col-4"><input class="form-control border-secondary" name="ranges-${index}-start_range" type="number" min="1" placeholder="Start"></div>
             <div class="col-1 text-center fw-bold text-dark">-</div>
-            <div class="col-4"><input class="form-control form-control-sm border-secondary" name="ranges-${index}-end_range" type="number" min="1" placeholder="End"></div>
-            <div class="col-3"><button type="button" class="btn btn-outline-danger btn-sm w-100 remove-range" tabindex="-1"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="col-4"><input class="form-control border-secondary" name="ranges-${index}-end_range" type="number" min="1" placeholder="End"></div>
+            <div class="col-3"><button type="button" class="btn btn-outline-danger w-100 remove-range" tabindex="-1"><i class="fa-solid fa-xmark"></i></button></div>
         `;
         rangesWrapper.appendChild(newRow);
       });
@@ -800,7 +951,7 @@
       });
     }
 
-    // --- LIVE MODE & UI LOGIC (Now using robust Bootstrap classes) ---
+    // --- LIVE MODE & UI LOGIC ---
     try {
         const serverStatus = {{ study.status | default(0) }}; 
         const hasSavedTypes = {% if study.assessable_result_types_text %}true{% else %}false{% endif %};
@@ -850,29 +1001,15 @@
             }
         }
 
-          function updateUIState() {
+        function updateUIState() {
             const typeCbs = document.querySelectorAll('input[name="assessment_result_types"]');
             const liveToggle = document.getElementById('live_link_mode_checkbox');
             
             let checkedTypes = Array.from(typeCbs).filter(cb => cb.checked).map(cb => cb.value.toLowerCase());
             const isLiveMode = liveToggle ? liveToggle.checked : false;
-
             const noTypesSelected = checkedTypes.length === 0;
 
-            // --- 1. GLOBAL WARNING ---
-            const globalWarnTop = document.getElementById('ui-warning-unsaved-global');
             const globalWarnBottom = document.getElementById('ui-warning-unsaved-bottom');
-            const saveBtn = document.getElementById('save-settings-btn');
-            
-            if (globalWarnTop) {
-                if (isDirty) {
-                    globalWarnTop.classList.remove('d-none');
-                    globalWarnTop.classList.add('d-flex');
-                } else {
-                    globalWarnTop.classList.remove('d-flex');
-                    globalWarnTop.classList.add('d-none');
-                }
-            }
             
             if (globalWarnBottom) {
                 if (isDirty) { 
@@ -884,9 +1021,6 @@
                 }
             }
 
-
-
-            // --- 2. PARTICIPANTS BOX (Invite Link) ---
             const boxNoTypes = document.getElementById('ui-warning-notypes');
             const boxDownloads = document.getElementById('ui-warning-downloads');
             const boxUnsavedInvite = document.getElementById('ui-warning-unsaved-invite');
@@ -914,7 +1048,6 @@
         const settingsForm = document.getElementById('study-settings-form');
         if (settingsForm) {
             const getFormState = () => new URLSearchParams(new FormData(settingsForm)).toString();
-            
             const initialFormState = getFormState();
 
             const checkDirtyState = () => {
@@ -941,7 +1074,6 @@
                 });
             }
         }
-
 
     } catch (error) {
         console.error("Critical error in RAT UI logic: ", error);
@@ -1010,7 +1142,295 @@
     fetchStatus();
     setInterval(fetchStatus, 4000);
     {% endif %}
-  });
+  }); // <-- END OF DOMContentLoaded
+  
+
+// --- GLOBAL FUNCTIONS FOR THE SURVEY BUILDER ---
+
+function openSurveyBuilder(type) {
+    currentSurveyType = type;
+    const title = type === 'pre' ? 'Edit Pre-Survey (Initial Questionnaire)' : 'Edit Post-Survey (Exit Questionnaire)';
+    document.getElementById('surveyBuilderTitle').innerText = title;
+    
+    const container = document.getElementById('survey-questions-container');
+    container.innerHTML = ''; 
+    
+    const hiddenFieldId = type === 'pre' ? 'pre_survey_hidden' : 'post_survey_hidden';
+    const jsonStr = document.getElementById(hiddenFieldId).value;
+    
+    let questions = [];
+    if (jsonStr && jsonStr.trim() !== '') {
+        try { questions = JSON.parse(jsonStr); } catch (e) { console.error("JSON Parse Error", e); }
+    }
+    
+    if (questions.length === 0) {
+        addNewSurveyQuestion(); 
+    } else {
+        questions.forEach(q => addNewSurveyQuestion(q));
+    }
+    
+    surveyModal.show();
+}
+
+function addNewSurveyQuestion(data = null) {
+    const container = document.getElementById('survey-questions-container');
+    const qId = 'q_' + Math.random().toString(36).substr(2, 9); 
+    
+    const title = data ? data.title : '';
+    const type = data ? data.type : 'short_text';
+    const mandatory = data ? data.mandatory : true;
+    const orientation = data && data.orientation ? data.orientation : 'horizontal';
+    const internalId = data && data.id ? data.id : qId;
+
+    const scaleMin = data && data.min ? data.min : '1';
+    const scaleMax = data && data.max ? data.max : '5';
+    const scaleStep = data && data.step ? data.step : '1';
+    const scaleMinLabel = data && data.min_label ? data.min_label : 'Strongly disagree';
+    const scaleMaxLabel = data && data.max_label ? data.max_label : 'Strongly agree';
+
+    const card = document.createElement('div');
+    card.className = 'card shadow-sm mb-3 border-secondary survey-question-card';
+    card.dataset.id = internalId;
+    
+    card.innerHTML = `
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-dark"><i class="fa-solid fa-grip-lines text-muted me-2" style="cursor: grab;"></i>Question</span>
+            <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="this.closest('.card').remove()"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div class="card-body p-3">
+            <div class="row g-2">
+                <div class="col-md-8">
+                    <label class="form-label small fw-bold">Title / Question Text</label>
+                    <input type="text" class="form-control form-control-sm q-title" placeholder="e.g. What is your highest level of education?" value="${title.replace(/"/g, '&quot;')}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Question Type</label>
+                    <select class="form-select form-select-sm q-type" onchange="toggleOptionsArea(this)">
+                        <option value="short_text" ${type === 'short_text' ? 'selected' : ''}>Short Text</option>
+                        <option value="long_text" ${type === 'long_text' ? 'selected' : ''}>Long Text</option>
+                        <option value="single_choice" ${type === 'single_choice' ? 'selected' : ''}>Single Choice (Radio)</option>
+                        <option value="multiple_choice" ${type === 'multiple_choice' ? 'selected' : ''}>Multiple Choice (Checkbox)</option>
+                        <option value="likert_scale" ${type === 'likert_scale' ? 'selected' : ''}>Likert Scale</option>
+                        <option value="scale_number" ${type === 'scale_number' ? 'selected' : ''}>Number Scale (Slider)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-2 orientation-area" style="display: ${type === 'likert_scale' ? 'block' : 'none'};">
+                <label class="form-label small fw-bold">Layout (Likert only)</label>
+                <select class="form-select form-select-sm q-orientation w-50">
+                    <option value="horizontal" ${orientation === 'horizontal' ? 'selected' : ''}>Horizontal (Table)</option>
+                    <option value="vertical" ${orientation === 'vertical' ? 'selected' : ''}>Vertical (List)</option>
+                </select>
+            </div>
+
+            <div class="mt-2 form-check form-switch">
+                <input class="form-check-input q-mandatory" type="checkbox" id="mand_${qId}" ${mandatory ? 'checked' : ''}>
+                <label class="form-check-label small" for="mand_${qId}">Mandatory (Must be answered)</label>
+            </div>
+            
+            <div class="options-area mt-3 p-2 bg-light border rounded" style="display: ${['single_choice', 'multiple_choice', 'likert_scale'].includes(type) ? 'block' : 'none'};">
+                <label class="form-label small fw-bold mb-1">Answer Options</label>
+                <div class="options-list"></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-1 add-option-btn" onclick="addOptionToCard(this)" style="font-size: 0.8rem;"><i class="fa-solid fa-plus"></i> Add Option</button>
+            </div>
+
+            <div class="slider-options-area mt-3 p-2 bg-light border rounded" style="display: ${type === 'scale_number' ? 'block' : 'none'};">
+                <label class="form-label small fw-bold mb-1">Slider Configuration</label>
+                <div class="row g-2">
+                    <div class="col-4"><label class="small text-muted">Start Value (Number)</label><input type="number" class="form-control form-control-sm opt-min" value="${scaleMin}"></div>
+                    <div class="col-4"><label class="small text-muted">End Value (Number)</label><input type="number" class="form-control form-control-sm opt-max" value="${scaleMax}"></div>
+                    <div class="col-4"><label class="small text-muted">Steps (Number)</label><input type="number" class="form-control form-control-sm opt-step" value="${scaleStep}"></div>
+                    <div class="col-6 mt-2"><label class="small text-muted">Left Label (Start)</label><input type="text" class="form-control form-control-sm opt-min-label" placeholder="e.g. Strongly disagree" value="${scaleMinLabel.replace(/"/g, '&quot;')}"></div>
+                    <div class="col-6 mt-2"><label class="small text-muted">Right Label (End)</label><input type="text" class="form-control form-control-sm opt-max-label" placeholder="e.g. Strongly agree" value="${scaleMaxLabel.replace(/"/g, '&quot;')}"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(card);
+
+    if (data && data.options && ['single_choice', 'multiple_choice', 'likert_scale'].includes(type)) {
+        data.options.forEach(opt => addOptionToCard(card.querySelector('.add-option-btn'), opt.value, opt.label));
+    } else if (['single_choice', 'multiple_choice', 'likert_scale'].includes(type) && !data) {
+        addOptionToCard(card.querySelector('.add-option-btn'), '1', 'Option 1'); 
+    }
+}
+
+function toggleOptionsArea(selectElement) {
+    const card = selectElement.closest('.card');
+    const optionsArea = card.querySelector('.options-area');
+    const orientationArea = card.querySelector('.orientation-area');
+    const sliderArea = card.querySelector('.slider-options-area');
+    const type = selectElement.value;
+    
+    if (['single_choice', 'multiple_choice', 'likert_scale'].includes(type)) {
+        optionsArea.style.display = 'block';
+        if(optionsArea.querySelectorAll('.option-row').length === 0) {
+            addOptionToCard(optionsArea.querySelector('.add-option-btn'), '1', 'Option 1');
+        }
+    } else {
+        optionsArea.style.display = 'none';
+    }
+
+    if (type === 'likert_scale' && orientationArea) orientationArea.style.display = 'block';
+    else if (orientationArea) orientationArea.style.display = 'none';
+
+    if (type === 'scale_number' && sliderArea) sliderArea.style.display = 'block';
+    else if (sliderArea) sliderArea.style.display = 'none';
+}
+
+function addOptionToCard(buttonElement, optValue = '', optLabel = '') {
+    const list = buttonElement.closest('.options-area').querySelector('.options-list');
+    const row = document.createElement('div');
+    row.className = 'input-group input-group-sm mb-1 option-row';
+    row.innerHTML = `
+        <span class="input-group-text bg-white">Value:</span>
+        <input type="text" class="form-control opt-value" style="max-width: 80px;" placeholder="e.g. 1" value="${optValue.replace(/"/g, '&quot;')}">
+        <span class="input-group-text bg-white">Label:</span>
+        <input type="text" class="form-control opt-label" placeholder="optional (e.g. Strongly agree)" value="${optLabel.replace(/"/g, '&quot;')}">
+        <button class="btn btn-outline-danger" type="button" onclick="this.closest('.option-row').remove()"><i class="fa-solid fa-times"></i></button>
+    `;
+    list.appendChild(row);
+}
+
+function saveSurveyBuilder() {
+    const cards = document.querySelectorAll('.survey-question-card');
+    let surveyData = [];
+    
+    cards.forEach((card, index) => {
+        const title = card.querySelector('.q-title').value.trim();
+        if (!title) return; 
+        
+        let qObj = {
+            id: 'q_' + currentSurveyType + '_' + index, 
+            title: title,
+            type: card.querySelector('.q-type').value,
+            mandatory: card.querySelector('.q-mandatory').checked
+        };
+        
+        if (['single_choice', 'multiple_choice', 'likert_scale'].includes(qObj.type)) {
+            const rows = card.querySelectorAll('.option-row');
+            qObj.options = [];
+            rows.forEach((row, i) => {
+                const v = row.querySelector('.opt-value').value.trim() || (i+1).toString();
+                const l = row.querySelector('.opt-label').value.trim(); 
+                qObj.options.push({ value: v, label: l });
+            });
+
+            if (qObj.type === 'likert_scale') {
+                const ori = card.querySelector('.q-orientation');
+                if(ori) qObj.orientation = ori.value;
+            }
+        } 
+        else if (qObj.type === 'scale_number') {
+            qObj.min = card.querySelector('.opt-min').value;
+            qObj.max = card.querySelector('.opt-max').value;
+            qObj.step = card.querySelector('.opt-step').value;
+            qObj.min_label = card.querySelector('.opt-min-label').value;
+            qObj.max_label = card.querySelector('.opt-max-label').value;
+        }
+        
+        surveyData.push(qObj);
+    });
+    
+    const hiddenFieldId = currentSurveyType === 'pre' ? 'pre_survey_hidden' : 'post_survey_hidden';
+    const hiddenField = document.getElementById(hiddenFieldId);
+    
+    hiddenField.value = surveyData.length > 0 ? JSON.stringify(surveyData, null, 2) : '';
+    hiddenField.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    updateSurveyBadges();
+    surveyModal.hide();
+}
+
+function updateSurveyBadges() {
+    ['pre', 'post'].forEach(type => {
+        const hiddenVal = document.getElementById(type + '_survey_hidden').value;
+        const badge = document.getElementById(type + 'survey-badge');
+        const exportBtn = document.getElementById('btn-export-' + type + 'survey');
+        
+        if(!badge) return;
+        
+        if (hiddenVal && hiddenVal.trim() !== '') {
+            try {
+                const count = JSON.parse(hiddenVal).length;
+                
+                badge.innerText = count + (count === 1 ? ' Question' : ' Questions');
+                badge.classList.remove('bg-light', 'text-secondary', 'd-none');
+                badge.classList.add('bg-primary', 'text-white');
+                
+                if (count > 0 && exportBtn) {
+                    exportBtn.classList.remove('d-none');
+                } else if (exportBtn) {
+                    exportBtn.classList.add('d-none');
+                }
+
+            } catch(e) { 
+                if (exportBtn) exportBtn.classList.add('d-none');
+            }
+        } else {
+            badge.innerText = '0 Questions';
+            badge.classList.remove('bg-primary', 'text-white');
+            badge.classList.add('bg-light', 'text-secondary');
+            
+            if (exportBtn) exportBtn.classList.add('d-none');
+        }
+    });
+}
+
+
+// --- IMPORT / EXPORT FUNCTIONALITY ---
+
+// Export Function
+function exportSurvey(type) {
+    const hiddenFieldId = type === 'pre' ? 'pre_survey_hidden' : 'post_survey_hidden';
+    const jsonStr = document.getElementById(hiddenFieldId).value;
+    
+    if (!jsonStr) return;
+
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `survey_${type}_config.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Import Function (Opens file dialog)
+function importSurvey(type) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = readerEvent => {
+            const content = readerEvent.target.result;
+            // Validate JSON
+            try {
+                JSON.parse(content);
+                const hiddenFieldId = type === 'pre' ? 'pre_survey_hidden' : 'post_survey_hidden';
+                document.getElementById(hiddenFieldId).value = content;
+                document.getElementById(hiddenFieldId).dispatchEvent(new Event('change', { bubbles: true }));
+                updateSurveyBadges();
+                alert('Survey imported successfully!');
+            } catch (err) {
+                alert('Invalid JSON file.');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// Link buttons on DOMContentLoaded:
+document.getElementById('btn-import-presurvey').addEventListener('click', () => importSurvey('pre'));
+document.getElementById('btn-import-postsurvey').addEventListener('click', () => importSurvey('post'));
+document.getElementById('btn-export-presurvey').addEventListener('click', () => exportSurvey('pre'));
+document.getElementById('btn-export-postsurvey').addEventListener('click', () => exportSurvey('post'));
+
 </script>
 
 {% endblock %}

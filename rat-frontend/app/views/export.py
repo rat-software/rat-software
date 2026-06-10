@@ -11,6 +11,7 @@ from datetime import datetime
 from io import BytesIO
 from sqlalchemy import text
 import re
+import json
 
 @app.route('/<id>/export', methods=['GET', 'POST'])
 @login_required
@@ -47,6 +48,21 @@ def export(id):
         pairs = db.session.execute(text("SELECT serp_id, query FROM result WHERE study = :study_id AND serp_id IS NOT NULL"), {'study_id': id}).all()
         for r_serp, r_query in pairs:
             if r_serp: serp_to_query[r_serp] = r_query
+            
+
+    def get_study_metadata_df():
+        """ Creates a summary DataFrame with the study's core metadata. """
+        metadata = [
+            {'Property': 'Study ID', 'Value': study.id},
+            {'Property': 'Study Name', 'Value': study.name},
+            {'Property': 'Description', 'Value': study.description or 'N/A'},
+            {'Property': 'Task Description (shown to users)', 'Value': study.task or 'N/A'},
+            {'Property': 'Study Introduction', 'Value': study.participant_description if study.show_description_after_join else 'Disabled'},
+            {'Property': 'Live Link Mode', 'Value': 'Enabled' if study.live_link_mode else 'Disabled'},
+            {'Property': 'Created At', 'Value': study.created_at.strftime('%Y-%m-%d %H:%M:%S') if study.created_at else 'N/A'}
+        ]
+        return pd.DataFrame(metadata)            
+            
 
     def get_assessments_df():
         """ Creates a DataFrame for ALL assessments and fills missing query keys using Python mapping. """
@@ -54,7 +70,7 @@ def export(id):
         
         participant_col = "p.name AS participant_name," if has_participants else ""
         
-        types_with_labels = ('true_false', 'likert_scale', 'multiple_choice')
+        types_with_labels = ('true_false', 'likert_scale', 'multiple_choice', 'single_choice')
         types_with_labels_sql_string = ", ".join([f"'{val}'" for val in types_with_labels])
 
         base_columns = f"""
@@ -199,7 +215,6 @@ def export(id):
         return df
 
     def get_search_results_df():
-        """ Creates an independent DataFrame for ALL search results with tracking IDs. """
         sql_query = text("""
             SELECT 
                 r.id AS result_id, 
@@ -223,7 +238,6 @@ def export(id):
         return pd.DataFrame.from_records(records, columns=labels).drop_duplicates()
 
     def get_serp_results_master_df():
-        """ Standalone clean worksheet for tracking SERP entities via Python lookup loop. """
         try:
             serp_records = db.session.execute(text("SELECT id, page, created_at FROM serp WHERE study = :study_id"), {'study_id': id}).all()
         except Exception:
@@ -273,14 +287,10 @@ def export(id):
         return pd.DataFrame.from_records(db.session.execute(sql_query, {'study_id': id}).all(), columns=labels).drop_duplicates()
 
     def get_classifier_indicators_df():
-        """ 
-        Fixed master tab displaying the classifier indicators raw parameter values. 
-        Includes the Classifier ID to allow for easy VLOOKUP filtering.
-        """
         sql_query = text("""
             SELECT 
                 ci.id AS indicator_result_id,
-                ci.classifier AS classifier_id,       -- Added: Unique Classifier ID from table column
+                ci.classifier AS classifier_id,
                 r.id AS result_id,
                 r.url,
                 c.display_name AS classifier_name,
@@ -293,13 +303,11 @@ def export(id):
             WHERE r.study = :study_id
             ORDER BY r.id, c.id, ci.id
         """)
-        # Aligned the labels array to capture the newly added column element seamlessly
         labels = ['Indicator Result ID', 'Classifier ID', 'Result ID', 'URL', 'Classifier Name', 'Indicator Parameter', 'Value', 'Timestamp']
         records = db.session.execute(sql_query, {'study_id': id}).all()
         return pd.DataFrame.from_records(records, columns=labels).drop_duplicates()
 
     def get_ai_results_df():
-        """ Generates AI overview metrics including structural row tracking identifiers. """
         sql_query = text("""
             SELECT 
                 ra.id AS ai_result_id, 
@@ -316,7 +324,6 @@ def export(id):
         return pd.DataFrame.from_records(records, columns=labels)
 
     def get_chatbot_results_df():
-        """ Generates chatbot output details including structural row tracking identifiers. """
         sql_query = text("""
             SELECT 
                 rc.id AS chatbot_result_id, 
@@ -338,6 +345,60 @@ def export(id):
         records = db.session.execute(sql_query, {'study_id': id}).all()
         return pd.DataFrame.from_records(records, columns=labels)
     
+    # ==============================================================================
+    # NEU: EXPORT FÜR PRE- UND POST-SURVEYS
+    # ==============================================================================
+    def get_survey_answers_df():
+        """ Parses JSON survey answers from participants and maps IDs to Question Titles. """
+        q_map = {}
+        
+        # 1. Map Pre-Survey Question IDs to Titles
+        if study.pre_survey_json:
+            try:
+                pre_qs = json.loads(study.pre_survey_json)
+                for q in pre_qs:
+                    q_map[q['id']] = f"[PRE] {q['title']}"
+            except Exception: pass
+            
+        # 2. Map Post-Survey Question IDs to Titles
+        if study.post_survey_json:
+            try:
+                post_qs = json.loads(study.post_survey_json)
+                for q in post_qs:
+                    q_map[q['id']] = f"[POST] {q['title']}"
+            except Exception: pass
+
+        rows = []
+        participants = db.session.query(Participant).join(participant_study).filter(participant_study.c.study == id).all()
+        
+        for p in participants:
+            p_row = {'Participant ID': p.id, 'Participant Name': p.name}
+            
+            # Pre-Survey Antworten entpacken
+            if p.pre_survey_answers:
+                try:
+                    pre_ans = json.loads(p.pre_survey_answers).get(str(id), {})
+                    for q_id, val in pre_ans.items():
+                        col_name = q_map.get(q_id, q_id)
+                        # Arrays (aus Multiple Choice) in Strings umwandeln
+                        if isinstance(val, list): val = ", ".join(val)
+                        p_row[col_name] = val
+                except Exception: pass
+                
+            # Post-Survey Antworten entpacken
+            if p.post_survey_answers:
+                try:
+                    post_ans = json.loads(p.post_survey_answers).get(str(id), {})
+                    for q_id, val in post_ans.items():
+                        col_name = q_map.get(q_id, q_id)
+                        if isinstance(val, list): val = ", ".join(val)
+                        p_row[col_name] = val
+                except Exception: pass
+                
+            rows.append(p_row)
+            
+        return pd.DataFrame(rows)
+
     def format_domain_df(domain_data, data_key):
         if not domain_data or data_key not in domain_data: return pd.DataFrame()
         df = pd.DataFrame(domain_data[data_key])
@@ -358,8 +419,14 @@ def export(id):
 
     top_domains_preview = get_top_main_domains(study, limit=1)
     
+    # Check if any survey data exists
+    has_survey_data = bool((study.pre_survey_json and study.pre_survey_json.strip() not in ['', '[]']) or 
+                           (study.post_survey_json and study.post_survey_json.strip() not in ['', '[]']))
+    
     available_data = {
+        'study_metadata': True,
         'assessments': db.session.query(Answer).filter(Answer.study_id == id).first() is not None,
+        'survey_answers': has_survey_data, # NEU!
         'questions': db.session.query(Question).filter(Question.study_id == id).first() is not None,
         'search_results': db.session.query(Result).filter(Result.study_id == id).first() is not None,
         'serp_results_master': db.session.query(Serp).filter(Serp.study_id == id).first() is not None, 
@@ -382,6 +449,7 @@ def export(id):
         writer = pd.ExcelWriter(output, engine='xlsxwriter')
         
         export_options = {
+            'study_metadata': ("Study Overview", get_study_metadata_df),
             'result_stats': ("Result Stats", lambda: pd.DataFrame(list(result_stats_data.items()), columns=['Statistic', 'Value'])),
             'evaluation_stats': ("Evaluation Stats", lambda: pd.DataFrame([s for s in evaluation_stats_data.items() if s[0] != 'breakdown'], columns=['Statistic', 'Value'])),
             'evaluation_breakdown': ("Evaluation Breakdown", lambda: pd.DataFrame(evaluation_stats_data['breakdown']) if evaluation_stats_data and 'breakdown' in evaluation_stats_data else pd.DataFrame()),
@@ -390,6 +458,7 @@ def export(id):
             'top_domains_standard': ("All Domains (Standard)", get_top_domains_standard_df),
             'top_domains_ai': ("All Domains (AI Sources)", get_top_domains_ai_df),
             'assessments': ("Assessments", get_assessments_df),
+            'survey_answers': ("Participant Surveys", get_survey_answers_df), # NEU! Export der Fragebögen
             'search_results': ("Search Results", get_search_results_df),
             'serp_results_master': ("SERP Results Master", get_serp_results_master_df), 
             'ai_results': ("AI Overview Results", get_ai_results_df),
