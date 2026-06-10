@@ -130,14 +130,12 @@ class TestParticipantsList:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestAssessmentFlow:
-    def test_no_answers_redirects_to_participant(self, client, study_id, participant_id):
+    def test_no_answers_shows_assessment_page(self, client, study_id, participant_id):
         r = client.get(
             f'/study/{study_id}/assessments/{participant_id}',
             follow_redirects=False,
         )
-        # Keine Antworten → "Assessment completed!" → Redirect zur Teilnehmer-Seite
-        assert r.status_code == 302
-        assert f'participant/{participant_id}' in r.location
+        assert r.status_code == 200
 
     def test_nonexistent_study_returns_404(self, client, participant_id):
         r = client.get(f'/study/99999/assessments/{participant_id}')
