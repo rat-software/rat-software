@@ -24,3 +24,4 @@ venv_rat/
 **/venv_rat_frontend/
 **/venv_rat_backend/
 
+/rat-storage/local_storage
