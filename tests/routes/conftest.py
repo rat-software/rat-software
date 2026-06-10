@@ -131,6 +131,7 @@ def study_id(app):
             created_at=datetime.now(),
             live_link_mode=True,
             visible=True,
+            max_queries_per_participant=-1,
         )
         study.users.append(user)
         db.session.add(study)
