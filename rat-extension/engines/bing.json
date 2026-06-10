@@ -5,7 +5,7 @@
     "name": "Bing",
     "author": "RAT System",
     "version": "1.0",
-    "description": "Standard Scraper for Bing Search (includes Copilot Chat, Ads, and Organic)"
+    "description": "Standard Scraper for Bing Search"
   },
   "request": {
     "baseUrl": "https://www.bing.com/search",
@@ -183,23 +183,23 @@
       }
     ]
   },
-	"behavior": {
-		"cookieConsentSelectors": [
-		  "#bnp_btn_accept",
-		  ".bnp_btn_accept"
-		],
-		"popupDismissSelectors": [],
-		"aiExpandSelectors": [
-		  ".commoncontrols-compact-expansion-button button",
-		  ".cht_cit_exp"
-		],
-		"stickyHeaderSelectors": [
-		  "#b_header",
-		  ".b_searchboxForm",
-		  "[style*=\"position: fixed\"]",
-		  "[style*=\"position: sticky\"]"
-		]
-	  },
+  "behavior": {
+    "cookieConsentSelectors": [
+      "#bnp_btn_accept",
+      ".bnp_btn_accept"
+    ],
+    "popupDismissSelectors": [],
+    "aiExpandSelectors": [
+      ".commoncontrols-compact-expansion-button button",
+      ".cht_cit_exp"
+    ],
+    "stickyHeaderSelectors": [
+      "#b_header",
+      ".b_searchboxForm",
+      "[style*=\"position: fixed\"]",
+      "[style*=\"position: sticky\"]"
+    ]
+  },
   "captcha": {
     "urlIndicators": [],
     "textIndicators": [],
@@ -236,20 +236,46 @@
         "maxLength": 200
       }
     },
-	"ai_overview": {
-		  "container": "#copans_container",
-		  "text": {
-			"selector": ".cht_mdroot",
-			"regexClean": "^((Bilder|Videos|Images|Vidéos|Imágenes|Immagini|Video|Imagens|Vídeos|Afbeeldingen|Video's|Videor|Videoer|Billeder|Kuvat|Videot|Obrazy|Wideo|Картинки|Изображения|Видео|画像|ビデオ)\\s*)+"
-		  },
-		  "sources": [
-			{
-			  "type": "standard",
-			  "container": ".cht_cit",
-			  "title": ".cht_cit_title_text",
-			  "url": "a"
-			}
-		  ]
-		}
+    "ai_overview": {
+      "container": "li.b_ans.b_top, #copans_container, .answer_container",
+      "text": {
+        "selector": ".cht_mdroot",
+        "regexClean": "^((Bilder|Videos|Images|Vidéos|Imágenes|Immagini|Video|Imagens|Vídeos|Afbeeldingen|Video's|Videor|Videoer|Billeder|Kuvat|Videot|Obrazy|Wideo|Картинки|Изображения|Видео|画像|ビデオ)\\s*)+",
+        "elementsToRemove": [
+          "style",
+          "script",
+          "svg",
+          "button",
+          ".cht_actions",
+          ".cht_cit_root",
+          ".hs-sources-header",
+          ".fdbk_thmb_root",
+          ".hs-cr-link-container",
+          ".gs_secctrl",
+          ".cht_header",
+          ".health-branded-panel",
+          ".hbp-tab-control",
+          ".hbp-footer",
+          ".cr-link-container",
+          ".hbp-tab-separator",
+          ".md_citlink",
+          ".cht_cit",
+          ".hs-sources-container",
+          ".cit-label",
+          ".suggestion_chip",
+          ".sc_item",
+          ".hsm-summary-header-text",
+          ".hs-header"
+        ]
+      },
+      "sources": [
+        {
+          "type": "standard",
+          "container": ".cht_cit, .hs-source-tile",
+          "title": ".cht_cit_title_text, .hs-source-title",
+          "url": "a"
+        }
+      ]
+    }
   }
 }
