@@ -210,6 +210,11 @@ if (!window.ratListenerAdded) {
             } else if (node.nodeType === Node.ELEMENT_NODE) {
                 const tag = node.tagName.toUpperCase();
                 
+                // NEU: Überspringe CSS, JavaScript, SVGs und unsichtbare Elemente
+                if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG'].includes(tag)) {
+                    return; 
+                }
+
                 // Add bullet point marker for list items
                 if (tag === 'LI') text += '\n• ';
 
@@ -225,11 +230,8 @@ if (!window.ratListenerAdded) {
         doc.body.childNodes.forEach(child => walkDOM(child));
         
         // --- CLEANUP PHASE ---
-        // 1. Remove dangling/empty bullet points (a bullet followed immediately by nothing or a new line)
         text = text.replace(/•[ \t]*(?=\n|$)/g, '');
-        // 2. Clean up excessive newlines (max 2)
         text = text.replace(/\n{3,}/g, '\n\n');
-        // 3. Trim outer whitespace
         return text.trim();
     }
 

@@ -372,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('backBtn').addEventListener('click', () => showView('listView'));
     document.getElementById('backToListBtn').addEventListener('click', () => { 
         currentSessionId = null; 
+        cachedTasks = []; 
         showView('listView'); 
         chrome.runtime.sendMessage({ action: "GET_SESSIONS" }); 
     });
@@ -1019,10 +1020,17 @@ document.addEventListener('DOMContentLoaded', () => {
             let html = "";
             
             if (aiOverviewData) {
+                // Hier fügen wir ein pre-Tag für die unformatierte Rohdaten-Vorschau hinzu
                 html += `<div class="sandbox-card" style="border-color:#17a2b8; background:#e0f7fa;">
                     <div class="sandbox-card-title">🤖 AI Overview Detected</div>
-                    <div class="sandbox-card-snippet">${aiOverviewData.text_full.substring(0, 150)}...</div>
-                    <div style="font-size:10px; color:#666; margin-top:5px;">Sources: ${aiOverviewData.sources.length} extracted</div>
+                    <div class="sandbox-card-snippet">
+                        <strong>Text-Vorschau:</strong><br>
+                        <pre style="white-space: pre-wrap; word-break: break-all; font-family: monospace; font-size: 10px; background: #fff; padding: 5px;">${aiOverviewData.text_full}</pre>
+                    </div>
+                    <div style="font-size:10px; color:#666; margin-top:5px;">Sources found: ${aiOverviewData.sources.length}</div>
+                    <div style="font-size:10px; color:#666;">
+                        ${aiOverviewData.sources.map(s => `<div>🔗 ${s.title}: <a href="${s.url}" target="_blank">${s.url.substring(0,40)}...</a></div>`).join('')}
+                    </div>
                 </div>`;
             }
 
@@ -1177,8 +1185,19 @@ function renderList(sessions) {
 function openSession(id) { 
     currentSessionId = id; 
     document.getElementById('logContainer').innerHTML = ""; 
+    
+    cachedTasks = [];
+    currentTaskPage = 1; // Auch die Paginierung wieder auf Seite 1 setzen
+    const taskContainer = document.getElementById('taskListContainer');
+    if (taskContainer) taskContainer.innerHTML = "<div style='padding:10px;text-align:center'>Loading...</div>";
+    const countDisplay = document.getElementById('taskCountDisplay');
+    if (countDisplay) countDisplay.innerText = "0";
+
     showView('statusView'); 
+    
     chrome.runtime.sendMessage({ action: "GET_SESSION_STATUS", payload: { sessionId: id } }); 
+    
+    chrome.runtime.sendMessage({ action: "GET_TASKS", payload: { sessionId: id } });
 }
 
 function updateStatus(data) {
