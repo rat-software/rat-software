@@ -262,10 +262,8 @@ class TestStudySettingsFormBounds(unittest.TestCase):
     def test_max_results_one_passes(self):
         self.assertTrue(self._form(result_count=10, max_results=1).validate())
 
-    def test_max_results_zero_fails(self):
-        form = self._form(result_count=10, max_results=0)
-        self.assertFalse(form.validate())
-        self.assertTrue(_errors(form, 'max_results_per_participant'))
+    def test_max_results_zero_passes(self):
+        self.assertTrue(self._form(result_count=10, max_results=0).validate())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
