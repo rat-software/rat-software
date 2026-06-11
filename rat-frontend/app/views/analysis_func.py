@@ -49,7 +49,6 @@ def get_result_stats(study):
     result_stats = {
         "Queries": len(study.queries),
         "Search Engines": search_engines_count,
-        "Results to Collect per Query": study.result_count,
         "Collection Status": collection_status_display
     }
 
