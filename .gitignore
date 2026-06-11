@@ -25,3 +25,4 @@ venv_rat/
 **/venv_rat_backend/
 
 /rat-storage/local_storage
+rat-frontend/app/extension_downloads.csv
