@@ -8,10 +8,19 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+  .tooltip-icon { color: #6c757d; margin-left: 5px; font-size: 0.85rem; cursor: help; }
+  .tooltip-icon:hover { color: #0d6efd; }
+</style>
 {% endblock %}
 
-{% macro render_field(field, field_class, placeholder="") %}
-{{ field.label(class_="form-label") }}
+{% macro render_field(field, field_class, placeholder="", tooltip="") %}
+<label class="form-label fw-bold" for="{{ field.id }}">
+  {{ field.label.text }}
+  {% if tooltip %}
+  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ tooltip }}"></i>
+  {% endif %}
+</label>
 {{ field(class_=field_class, placeholder=placeholder) }}
 {% if field.errors %}
 <div class="invalid-feedback d-block">
@@ -35,20 +44,20 @@
         <div class="card-body">
 
           <div class="mb-3">
-            {{ render_field(form.name, "form-control") }}
+            {{ render_field(form.name, "form-control", tooltip="Enter a clear, recognizable name for your query sampling project.") }}
           </div>
           <div class="mb-3">
-            {{ render_field(form.description, "form-control", placeholder="Optional description...") }}
+            {{ render_field(form.description, "form-control", placeholder="Optional description...", tooltip="Optional. Add notes or context about the goals of this sampling study.") }}
           </div>
 
           <hr class="my-4">
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              {{ render_field(form.geotargets, "form-select", placeholder="Select a country...") }}
+              {{ render_field(form.geotargets, "form-select", placeholder="Select a country...", tooltip="Select the geographic region. This affects search volume and localized keyword suggestions from the API.") }}
             </div>
             <div class="col-md-6 mb-3">
-              {{ render_field(form.languages, "form-select", placeholder="Select a language...") }}
+              {{ render_field(form.languages, "form-select", placeholder="Select a language...", tooltip="Select the language setting for the Google Ads API keyword generation.") }}
             </div>
           </div>
 
@@ -61,7 +70,10 @@
                 <i class="fa-solid fa-download"></i> Download CSV Template
               </a>
             </span>
-            {{ form.seed_keywords.label(class_="form-label") }}
+            <label class="form-label fw-bold" for="{{ form.seed_keywords.id }}">
+                {{ form.seed_keywords.label.text }}
+                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Enter base keywords that will serve as the starting point for generating new query ideas. Put each keyword on a new line."></i>
+            </label>
             {{ form.seed_keywords(class_="form-control", rows=6, placeholder="Enter one keyword per line...") }}
             {% if form.seed_keywords.errors %}
             <div class="invalid-feedback d-block">
@@ -75,6 +87,10 @@
           </div>
 
           <div class="mb-3">
+            <label class="form-label fw-bold" for="{{ form.query_list.id }}">
+                {{ form.query_list.label.text }}
+                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Alternatively, you can upload a CSV file containing a 'query' column with your seed keywords."></i>
+            </label>
             {{ form.query_list(class_="form-control") }}
 
             <div id="query-csv-preview-container" class="mt-3 p-3 bg-light rounded border" style="display: none;">
@@ -103,6 +119,12 @@
 
 <script>
   $(document).ready(function () {
+    // Initialize Tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
     $.ajaxSetup({
       beforeSend: function (xhr, settings) {
         if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {

@@ -5,12 +5,21 @@
 {% block head %}
 {{ super() }}
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+  .tooltip-icon { color: #6c757d; margin-left: 5px; font-size: 0.85rem; cursor: help; }
+  .tooltip-icon:hover { color: #0d6efd; }
+</style>
 {% endblock %}
 
 {% block content %}
 
-{% macro render_create_study_fields(field, url, field_class) %}
-{{ field.label(class_="form-label") }}
+{% macro render_create_study_fields(field, field_class, tooltip="") %}
+<label class="form-label fw-bold" for="{{ field.id }}">
+  {{ field.label.text }}
+  {% if tooltip %}
+  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="{{ tooltip }}"></i>
+  {% endif %}
+</label>
 {{ field(class_=field_class) }}
 
 {% if field.errors %}
@@ -46,23 +55,11 @@
         <div class="card-body">
 
           <div class="mb-3">
-            <span class="float-end help">
-              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true"
-                title="Enter the title of your study.<br/> Choose a concise name that accurately reflects the focus of your research.">
-                <i class="fa-solid fa-circle-question"></i>
-              </a>
-            </span>
-            {{ render_create_study_fields(form.name, "#name", "form-control") }}
+            {{ render_create_study_fields(form.name, "form-control", tooltip="Enter the title of your study.<br/> Choose a concise name that accurately reflects the focus of your research.") }}
           </div>
 
           <div class="mb-3">
-            <span class="float-end help">
-              <a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
-                title="Provide a brief description of your study. May include the main objectives and any relevant details.">
-                <i class="fa-solid fa-circle-question"></i>
-              </a>
-            </span>
-            {{ render_create_study_fields(form.description, "#description", "form-control") }}
+            {{ render_create_study_fields(form.description, "form-control", tooltip="Provide a brief description of your study. May include the main objectives and any relevant details.") }}
           </div>
 
           <div class="mt-5">
