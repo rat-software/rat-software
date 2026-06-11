@@ -2,7 +2,14 @@
 {% extends "master.html" %}
 
 {% block title %}{{ title }}{% endblock %}
-{% block head %}{{ super() }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  .tooltip-icon { color: #6c757d; margin-left: 5px; font-size: 0.85rem; cursor: help; }
+  .tooltip-icon:hover { color: #0d6efd; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -20,11 +27,15 @@
                     {{ form.hidden_tag() }}
 
                     <div class="mb-3">
-                        <label for="name" class="form-label">{{ form.name.label }}</label>
+                        <label for="name" class="form-label fw-bold">
+                            {{ form.name.label.text }}
+                        </label>
                         {{ form.name(class="form-control") }}
                     </div>
                     <div class="mb-3">
-                        <label for="description" class="form-label">{{ form.description.label }}</label>
+                        <label for="description" class="form-label fw-bold">
+                            {{ form.description.label.text }}
+                        </label>
                         {{ form.description(class="form-control", rows=3) }}
                     </div>
 
@@ -44,8 +55,11 @@
                     {% endif %}
 
                     <div class="mt-4">
-                         <label for="new_keywords" class="form-label">{{ form.new_keywords.label }}</label>
-                        {{ form.new_keywords(class="form-control", rows=5) }}
+                         <label for="new_keywords" class="form-label fw-bold">
+                            {{ form.new_keywords.label.text }}
+                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Add additional seed keywords to this study. This will trigger a new background generation process for these specific terms."></i>
+                        </label>
+                        {{ form.new_keywords(class="form-control", rows=5, placeholder="Enter one keyword per line...") }}
                     </div>
                     
                     <div class="mt-4 border-top pt-3">
@@ -57,4 +71,13 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+</script>
 {% endblock %}

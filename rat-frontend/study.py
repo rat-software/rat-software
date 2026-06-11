@@ -2,7 +2,7 @@ from .. import app, db
 from ..forms import StudyForm, ConfirmationForm, StudySettingsForm, UploadResultsForm, ConfirmUploadForm
 from ..models import (Study, Query, Answer,
                       Result, Classifier, RangeStudy, 
-                      ResultAi, ResultAiSource, ResultSource, ResultChatbot, Serp, ClassifierResult)
+                      ResultAi, ResultAiSource, ResultSource, ResultChatbot, Serp)
 from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, send_file, jsonify
 from markupsafe import Markup
 from sqlalchemy.orm import raiseload, joinedload
@@ -466,44 +466,9 @@ def study_progress(id):
     study = Study.query.get_or_404(id)
     status, progress_percent = check_and_update_status(study)
     
-    # --- NEU: Classifier Progress Berechnung ---
-    active_classifiers_count = len(study.classifier)
-    clf_progress_percent = 0
-    has_classifiers = active_classifiers_count > 0
-    
-    if has_classifiers:
-        # 1. Wie viele Ergebnisse wurden erfolgreich gescrapt? (Nur diese können klassifiziert werden)
-        # scraped_results_count = db.session.query(Result.id)\
-        #     .join(ResultSource, ResultSource.result_id == Result.id)\
-        #     .filter(Result.study_id == id, ResultSource.progress == 1)\
-        #     .count()
-
-
-        results_count = db.session.query(Result).filter_by(study_id=id).count()
-            
-        expected_clf_runs = active_classifiers_count * results_count
-        
-        # 2. Wie viele Klassifizierungen sind bereits fertig? (JOIN über Result, da study_id in ClassifierResult NULL ist)
-        finished_clf_runs = db.session.query(ClassifierResult.id)\
-            .join(Result, ClassifierResult.result_id == Result.id)\
-            .filter(Result.study_id == id)\
-            .count()
-            
-        # 3. Prozent berechnen (mit Cap bei 100%, falls es mal asynchrone Überschneidungen gibt)
-        if expected_clf_runs > 0:
-            clf_progress_percent = min(100, round((finished_clf_runs / expected_clf_runs) * 100))
-        elif expected_clf_runs == 0 and scraped_results_count == 0 and progress_percent < 100:
-            # Warten auf Scraping
-            clf_progress_percent = 0
-        else:
-            clf_progress_percent = 100
-    # -------------------------------------------
-    
     return jsonify({
         'status': status, 
         'progress_percent': progress_percent,
-        'has_classifiers': has_classifiers,      # Dem Frontend mitteilen, ob Classifier aktiv sind
-        'clf_progress_percent': clf_progress_percent, # Der neue Prozentwert
         'results': db.session.query(Result).filter(Result.study_id == id).count(),
         'results_ai': db.session.query(ResultAi).where(ResultAi.study_id == id).count(),
         'results_chatbot': db.session.query(ResultChatbot).where(ResultChatbot.study_id == id).count(),
