@@ -99,8 +99,15 @@ async function localGetPageContent(sessionId, taskIdx, pageNum) {
 // --- 2. HEAVY LIFTING FUNCTIONS (IMPORT / EXPORT SESSIONS) ---
 async function performImport(file) {
     if (!dbLocal) await initLocalDB();
+    
+    // Update UI to prevent blocking and inform the user
+    const btn = document.getElementById('importBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "⏳ Importing...!";
+    btn.disabled = true;
+    btn.style.backgroundColor = "#6c757d";
+
     try {
-        alert("Importing Backup... Please wait. Do not close this panel!");
         const zip = await JSZip.loadAsync(file); 
         const metaStr = await zip.file("sessions_metadata.json").async("string");
         const sessions = JSON.parse(metaStr);
@@ -123,13 +130,24 @@ async function performImport(file) {
         chrome.runtime.sendMessage({ action: "GET_SESSIONS" }); 
     } catch(e) {
         alert("Import Error: " + e.message);
+    } finally {
+        // Always reset the button state, regardless of success or failure
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.backgroundColor = "";
     }
 }
 
 async function performFullBackup() {
     if (!dbLocal) await initLocalDB();
-    alert("Generating Full Backup... This may take a while. Do not close this panel!");
     
+    // Update UI to prevent blocking and inform the user
+    const btn = document.getElementById('exportAllBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "⏳ Backing up...!";
+    btn.disabled = true;
+    btn.style.backgroundColor = "#6c757d";
+
     try {
         const sessions = await localGetAllSessions();
         const zip = new JSZip();
@@ -155,8 +173,17 @@ async function performFullBackup() {
             saveAs: true 
         }, () => {
             setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
+            
+            // Reset button to original state
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.backgroundColor = "";
         });
     } catch(e) {
+        // Reset button on error and inform the user
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.backgroundColor = "";
         alert("Backup Error: " + e.message);
     }
 }
@@ -266,7 +293,13 @@ async function performImportStudyDesign(file) {
 
 async function performExportDataAsZip(sessionId) {
     if (!dbLocal) await initLocalDB();
-    alert("Generation of export started. Please wait. Do not close this panel!");
+    
+    // Update UI to prevent blocking and inform the user
+    const btn = document.getElementById('downloadBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "⏳ Generating...!";
+    btn.disabled = true;
+    btn.style.backgroundColor = "#6c757d";
 
     try {
         const session = await localGetSession(sessionId);
@@ -335,9 +368,18 @@ async function performExportDataAsZip(sessionId) {
             saveAs: true
         }, () => {
             setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
+            
+            // Reset button to original state after successful download initialization
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            btn.style.backgroundColor = ""; 
         });
 
     } catch (err) {
+        // Reset button on error and inform the user
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.backgroundColor = "";
         alert("Critical Error during Export: " + err.message);
     }
 }
