@@ -450,10 +450,10 @@
 	<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Choose whether to stop after extracting a specific number of organic results OR after extracting a specific number of search pages.">?</span></label>
       <div class="row" style="margin-bottom: 15px;">
           <select id="sessLimitType" style="flex:1;">
-              <option value="RESULTS">Total Organic Results</option>
               <option value="PAGES">Total Pages (SERPs)</option>
+              <option value="RESULTS">Total Organic Results</option>
           </select>
-          <input type="number" id="sessLimit" value="10" style="flex:1;">
+          <input type="number" id="sessLimit" value="1" style="flex:1;">
       </div>
 
       <label style="margin-top:0">Configured Engines</label>
@@ -541,10 +541,10 @@
 		<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Change the quota type or target number for all remaining tasks in this session.">?</span></label>
           <div class="row" style="margin-bottom:15px;">
             <select id="liveLimitType" style="flex:1; padding:6px;">
-                <option value="RESULTS">Results</option>
                 <option value="PAGES">Pages</option>
+                <option value="RESULTS">Results</option>
             </select>
-            <input type="number" id="liveLimit" style="flex:1; padding:6px;" placeholder="Ex: 10">
+            <input type="number" id="liveLimit" style="flex:1; padding:6px;" placeholder="Ex: 1">
             <button id="applyLimitBtn" class="btn-secondary btn-sm" style="width:auto; margin:0">Update</button>
           </div>
 

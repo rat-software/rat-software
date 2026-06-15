@@ -26,3 +26,5 @@ venv_rat/
 
 /rat-storage/local_storage
 rat-frontend/app/extension_downloads.csv
+rat-extension/engines/bing.jsonZone.Identifier
+*.Identifier
