@@ -155,7 +155,12 @@ if keywords:
 
 
             if __name__ == "__main__":
-                googleads_client = GoogleAdsClient.load_from_storage(google_ads_client)
+                try:
+                    googleads_client = GoogleAdsClient.load_from_storage(google_ads_client)
+                except Exception as ex:
+                    print(f"Failed to load Google Ads client configuration from: {google_ads_client}")
+                    print(f"Error details: {ex}")
+                    sys.exit(1)
 
 
 
