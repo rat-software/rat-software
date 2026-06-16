@@ -11,6 +11,8 @@ import sqlalchemy
 from sqlalchemy import func, update, or_, and_, literal_column
 from ..helpers import clean_filter_string
 
+from datetime import timedelta
+
 
 @app.route('/study/<id>/participants')
 def participants(id):
@@ -137,7 +139,12 @@ def new_participant(study_id):
             return redirect(url_for('returning_participant', study_id=study_id))
         return render_template('participants/join.html', form=form)
 
-    study = Study.query.get_or_404(study_id)
+    # ---------------------------------------------------------
+    # 1. PESSIMISTIC LOCKING
+    # Secures the row in the database to prevent concurrent 
+    # thread overlap or race conditions during allocation.
+    # ---------------------------------------------------------
+    study = db.session.query(Study).with_for_update().get_or_404(study_id)
     
     max_id = db.session.query(func.max(Participant.id)).scalar() or 0
     participant = Participant(
@@ -148,16 +155,13 @@ def new_participant(study_id):
     participant.studies.append(study)
     db.session.add(participant)
 
-    # --- TASK ASSIGNMENT BLOCK (participant.py) ---
+    # --- TASK ASSIGNMENT BLOCK ---
     selected_types = [t.strip().lower() for t in study.assessable_result_types_text.split(',')] if study.assessable_result_types_text else []
         
-    # Get limits
-
     max_items = study.max_results_per_participant if (study.limit_per_participant and study.max_results_per_participant) else 99999
-
-    # Memory Safe Limit: Only pull what we reasonably need for shuffling (e.g., 3x the max_items)
+    
+    # Memory optimization guard: fetch only what is reasonably required for balancing/shuffling
     fetch_limit = max_items * 3 
-
     all_available_tasks = []
 
     if selected_types:
@@ -171,7 +175,7 @@ def new_participant(study_id):
         else:
             org_q = org_q.filter(ResultSource.progress == 1)
 
-        # Apply Range and URL filters
+        # Apply evaluation criteria filters (ranges & URL inclusion/exclusion)
         ranges = RangeStudy.query.filter_by(study=study.id).all()
         if ranges:
             range_filters = [and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]
@@ -185,97 +189,122 @@ def new_participant(study_id):
         if exclude_filters:
             org_q = org_q.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
 
-        # CHANGED: Append to master list
-        org_tasks = org_q.order_by(Result.assignment_count.asc()).limit(fetch_limit).all()
+        org_tasks = org_q.limit(fetch_limit).all()
         all_available_tasks.extend(org_tasks)
 
         # 2. Fetch AI Overviews
         ai_tasks = db.session.query(ResultAi).filter(
             ResultAi.study_id == study.id, ResultAi.result_type_text.in_(selected_types)
-        ).order_by(ResultAi.assignment_count.asc()).limit(fetch_limit).all()
+        ).limit(fetch_limit).all()
         all_available_tasks.extend(ai_tasks)
 
         # 3. Fetch Chatbots
         chat_tasks = db.session.query(ResultChatbot).filter(
             ResultChatbot.study_id == study.id, ResultChatbot.result_type_text.in_(selected_types)
-        ).order_by(ResultChatbot.assignment_count.asc()).limit(fetch_limit).all()
+        ).limit(fetch_limit).all()
         all_available_tasks.extend(chat_tasks)
             
-        # 4. Fetch SERPs
+        # 4. Fetch SERPs (Search Engine Result Pages)
         if "serp" in selected_types:
-            serp_tasks = db.session.query(Serp).filter(
-                Serp.study_id == study.id
-            ).order_by(Serp.assignment_count.asc()).limit(fetch_limit).all()
+            serp_tasks = db.session.query(Serp).filter(Serp.study_id == study.id).limit(fetch_limit).all()
             all_available_tasks.extend(serp_tasks)
 
+    # ---------------------------------------------------------
+    # 2. DYNAMIC LIVE-SCORE CALCULATION
+    # Dynamically reads the 'Answer' table to calculate a live metric.
+    # Includes finished submissions (status=1) and highly active 
+    # ongoing sessions (status=0, created within the last 45 mins).
+    # ---------------------------------------------------------
+    active_timeout = datetime.now() - timedelta(minutes=45)
+    item_scores = {'result': {}, 'result_ai': {}, 'result_chatbot': {}, 'serp': {}}
+    
+    def fetch_live_scores(column_ref):
+        return db.session.query(column_ref, func.count(Answer.id)).filter(
+            Answer.study_id == study.id,
+            column_ref.isnot(None),
+            or_(
+                Answer.status == 1,
+                and_(Answer.status == 0, Answer.created_at >= active_timeout)
+            )
+        ).group_by(column_ref).all()
+
+    for r_id, score in fetch_live_scores(Answer.result_id): item_scores['result'][r_id] = score
+    for r_id, score in fetch_live_scores(Answer.result_ai_id): item_scores['result_ai'][r_id] = score
+    for r_id, score in fetch_live_scores(Answer.result_chatbot_id): item_scores['result_chatbot'][r_id] = score
+    for r_id, score in fetch_live_scores(Answer.result_serp_id): item_scores['serp'][r_id] = score
+
+    def get_live_score(task):
+        if isinstance(task, Result): return item_scores['result'].get(task.id, 0)
+        elif isinstance(task, ResultAi): return item_scores['result_ai'].get(task.id, 0)
+        elif isinstance(task, ResultChatbot): return item_scores['result_chatbot'].get(task.id, 0)
+        elif isinstance(task, Serp): return item_scores['serp'].get(task.id, 0)
+        return 0
+
+    # Sort all components globally by their calculated live score (least-reviewed items first)
+    all_available_tasks.sort(key=lambda x: (get_live_score(x), random.random()))
+    
     final_tasks = []
     
-    # Sort EVERYTHING by assignment count so the least-rated items are always first
-    all_available_tasks.sort(key=lambda x: (x.assignment_count or 0, random.random()))
-    
     # ---------------------------------------------------------
-     # MODE A: QUERY PRIORITY QUEUE (Limit by Query & Items)
+    # MODE A: QUERY PRIORITY QUEUE (Group items tightly by search queries)
     # ---------------------------------------------------------
     db_query_limit = study.max_queries_per_participant
 
     if db_query_limit is not None and db_query_limit != -1:
         max_queries = db_query_limit if db_query_limit > 0 else 99999
-        
         tasks_by_query = {}
+        
+        # Structure elements into object pools mapped by their parent query
         for task in all_available_tasks:
             q_obj = getattr(task, 'query_', None)
             if not q_obj: continue
-            
-            if q_obj not in tasks_by_query:
-                tasks_by_query[q_obj] = {'org': [], 'ai': [], 'chat': [], 'serp': []}
+            if q_obj not in tasks_by_query: tasks_by_query[q_obj] = {'org': [], 'ai': [], 'chat': [], 'serp': []}
             
             if isinstance(task, Result): tasks_by_query[q_obj]['org'].append(task)
             elif isinstance(task, ResultAi): tasks_by_query[q_obj]['ai'].append(task)
             elif isinstance(task, ResultChatbot): tasks_by_query[q_obj]['chat'].append(task)
             elif isinstance(task, Serp): tasks_by_query[q_obj]['serp'].append(task)
 
-        # Sort queries by assignment count (Least assigned first)
-        sorted_queries = sorted(list(tasks_by_query.keys()), key=lambda q: (q.assignment_count or 0, random.random()))
+        # Aggregate individual item scores to map an absolute query-level live score
+        query_scores = {}
+        for q_obj, clusters in tasks_by_query.items():
+            query_scores[q_obj] = sum(get_live_score(t) for group in clusters.values() for t in group)
 
+        # Base sorting: prioritize queries with the lowest accumulated score
+        sorted_queries = sorted(list(tasks_by_query.keys()), key=lambda q: (query_scores.get(q, 0), random.random()))
+        
+        # --- ADAPTIVE CANDIDATE POOL MECHANISM ---
+        # Select twice the amount of needed queries, capped safely at the maximum available count
+        pool_size = min(max_queries * 2, len(sorted_queries))
+        candidate_pool = sorted_queries[:pool_size]
+        
+        # Randomly sample the target number of queries from the highest priority candidate pool.
+        # This significantly decreases the risk of priming effects with related sequential tasks.
+        chosen_queries = random.sample(candidate_pool, min(len(candidate_pool), max_queries))
+        # -----------------------------------------
+        
         added_queries_count = 0
         
-        for q_obj in sorted_queries:
+        # Iterate over our random, prioritized subset
+        for q_obj in chosen_queries:
             if added_queries_count >= max_queries: break
-            
             q_cluster = tasks_by_query[q_obj]
             
-            # 1. Nimm ALLE Elemente dieser Query (über alle Suchmaschinen hinweg!)
-            cluster_tasks = []
-            cluster_tasks.extend(q_cluster['ai'])
-            cluster_tasks.extend(q_cluster['serp'])
-            cluster_tasks.extend(q_cluster['chat'])
-            cluster_tasks.extend(q_cluster['org'])
-            
+            cluster_tasks = q_cluster['ai'] + q_cluster['serp'] + q_cluster['chat'] + q_cluster['org']
             if not cluster_tasks: continue
 
-            # WICHTIG: Die Query wird nur als GANZES Paket zugewiesen.
-            # Wenn das Hinzufügen dieser Query das Item-Limit des Teilnehmers sprengen würde,
-            # weisen wir sie nicht mehr zu (außer es ist seine allererste Query).
-            if len(final_tasks) > 0 and (len(final_tasks) + len(cluster_tasks) > max_items):
-                break 
+            # Strict guard check for the total participant item workload capacity
+            if len(final_tasks) > 0 and (len(final_tasks) + len(cluster_tasks) > max_items): break 
                 
-            # 2. RANDOMISIERUNG (Gegen Reihenfolge-Bias)
-            # Mischt Google, Bing, SERPs und organische Ergebnisse dieser Query bunt durch.
+            # Randomize intra-query item sequences to completely eliminate layout or engine bias
             random.shuffle(cluster_tasks)
-            
             final_tasks.extend(cluster_tasks)
             added_queries_count += 1
-            
-            # Increment the Query Priority Counter
-            if getattr(q_obj, 'assignment_count', None) is None:
-                q_obj.assignment_count = 0
-            q_obj.assignment_count += 1
 
     # ---------------------------------------------------------
-    # MODE B: STRATIFIED RANDOM (Limit by Items Only)
+    # MODE B: STRATIFIED RANDOM (No query grouping, balance items directly)
     # ---------------------------------------------------------
     else:
-        # Group the already-sorted items into pools
         pools = {'org': [], 'ai': [], 'chat': [], 'serp': []}
         for task in all_available_tasks:
             if isinstance(task, Result): pools['org'].append(task)
@@ -283,38 +312,35 @@ def new_participant(study_id):
             elif isinstance(task, ResultChatbot): pools['chat'].append(task)
             elif isinstance(task, Serp): pools['serp'].append(task)
 
+        # Distribute workload equitably across available data domains until max_items is satisfied
         while len(final_tasks) < max_items:
             added = 0
             for key in ['org', 'ai', 'chat', 'serp']:
                 if pools[key]:
-                    # Pulls the absolute lowest assignment_count item of this type
                     final_tasks.append(pools[key].pop(0))
                     added += 1
                 if len(final_tasks) >= max_items: break
             if added == 0: break
             
-        # RANDOMIZE the presentation order so it isn't strictly Org -> AI -> Chat -> Serp
         random.shuffle(final_tasks)
 
     # --- ANSWER CREATION & RESULTTYPE MAPPING ---
     res_types_map = {rt.name.strip().lower(): rt.id for rt in db.session.query(ResultType).all()}
 
     for task in final_tasks:
-        # Resolve the string name
         task_type_text = "serp"
         if isinstance(task, Result): task_type_text = getattr(task, 'result_type_text', 'organic')
         elif isinstance(task, ResultAi): task_type_text = getattr(task, 'result_type_text', 'ai overview')
         elif isinstance(task, ResultChatbot): task_type_text = getattr(task, 'result_type_text', 'chatbot')
 
         task_type_text = str(task_type_text).strip().lower()
-        # Resolve the database ID
         resolved_type_id = res_types_map.get(task_type_text, 1)
 
-        # Increment the item assignment counter ONCE per task (not per question)
-        if getattr(task, 'assignment_count', None) is None: 
-            task.assignment_count = 0
+        # Legacy Counter: Kept active for passive administrative reporting dashboards
+        if getattr(task, 'assignment_count', None) is None: task.assignment_count = 0
         task.assignment_count += 1
 
+        # Generate persistent, blank assessment records for each linked survey question
         for question in study.questions:
             answer = Answer(
                 study_id=study.id,
@@ -333,9 +359,10 @@ def new_participant(study_id):
                 
             db.session.add(answer)
 
+    # Committing implicitly breaks the pessimistic with_for_update() database lock,
+    # clearing the gateway for the next user transaction.
     db.session.commit()
     return redirect(url_for('participant', id=participant.id))
-
 
 @app.route('/study/<study_id>/participant/returning', methods=["GET", "POST"])
 @app.route('/returning/<study_id>', methods=["GET", "POST"])
