@@ -45,87 +45,79 @@ from pathlib import Path
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 # Add the /libs/ directory to the system path to enable imports from that location
 sys.path.append(currentdir + "/libs/")
+sys.path.append(currentdir + "/../")
 
 # Import everything from the 'text_analyzer' module
 from text_analyzer import *
 
-def main(classifier_id, db, helper, job_server, study_id):
-    """
-    Main function responsible for classifying results using a specified classifier.
+from classifier import *
 
-    Args:
-        classifier_id (int): The ID of the classifier to use for classification.
-        db (DB): The database object used for database operations.
-        helper (Helper): Helper object for additional functionality.
-        job_server (str): Identifier of the processing server.
-        study_id (int): The ID of the study currently being processed.
+class ReadabilityScore(Classifier):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = Helper()
 
-    Returns:
-        None
-    """
-    print(f"Executing readability_score for Study ID: {study_id}")
-
-    def classify_results(results):
+    def process_result(self, result, indicators):
         """
-        Classify results obtained from the database using a specific classifier.
-        Uses atomic database constraints to prevent race conditions across multiple servers.
+        Process a single result to extract indicators.
 
         Args:
-            results (list): List of results to classify.
+            result (object): The result to process.
+            helper (object): Helper object for utility functions.
 
         Returns:
-            None
+            dict: A dictionary of indicators extracted from the result.
         """
-        for result in results:
-            result_id = result['id']
+        print("helper list:")
+        print(dir(self.helper))
+        code = self.helper.decode_code(result["file_path"])
+        error_code = result["error_code"]
+        status_code = result["status_code"]
+        result_id = result["id"]
 
-            # ATOMIC LOCK ATTEMPT: Try to insert "in process" directly into the DB.
-            # If it returns False, another instance just claimed it or it's already processed.
-            if not db.insert_classification_result(classifier_id, "in process", result_id, job_server):
-                print(f"Result {result_id} already locked or processed by another instance. Skipping.")
-                continue # Safely skip to the next document
+        print("test_score")
 
-            # IF WE REACH HERE, THIS SERVER OWNS THE JOB!
-            data = {k: v for k, v in result.items()}
-            code = helper.decode_code(data["file_path"])
-            error_code = data["error_code"]
-            status_code = data["status_code"]
+        classification_result = "error"
 
-            try:
-                # Proceed only if the page loaded successfully and HTML code exists
-                if status_code == 200 and not error_code and code:
-                    tx = Text_Analyzer()
-                    analysis_output = tx.analyze(code)
+        if status_code == 200:
+            if not error_code:
+                if code:
+                    try:
+                        tx = Text_Analyzer()
+                        analysis_output = tx.analyze(code)
+                        print("analysis output")
+                        print(analysis_output)
+                    except Exception as e:
+                        print(f"Analyzer exception {e}")
 
-                    # Check if the analysis successfully returned a numerical score
+                    # Check if the result is a numerical score
                     if isinstance(analysis_output, (int, float)):
                         # 1. Write the individual indicator directly to the database
                         score_value = f"{analysis_output:.2f}"
-                        db.insert_indicator("Reading Ease", score_value, classifier_id, result_id, job_server)
-                        
-                        # 2. Assign the numerical score as the main classification result
+                        self.insert_indicator("Reading Ease", score_value, result_id)
+
+                        # 2. Create the classification result from the score
                         classification_result = score_value
                     else:
-                        # If it returned a string (e.g., "Language 'bn' not supported" or "Not enough text")
-                        # Save the exact reason as an indicator to keep the DB clean!
-                        db.insert_indicator("exclusion_reason", str(analysis_output), classifier_id, result_id, job_server)
-                        
-                        # Set the main classification result to a standardized error flag
-                        classification_result = 'error'
+                        print("NAN")
+                        # If it's a string (e.g., "Not enough content..."), use it as the result
+                        # In this case, no indicators will be written
+                        classification_result = analysis_output
+                    self.insert_indicator("classification_result", classification_result, result_id)
+                    self.insert_indicator("exclusion_reason", classification_result, result_id)
+
                 else:
-                    classification_result = 'error'
-                
-                # Update the database with the final score or error flag
-                db.update_classification_result(classification_result, result_id, classifier_id)
+                    print("not code")
+                    self.insert_indicator("reason", "No content", result_id)
+            else:
+                print("error code")
+                self.insert_indicator("reason", f"Error code {error_code}", result_id)
+        else:
+            print("not 200")
+            self.insert_indicator("reason", f"HTTP error {status_code}", result_id)
 
-            except Exception as e:
-                print(f"Error classifying result {result_id}: {e}")
-                classification_result = 'classifier_error'
-                db.update_classification_result(classification_result, result_id, classifier_id)
+        return classification_result
 
-    # Retrieve results to be classified from the database using the classifier ID
-    results = db.get_results(classifier_id, study_id)
-    print(f"Found {len(results)} pending results for classifier {classifier_id}")
-    
-    # Process and classify the retrieved results
-    classify_results(results)
+
+if __name__ == "__main__":
+    pass
