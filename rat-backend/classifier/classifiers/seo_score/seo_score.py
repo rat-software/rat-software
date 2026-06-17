@@ -48,7 +48,9 @@ sys.path.append(currentdir + "/libs/")
 # Import everything from the indicators module
 from indicators import *
 
-class SEOScorer:
+from .. import classifier
+
+class SeoScore(classifier.Classifier):
     """Handles SEO scoring logic"""
     def __init__(self):
         # Category weights (total = 100)
@@ -82,6 +84,120 @@ class SEOScorer:
                 'micro_tools': 5
             }
         }
+
+    def process_result(result, helper):
+        """Process a single result and return indicators"""
+        try:
+            url = result["url"]
+            main = result["main"]
+            code = helper.decode_code(result["file_path"])
+            error_code = result["error_code"]
+            status_code = result["status_code"]
+            query = result["query"]
+            content_type = result["content_type"].lower()
+
+            # Check if content type indicates HTML document
+            is_html = (content_type == 'html' or 'html' in content_type)
+            is_pdf = '.pdf' in url.lower() or '?pdf' in url.lower()
+
+            if not is_html or is_pdf:
+                return {
+                    'is_html': False,
+                    'status': 'excluded',
+                    'reason': f'Only HTML documents are included in SEO scoring. Found content type: {content_type}',
+                    'content_type': content_type
+                }
+
+            if status_code != 200 or error_code:
+                print(f"Skipping result with status code {status_code} or error code {error_code}")
+                return None
+
+            # Parse content
+            soup = BeautifulSoup(code, 'lxml')
+            tree = html.fromstring(code)
+
+            # Collect all indicators
+            indicators = {}
+
+            # Content Analysis
+            indicators['content_length_score'] = analyze_content_length(soup)
+            indicators['heading_structure_score'] = analyze_heading_structure(soup)
+
+            # Link Analysis
+
+            hyperlinks = identify_hyperlinks(get_hyperlinks(code, main), main)
+            indicators['internal_links'] = hyperlinks["internal"]
+            indicators['external_links'] = hyperlinks["external"]
+
+            link_score = analyze_link_quality(hyperlinks["internal"], hyperlinks["external"])
+            indicators['link_quality_score'] = link_score
+            indicators['internal_link_count'] = hyperlinks["internal"]
+            indicators['external_link_count'] = hyperlinks["external"]
+
+            # Image Analysis
+            indicators['image_optimization_score'] = analyze_images(soup)
+
+            # Navigation Analysis
+            indicators['navigation_score'] = analyze_navigation(soup)
+
+            # Title Analysis
+            title_score, title_text = analyze_title(soup)
+            indicators['title_score'] = title_score
+            indicators['title_text'] = title_text if title_text else ''
+
+            # Description Analysis
+            desc_score, desc_text = analyze_description(soup)
+            indicators['description_score'] = desc_score
+            indicators['description_text'] = desc_text if desc_text else ''
+
+            # Social Tags Analysis
+            social_score, social_tags = check_social_tags(soup)
+            indicators['social_tags_score'] = social_score
+            indicators['social_tags'] = social_tags
+
+            # Keyword Analysis
+            if query:
+                keyword_score, keyword_reasons = analyze_keyword_usage(soup, url, query)
+                indicators['keyword_optimization_score'] = keyword_score
+                indicators['keyword_optimization_reasons'] = keyword_reasons
+
+            # Original indicators from seo_rule_based.py
+            plugins = identify_plugins(code)
+            indicators.update({
+                'tools_analytics': plugins['tools analytics'],
+                'tools_seo': plugins['tools seo'],
+                'tools_caching': plugins['tools caching'],
+                'tools_social': plugins['tools social'],
+                'tools_ads': plugins['tools ads']
+            })
+
+            # Technical indicators
+            indicators['robots_txt'] = identify_robots_txt(main)
+            indicators['loading_time'] = calculate_loading_time(url)
+
+            # Parse URL and links
+            parsed_url = urlparse(url)
+            indicators['https'] = parsed_url.scheme == 'https'
+
+
+
+            # Additional technical indicators
+            indicators.update({
+                'url_length': identify_url_length(url),
+                'micros': identify_micros(code),
+                'sitemap': identify_sitemap(code),
+                'og': identify_og(code),
+                'viewport': identify_viewport(code),
+                'wordpress': identify_wordpress(code),
+                'canonical': identify_canonical(code),
+                'nofollow': identify_nofollow(code),
+                'h1': identify_h1(code)
+            })
+
+            return indicators
+        except Exception as e:
+            print(f"Error processing result: {str(e)}")
+            return None
 
     def get_classification(self, score):
         """Determine SEO optimization classification based on score"""
@@ -750,7 +866,7 @@ def classify_results(results, classifier_id, db, job_server, scorer, helper):
 
 def main(classifier_id, db, helper, job_server, study_id):
     """Main function that processes web results and performs SEO analysis."""
-    scorer = SEOScorer()
+    scorer = SeoScore()
 
     # Get results and start classification
     results = db.get_results(classifier_id, study_id)
