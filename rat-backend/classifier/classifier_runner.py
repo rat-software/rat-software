@@ -2,7 +2,7 @@
 Module for loading and running classifiers.
 
 Classes:
-    Classifier: A class for loading and running classifiers.
+    ClassifierRunner: A class for loading and running classifiers.
 
 Functions:
     main: Main function to initialize helper, database, and run classifiers.
@@ -14,7 +14,7 @@ import json
 from libs.lib_helper import Helper
 from libs.lib_db import DB
 
-class Classifier:
+class ClassifierRunner:
     """
     A class used to load and run classifiers.
 
@@ -47,10 +47,27 @@ class Classifier:
     
             # Dynamically import the classifier module based on the classifier name
             module = importlib.import_module(f"classifiers.{c['name']}.{c['name']}")
-            
-            # Call the main function of the imported module with classifier ID, db, helper, job_server, and study ID
-            module.main(c['id'], db, helper, job_server, c['study'])
-
+            # Call the main function of the imported module with classifier ID, db, and helper as arguments
+            classifier_name = c['name']
+            classifier_id = c['id']
+            if(classifier_name):
+                print(f"Running classifier: {classifier_name}")
+                class_name = helper.to_camel_case(classifier_name)
+                try:
+                    classifier_class = getattr(module, class_name)
+                    classifier = classifier_class()
+                    # Get results and start classification
+                    results = db.get_results(classifier_id, c['study'])
+                    print(results)
+                    print(f"Processing {len(results)} results for classifier {classifier_id}")
+                    classifier.classify_results(results, classifier_id, db, job_server, classifier, helper)
+                except Exception as e:
+                    print(f"Error occurred while running classifier {class_name}: {e}")
+                    print(f"Classifier not found: {class_name}. Trying the old way.")
+                    module.main(c['id'], db, helper, job_server, c['study'])
+                    #db.deleteClassifierDuplicates()
+            else:
+                print("Classifier name not provided. Cannot run classifier.")
 
 def main():
     """
@@ -97,8 +114,8 @@ def main():
     # Retrieve the list of active classifiers from the database
     classifiers = db.get_classifiers()
     
-    # Create a Classifier object and trigger the pipeline execution
-    Classifier().load_classifier(classifiers, db, helper, job_server)
+    # Create a Classifier object and load the classifiers
+    ClassifierRunner().load_classifier(classifiers, db, helper, job_server)
 
 if __name__ == "__main__":
     main()
