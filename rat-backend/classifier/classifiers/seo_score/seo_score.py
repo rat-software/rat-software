@@ -786,10 +786,8 @@ def process_result(result, helper):
         return None
 
 def classify_results(results, classifier_id, db, job_server, scorer, helper):
-    """
-    Classify results and update database with scores and indicators.
-    Uses atomic database constraints to prevent race conditions across multiple servers.
-    """
+    #TODO: remove, moved to class.
+    """Classify results and update database with scores and indicators"""
     result_counter = len(results)
 
     for result in results:
