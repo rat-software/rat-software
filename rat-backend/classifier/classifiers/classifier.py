@@ -101,10 +101,10 @@ class Classifier:
         """
         raise NotImplementedError("This method should be implemented by subclasses to process results and extract indicators.")
         # Placeholder for actual processing logic
-        indicators = {
+        """indicators = {
             "indicator_1": helper.extract_indicator_1(result),
             "indicator_2": helper.extract_indicator_2(result),
             # Add more indicators as needed
         }
-        return indicators
+        return indicators"""
 
