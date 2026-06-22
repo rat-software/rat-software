@@ -436,6 +436,8 @@ if __name__ == "__main__":
     refresh_time = sources_cnf.get('refresh_time', 48)
     country = sources_cnf.get('country', 'Germany')
 
+    max_counter = sources_cnf.get('counter', 3)
+
     # Initialize logger early so we can log aborts immediately
     logger = Logger()
 
@@ -469,7 +471,7 @@ if __name__ == "__main__":
 
     # Initialize database
     try:
-        db = DB(db_cnf, job_server, refresh_time)
+        db = DB(db_cnf, job_server, refresh_time, max_counter)
         if not db.check_db_connection():
             print("Could not establish database connection. Exiting...")
             logger.write_to_log("CRITICAL ERROR: Database connection failed.")
