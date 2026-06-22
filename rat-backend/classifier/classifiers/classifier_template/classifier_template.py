@@ -30,7 +30,7 @@ def main(classifier_id, db, helper, job_server, study_id):
     Main function responsible for classifying results using a specified classifier.
     """
     
-    def check_for_duplicates(check_dup, source_id): # source_id als Parameter benötigt
+    def check_for_duplicates(check_dup, source_id):
         """
         Check for duplicate classification results and update the database accordingly.
         """
@@ -51,6 +51,8 @@ def main(classifier_id, db, helper, job_server, study_id):
                         result_indicators = db.get_indicators(rs)
 
                     # Insert classification result if not already present
+                    # Note: For duplicate bulk inserts, we don't need strict atomic locking 
+                    # since they are just copies of an already processed result.
                     if not db.check_classification_result(classifier_id, rs):
                         db.insert_classification_result(classifier_id, insert_classification, rs, job_server)
 
@@ -67,6 +69,7 @@ def main(classifier_id, db, helper, job_server, study_id):
     def classify_results(results):
         """
         Classify results obtained from the database using a specific classifier.
+        Uses atomic database constraints to prevent race conditions across multiple servers.
         """
         def write_indicators_to_db(indicators, result_id):
             """
@@ -84,58 +87,63 @@ def main(classifier_id, db, helper, job_server, study_id):
                 db.insert_indicator(indicator, insert_result, classifier_id, result_id, job_server)
 
         for result in results:
-            # Daten sauber entpacken
             data = {k: v for k, v in result.items()}
             result_id = data['id']
             source_id = data.get("source")
 
             # ---------------------------------------------------------
-            # CONCURRENCY CHECKS (Wichtig für Multi-Server Setups!)
+            # ATOMIC CONCURRENCY CHECK (Crucial for Multi-Server Setups!)
             # ---------------------------------------------------------
-            # 1. Check if the result is already fully processed
-            if db.check_classification_result_not_in_process(classifier_id, result_id):
-                print(f"Result {result_id} is already finished.")
-                continue
+            # Try to insert "in process" directly into the DB.
+            # If it returns False, another instance just claimed it or it's already processed.
+            if not db.insert_classification_result(classifier_id, "in process", result_id, job_server):
+                print(f"Result {result_id} already locked or processed by another instance. Skipping.")
+                continue # Safely skip to the next document
 
-            # 2. Check if another server is currently processing it
-            if db.check_classification_result(classifier_id, result_id):
-                print(f"Result {result_id} is already being processed by another server")
-                continue
-
-            # 3. Claim the result by inserting "in process"
-            db.insert_classification_result(classifier_id, "in process", result_id, job_server)
+            # ---------------------------------------------------------
+            # IF WE REACH HERE, THIS SERVER OWNS THE JOB!
             # ---------------------------------------------------------
 
-            # Check for duplicates before proceeding
-            check_dup = db.check_source_duplicates(source_id) # Richtiger Methodenname laut lib_db.py
+            # Check for duplicates before proceeding with heavy processing
+            check_dup = db.check_source_duplicates(source_id)
             if check_for_duplicates(check_dup, source_id):
                 classification_result = ''
                 indicators = {}
 
-                # =========================================================
-                # Start your custom code here
-                # =========================================================
-                
-                # Load the code/picture securely
-                # code = helper.decode_code(data.get("file_path"))
-                # picture = helper.decode_picture(data.get("file_path"))
+                try:
+                    # =========================================================
+                    # Start your custom code here
+                    # =========================================================
+                    
+                    # Load the code/picture securely
+                    # code = helper.decode_code(data.get("file_path"))
+                    # picture = helper.decode_picture(data.get("file_path"))
 
-                # classification_result = custom_classify(result, helper)
-                # indicators = calculate_indicators(result, helper)
+                    # classification_result = custom_classify(result, helper)
+                    # indicators = calculate_indicators(result, helper)
 
-                # =========================================================
-                # End of your custom code
-                # =========================================================
+                    # Example fallback result if nothing is implemented yet:
+                    # classification_result = 'processed' 
 
-                # Write calculated indicators to the database
-                write_indicators_to_db(indicators, result_id)
-                
-                # Update the classification result in the database 
-                # (Reihenfolge: Wert, Result_ID, Classifier_ID)
-                db.update_classification_result(classification_result, result_id, classifier_id)
+                    # =========================================================
+                    # End of your custom code
+                    # =========================================================
+
+                    # Write calculated indicators to the database
+                    write_indicators_to_db(indicators, result_id)
+                    
+                    # Update the classification result in the database 
+                    # (Order: Value, Result_ID, Classifier_ID)
+                    db.update_classification_result(classification_result, result_id, classifier_id)
+
+                except Exception as e:
+                    print(f"Critical error executing custom classifier logic for result {result_id}: {str(e)}")
+                    # Failsafe: Prevent the job from being stuck as "in process" forever
+                    db.update_classification_result('classifier_error', result_id, classifier_id)
 
     # Retrieve results to be classified from the database using the classifier ID and study ID
     results = db.get_results(classifier_id, study_id)
+    print(f"Found {len(results)} pending results for classifier {classifier_id}")
     
     # Process and classify the retrieved results
     classify_results(results)

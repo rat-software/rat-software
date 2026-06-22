@@ -10,10 +10,13 @@ from itertools import combinations
 def get_result_stats(study):
     from ..models import Serp  # Import Serp model inline to ensure no circular import flags
     
+    # Central variable for the maximum number of scraper retries
+    max_retries = 3 
+    
     scrapers_all = db.session.query(Scraper.id).filter(Scraper.study_id == study.id).count()
     scrapers_done = db.session.query(Scraper.id).filter(
         Scraper.study_id == study.id,
-        or_(Scraper.progress == 1, and_(Scraper.progress == -1, Scraper.counter > 10))
+        or_(Scraper.progress == 1, and_(Scraper.progress == -1, Scraper.counter >= max_retries)) # For initial scrapers
     ).count()
     scraper_percent = (scrapers_done / scrapers_all) * 100 if scrapers_all > 0 else 0
 
@@ -24,9 +27,10 @@ def get_result_stats(study):
     else:
         collection_status_percent = scraper_percent
         if total_results_to_process > 0 or scrapers_all > 0:
+            # FIXED: Counts only definitively finished (1) or definitively failed (>= max_retries) sources
             finished_sources = db.session.query(ResultSource.result_id).join(Result).filter(
                 Result.study_id == study.id,
-                or_(ResultSource.progress == 1, and_(ResultSource.progress == -1, ResultSource.counter > 2))
+                or_(ResultSource.progress == 1, and_(ResultSource.progress == -1, ResultSource.counter >= max_retries))
             ).count()
 
             total_tasks = scrapers_all + total_results_to_process
@@ -61,14 +65,25 @@ def get_result_stats(study):
                 .filter(Result.study_id == study.id, ResultSource.progress == 1)\
                 .distinct().count()
             
+            # FIXED: Count only definitively failed sources (reached max retries limit)
             failed_results_count = db.session.query(Result.id)\
                 .join(Result.source_associations)\
-                .filter(Result.study_id == study.id, ResultSource.progress == -1)\
+                .filter(Result.study_id == study.id, ResultSource.progress == -1, ResultSource.counter >= max_retries)\
                 .distinct().count()
             
-            if processed_results_count > 0 or failed_results_count > 0:
+            # NEW: Count sources that are currently in the retry loop
+            retry_results_count = db.session.query(Result.id)\
+                .join(Result.source_associations)\
+                .filter(Result.study_id == study.id, ResultSource.progress == -1, ResultSource.counter < max_retries)\
+                .distinct().count()
+            
+            if processed_results_count > 0 or failed_results_count > 0 or retry_results_count > 0:
                 result_stats["Results with Processed Source"] = processed_results_count
                 result_stats["Results with Failed Source"] = failed_results_count
+                
+                # Display this row in the dashboard as long as the scraper is still attempting retries
+                if retry_results_count > 0:
+                    result_stats["Sources currently in Retry"] = retry_results_count
 
     # --- ADDED: SERP Layout Pages Count Metric ---
     serp_results_count = db.session.query(Serp).filter(Serp.study_id == study.id).count()
@@ -424,8 +439,8 @@ def convert_answer_stats_to_df(answer_stats_data):
 
 def get_overlap_stats(study):
     """
-    Berechnet die Überschneidungen (Overlap) zwischen verschiedenen Suchmaschinen
-    basierend auf den URLs der Ergebnisse (nutzt jetzt die engine_text der Extension).
+    Calculates the overlaps between different search engines
+    based on the URLs of the results (now uses engine_text from the extension).
     """
     # 1. Identify all existing search engines in this study
     engines = db.session.query(Result.engine_text).filter(

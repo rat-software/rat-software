@@ -670,7 +670,10 @@ def process_result(result, helper):
         return None
 
 def classify_results(results, classifier_id, db, job_server, scorer, helper):
-    """Classify results and update database with scores and indicators"""
+    """
+    Classify results and update database with scores and indicators.
+    Uses atomic database constraints to prevent race conditions across multiple servers.
+    """
     result_counter = len(results)
 
     for result in results:
@@ -678,24 +681,18 @@ def classify_results(results, classifier_id, db, job_server, scorer, helper):
         result_id = data["id"]
 
         result_counter -= 1
-        print(result_counter)
-        print(result_id)
+        print(f"Remaining: {result_counter} | Processing Result ID: {result_id}")
 
         try:
             
-            # 1. Check if the result is already fully processed (has a final score)
-            if db.check_classification_result_not_in_process(classifier_id, result_id):
-                print(f"Result {result_id} is already finished.")
-                continue
+            # ATOMIC LOCK ATTEMPT: Try to insert "in process" directly into the DB.
+            # If it returns False, another instance just claimed it or it's already processed.
+            if not db.insert_classification_result(classifier_id, "in process", result_id, job_server):
+                print(f"Result {result_id} already locked or processed by another instance. Skipping.")
+                continue # Safely skip to the next document
 
-            # 2. Check if another server is currently processing it (has "in process" status)
-            if db.check_classification_result(classifier_id, result_id):
-                print(f"Result {result_id} is already being processed by another server")
-                continue
-
-            # 3. If neither applies, claim the result by inserting "in process"
-            db.insert_classification_result(classifier_id, "in process", result_id, job_server)
-            
+            # ---------------------------------------------------------
+            # IF WE REACH HERE, THIS SERVER OWNS THE JOB!
             # ---------------------------------------------------------
 
             try:
@@ -746,11 +743,10 @@ def classify_results(results, classifier_id, db, job_server, scorer, helper):
 
             except Exception as e:
                 print(f"Error in classification: {str(e)}")
-                db.update_classification_result('error', result_id, classifier_id)
+                db.update_classification_result('classifier_error', result_id, classifier_id)
 
         except Exception as e:
-            print(f"Error in classification: {str(e)}")
-            db.update_classification_result('error', result_id, classifier_id)
+            print(f"Critical error locking result {result_id}: {str(e)}")
 
 def main(classifier_id, db, helper, job_server, study_id):
     """Main function that processes web results and performs SEO analysis."""

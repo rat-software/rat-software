@@ -55,20 +55,43 @@ class DB:
 
     def get_classifiers(self):
         """
-        Get the classifiers from the database, newest studies first.
+        Get the classifiers from the database, but ONLY for studies that
+        actually have pending results or dead sources to flag.
+        This completely eliminates the bottleneck of iterating through old, finished studies.
         """
+        from psycopg2.extras import RealDictCursor
+        
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
             
+            # The EXISTS clause acts like a high-speed radar. 
+            # It only returns the classifier/study combo if there is at least ONE 
+            # row that actually requires processing by the Python script.
             cur.execute("""
                 SELECT classifier.id, classifier.name, classifier_study.study 
                 FROM classifier
                 JOIN classifier_study ON classifier.id = classifier_study.classifier
+                WHERE EXISTS (
+                    SELECT 1 
+                    FROM result
+                    JOIN result_source ON result_source.result = result.id
+                    JOIN source ON result_source.source = source.id
+                    LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = classifier.id
+                    WHERE result.study = classifier_study.study
+                      AND (
+                          -- Condition 1: Fresh, unclassified sources
+                          (source.progress = 1 AND cr.id IS NULL)
+                          OR
+                          -- Condition 2: Dead sources that need the 'source_failed' flag
+                          (source.progress = -1 AND result_source.counter >= %s AND (cr.value IS NULL OR cr.value IN ('error', 'classifier_error', 'in process')))
+                      )
+                )
                 ORDER BY classifier_study.study DESC
-            """)
+            """, (self.max_counter,))
             
             conn.commit()
             classifiers = cur.fetchall()
+            
         return classifiers
 
     def get_search_engines(self, results):
@@ -134,7 +157,7 @@ class DB:
                 WHERE classifier_study.classifier = %s 
                   AND result.study = %s
                   AND source.progress = 1 
-                  AND (cr.id IS NULL OR cr.value IN ('error', 'classifier_error', 'in process'))
+                  AND cr.id IS NULL
                 ORDER BY result.id, result.created_at
                 LIMIT 10
             """, (classifier_id, classifier_id, study_id))
@@ -150,18 +173,10 @@ class DB:
             
         return results
 
-
     def insert_classification_result(self, classifier_id, value, result, job_server):
         """
         Insert a classification result into the database.
-
-        Args:
-            classifier_id (int): ID of the classifier.
-            value (str): Value of the classification.
-            result (int): ID of the result.
-
-        Returns:
-            None
+        Returns True if successfully locked, False if another instance beat us to it.
         """
         try:
             created_at = datetime.now()
@@ -170,8 +185,14 @@ class DB:
                 cur.execute("INSERT INTO classifier_result (classifier, value, result, created_at, job_server) VALUES (%s, %s, %s, %s, %s);", 
                             (classifier_id, value, result, created_at, job_server))
                 conn.commit()
+            return True # Sperre erfolgreich gesetzt!
         except Exception as e:
+            # '23505' ist der standardisierte PostgreSQL-Fehlercode für unique_violation
+            if hasattr(e, 'pgcode') and e.pgcode == '23505':
+                return False # Ein anderer Worker war schneller, sauber abbrechen ohne Crash
+            
             print(f"Error inserting classification result: {e}")
+            return False
 
     def insert_indicator(self, indicator, value, classifier_id, result, job_server):
         """

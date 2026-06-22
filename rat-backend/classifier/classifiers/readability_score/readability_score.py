@@ -41,7 +41,6 @@ from lib_db import DB
 from lib_helper import Helper
 from pathlib import Path
 
-
 # Determine the directory where this script is located
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 # Add the /libs/ directory to the system path to enable imports from that location
@@ -51,8 +50,6 @@ sys.path.append(currentdir + "/libs/")
 from text_analyzer import *
 
 def main(classifier_id, db, helper, job_server, study_id):
-    print("readibility_score")
-    print(study_id)
     """
     Main function responsible for classifying results using a specified classifier.
 
@@ -60,65 +57,18 @@ def main(classifier_id, db, helper, job_server, study_id):
         classifier_id (int): The ID of the classifier to use for classification.
         db (DB): The database object used for database operations.
         helper (Helper): Helper object for additional functionality.
+        job_server (str): Identifier of the processing server.
+        study_id (int): The ID of the study currently being processed.
 
     Returns:
         None
     """
-    
-    def check_for_duplicates(len_duplicates, source_id):
-        """
-        Checks for duplicate classification results and handles them accordingly.
-
-        Args:
-            check_dup: A list of classification results to check for duplicates.
-
-        Returns:
-            bool: Returns False if there are more than 1000 duplicates and processing is done; True otherwise.
-        """
-        if len_duplicates > 1:
-            print("duplicate")
-
-            result_ids = db.get_results_result_source(source_id)
-            
-            # Retrieve existing classifier results and indicators
-            for result_id in result_ids:
-                insert_classification = False
-                result_id = result_id[0]
-                classifier_result = db.get_classifier_result(result_id)
-                
-                if classifier_result:
-                    insert_classification = classifier_result[0][0]
-                    result_indicators = db.get_indicators(result_id)
-                    break
-            
-            for result_id in result_ids:
-                result_id = result_id[0]
-                if insert_classification:
-                    
-                    try:
-                        db.update_classification_result(classifier_id, insert_classification, result_id)
-                    except Exception as e:
-                        pass
-                    
-                    if db.check_classification_result_not_in_process(classifier_id, result_id):
-                        db.insert_classification_result(classifier_id, insert_classification, result_id, job_server)
-                        for ri in result_indicators:
-                            indicator = ri[2]
-                            value = ri[3]
-                            if not db.check_indicator_result(classifier_id, result_id, indicator, value):
-                                db.insert_indicator(indicator, value, classifier_id, result_id, job_server)
-              
-            if insert_classification:
-                return True
-            else:
-                return False
-      
-        else:
-            return False
+    print(f"Executing readability_score for Study ID: {study_id}")
 
     def classify_results(results):
         """
         Classify results obtained from the database using a specific classifier.
+        Uses atomic database constraints to prevent race conditions across multiple servers.
 
         Args:
             results (list): List of results to classify.
@@ -126,44 +76,38 @@ def main(classifier_id, db, helper, job_server, study_id):
         Returns:
             None
         """
-
-        # Mark all results as "in process"
         for result in results:
             result_id = result['id']
 
-            if not db.check_classification_result(classifier_id, result_id):
-                print("in process")
-                db.insert_classification_result(classifier_id, "in process", result_id, job_server)
+            # ATOMIC LOCK ATTEMPT: Try to insert "in process" directly into the DB.
+            # If it returns False, another instance just claimed it or it's already processed.
+            if not db.insert_classification_result(classifier_id, "in process", result_id, job_server):
+                print(f"Result {result_id} already locked or processed by another instance. Skipping.")
+                continue # Safely skip to the next document
 
-        for result in results:
+            # IF WE REACH HERE, THIS SERVER OWNS THE JOB!
             data = {k: v for k, v in result.items()}
-            result_id = data["id"]
-            print(result_id)
-            
-            if db.check_classification_result_not_in_process(classifier_id, result_id):
-                print("already processed by another instance")
-                continue # Skip if already processed by another instance
-
             code = helper.decode_code(data["file_path"])
             error_code = data["error_code"]
             status_code = data["status_code"]
 
             try:
+                # Proceed only if the page loaded successfully and HTML code exists
                 if status_code == 200 and not error_code and code:
                     tx = Text_Analyzer()
                     analysis_output = tx.analyze(code)
 
-                    # Check if the result is a numerical score
+                    # Check if the analysis successfully returned a numerical score
                     if isinstance(analysis_output, (int, float)):
                         # 1. Write the individual indicator directly to the database
                         score_value = f"{analysis_output:.2f}"
                         db.insert_indicator("Reading Ease", score_value, classifier_id, result_id, job_server)
                         
-                        # 2. Create the classification result from the score
+                        # 2. Assign the numerical score as the main classification result
                         classification_result = score_value
                     else:
-                        # If it's a string (e.g., "Language 'bn' not supported"), 
-                        # save the exact reason as an indicator to keep the DB clean!
+                        # If it returned a string (e.g., "Language 'bn' not supported" or "Not enough text")
+                        # Save the exact reason as an indicator to keep the DB clean!
                         db.insert_indicator("exclusion_reason", str(analysis_output), classifier_id, result_id, job_server)
                         
                         # Set the main classification result to a standardized error flag
@@ -171,6 +115,7 @@ def main(classifier_id, db, helper, job_server, study_id):
                 else:
                     classification_result = 'error'
                 
+                # Update the database with the final score or error flag
                 db.update_classification_result(classification_result, result_id, classifier_id)
 
             except Exception as e:
@@ -180,8 +125,7 @@ def main(classifier_id, db, helper, job_server, study_id):
 
     # Retrieve results to be classified from the database using the classifier ID
     results = db.get_results(classifier_id, study_id)
-    print(classifier_id)
-    print(len(results))
+    print(f"Found {len(results)} pending results for classifier {classifier_id}")
     
     # Process and classify the retrieved results
     classify_results(results)
