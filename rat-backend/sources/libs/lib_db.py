@@ -54,10 +54,11 @@ class DB:
     refresh_time: int
     """Hours for refreh scraped sources"""
 
-    def __init__(self, db_cnf: dict, job_server: str, refresh_time: int):
+    def __init__(self, db_cnf: dict, job_server: str, refresh_time: int, max_counter: int = 3):
         self.db_cnf = db_cnf
         self.job_server = job_server
         self.refresh_time = refresh_time
+        self.max_counter = max_counter
 
     def __del__(self):
         """Destroy Database object"""
@@ -86,7 +87,7 @@ class DB:
         """
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT result_source.id, result_source.source, result_source.result  FROM result_source where (result_source.progress = 2 or result_source.progress = -1)  and result_source.counter < 3 and result_source.job_server = %s and result_source.created_at < now() - interval '10 minutes'",(job_server,))
+        cur.execute("SELECT result_source.id, result_source.source, result_source.result  FROM result_source where (result_source.progress = 2 or result_source.progress = -1)  and result_source.counter < %s and result_source.job_server = %s and result_source.created_at < now() - interval '10 minutes'",(self.max_counter, job_server,))
         conn.commit()
         sources_pending = cur.fetchall()
         conn.close()
@@ -108,14 +109,15 @@ class DB:
             sql = """
                 SELECT id, source 
                 FROM result_source 
-                WHERE counter >= 3 
+                WHERE counter >= %s 
                 AND job_server = %s 
                 AND (
                     progress = -1 
                     OR (progress IN (0, 2) AND created_at < %s)
                 )
             """
-            cur.execute(sql, (job_server, threshold_time))
+
+            cur.execute(sql, (self.max_counter, job_server, threshold_time))
             sources_failed = cur.fetchall()
             conn.commit()
             conn.close()
@@ -368,7 +370,7 @@ class DB:
     def get_sources(self, job_server):
         conn = DB.connect_to_db(self)
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        sql = """
+        sql = f"""
             WITH RankedSources AS (
                 SELECT 
                     r.id, r.url, c.name AS country_name, c.code, s.created_at as study_date,
@@ -377,7 +379,7 @@ class DB:
                 JOIN study s ON r.study = s.id 
                 LEFT JOIN country c ON r.country = c.id 
                 LEFT JOIN result_source rs ON rs.result = r.id 
-                WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3))
+                WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < {self.max_counter}))
                 AND s.live_link_mode = FALSE
             )
             SELECT id, url, country_name, code

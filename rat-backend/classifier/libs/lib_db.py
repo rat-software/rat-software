@@ -11,14 +11,20 @@ class DB:
     """
     db_cnf: dict
 
-    def __init__(self, db_cnf: dict):
+    def __init__(self, db_cnf: dict, job_server: str = "unknown_server", refresh_time: int = 48, max_counter: int = 3):
         """
         Initialize the DB object with database configuration.
 
         Args:
             db_cnf (dict): Database configuration dictionary.
+            job_server (str): Identifier of the processing server.
+            refresh_time (int): Refresh interval.
+            max_counter (int): Maximum retry counter for dead sources.
         """
         self.db_cnf = db_cnf
+        self.job_server = job_server
+        self.refresh_time = refresh_time
+        self.max_counter = max_counter
 
     def __del__(self):
         """Destroy Database object and print a message."""
@@ -108,12 +114,13 @@ class DB:
     def get_results(self, classifier_id, study_id):     
         """
         Get the results for a given classifier ID.
+        Only feeds fully successful scrapes (progress = 1) to the classifiers.
         """
+        from psycopg2.extras import RealDictCursor
+        
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
             
-            # NEU: DISTINCT ON (result.id) sorgt dafür, dass keine ID doppelt vorkommt!
-            # WICHTIG: Bei DISTINCT ON muss die Spalte (result.id) als erstes im ORDER BY stehen.
             cur.execute("""
                 SELECT DISTINCT ON (result.id)
                        result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
@@ -126,7 +133,7 @@ class DB:
                 LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = %s
                 WHERE classifier_study.classifier = %s 
                   AND result.study = %s
-                  AND (source.progress = 1 OR source.progress = -1) 
+                  AND source.progress = 1 
                   AND (cr.id IS NULL OR cr.value IN ('error', 'classifier_error', 'in process'))
                 ORDER BY result.id, result.created_at
                 LIMIT 10
@@ -135,11 +142,13 @@ class DB:
             conn.commit()
             results = cur.fetchall()
             
-        results = self.get_search_engines(results)
-        results = self.get_queries(results)
+        # Assuming you have these helper functions elsewhere in your class
+        if hasattr(self, 'get_search_engines'):
+            results = self.get_search_engines(results)
+        if hasattr(self, 'get_queries'):
+            results = self.get_queries(results)
+            
         return results
-    
-
 
 
     def insert_classification_result(self, classifier_id, value, result, job_server):
@@ -387,6 +396,37 @@ class DB:
                 );
             """)
             conn.commit()
+
+
+    def flag_dead_sources(self, classifier_id, study_id, job_server):
+        """
+        Central method: Finds all results whose source permanently failed 
+        (progress = -1 and counter >= self.max_counter) and marks them in 
+        classifier_result as 'source_failed'.
+        """
+        with self.connect_to_db() as conn:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cur.execute("""
+                SELECT result.id, cr.id as cr_id 
+                FROM result
+                JOIN result_source ON result_source.result = result.id
+                JOIN source ON result_source.source = source.id
+                LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = %s
+                WHERE result.study = %s
+                  AND source.progress = -1 
+                  AND result_source.counter >= %s
+                  AND (cr.value IS NULL OR cr.value IN ('error', 'classifier_error', 'in process'))
+            """, (classifier_id, study_id, self.max_counter))
+            
+            dead_results = cur.fetchall()
+            
+        # Register the final failure for all found dead sources
+        for row in dead_results:
+            result_id = row['id']
+            if row['cr_id']:
+                self.update_classification_result('source_failed', result_id, classifier_id)
+            else:
+                self.insert_classification_result(classifier_id, 'source_failed', result_id, job_server)            
 
     def check_db_connection(self):
         """
