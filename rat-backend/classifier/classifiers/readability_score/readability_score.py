@@ -162,9 +162,12 @@ def main(classifier_id, db, helper, job_server, study_id):
                         # 2. Create the classification result from the score
                         classification_result = score_value
                     else:
-                        # If it's a string (e.g., "Not enough content..."), use it as the result
-                        # In this case, no indicators will be written
-                        classification_result = analysis_output
+                        # If it's a string (e.g., "Language 'bn' not supported"), 
+                        # save the exact reason as an indicator to keep the DB clean!
+                        db.insert_indicator("exclusion_reason", str(analysis_output), classifier_id, result_id, job_server)
+                        
+                        # Set the main classification result to a standardized error flag
+                        classification_result = 'error'
                 else:
                     classification_result = 'error'
                 
