@@ -239,10 +239,10 @@ class TestMainClassifyResults(unittest.TestCase):
 
     # ── Not enough text ───────────────────────────────────────────────────────
 
-    def test_too_few_words_no_indicator_inserted(self):
+    def test_too_few_words_writes_exclusion_reason_indicator(self):
         db, _ = self._run([self._result()],
                           code='<html><body><p>too short</p></body></html>')
-        db.insert_indicator.assert_not_called()
+        db.insert_indicator.assert_called_once_with('exclusion_reason', 'error', 1, 1, 'test')
         db.update_classification_result.assert_called_once_with('error', 1, 1)
 
     # ── Successful English classification ─────────────────────────────────────
