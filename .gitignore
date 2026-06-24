@@ -19,6 +19,7 @@ rat-backend/query_sampler/google-ads.yaml
 extension_downloads.csv
 nohup.out
 **/tmp_uploads
+**/test-sources/
 
 # Virtuelle Umgebungen (lokal, nicht versionieren)
 venv_rat/
