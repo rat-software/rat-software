@@ -46,7 +46,7 @@ joblib==1.5.3
 jsonpatch==1.33
 jsonpointer==3.1.1
 langdetect==1.0.9
-lxml==6.0.4
+lxml>=6.1.0
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 marshmallow==3.26.2
