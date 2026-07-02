@@ -161,7 +161,7 @@ def new_participant(study_id):
     max_items = study.max_results_per_participant if (study.limit_per_participant and study.max_results_per_participant) else 99999
     
     # Memory optimization guard: fetch only what is reasonably required for balancing/shuffling
-    fetch_limit = max_items * 3 
+    fetch_limit = 99999
     all_available_tasks = []
 
     # PRÜFUNG: Dürfen wir ein Limit setzen oder machen wir die Gruppierung kaputt?
@@ -229,10 +229,8 @@ def new_participant(study_id):
         return db.session.query(column_ref, func.count(Answer.id)).filter(
             Answer.study_id == study.id,
             column_ref.isnot(None),
-            or_(
-                Answer.status == 1,
-                and_(Answer.status == 0, Answer.created_at >= active_timeout)
-            )
+            # Nur abgeschlossene oder explizit geskippte Items zählen als "belegt"
+            Answer.status.in_([1, 2]) 
         ).group_by(column_ref).all()
 
     for r_id, score in fetch_live_scores(Answer.result_id): item_scores['result'][r_id] = score
@@ -250,7 +248,7 @@ def new_participant(study_id):
     # Sort all components globally by their calculated live score (least-reviewed items first)
     all_available_tasks.sort(key=lambda x: (get_live_score(x), random.random()))
     
-    final_tasks = []
+    final_tasks = all_available_tasks[:max_items]
     
     # ---------------------------------------------------------
     # MODE A: QUERY PRIORITY QUEUE (Group items tightly by search queries)
@@ -278,7 +276,7 @@ def new_participant(study_id):
             query_scores[q_obj] = sum(get_live_score(t) for group in clusters.values() for t in group)
 
         # Base sorting: prioritize queries with the lowest accumulated score
-        sorted_queries = sorted(list(tasks_by_query.keys()), key=lambda q: (query_scores.get(q, 0), random.random()))
+        sorted_queries = sorted(list(tasks_by_query.keys()), key=lambda q: query_scores.get(q, 0))
         
         # --- ADAPTIVE CANDIDATE POOL MECHANISM ---
         # Select twice the amount of needed queries, capped safely at the maximum available count

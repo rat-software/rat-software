@@ -500,3 +500,71 @@ def get_overlap_stats(study):
         return overlap_list
     
     return None
+    
+    
+def get_query_evaluation_stats(study):
+    from ..models import Serp
+    # 1. Alle Queries der Studie laden
+    queries = {q.id: {
+        "text": q.query, "total_items": 0, 
+        "finished_answers": 0, "open_answers": 0, 
+        "unique_participants": set()
+    } for q in study.queries}
+    
+    if not queries:
+        return None
+        
+    # 2. Mapping: Welche Result-ID gehört zu welcher Query-ID?
+    res_map = {r.id: r.query_id for r in db.session.query(Result.id, Result.query_id).filter_by(study_id=study.id).all()}
+    ai_map = {r.id: r.query_id for r in db.session.query(ResultAi.id, ResultAi.query_id).filter_by(study_id=study.id).all()}
+    chat_map = {r.id: r.query_id for r in db.session.query(ResultChatbot.id, ResultChatbot.query_id).filter_by(study_id=study.id).all()}
+    serp_map = {r.id: r.query_id for r in db.session.query(Serp.id, Serp.query_id).filter_by(study_id=study.id).all()}
+    
+    # 3. Zähle die verfügbaren Items pro Query zusammen
+    for q_id in res_map.values(): queries[q_id]["total_items"] += 1
+    for q_id in ai_map.values(): queries[q_id]["total_items"] += 1
+    for q_id in chat_map.values(): queries[q_id]["total_items"] += 1
+    for q_id in serp_map.values(): queries[q_id]["total_items"] += 1
+    
+    # 4. Gehe alle Antworten durch und weise sie der Query zu
+    answers = db.session.query(Answer.result_id, Answer.result_ai_id, Answer.result_chatbot_id, Answer.result_serp_id, Answer.status, Answer.participant_id).filter_by(study_id=study.id).all()
+    
+    for ans in answers:
+        q_id = None
+        if ans.result_id: q_id = res_map.get(ans.result_id)
+        elif ans.result_ai_id: q_id = ai_map.get(ans.result_ai_id)
+        elif ans.result_chatbot_id: q_id = chat_map.get(ans.result_chatbot_id)
+        elif ans.result_serp_id: q_id = serp_map.get(ans.result_serp_id)
+        
+        if q_id and q_id in queries:
+            if ans.status == 1: # Abgeschlossen
+                queries[q_id]["finished_answers"] += 1
+            if ans.status == 2: # Skipped
+                queries[q_id]["finished_answers"] += 1
+                if ans.participant_id: 
+                    queries[q_id]["unique_participants"].add(ans.participant_id)
+            elif ans.status == 0: # Offen / In Bearbeitung
+                queries[q_id]["open_answers"] += 1
+                
+    # 5. Formatierung für das Frontend
+    num_questions = len(study.questions) or 1
+    result_list = []
+    
+    for q_id, data in queries.items():
+        expected_answers = data["total_items"] * num_questions
+        progress_pct = (data["finished_answers"] / expected_answers * 100) if expected_answers > 0 else 0
+        
+        result_list.append({
+            "id": q_id,
+            "query_text": data["text"],
+            "items": data["total_items"],
+            "participants_count": len(data["unique_participants"]),
+            "finished_answers": data["finished_answers"],
+            "open_answers": data["open_answers"],
+            "expected_answers": expected_answers,
+            "progress_pct": round(progress_pct, 1)
+        })
+        
+    # Standard-Sortierung: Die am wenigsten bearbeiteten Queries nach oben
+    result_list.sort(key=lambda x: x["progress_pct"])
+    return result_list

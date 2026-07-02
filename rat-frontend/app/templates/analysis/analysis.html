@@ -160,6 +160,65 @@
     </div>
   </div>
   {% endif %}
+  
+	{% if query_eval_stats %}
+	  <div class="col-12 pb-4 dashboard-widget" data-widget-id="w-query-eval" data-widget-title="Query Evaluation Monitor">
+		<div class="card h-100 shadow-sm border-0">
+		  <div class="card-body">
+			<div class="crd-header-title drag-handle">
+				<i class="fa-solid fa-grip-vertical"></i> 
+				Query Evaluation Monitor
+				<i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Live-Tracking der Arbeitslast: Zeigt an, wie viele Teilnehmer eine bestimmte Suchanfrage bereits bewertet haben. Hilft bei der Überprüfung des Load-Balancers."></i>
+			</div>
+			
+			<div class="table-responsive mt-3">
+			  <table class="table table-hover table-striped table-sm border" id="queryEvalTable">
+				<thead class="table-light">
+				  <tr>
+					<th onclick="sortTable(0)" style="cursor:pointer; width: 35%;">Search Query <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+					<th onclick="sortTable(1)" style="cursor:pointer;" class="text-center">Items <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+					<th onclick="sortTable(2)" style="cursor:pointer;" class="text-center">Users Finished <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+					<th onclick="sortTable(3)" style="cursor:pointer;" class="text-center">Active (Open) <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+					<th onclick="sortTable(4)" style="cursor:pointer;">Progress <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
+				  </tr>
+				</thead>
+				<tbody id="queryEvalTableBody">
+				  {% for q in query_eval_stats %}
+				  <tr>
+					<td class="fw-bold">{{ q.query_text }}</td>
+					<td class="text-center">{{ q['items'] }}</td>
+					<td class="text-center">
+						<span class="badge {% if q.participants_count > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+							<i class="fa-solid fa-user me-1"></i> {{ q.participants_count }}
+						</span>
+					</td>
+					<td class="text-center text-warning fw-bold">{{ q.open_answers }}</td>
+					<td data-sort="{{ q.progress_pct }}">
+					  <div class="d-flex align-items-center">
+						<div class="progress flex-grow-1 me-2" style="height: 10px;">
+						  <div class="progress-bar bg-primary" style="width: {{ q.progress_pct }}%;"></div>
+						</div>
+						<span class="small text-muted" style="min-width: 40px;">{{ q.progress_pct }}%</span>
+					  </div>
+					</td>
+				  </tr>
+				  {% endfor %}
+				</tbody>
+			  </table>
+			</div>
+			
+			<div class="d-flex justify-content-between align-items-center mt-2">
+				<span class="small text-muted" id="queryPageInfo"></span>
+				<div class="btn-group btn-group-sm">
+					<button class="btn btn-outline-secondary" id="btnPrevQuery" onclick="changePage(-1)">Previous</button>
+					<button class="btn btn-outline-secondary" id="btnNextQuery" onclick="changePage(1)">Next</button>
+				</div>
+			</div>
+
+		  </div>
+		</div>
+	  </div>
+	{% endif %}	  
 
   {% if answer_stats %}
   {% for question in answer_stats %}
@@ -625,5 +684,74 @@
     });
     {% endif %}
   });
+  
+  // Vanilla JS Paginierung und Sortierung für die Query Tabelle
+    let currentQPage = 1;
+    const rowsPerPage = 10;
+    let tableRows = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const tbody = document.getElementById("queryEvalTableBody");
+        if(tbody) {
+            tableRows = Array.from(tbody.getElementsByTagName("tr"));
+            renderTable();
+        }
+    });
+
+    function renderTable() {
+        const tbody = document.getElementById("queryEvalTableBody");
+        const pageInfo = document.getElementById("queryPageInfo");
+        const totalPages = Math.ceil(tableRows.length / rowsPerPage);
+        
+        // Hide all
+        tableRows.forEach(row => row.style.display = "none");
+        
+        // Show current page
+        const start = (currentQPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        tableRows.slice(start, end).forEach(row => row.style.display = "");
+        
+        // Update info & buttons
+        pageInfo.innerText = `Showing ${start + 1} to ${Math.min(end, tableRows.length)} of ${tableRows.length} queries`;
+        document.getElementById("btnPrevQuery").disabled = currentQPage === 1;
+        document.getElementById("btnNextQuery").disabled = currentQPage === totalPages || totalPages === 0;
+        
+        // Append sorted rows
+        tableRows.forEach(row => tbody.appendChild(row));
+    }
+
+    function changePage(direction) {
+        currentQPage += direction;
+        renderTable();
+    }
+
+    function sortTable(columnIndex) {
+        const isNumeric = [1, 2, 3, 4].includes(columnIndex);
+        let ascending = document.getElementById("queryEvalTable").dataset.sortOrder !== "asc";
+        
+        tableRows.sort((a, b) => {
+            let valA = a.cells[columnIndex].innerText.trim();
+            let valB = b.cells[columnIndex].innerText.trim();
+            
+            // Für die Progress-Bar Spalte das data-sort Attribut verwenden
+            if(columnIndex === 4) {
+                valA = parseFloat(a.cells[columnIndex].getAttribute('data-sort'));
+                valB = parseFloat(b.cells[columnIndex].getAttribute('data-sort'));
+            } else if (isNumeric) {
+                valA = parseFloat(valA.replace(/[^0-9.-]+/g,"")) || 0;
+                valB = parseFloat(valB.replace(/[^0-9.-]+/g,"")) || 0;
+            }
+
+            if (valA < valB) return ascending ? -1 : 1;
+            if (valA > valB) return ascending ? 1 : -1;
+            return 0;
+        });
+
+        document.getElementById("queryEvalTable").dataset.sortOrder = ascending ? "asc" : "desc";
+        currentQPage = 1; // Nach dem Sortieren auf Seite 1 zurückspringen
+        renderTable();
+    }
+	
+  
 </script>
 {% endblock %}
