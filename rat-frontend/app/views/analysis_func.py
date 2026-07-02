@@ -537,9 +537,7 @@ def get_query_evaluation_stats(study):
         elif ans.result_serp_id: q_id = serp_map.get(ans.result_serp_id)
         
         if q_id and q_id in queries:
-            if ans.status == 1: # Abgeschlossen
-                queries[q_id]["finished_answers"] += 1
-            if ans.status == 2: # Skipped
+            if ans.status in [1, 2]: # Abgeschlossen (1) ODER Skipped (2)
                 queries[q_id]["finished_answers"] += 1
                 if ans.participant_id: 
                     queries[q_id]["unique_participants"].add(ans.participant_id)
