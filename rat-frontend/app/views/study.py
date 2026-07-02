@@ -635,6 +635,8 @@ def update_study_settings(id):
 
         # --- 3. WORKLOAD & ASSIGNMENT LIMITS ---
         
+        study.group_by_query = 'group_by_query' in request.form
+        
         limit_by_query = 'limit_by_query' in request.form
         
         if limit_by_query:
