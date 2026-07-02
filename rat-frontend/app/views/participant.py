@@ -164,6 +164,10 @@ def new_participant(study_id):
     fetch_limit = max_items * 3 
     all_available_tasks = []
 
+    # PRÜFUNG: Dürfen wir ein Limit setzen oder machen wir die Gruppierung kaputt?
+    # Wenn limit_by_query aktiv ist, laden wir ALLES, um die Queries nicht zu zerschneiden.
+    apply_limit = not (study.limit_by_query and study.max_queries_per_participant != -1)
+
     if selected_types:
         # 1. Fetch Organic Results
         org_q = db.session.query(Result).join(Result.source_associations).filter(
@@ -175,7 +179,6 @@ def new_participant(study_id):
         else:
             org_q = org_q.filter(ResultSource.progress == 1)
 
-        # Apply evaluation criteria filters (ranges & URL inclusion/exclusion)
         ranges = RangeStudy.query.filter_by(study=study.id).all()
         if ranges:
             range_filters = [and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]
@@ -189,24 +192,28 @@ def new_participant(study_id):
         if exclude_filters:
             org_q = org_q.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
 
-        org_tasks = org_q.limit(fetch_limit).all()
+        # Hier greift die Logik für org_tasks
+        org_tasks = org_q.limit(fetch_limit).all() if apply_limit else org_q.all()
         all_available_tasks.extend(org_tasks)
 
         # 2. Fetch AI Overviews
-        ai_tasks = db.session.query(ResultAi).filter(
+        ai_q = db.session.query(ResultAi).filter(
             ResultAi.study_id == study.id, ResultAi.result_type_text.in_(selected_types)
-        ).limit(fetch_limit).all()
+        )
+        ai_tasks = ai_q.limit(fetch_limit).all() if apply_limit else ai_q.all()
         all_available_tasks.extend(ai_tasks)
 
         # 3. Fetch Chatbots
-        chat_tasks = db.session.query(ResultChatbot).filter(
+        chat_q = db.session.query(ResultChatbot).filter(
             ResultChatbot.study_id == study.id, ResultChatbot.result_type_text.in_(selected_types)
-        ).limit(fetch_limit).all()
+        )
+        chat_tasks = chat_q.limit(fetch_limit).all() if apply_limit else chat_q.all()
         all_available_tasks.extend(chat_tasks)
             
         # 4. Fetch SERPs (Search Engine Result Pages)
         if "serp" in selected_types:
-            serp_tasks = db.session.query(Serp).filter(Serp.study_id == study.id).limit(fetch_limit).all()
+            serp_q = db.session.query(Serp).filter(Serp.study_id == study.id)
+            serp_tasks = serp_q.limit(fetch_limit).all() if apply_limit else serp_q.all()
             all_available_tasks.extend(serp_tasks)
 
     # ---------------------------------------------------------
