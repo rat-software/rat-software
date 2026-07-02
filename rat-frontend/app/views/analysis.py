@@ -5,7 +5,7 @@ from flask_security import login_required
 from .analysis_func import (get_result_stats, get_evaluation_stats,
                            get_classifier_stats, get_top_main_domains, 
                            get_answer_stats, convert_answer_stats_to_df,
-                           get_overlap_stats)
+                           get_overlap_stats, get_query_evaluation_stats)
 
 import pandas as pd
 import io
@@ -43,6 +43,8 @@ def _get_analysis_data(study_id):
     top_domains = get_top_main_domains(study)
     answer_stats = get_answer_stats(study)
     overlap_list = get_overlap_stats(study)
+    
+    query_eval_stats = get_query_evaluation_stats(study)
     
     # Standard approach: We load the filtered classifier data for the dashboard 
     # (matching the result limit defined in the study, if any)
@@ -139,7 +141,8 @@ def _get_analysis_data(study_id):
         'classifier_stats': processed_classifier_stats, 
         'top_domains': top_domains, 
         'overlap_list': overlap_list, 
-        'answer_stats': answer_stats
+        'answer_stats': answer_stats,
+        'query_eval_stats': query_eval_stats
     }
 
 @app.route('/<int:id>/analysis')
