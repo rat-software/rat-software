@@ -1624,7 +1624,8 @@ class Sources:
                         
                     nonlocal driver
                     try:
-                        driver.get(url)
+                        driver.uc_open_with_reconnect(url, reconnect_time=4)
+                        driver.uc_gui_click_captcha()   # klickt die Cloudflare-Box, falls vorhanden
                         self.bypass_cookie_banners(driver)
                         time.sleep(2)
                         return True
