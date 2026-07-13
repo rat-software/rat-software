@@ -92,6 +92,7 @@ def export(id):
                 qry.id AS query_id,
                 qry.query AS query_string,
                 'Search Result' AS source_type,
+                r.engine_text AS search_engine,
                 r.title AS source_title,
                 r.position AS source_position,
                 NULL AS serp_page,
@@ -115,6 +116,7 @@ def export(id):
                 NULL AS query_id,
                 NULL AS query_string,
                 COALESCE(a.result_type_text, 'SERP Result') AS source_type,
+                s.engine_text AS search_engine,
                 'SERP Layout' AS source_title,
                 NULL AS source_position,
                 COALESCE(s.page, 1) AS serp_page,
@@ -137,6 +139,7 @@ def export(id):
                 qry.id AS query_id,
                 qry.query AS query_string,
                 'AI Overview' AS source_type,
+                ra.engine_text AS search_engine,
                 'AI Answer' AS source_title,
                 NULL AS source_position,
                 NULL AS serp_page,
@@ -160,6 +163,7 @@ def export(id):
                 qry.id AS query_id,
                 qry.query AS query_string,
                 'Chatbot' AS source_type,
+                rc.engine_text AS search_engine,
                 'Chatbot Answer' AS source_title,
                 NULL AS source_position,
                 NULL AS serp_page,
@@ -186,12 +190,12 @@ def export(id):
 
         if has_participants:
             labels = [
-                'Query ID', 'Keyword (Query)', 'Source Type', 'Source Title', 'Source Position', 'SERP Page', 'Source Domain', 'Source URL', 
+                'Query ID', 'Keyword (Query)', 'Source Type', 'Search Engine', 'Source Title', 'Source Position', 'SERP Page', 'Source Domain', 'Source URL', 
                 'Source ID', 'Participant Name', 'Question', 'Question Position', 'Question Type', 'Answer', 'Status Code', 'Timestamp'
             ]
         else:
             labels = [
-                'Query ID', 'Keyword (Query)', 'Source Type', 'Source Title', 'Source Position', 'SERP Page', 'Source Domain', 'Source URL', 
+                'Query ID', 'Keyword (Query)', 'Source Type', 'Search Engine', 'Source Title', 'Source Position', 'SERP Page', 'Source Domain', 'Source URL', 
                 'Source ID', 'Question', 'Question Position', 'Question Type', 'Answer', 'Status Code', 'Timestamp'
             ]
 
@@ -239,15 +243,16 @@ def export(id):
 
     def get_serp_results_master_df():
         try:
-            serp_records = db.session.execute(text("SELECT id, page, created_at FROM serp WHERE study = :study_id"), {'study_id': id}).all()
+            serp_records = db.session.execute(text("SELECT id, page, created_at, engine_text FROM serp WHERE study = :study_id"), {'study_id': id}).all()
         except Exception:
-            serp_records = db.session.execute(text("SELECT id, page, created_at FROM serp WHERE study_id = :study_id"), {'study_id': id}).all()
+            serp_records = db.session.execute(text("SELECT id, page, created_at, engine_text FROM serp WHERE study_id = :study_id"), {'study_id': id}).all()
 
         master_rows = []
         for s_row in serp_records:
             s_id = s_row[0]
             page = s_row[1]
             created_at = s_row[2]
+            engine_text = s_row[3]
             
             q_id = serp_to_query.get(s_id, None)
             keyword = query_map.get(q_id, '') if q_id else ''
@@ -259,6 +264,7 @@ def export(id):
             master_rows.append({
                 'Query ID': q_id,
                 'Keyword': keyword,
+                'Search Engine': engine_text,
                 'SERP Tracking ID': s_id,
                 'SERP Page': page,
                 'Timestamp': created_at
@@ -312,6 +318,7 @@ def export(id):
             SELECT 
                 ra.id AS ai_result_id, 
                 q.query AS keyword, 
+                ra.engine_text,
                 ra.answer, 
                 ra.created_at 
             FROM result_ai ra 
@@ -319,7 +326,7 @@ def export(id):
             WHERE ra.study = :study_id 
             ORDER BY ra.created_at
         """)
-        labels = ['AI Result ID', 'Keyword (Query)', 'Answer Text', 'Timestamp']
+        labels = ['AI Result ID', 'Keyword (Query)', 'Search Engine', 'Answer Text', 'Timestamp']
         records = db.session.execute(sql_query, {'study_id': id}).all()
         return pd.DataFrame.from_records(records, columns=labels)
 
@@ -328,6 +335,7 @@ def export(id):
             SELECT 
                 rc.id AS chatbot_result_id, 
                 q.query AS keyword, 
+                rc.engine_text,
                 rc.answer, 
                 rc.created_at 
             FROM result_chatbot rc 
@@ -335,13 +343,25 @@ def export(id):
             WHERE rc.study = :study_id 
             ORDER BY rc.created_at
         """)
-        labels = ['Chatbot Result ID', 'Keyword (Query)', 'Answer Text', 'Timestamp']
+        labels = ['Chatbot Result ID', 'Keyword (Query)', 'Search Engine', 'Answer Text', 'Timestamp']
         records = db.session.execute(sql_query, {'study_id': id}).all()
         return pd.DataFrame.from_records(records, columns=labels)
 
     def get_ai_sources_df():
-        sql_query = text("SELECT ras.result_ai, ras.title, ras.description, ras.url, ras.position, ras.main FROM result_ai_source ras WHERE ras.study = :study_id ORDER BY ras.result_ai, ras.position")
-        labels = ['AI Result ID', 'Title', 'Description', 'URL', 'Position', 'Main']
+        sql_query = text("""
+            SELECT 
+                ras.result_ai, 
+                ras.engine_text, 
+                ras.title, 
+                ras.description, 
+                ras.url, 
+                ras.position, 
+                ras.main 
+            FROM result_ai_source ras 
+            WHERE ras.study = :study_id 
+            ORDER BY ras.result_ai, ras.position
+        """)
+        labels = ['AI Result ID', 'Search Engine', 'Title', 'Description', 'URL', 'Position', 'Main']
         records = db.session.execute(sql_query, {'study_id': id}).all()
         return pd.DataFrame.from_records(records, columns=labels)
     
