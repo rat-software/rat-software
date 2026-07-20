@@ -1,10 +1,18 @@
 from flask import json
+import os
+import inspect
+import sys
 
+# Import path setup from original script
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.append(currentdir + "/../libs/")
 
+from lib_helper import Helper
 
 
 class Classifier:
     def __init__(self, classifier_id: int = None, db=None, job_server: str = None):
+        self.helper = Helper()
         self.classifier_id = classifier_id
         self.db = db
         self.job_server = job_server
