@@ -31,15 +31,11 @@ def upgrade():
 
     with op.batch_alter_table('classifier_indicator', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_classifier_indicator_result'), ['result'], unique=False)
-        batch_op.create_index(batch_op.f('ix_classifier_indicator_study'), ['study'], unique=False)
-        batch_op.create_foreign_key(batch_op.f('fk_classifier_indicator_study_study'), 'study', ['study'], ['id'], ondelete='CASCADE')
         batch_op.create_foreign_key(batch_op.f('fk_classifier_indicator_result_result'), 'result', ['result'], ['id'], ondelete='CASCADE')
         batch_op.create_foreign_key(batch_op.f('fk_classifier_indicator_classifier_classifier'), 'classifier', ['classifier'], ['id'])
 
     with op.batch_alter_table('classifier_result', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_classifier_result_study'), ['study'], unique=False)
         batch_op.create_foreign_key(batch_op.f('fk_classifier_result_classifier_classifier'), 'classifier', ['classifier'], ['id'])
-        batch_op.create_foreign_key(batch_op.f('fk_classifier_result_study_study'), 'study', ['study'], ['id'], ondelete='CASCADE')
         batch_op.create_foreign_key(batch_op.f('fk_classifier_result_result_result'), 'result', ['result'], ['id'])
 
     with op.batch_alter_table('classifier_study', schema=None) as batch_op:
@@ -137,8 +133,6 @@ def upgrade():
         batch_op.create_foreign_key(batch_op.f('fk_study_user_study_study'), 'study', ['study'], ['id'])
         batch_op.create_foreign_key(batch_op.f('fk_study_user_user_user'), 'user', ['user'], ['id'])
 
-    with op.batch_alter_table('user', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('force_password_change', sa.Boolean(), nullable=False))
 
     with op.batch_alter_table('user_role', schema=None) as batch_op:
         batch_op.create_foreign_key(batch_op.f('fk_user_role_user_user'), 'user', ['user'], ['id'])

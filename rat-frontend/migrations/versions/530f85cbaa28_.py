@@ -24,14 +24,6 @@ def upgrade():
                existing_type=sa.TEXT(),
                type_=sa.String(),
                existing_nullable=True)
-        batch_op.drop_index(batch_op.f('idx_answer__participant'))
-        batch_op.drop_index(batch_op.f('idx_answer__question'))
-        batch_op.drop_index(batch_op.f('idx_answer__result'))
-        batch_op.drop_index(batch_op.f('idx_answer__study'))
-        batch_op.drop_constraint(batch_op.f('fk_answer__participant'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_answer__study'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_answer__result'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_answer__question'), type_='foreignkey')
         batch_op.create_foreign_key(batch_op.f('fk_answer_result_serp_serp'), 'serp', ['result_serp'], ['id'])
         batch_op.create_foreign_key(batch_op.f('fk_answer_participant_participant'), 'participant', ['participant'], ['id'])
         batch_op.create_foreign_key(batch_op.f('fk_answer_result_chatbot_result_chatbot'), 'result_chatbot', ['result_chatbot'], ['id'])
@@ -70,7 +62,6 @@ def upgrade():
                existing_type=sa.INTEGER(),
                nullable=True)
         batch_op.create_index(batch_op.f('ix_classifier_indicator_result'), ['result'], unique=False)
-        batch_op.drop_constraint(batch_op.f('fk_indicator__result'), type_='foreignkey')
         batch_op.create_foreign_key(batch_op.f('fk_classifier_indicator_result_result'), 'result', ['result'], ['id'], ondelete='CASCADE')
         batch_op.drop_column('job_server')
 
@@ -83,12 +74,9 @@ def upgrade():
                existing_type=postgresql.TIMESTAMP(),
                nullable=True,
                existing_server_default=sa.text('now()'))
-        batch_op.drop_constraint(batch_op.f('unique_classifier_result'), type_='unique')
         batch_op.drop_column('job_server')
         batch_op.drop_column('study')
 
-    with op.batch_alter_table('classifier_study', schema=None) as batch_op:
-        batch_op.drop_column('id')
 
     with op.batch_alter_table('country', schema=None) as batch_op:
         batch_op.alter_column('name',
@@ -109,8 +97,6 @@ def upgrade():
                existing_type=sa.TEXT(),
                type_=sa.String(),
                existing_nullable=True)
-        batch_op.drop_index(batch_op.f('idx_option__question'))
-        batch_op.drop_constraint(batch_op.f('fk_option__question'), type_='foreignkey')
         batch_op.create_foreign_key(batch_op.f('fk_option_question_question'), 'question', ['question'], ['id'])
 
     with op.batch_alter_table('participant', schema=None) as batch_op:
@@ -119,8 +105,6 @@ def upgrade():
                type_=sa.String(),
                existing_nullable=True)
 
-    with op.batch_alter_table('participant_study', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('idx_participant_study'))
 
     with op.batch_alter_table('qs_geotarget', schema=None) as batch_op:
         batch_op.alter_column('name',
@@ -185,7 +169,6 @@ def upgrade():
         batch_op.alter_column('criterion_id',
                existing_type=sa.INTEGER(),
                nullable=True)
-        batch_op.drop_column('code')
 
     with op.batch_alter_table('qs_study', schema=None) as batch_op:
         batch_op.alter_column('name',
@@ -202,7 +185,6 @@ def upgrade():
         batch_op.drop_column('id')
 
     with op.batch_alter_table('query', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('assignment_count', sa.Integer(), nullable=True))
         batch_op.alter_column('query',
                existing_type=sa.TEXT(),
                type_=sa.String(),
@@ -211,10 +193,7 @@ def upgrade():
                existing_type=sa.TEXT(),
                type_=sa.String(),
                existing_nullable=True)
-        batch_op.drop_index(batch_op.f('idx_query__study'))
-        batch_op.drop_constraint(batch_op.f('fk_query__study'), type_='foreignkey')
         batch_op.create_foreign_key(batch_op.f('fk_query_study_study'), 'study', ['study'], ['id'], ondelete='CASCADE')
-        batch_op.drop_column('task')
 
     with op.batch_alter_table('question', schema=None) as batch_op:
         batch_op.alter_column('title',
@@ -225,17 +204,9 @@ def upgrade():
                existing_type=sa.TEXT(),
                type_=sa.String(),
                existing_nullable=True)
-        batch_op.drop_index(batch_op.f('idx_question__question_template'))
-        batch_op.drop_index(batch_op.f('idx_question__question_type'))
-        batch_op.drop_index(batch_op.f('idx_question__study'))
-        batch_op.drop_constraint(batch_op.f('fk_question__question_type'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_question__study'), type_='foreignkey')
         batch_op.create_foreign_key(batch_op.f('fk_question_question_type_questiontype'), 'questiontype', ['question_type'], ['id'])
         batch_op.create_foreign_key(batch_op.f('fk_question_study_study'), 'study', ['study'], ['id'], ondelete='CASCADE')
-        batch_op.drop_column('question_template')
 
-    with op.batch_alter_table('question_result', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('idx_question_result'))
 
     with op.batch_alter_table('questiontype', schema=None) as batch_op:
         batch_op.alter_column('name',
@@ -283,20 +254,12 @@ def upgrade():
                existing_type=sa.TEXT(),
                type_=sa.String(),
                existing_nullable=True)
-        batch_op.drop_index(batch_op.f('fki_r'))
-        batch_op.drop_index(batch_op.f('idx_result__scraper'))
-        batch_op.drop_index(batch_op.f('idx_result__study'))
         batch_op.create_index(batch_op.f('ix_result_normalized_url'), ['normalized_url'], unique=False)
-        batch_op.drop_constraint(batch_op.f('fk_result__study'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_result__query'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_result_scraper'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_result_resulttype'), type_='foreignkey')
         batch_op.create_foreign_key(batch_op.f('fk_result_scraper_scraper'), 'scraper', ['scraper'], ['id'])
         batch_op.create_foreign_key(batch_op.f('fk_result_country_country'), 'country', ['country'], ['id'])
         batch_op.create_foreign_key(batch_op.f('fk_result_study_study'), 'study', ['study'], ['id'], ondelete='CASCADE')
         batch_op.create_foreign_key(batch_op.f('fk_result_query_query'), 'query', ['query'], ['id'])
         batch_op.create_foreign_key(batch_op.f('fk_result_serp_serp'), 'serp', ['serp'], ['id'])
-        batch_op.drop_column('resulttype')
 
     with op.batch_alter_table('result_ai', schema=None) as batch_op:
         batch_op.alter_column('created_at',
@@ -362,7 +325,6 @@ def upgrade():
         batch_op.alter_column('progress',
                existing_type=sa.INTEGER(),
                nullable=False)
-        batch_op.drop_constraint(batch_op.f('uq_result'), type_='unique')
         batch_op.drop_column('error_code')
         batch_op.drop_column('created_at')
         batch_op.drop_column('id')
