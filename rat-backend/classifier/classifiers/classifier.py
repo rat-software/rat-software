@@ -66,11 +66,9 @@ class Classifier:
                                 value_str = str(value)
                             self.db.insert_indicator(key, value_str, self.classifier_id, result_id, self.job_server)
                         # Check if excluded
-                        if indicators['excluded'] == True:
+                        if (indicators.get('excluded') != None) & (indicators.get('excluded') == True):
                             self.db.update_classification_result('excluded', result_id, self.classifier_id)
                             self.db.insert_indicator('exclusion_reason', indicators['reason'],
-                                                self.classifier_id, result_id, self.job_server)
-                            self.db.insert_indicator('content_type', indicators['content_type'],
                                                 self.classifier_id, result_id, self.job_server)
                             continue
                     # Calculate classification
