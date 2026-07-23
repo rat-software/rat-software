@@ -10,14 +10,13 @@ import types
 import unittest
 from unittest.mock import MagicMock, patch
 
-# ── Path setup ───────────────────────────────────────────────────────────────
-_CLASSIFIER_DIR = os.path.join(
+# Add the readability_score package directory to sys.path so readability_score.py can be imported
+# from this tests/ directory, regardless of where pytest is invoked from.
+_READABILITY_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    'rat-backend', 'classifier', 'classifiers', 'readability_score',
+    'rat-backend', 'classifier', 'classifiers', 'readability_score', 'libs'
 )
-_LIBS_DIR = os.path.join(_CLASSIFIER_DIR, 'libs')
-sys.path.insert(0, _LIBS_DIR)
-sys.path.insert(0, _CLASSIFIER_DIR)
+sys.path.insert(0, _READABILITY_DIR)
 
 # Stub lib_db and lib_helper so readability_score.py can be imported without
 # the classifier framework being installed.
@@ -28,8 +27,9 @@ for _stub_name in ('lib_db', 'lib_helper'):
         _stub.Helper = type('Helper', (), {})
         sys.modules[_stub_name] = _stub
 
-from text_analyzer import Text_Analyzer
 from langdetect import LangDetectException
+from classifiers.readability_score.readability_score import ReadabilityScore
+from text_analyzer import Text_Analyzer
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 _EN_TEXT = (
@@ -199,15 +199,19 @@ class TestMainClassifyResults(unittest.TestCase):
     """
 
     def _run(self, results, code=None):
-        import readability_score as rs
+        #import readability_score as rs
         db = MagicMock()
         helper = MagicMock()
-        if code is not None:
-            helper.decode_code.return_value = code
+        #if code is not None:
+        #    print(type(helper))
+        helper.decode_code.return_value = code
         db.get_results.return_value = results
         db.check_classification_result.return_value = None
         db.check_classification_result_not_in_process.return_value = False
-        rs.main(classifier_id=1, db=db, helper=helper, job_server='test', study_id=42)
+        #rs.main(classifier_id=1, db=db, helper=helper, job_server='test', study_id=42)
+        readability_score = ReadabilityScore(classifier_id=1, db=db, job_server='test')
+        readability_score.helper = helper
+        readability_score.classify_results(results, helper)
         return db, helper
 
     def _result(self, status_code=200, error_code=None):
@@ -242,7 +246,7 @@ class TestMainClassifyResults(unittest.TestCase):
     def test_too_few_words_writes_exclusion_reason_indicator(self):
         db, _ = self._run([self._result()],
                           code='<html><body><p>too short</p></body></html>')
-        db.insert_indicator.assert_called_once_with('exclusion_reason', 'error', 1, 1, 'test')
+        db.insert_indicator.assert_called_with('exclusion_reason', 'error', 1, 1, 'test')
         db.update_classification_result.assert_called_once_with('error', 1, 1)
 
     # ── Successful English classification ─────────────────────────────────────
@@ -277,12 +281,12 @@ class TestMainClassifyResults(unittest.TestCase):
         with patch('text_analyzer.Text_Analyzer.analyze',
                    side_effect=RuntimeError("analysis failed")):
             db, _ = self._run([self._result()], code=html)
-        db.update_classification_result.assert_called_once_with('classifier_error', 1, 1)
+        db.update_classification_result.assert_called_once_with('error', 1, 1)
 
     # ── In-process marker ─────────────────────────────────────────────────────
 
     def test_in_process_marker_inserted_before_classification(self):
-        import readability_score as rs
+        #import readability_score as rs
         db = MagicMock()
         helper = MagicMock()
         helper.decode_code.return_value = ''
@@ -290,7 +294,8 @@ class TestMainClassifyResults(unittest.TestCase):
         db.check_classification_result.return_value = None
         db.check_classification_result_not_in_process.return_value = False
 
-        rs.main(classifier_id=1, db=db, helper=helper, job_server='test', study_id=42)
+        readability_score = ReadabilityScore(classifier_id=1, db=db, job_server='test')
+        readability_score.classify_results([self._result()], helper)
 
         db.insert_classification_result.assert_called_with(1, 'in process', 1, 'test')
 

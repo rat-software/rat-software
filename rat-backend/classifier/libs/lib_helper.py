@@ -115,3 +115,6 @@ class Helper:
     def file_to_dict(self, path):
         with open(path, encoding="utf-8") as f:
             return json.load(f)
+
+    def to_camel_case(self, snake_str):
+        return "".join(x.capitalize() for x in snake_str.lower().split("_"))

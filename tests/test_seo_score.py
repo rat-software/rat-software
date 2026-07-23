@@ -9,6 +9,7 @@ import os
 import types
 import unittest
 from bs4 import BeautifulSoup
+from unittest.mock import MagicMock
 
 # Add the seo_score package directory to sys.path so seo_score.py can be imported
 # from this tests/ directory, regardless of where pytest is invoked from.
@@ -24,7 +25,7 @@ sys.path.insert(0, _SEO_DIR)
 sys.modules.setdefault('indicators', types.ModuleType('indicators'))
 
 from seo_score import (
-    SEOScorer,
+    SeoScore,
     analyze_content_length,
     analyze_heading_structure,
     analyze_link_quality,
@@ -43,13 +44,13 @@ def _soup(html: str) -> BeautifulSoup:
 
 
 # ─────────────────────────────────────────────────────────────────
-# SEOScorer.get_classification — threshold boundary tests
+# SeoScore.get_classification — threshold boundary tests
 # ─────────────────────────────────────────────────────────────────
 
 class TestGetClassification(unittest.TestCase):
 
     def setUp(self):
-        self.scorer = SEOScorer()
+        self.scorer = SeoScore(MagicMock(), 'srv')
 
     def test_score_at_75_threshold(self):
         self.assertEqual(self.scorer.get_classification(75), 'most_probably_optimized')
@@ -74,13 +75,13 @@ class TestGetClassification(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────
-# SEOScorer.calculate_score — edge cases and main paths
+# SeoScore.calculate_score — edge cases and main paths
 # ─────────────────────────────────────────────────────────────────
 
 class TestCalculateScore(unittest.TestCase):
 
     def setUp(self):
-        self.scorer = SEOScorer()
+        self.scorer = SeoScore()
 
     # Edge case: empty dict
     def test_empty_indicators_returns_zero(self):
@@ -185,13 +186,13 @@ class TestCalculateScore(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────
-# SEOScorer._calculate_technical_score
+# SeoScore._calculate_technical_score
 # ─────────────────────────────────────────────────────────────────
 
 class TestCalculateTechnicalScore(unittest.TestCase):
 
     def setUp(self):
-        self.scorer = SEOScorer()
+        self.scorer = SeoScore()
 
     def _score(self, indicators):
         return self.scorer._calculate_technical_score(indicators)
@@ -237,13 +238,13 @@ class TestCalculateTechnicalScore(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────
-# SEOScorer._calculate_content_score
+# SeoScore._calculate_content_score
 # ─────────────────────────────────────────────────────────────────
 
 class TestCalculateContentScore(unittest.TestCase):
 
     def setUp(self):
-        self.scorer = SEOScorer()
+        self.scorer = SeoScore()
 
     def _score(self, indicators):
         return self.scorer._calculate_content_score(indicators)
@@ -300,13 +301,13 @@ class TestCalculateContentScore(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────
-# SEOScorer._calculate_user_experience_score
+# SeoScore._calculate_user_experience_score
 # ─────────────────────────────────────────────────────────────────
 
 class TestCalculateUserExperienceScore(unittest.TestCase):
 
     def setUp(self):
-        self.scorer = SEOScorer()
+        self.scorer = SeoScore()
 
     def _score(self, indicators):
         return self.scorer._calculate_user_experience_score(indicators)
@@ -360,13 +361,13 @@ class TestCalculateUserExperienceScore(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────
-# SEOScorer._calculate_meta_score
+# SeoScore._calculate_meta_score
 # ─────────────────────────────────────────────────────────────────
 
 class TestCalculateMetaScore(unittest.TestCase):
 
     def setUp(self):
-        self.scorer = SEOScorer()
+        self.scorer = SeoScore()
 
     def _score(self, indicators):
         return self.scorer._calculate_meta_score(indicators)
