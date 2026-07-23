@@ -113,7 +113,7 @@ class SeoScore(Classifier):
             classification = self.get_classification(score_results['total_score'])
             self.insert_indicator('seo_classification', classification, result_id)
 
-            return classification
+            return score_results['total_score']
 
         except Exception as e:
             print(f"Error processing result: {str(e)}")
