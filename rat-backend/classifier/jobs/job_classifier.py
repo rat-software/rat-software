@@ -34,7 +34,7 @@ def job():
         workingdir = currentdir
 
     # Construct the command to run the classifier script
-    classifier_job = 'python ' + os.path.join(workingdir, 'classifier.py')
+    classifier_job = 'python ' + os.path.join(workingdir, 'classifier_runner.py')
 
     # Execute the classifier script
     os.system(classifier_job)
