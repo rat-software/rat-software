@@ -69,6 +69,18 @@ qs_study_user = db.Table('qs_study_user',
     extend_existing=True
 )
 
+classifier_resulttype = db.Table('classifier_resulttype',
+    db.Column('classifier', db.ForeignKey('classifier.id'), primary_key=True),
+    db.Column('resulttype', db.ForeignKey('resulttype.id'), primary_key=True), 
+    extend_existing=True
+)
+
+ai_segment_source = db.Table('ai_segment_source',
+    db.Column('segment_id', db.Integer, db.ForeignKey('result_ai_segment.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('source_id', db.Integer, db.ForeignKey('result_ai_source.id', ondelete='CASCADE'), primary_key=True),
+    extend_existing=True
+)
+
 # ==============================================================================
 # CORE ORM MODELS
 # ==============================================================================
@@ -161,16 +173,23 @@ class Answer(db.Model):
     
     result_serp_id = db.Column('result_serp', db.Integer, db.ForeignKey('serp.id'), nullable=True)
     result_serp = db.relationship('Serp', back_populates='answers', lazy='select')
+    
+    result_ai_source_id = db.Column('result_ai_source', db.Integer, db.ForeignKey('result_ai_source.id'), nullable=True)
+    result_ai_source = db.relationship('ResultAiSource', back_populates='answers', lazy='select')
 
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='answers', lazy='select')
 
     result_type_text = db.Column(db.String(50), nullable=True)
 
+    result_image_id = db.Column('result_image', db.Integer, db.ForeignKey('result_image.id'), nullable=True)
+    result_image = db.relationship('ResultImage', back_populates='answers', lazy='select')
+
     __table_args__ = (
         db.Index('idx_answer_lookup', 'participant', 'study', 'status'),
         {'extend_existing': True}
     )
+
 
 class Classifier(db.Model):
     __tablename__ = 'classifier'
@@ -179,10 +198,13 @@ class Classifier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('name', db.String)
     display_name = db.Column('display_name', db.String)
+    description = db.Column('description', db.String, nullable=True)
+    description_url = db.Column('description_url', db.String, nullable=True)
     display = db.Column(db.Boolean)
     indicators = db.relationship('ClassifierIndicator', back_populates='classifier', uselist=False, lazy='select')
     results = db.relationship('ClassifierResult', back_populates='classifier', lazy='select')
     studies = db.relationship('Study', secondary=classifier_study, back_populates='classifier', lazy='select')
+    resulttypes = db.relationship('ResultType', secondary=classifier_resulttype, backref=db.backref('classifiers', lazy='select'), lazy='select')
 
 class ClassifierResult(db.Model):
     __tablename__ = 'classifier_result'
@@ -195,7 +217,20 @@ class ClassifierResult(db.Model):
     job_server = db.Column('job_server', db.String)
     created_at = db.Column(db.DateTime)
     classifier = db.relationship("Classifier", back_populates="results")
+    
+    result_ai_id = db.Column("result_ai", db.Integer, db.ForeignKey('result_ai.id'), nullable=True)
+    result_chatbot_id = db.Column("result_chatbot", db.Integer, db.ForeignKey('result_chatbot.id'), nullable=True)
+    result_ai_source_id = db.Column("result_ai_source", db.Integer, db.ForeignKey('result_ai_source.id'), nullable=True)
+
+    result_image_id = db.Column("result_image", db.Integer, db.ForeignKey('result_image.id'), nullable=True)
+    
     result = db.relationship("Result", back_populates="classifier")
+    
+    result_ai = db.relationship("ResultAi", backref="classifier_results")
+    result_chatbot = db.relationship("ResultChatbot", backref="classifier_results")
+    result_ai_source = db.relationship("ResultAiSource", backref="classifier_results")
+    result_image = db.relationship('ResultImage', backref="classifier_results")
+    
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='classifier_results', lazy='select')
 
@@ -209,7 +244,18 @@ class ClassifierIndicator(db.Model):
     job_server = db.Column('job_server', db.String)
     created_at = db.Column(db.DateTime)
     result_id = db.Column('result', db.Integer, db.ForeignKey('result.id', ondelete='CASCADE'), index=True)
+    
+    result_ai_id = db.Column("result_ai", db.Integer, db.ForeignKey('result_ai.id'), nullable=True)
+    result_chatbot_id = db.Column("result_chatbot", db.Integer, db.ForeignKey('result_chatbot.id'), nullable=True)
+    result_ai_source_id = db.Column("result_ai_source", db.Integer, db.ForeignKey('result_ai_source.id'), nullable=True)
+    result_image_id = db.Column("result_image", db.Integer, db.ForeignKey('result_image.id'), nullable=True)
+
     result = db.relationship('Result', back_populates='indicators', lazy='select')
+    
+    result_ai = db.relationship("ResultAi", backref="classifier_indicators")
+    result_chatbot = db.relationship("ResultChatbot", backref="classifier_indicators")
+    result_ai_source = db.relationship("ResultAiSource", backref="classifier_indicators")
+    result_image = db.relationship("ResultImage", backref="classifier_indicators")
     study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
     study = db.relationship('Study', back_populates='classifier_indicators', lazy='select')
     classifier_id = db.Column('classifier', db.Integer, db.ForeignKey('classifier.id'))
@@ -481,6 +527,7 @@ class Study(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     description = db.Column(db.String)
+    study_mode = db.Column(db.String(50), default='unselected', nullable=True)
     created_at = db.Column(db.DateTime)
     updated_at = db.Column(db.DateTime)
     result_count = db.Column(db.Integer)
@@ -504,6 +551,8 @@ class Study(db.Model):
     limit_by_query = db.Column(db.Boolean, default=True) 
     
     max_queries_per_participant = db.Column(db.Integer)
+    
+    llm_classifiers_json = db.Column(db.Text, nullable=True)
 
     assessment_result_types = db.relationship('ResultType', secondary='study_resulttype', lazy='subquery', backref=db.backref('studies', lazy=True))
     answers = db.relationship('Answer', back_populates='study', lazy='select', cascade="all, delete-orphan")
@@ -618,6 +667,8 @@ class ResultAiSource(db.Model):
     country = db.relationship('Country', backref=db.backref('result_ai_sources', lazy=True))
     result_type_text = db.Column(db.String(50), nullable=True)
     engine_text = db.Column(db.String(100), nullable=True)
+    source_type = db.Column(db.String(50), nullable=True, default='carousel')
+    answers = db.relationship('Answer', back_populates='result_ai_source', lazy='select')
 
 
 class ResultChatbot(db.Model):
@@ -638,3 +689,47 @@ class ResultChatbot(db.Model):
     answers = db.relationship('Answer', back_populates='result_chatbot', lazy='select')
     result_type_text = db.Column(db.String(50), nullable=True)
     engine_text = db.Column(db.String(100), nullable=True)
+    
+class ResultAiSegment(db.Model):
+    __tablename__ = 'result_ai_segment'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text)          # Der Text des Segments
+    position = db.Column(db.Integer)   # Die Reihenfolge im Gesamttext
+
+    # Verbindung zum Haupt-KI-Ergebnis (One-to-Many)
+    result_ai_id = db.Column('result_ai', db.Integer, db.ForeignKey('result_ai.id', ondelete='CASCADE'))
+    
+    # Many-to-Many Verbindung zu den bereits existierenden AI-Sources
+    sources = db.relationship('ResultAiSource', secondary=ai_segment_source, lazy='subquery',
+        backref=db.backref('segments', lazy=True))
+
+class ResultImage(db.Model):
+    __tablename__ = 'result_image'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.Text)
+    source_url = db.Column(db.Text)
+    image_url = db.Column(db.Text)
+    source_name = db.Column(db.Text)
+    position = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime)
+    
+    file_path = db.Column(db.String(255))
+    progress = db.Column(db.Integer, default=0)
+    counter = db.Column(db.Integer, default=0)
+    
+    result_type_text = db.Column(db.String(50), default='image')
+    engine_text = db.Column(db.String(100))
+    
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='CASCADE'), index=True)
+    query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
+    source_id = db.Column('source', db.Integer, db.ForeignKey('source.id'))
+    country_id = db.Column('country', db.Integer, db.ForeignKey('country.id'))
+    
+    study = db.relationship('Study', backref=db.backref('result_images', lazy=True, cascade="all, delete-orphan"))
+    query_ = db.relationship('Query', backref=db.backref('result_images', lazy=True))
+    source = db.relationship('Source', backref=db.backref('result_images', lazy=True))
+    answers = db.relationship('Answer', back_populates='result_image', lazy='select')

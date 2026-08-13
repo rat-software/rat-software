@@ -1,27 +1,28 @@
 """
 Main application for scraping sources using the results table in the database.
+
+This script acts as a standalone worker that queries the database for URLs pending 
+scraping, utilizes proxies based on country configurations, fetches the raw HTML and 
+screenshots via the storage server, and updates the database with the results.
 """
 
-#load custom libs
+# Load custom internal libraries
 from libs.lib_logger import *
 from libs.lib_db import *
 from libs.lib_sources import *
+from libs.lib_helper import *
+from libs.lib_proxy_checker import check_proxy, get_working_proxy, get_proxy_for_scraping
 
-#load required libs
+# Load standard Python libraries
 from datetime import datetime
 import json
 import time
 import threading
 import concurrent.futures
-
 import os
 import inspect
-from libs.lib_helper import *
-
 import random
 import csv
-from libs.lib_proxy_checker import check_proxy, get_working_proxy, get_proxy_for_scraping
-
 import sys
 
 class SourcesScraper:
@@ -29,22 +30,29 @@ class SourcesScraper:
     A class to scrape and process source URLs from a database.
 
     Attributes:
-        get_sources (list): List of sources to be scraped, including their IDs and URLs.
-        job_server (str): Path to the configuration file of the sources scraper.
-        db (object): Database object for querying and updating source information.
-        logger (object): Logger object for logging operations and errors.
-        sources (object): Sources object for handling source-related operations.
-
-    Methods:
-        __init__(get_sources: list, job_server: str, db: object, logger: object, sources: object):
-            Initializes the SourcesScraper object with the provided parameters.
-        __del__():
-            Destructor for the SourcesScraper object.
-        scrape():
-            Scrapes the source code and screenshots of URLs, updating the database with the results.
+        get_sources (list): List of sources to be scraped, including their IDs, URLs, and country codes.
+        job_server (str): The identifier of the server executing this job.
+        db (object): Database manager object for querying and updating source information.
+        logger (object): Logger object for tracking operations, errors, and progress.
+        sources (object): Sources object for handling source-related network and scraping operations.
+        country (str): The default country origin configured for this scraping job.
     """    
 
     def __init__(self, get_sources: list, job_server: str, db: object, logger: object, sources: object, country: str):
+        """
+        Initializes the SourcesScraper object with the provided configuration and database context.
+
+        Args:
+            get_sources (list): List of tuples containing source data to process.
+            job_server (str): Identifier of the current job server.
+            db (object): Instantiated database connection object.
+            logger (object): Instantiated logger object.
+            sources (object): Instantiated sources processing object.
+            country (str): Default proxy country configuration.
+
+        Returns:
+            None
+        """
         self.get_sources = get_sources
         self.job_server = job_server
         self.db = db
@@ -53,45 +61,79 @@ class SourcesScraper:
         self.country = country
 
     def __del__(self):
-        """Destroy the sources scraper"""
+        """
+        Destructor for the SourcesScraper object. 
+        Cleans up and prints a termination message to the console.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         print('Sources Scraper object destroyed')
 
 
     def scrape(self):
         """
-        Scrapes URLs and updates the database with source code and screenshots.
+        Main execution loop that scrapes URLs and updates the database with source code and metadata.
 
-        This method performs the following steps:
-        1. Initializes a threading event for managing scrape results.
-        2. Iterates over the list of sources to be scraped.
-        3. Checks if the source has already been processed.
-        4. Handles duplicate sources by updating their records if necessary.
-        5. Initiates the scraping process using a separate thread.
-        6. Waits for the scraping results, processes them, and updates the database.
-        7. Logs errors and status updates throughout the process.
+        This method iterates through the assigned list of sources, deduplicates matching targets, 
+        assigns appropriate proxies, and spawns managed threads to fetch the web contents. 
+        It strictly enforces timeouts and updates the central database with success/failure states.
+
+        Args:
+            None
+
+        Returns:
+            None
         """
 
-        #initialize an event based dictionary for the scraping results
+        # Initialize an event-based dictionary to signal when scraping results are ready from the worker thread
         result_dict_available = threading.Event()      
 
-        def scrape_url(sources_url, proxy, country_code, timeout=450):
-            """Thread-sicherer URL-Scraper mit Timeout"""
+        def scrape_url(sources_url, proxy, country_code, timeout=450, is_image_task_flag=False):
+            """
+            Thread-safe URL scraper with strict timeout functionality.
+
+            Executes the actual scraping payload within a ThreadPoolExecutor. If the process 
+            exceeds the defined timeout, it safely aborts and constructs an error payload 
+            to prevent the main thread from hanging indefinitely.
+
+            Args:
+                sources_url (str): The target URL to be scraped.
+                proxy (str/dict): The proxy server string or dict to route the request through.
+                country_code (str): The requested country origin for proxy routing.
+                timeout (int): Maximum allowed execution time in seconds. Defaults to 450.
+                is_image_task_flag (bool): Indicates if the url is a direct image download.
+
+            Returns:
+                None (Modifies the global result_dict and sets the threading event)
+            """
             global result_dict  
             result_dict = None
             
             try:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Download: {sources_url[:80]}... (Ist Bild: {is_image_task_flag})")
                 self.logger.write_to_log(f"Starting scrape for URL: {sources_url} with timeout {timeout}s")
                 start_time = time.time()
                 
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(self.sources.save_code, sources_url, proxy, country_code)
-                    
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                     try:
-                        result_dict = future.result(timeout=timeout)
+                        # Wait for the result up to the configured timeout limit
+                        if is_image_task_flag:
+                            future = executor.submit(self.sources.save_image_robust, sources_url, proxy, timeout=30)
+                            result_dict = future.result(timeout=35)
+                        else:
+                            future = executor.submit(self.sources.save_code, sources_url, proxy, country_code)
+                            result_dict = future.result(timeout=timeout)
                         elapsed = time.time() - start_time
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✓ Download beendet ({elapsed:.2f}s): {sources_url[:80]}...")
                         self.logger.write_to_log(f"Scraping completed for {sources_url} in {elapsed:.2f}s")
                     except concurrent.futures.TimeoutError as te:
+                        # Handle cases where the target site hangs or the proxy is too slow
                         error_msg = f"Scraping timed out after {timeout}s for URL: {sources_url}"
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ TIMEOUT: {sources_url[:80]}...")
                         self.logger.write_to_log(error_msg)
                         result_dict = {
                             "file_path": None, 
@@ -103,6 +145,7 @@ class SourcesScraper:
                         }
                     except Exception as e:
                         error_msg = f"Error during scraping: {str(e)}"
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ ERROR: {error_msg}")
                         self.logger.write_to_log(error_msg)
                         result_dict = {
                             "file_path": None, 
@@ -112,6 +155,8 @@ class SourcesScraper:
                             "error_codes": error_msg,
                             "content_dict": {"":""}
                         }
+                
+                # Failsafe: Ensure result_dict is always populated even if the executor failed silently
                 if result_dict is None:
                     self.logger.write_to_log(f"No result returned for {sources_url} - creating default error result")
                     result_dict = {
@@ -119,7 +164,7 @@ class SourcesScraper:
                         "request": {"content_type": "error", "status_code": -1},
                         "final_url": sources_url,
                         "meta": {"ip": "-1", "main": sources_url},
-                        "error_codes": error_msg,
+                        "error_codes": "Critical worker error",
                         "content_dict": {"":""}
                     }
             except Exception as outer_e:
@@ -133,34 +178,39 @@ class SourcesScraper:
                     "content_dict": {"":""}
                 }
             finally:
+                # Signal the main loop that the dictionary is populated and the thread is finishing
                 elapsed = time.time() - start_time
                 self.logger.write_to_log(f"Setting result available for {sources_url} after {elapsed:.2f}s")
                 result_dict_available.set()
 
 
-        #loop through all sources to scrape
+        # Iterate over all sources assigned to this scraper instance
         for source_to_scrape in self.get_sources:
             global result_dict
             result_dict = None
             
+            # Unpack database row
             result_id = source_to_scrape[0] 
             url = source_to_scrape[1] 
             country_proxy = source_to_scrape[2] 
-            country_code = source_to_scrape[3] 
+            country_code = source_to_scrape[3]
+
+            is_image_task = isinstance(result_id, str) and result_id.startswith('result_image:') 
 
             base_main = url
             base_ip = "-1"
             try:
+                # Attempt to extract base metadata (IP, base domain) before scraping
                 base_meta = self.sources.get_result_meta(url)
                 base_main = base_meta.get("main", url)
                 base_ip = base_meta.get("ip", "-1")
                 
                 self.db.update_result(result_id, base_ip, base_main, url)
             except Exception as e:
-                self.logger.write_to_log(f"Fehler beim initialen Parsen der URL {url}: {e}")
-            # ====================================================================
+                self.logger.write_to_log(f"Error during initial URL parsing for {url}: {e}")
 
             try:
+                # Retrieve an appropriate proxy based on target country
                 proxy, proxy_error = get_proxy_for_scraping(country_proxy, self.country)
             except Exception as e:
                 proxy = None
@@ -177,17 +227,19 @@ class SourcesScraper:
             counter = 1  
             source_id = None  
             
+            # Prevent race conditions by checking if another job server picked this up
             if self.db.check_progress(url, result_id):
-                self.logger.write_to_log(f"Skipping {url} (ID: {result_id}) - already in progress")
+                msg = f"Skipping {url} (ID: {result_id}) - already in progress"
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ {msg}")
+                self.logger.write_to_log(msg)
                 continue
             else:
                 try:
+                    # Deduplication check: Has this exact URL already been scraped with this proxy setup?
                     source_id_check = self.db.get_source_check(url, country_proxy) 
 
                     if source_id_check:
-                        print("duplicate")
-                        print(source_id_check)
-
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ♻️ Deduplikation: URL bereits gescrapt -> Mappe Source ID {source_id_check}")
                         log = str(source_id_check)+"_"+str(result_id)+"\t"+url+"\tupdate result"
                         self.logger.write_to_log(log)
                         
@@ -197,6 +249,7 @@ class SourcesScraper:
                             self.logger.write_to_log(f"Error getting counter for result {result_id}: {str(e)}")
                             counter = 1
 
+                        # Link the existing scraped source data to the current search result ID
                         self.db.update_result_source(result_id, source_id_check, 1, counter, created_at, self.job_server)
 
                         try:
@@ -206,9 +259,7 @@ class SourcesScraper:
                                 main = rc[1]
                                 final_url = rc[2]
 
-                                if not(final_url):
-                                    final_url = url
-                                elif len(final_url) == 0:
+                                if not(final_url) or len(final_url) == 0:
                                     final_url = url
 
                                 self.db.update_result(result_id, ip, main, final_url)
@@ -216,6 +267,7 @@ class SourcesScraper:
                             self.logger.write_to_log(f"Error updating duplicate content for {result_id}: {str(e)}")
 
                     else:
+                        # Handle new source insertion
                         if self.db.get_source_check_by_result_id(result_id):
                             if self.db.get_result_source_source(result_id):
                                 source_id = self.db.get_result_source_source(result_id)
@@ -225,8 +277,7 @@ class SourcesScraper:
                                 source_id = source_id[0]
                                 counter = 1
                             created_at = datetime.now()
-                            print("new")
-                            print(source_id)
+                            print(f"[{datetime.now().strftime('%H:%M:%S')}] Neue Source ID: {source_id}")
                             self.db.update_result_source(result_id, source_id, 2, counter, created_at, self.job_server)
                         else:
                             source_id = False
@@ -239,6 +290,7 @@ class SourcesScraper:
                                     self.logger.write_to_log(f"Error getting counter for result {result_id}: {str(e)}")
                                     counter = 1
                                 
+                                # Abort early if the proxy is strictly required but missing
                                 if country_proxy != self.country and country_proxy is not None and proxy is None:
                                     error_code = f"No working proxies available for {country_proxy}: {proxy_error}"
                                     progress = -1
@@ -254,13 +306,15 @@ class SourcesScraper:
                                 max_scrape_time = 450  
                                 start_time = time.time()
                                 
-                                thread = threading.Thread(target=scrape_url, args=(url, proxy, country_code, max_scrape_time))
+                                # Spin up a separate thread so we can track exact elapsed time without blocking
+                                thread = threading.Thread(target=scrape_url, args=(url, proxy, country_code, max_scrape_time, is_image_task))
                                 thread.daemon = True  
                                 thread.start()
 
                                 wait_timeout = max_scrape_time * 1.5  
                                 wait_start_time = time.time()
                                 
+                                # Periodically check if the scraping thread has signaled completion
                                 while not result_dict_available.is_set():
                                     result_dict_available.wait(5)
                                     elapsed = time.time() - wait_start_time
@@ -294,9 +348,8 @@ class SourcesScraper:
                                 main = result_dict.get('meta', {}).get('main', url) 
                                 error_code = result_dict.get('error_codes', "") 
                                 
-                                # NEU: Wenn der Scraper wegen Timeout abstürzt, gibt er als "main" oft 
-                                # einfach wieder die Roh-URL zurück. Wir fangen das ab und verwenden 
-                                # unsere saubere base_main Domain!
+                                # NEW: If the scraper crashes due to a timeout, it often simply returns 
+                                # the raw URL as "main". We intercept this and use our clean base_main domain instead!
                                 if main == url or main == final_url:
                                     main = base_main
                                 if ip == "-1":
@@ -316,6 +369,7 @@ class SourcesScraper:
                                 timeout_indicators = ["timeout", "timed out", "partial content"]
                                 has_timeout = any(indicator in error_code.lower() for indicator in timeout_indicators)
 
+                                # Determine success or failure progress state based on payload integrity
                                 if (status_code != 200 or 
                                     content_type == 'error' or 
                                     file_path is None or  
@@ -354,7 +408,7 @@ class SourcesScraper:
                                     created_at = datetime.now()
                                     self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server)
                                     
-                                    # Das 2. Update der Result Tabelle, falls sich durch einen Redirect die URL/Domain geändert hat
+                                    # The second update to the Result table, in case the URL/domain changed due to a website redirect
                                     self.db.update_result(result_id, ip, main, final_url)
 
                                 except Exception as e:
@@ -362,7 +416,6 @@ class SourcesScraper:
                                     log = str(source_id)+"_"+str(result_id)+"\t"+url+"\t"+str(progress)+"\t"+error_code
                                     self.logger.write_to_log(log)
 
-                                    print(str(e))
                                     proxy_info = f" (Proxy: {proxy})" if proxy else ""
                                     if proxy_error:
                                         proxy_info += f" Proxy issues: {proxy_error}"
@@ -389,7 +442,7 @@ class SourcesScraper:
                                     proxy_info += f" Proxy issues: {proxy_error}"
                                     
                                 error_code = f"Final Source Controller scraping failed: {str(e)}{proxy_info}"
-                                print(error_code)
+                                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ ERROR: {error_code}")
                                 error = "error"
                                 progress = -1
                                 status_code = -1
@@ -405,21 +458,32 @@ class SourcesScraper:
                         proxy_info += f" Proxy issues: {proxy_error}"
                         
                     error_code = f"Process failed Source Controller scraping failed: {str(e)}{proxy_info}" 
-                    print(error_code)
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ FATAL EXCEPTION: {error_code}")
                     error = "error"
                     progress = -1
                     status_code = -1
                     content_dict = "error"  
                     log = "Skipped Result:"+str(result_id)+"\t"+str(e)+"\t \t \t "
                     self.logger.write_to_log(log)
+                    created_at = datetime.now() 
                     if source_id:  
                         self.db.update_source(source_id, None, progress, error, error_code, status_code, created_at, content_dict) 
-                        created_at = datetime.now() 
                         self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) 
+                    else:
+                        # BUGFIX für fehlenden DB-Eintrag wenn die Generierung vorher crasht
+                        self.db.update_result_source_result(result_id, -1, counter, created_at)
 
 if __name__ == "__main__":
-    import requests # Required for the Pre-Flight Check
+    """
+    Main entry point for the source scraping script.
+    
+    This block performs environment setup, configuration loading, pre-flight server checks, 
+    and instantiates the main application loops via ThreadPoolExecutors. It imposes a maximum 
+    run time on the scraper execution to guarantee proper teardown.
+    """
+    import requests # Required for the Pre-Flight Check against the storage server
 
+    # Ascertain absolute paths for configurations to avoid execution context issues
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
 
@@ -429,6 +493,7 @@ if __name__ == "__main__":
 
     helper = Helper()
 
+    # Load parameters into dicts
     db_cnf = helper.file_to_dict(path_db_cnf)
     sources_cnf = helper.file_to_dict(path_sources_cnf)
 
@@ -436,13 +501,12 @@ if __name__ == "__main__":
     refresh_time = sources_cnf.get('refresh_time', 48)
     country = sources_cnf.get('country', 'Germany')
 
-    max_counter = sources_cnf.get('counter', 3)
-
-    # Initialize logger early so we can log aborts immediately
+    # Initialize logger early so we can log application aborts immediately
     logger = Logger()
 
     # =========================================================
     # PRE-FLIGHT CHECK: STORAGE SERVER
+    # Verify the remote file storage server is actively responding
     # =========================================================
     storage_url = sources_cnf.get('storage-url')
     
@@ -469,9 +533,9 @@ if __name__ == "__main__":
         sys.exit(1)
     # =========================================================
 
-    # Initialize database
+    # Initialize the database connection wrapper
     try:
-        db = DB(db_cnf, job_server, refresh_time, max_counter)
+        db = DB(db_cnf, job_server, refresh_time)
         if not db.check_db_connection():
             print("Could not establish database connection. Exiting...")
             logger.write_to_log("CRITICAL ERROR: Database connection failed.")
@@ -482,6 +546,7 @@ if __name__ == "__main__":
 
     sources = Sources()
 
+    # Retrieve the batch of targets waiting in the queue
     try:
         get_sources = db.get_sources(job_server) 
         if not get_sources:
@@ -501,14 +566,17 @@ if __name__ == "__main__":
         del sources
         sys.exit(1)
 
-    print(get_sources)
+    print(f"Gefundene URLs zum Scrapen: {len(get_sources)}")
 
+    # Establish an overarching runtime limit to ensure cron jobs do not overlap infinitely
     MAX_TOTAL_RUNTIME = 7200  
     start_time = time.time()
 
+    # Pass the database, logger, and source target instances down to the controller class
     sources_scraper = SourcesScraper(get_sources, job_server, db, logger, sources, country) 
     
     try:
+        # Wrap the scraper in an executor to enforce the strict total execution timeout boundary
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(sources_scraper.scrape)
             try:
@@ -520,9 +588,11 @@ if __name__ == "__main__":
     except Exception as e:
         logger.write_to_log(f"Critical scraper error: {str(e)}")
 
+    # Log metrics
     runtime = time.time() - start_time
     logger.write_to_log(f"Total runtime: {runtime:.2f}s for {len(get_sources)} sources")
 
+    # Orderly garbage collection
     del logger
     del helper
     del db

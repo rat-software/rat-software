@@ -11,7 +11,7 @@ source venv_classifier/bin/activate
 # 2. Install Dependencies
 echo "📦 Installing packages..."
 pip install --upgrade pip
-pip install -r requirements_rat_classifier.txt
+pip install -r requirements.txt
 
 echo "✅ Setup complete! Use 'source venv_classifier/bin/activate' to start."
 

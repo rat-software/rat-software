@@ -58,8 +58,8 @@ class ClassifierRunner:
                     classifier = classifier_class(classifier_id=classifier_id, db=db, job_server=job_server)
                     # Get results and start classification
                     results = db.get_results(classifier_id, c['study'])
-                    print(results)
-                    print(f"Processing {len(results)} results for classifier {classifier_id}")
+                    #print(results)
+                    #print(f"Processing {len(results)} results for classifier {classifier_id}")
                     classifier.classify_results(results, helper)
                 except Exception as e:
                     print(f"Error occurred while running classifier {class_name}: {e}")

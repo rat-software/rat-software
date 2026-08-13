@@ -19,7 +19,7 @@
         </p>
 
         <form method="POST" action="{{ url_for('url_filters', id=study.id) }}">
-          {{ form.hidden_tag() }} {# Wichtig für CSRF-Schutz #}
+          {{ form.hidden_tag() }} 
 
           <div class="mb-3">
             <label for="include_urls" class="form-label">

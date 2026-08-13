@@ -1,5 +1,5 @@
 /**
- * @file sidepanel.js - Version 2.3 (With JSON Import/Export features)
+ * @file sidepanel.js - Version 2.1 (Video Export, CSV Formatting)
  * Manages the User Interface of the RAT Browser Extension.
  * Handles user input, session creation, real-time status updates, 
  * heavy-lifting database operations, and the Scraper Sandbox.
@@ -33,27 +33,25 @@ function applyZoom(zoomLevel) {
 }
 
 // --- DYNAMIC SCRAPE LIMIT DEFAULTS ---
-    // For the "Create Session" view
-    document.getElementById('sessLimitType').addEventListener('change', (e) => {
-        const limitInput = document.getElementById('sessLimit');
-        if (e.target.value === 'PAGES') {
-            limitInput.value = 1;
-        } else {
-            limitInput.value = 10;
-        }
-    });
+document.getElementById('sessLimitType').addEventListener('change', (e) => {
+    const limitInput = document.getElementById('sessLimit');
+    if (e.target.value === 'PAGES') {
+        limitInput.value = 1;
+    } else {
+        limitInput.value = 10;
+    }
+});
 
-    // For the "Live Status" edit view
-    document.getElementById('liveLimitType').addEventListener('change', (e) => {
-        const liveLimitInput = document.getElementById('liveLimit');
-        if (e.target.value === 'PAGES') {
-            liveLimitInput.value = 1;
-            liveLimitInput.placeholder = "Ex: 1";
-        } else {
-            liveLimitInput.value = 10;
-            liveLimitInput.placeholder = "Ex: 10";
-        }
-    });
+document.getElementById('liveLimitType').addEventListener('change', (e) => {
+    const liveLimitInput = document.getElementById('liveLimit');
+    if (e.target.value === 'PAGES') {
+        liveLimitInput.value = 1;
+        liveLimitInput.placeholder = "Ex: 1";
+    } else {
+        liveLimitInput.value = 10;
+        liveLimitInput.placeholder = "Ex: 10";
+    }
+});
 
 // --- 1. LOCAL DATABASE HELPERS FOR HEAVY LIFTING ---
 async function initLocalDB() {
@@ -100,7 +98,6 @@ async function localGetPageContent(sessionId, taskIdx, pageNum) {
 async function performImport(file) {
     if (!dbLocal) await initLocalDB();
     
-    // Update UI to prevent blocking and inform the user
     const btn = document.getElementById('importBtn');
     const originalText = btn.innerHTML;
     btn.innerHTML = "⏳ Importing...!";
@@ -131,7 +128,6 @@ async function performImport(file) {
     } catch(e) {
         alert("Import Error: " + e.message);
     } finally {
-        // Always reset the button state, regardless of success or failure
         btn.innerHTML = originalText;
         btn.disabled = false;
         btn.style.backgroundColor = "";
@@ -141,7 +137,6 @@ async function performImport(file) {
 async function performFullBackup() {
     if (!dbLocal) await initLocalDB();
     
-    // Update UI to prevent blocking and inform the user
     const btn = document.getElementById('exportAllBtn');
     const originalText = btn.innerHTML;
     btn.innerHTML = "⏳ Backing up...!";
@@ -173,14 +168,11 @@ async function performFullBackup() {
             saveAs: true 
         }, () => {
             setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
-            
-            // Reset button to original state
             btn.innerHTML = originalText;
             btn.disabled = false;
             btn.style.backgroundColor = "";
         });
     } catch(e) {
-        // Reset button on error and inform the user
         btn.innerHTML = originalText;
         btn.disabled = false;
         btn.style.backgroundColor = "";
@@ -188,10 +180,8 @@ async function performFullBackup() {
     }
 }
 
-
 async function performExportStudyDesign(sessionId) {
     try {
-        // 1. Hole nur die Metadaten der Studie aus der lokalen DB
         const tx = dbLocal.transaction(STORE_SESSIONS, "readonly");
         const store = tx.objectStore(STORE_SESSIONS);
         const request = store.get(sessionId);
@@ -207,7 +197,6 @@ async function performExportStudyDesign(sessionId) {
             sessionData.progress = 0;
 
             const zip = new JSZip();
-            
             zip.file("study_design.json", JSON.stringify(sessionData, null, 2));
 
             const blob = await zip.generateAsync({ type: "blob" });
@@ -216,7 +205,7 @@ async function performExportStudyDesign(sessionId) {
             chrome.downloads.download({
                 url: url,
                 filename: `rat_job_${sessionId}.zip`,
-                saveAs: true // Lässt dich den Speicherort wählen
+                saveAs: true
             });
         };
     } catch (e) {
@@ -224,7 +213,6 @@ async function performExportStudyDesign(sessionId) {
     }
 }
 
-// --- Event listener for the hidden file input field ---
 document.getElementById('importDesignInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -232,54 +220,38 @@ document.getElementById('importDesignInput').addEventListener('change', (e) => {
     }
 });
 
-// --- Core Import Function ---
 async function performImportStudyDesign(file) {
     try {
-        // 1. Load the ZIP file using the JSZip library
         const zip = await JSZip.loadAsync(file);
         const configFile = zip.file("study_design.json");
 
-        // Security check
         if (!configFile) {
             alert("Error: No 'study_design.json' found in the archive! Are you sure this is a Study Design file?");
             return;
         }
 
-        // 2. Read and parse the JSON
         const jsonString = await configFile.async("string");
         const sessionData = JSON.parse(jsonString);
 
-        // 3. Reset the status for a fresh run
         sessionData.status = "PAUSED";
         sessionData.progress = 0;
 
-        // 4. Save the parsed data into your local IndexedDB using dbLocal
         const tx = dbLocal.transaction(STORE_SESSIONS, "readwrite");
         const store = tx.objectStore(STORE_SESSIONS);
-        
         store.put(sessionData);
 
-        // 5. Success callback
         tx.oncomplete = async () => {
             alert("Study Design successfully imported!");
-            
-            // CRITICAL FIX: Inform the background script about the database change
-            // This ensures the worker process knows the new session exists
-            chrome.runtime.sendMessage({ 
-                action: "REFRESH_SESSIONS" 
-            });
+            chrome.runtime.sendMessage({ action: "REFRESH_SESSIONS" });
 
-            // CRITICAL FIX: Manually reload and re-render the list immediately in the UI
             if (typeof localGetAllSessions === 'function' && typeof renderList === 'function') {
                 const updatedSessions = await localGetAllSessions();
                 renderList(updatedSessions);
             }
             
-            // Reset the input value so the same file can be imported again if needed
             document.getElementById('importDesignInput').value = ""; 
         };
 
-        // 6. Error callback
         tx.onerror = (err) => {
             console.error("Database error during import:", err);
             alert("Error saving the study design to the local database.");
@@ -294,12 +266,19 @@ async function performImportStudyDesign(file) {
 async function performExportDataAsZip(sessionId) {
     if (!dbLocal) await initLocalDB();
     
-    // Update UI to prevent blocking and inform the user
     const btn = document.getElementById('downloadBtn');
     const originalText = btn.innerHTML;
     btn.innerHTML = "⏳ Generating...!";
     btn.disabled = true;
     btn.style.backgroundColor = "#6c757d";
+
+    const exportOrganic = document.getElementById('exportOrganic')?.checked ?? true;
+    const exportAds = document.getElementById('exportAds')?.checked ?? true;
+    const exportImages = document.getElementById('exportImages')?.checked ?? true;
+    const exportVideos = document.getElementById('exportVideos')?.checked ?? true;
+    const exportAiOverview = document.getElementById('exportAiOverview')?.checked ?? true;
+    const exportAiSources = document.getElementById('exportAiSources')?.checked ?? true;
+    const exportAiSegments = document.getElementById('exportAiSegments')?.checked ?? true;
 
     try {
         const session = await localGetSession(sessionId);
@@ -312,7 +291,7 @@ async function performExportDataAsZip(sessionId) {
             zip.file("activity_log.txt", logs.map(l => `[${l.ts}] [${l.level || 'INFO'}] ${l.msg}`).join("\n"));
         }
 
-        let csv = "\uFEFFquery,engine,country,lang,page,type,rank,title,url,snippet,ai_full_text\n";
+        let csv = "\uFEFFquery,engine,country,lang,page,type,rank,title,url,snippet,image_url,ai_full_text,source_type\n";
         const esc = (t) => t ? `"${String(t).replace(/"/g, '""')}"` : '""';
 
         for (let tIdx = 0; tIdx < session.tasks.length; tIdx++) {
@@ -342,19 +321,59 @@ async function performExportDataAsZip(sessionId) {
                 }
 
                 if (p.results.ai_overview?.found) {
-                    csv += `${meta},${p.pageNumber},ai_overview,1,AI Overview,,,${esc(p.results.ai_overview.text_full)}\n`;
-                    p.results.ai_overview.sources.forEach((src, idx) => {
-                        csv += `${meta},${p.pageNumber},ai_source,${idx + 1},${esc(src.title)},${esc(src.url)},,\n`;
+                    if (exportAiOverview) {
+                        csv += `${meta},${p.pageNumber},ai_overview,1,"AI Overview",,,,${esc(p.results.ai_overview.text_full)},\n`;
+                    }
+                    
+                    if (exportAiSources && p.results.ai_overview.sources) {
+                        p.results.ai_overview.sources.forEach((src, idx) => {
+                            let srcType = src.type || "carousel"; 
+                            csv += `${meta},${p.pageNumber},ai_source,${idx + 1},${esc(src.title)},${esc(src.url)},,,,${esc(srcType)}\n`;
+                        });
+                    }
+
+                    if (exportAiSegments && p.results.ai_overview.segments) {
+                        p.results.ai_overview.segments.forEach((seg, idx) => {
+                            let citedUrls = "";
+                            if (seg.citations && p.results.ai_overview.sources) {
+                                citedUrls = seg.citations.map(cId => {
+                                    let source = p.results.ai_overview.sources.find(s => s.id === cId);
+                                    return source ? source.url : "";
+                                }).filter(u => u !== "").join(" | ");
+                            }
+                            
+                            csv += `${meta},${p.pageNumber},ai_segment,${idx + 1},"AI Segment ${idx + 1}",${esc(citedUrls)},${esc(seg.text)},,,\n`;
+                        });
+                    }
+                }
+
+                // Organic Results
+                if (exportOrganic && p.results.organic) {
+                    p.results.organic.forEach(r => {
+                        csv += `${meta},${p.pageNumber},organic,${r.rank},${esc(r.title)},${esc(r.url)},${esc(r.snippet)},${esc(r.imageUrl)},,\n`;
+                    });
+                }
+                
+                // Image Results
+                if (exportImages && p.results.images) {
+                    p.results.images.forEach(r => {
+                        csv += `${meta},${p.pageNumber},image,${r.rank},${esc(r.title)},${esc(r.url)},${esc(r.snippet)},${esc(r.imageUrl)},,\n`;
                     });
                 }
 
-                p.results.organic.forEach(r => {
-                    csv += `${meta},${p.pageNumber},organic,${r.rank},${esc(r.title)},${esc(r.url)},${esc(r.snippet)},\n`;
-                });
+                // Video Results
+                if (exportVideos && p.results.videos) {
+                    p.results.videos.forEach(v => {
+                        csv += `${meta},${p.pageNumber},video,${v.rank},${esc(v.title)},${esc(v.url)},${esc(v.snippet)},${esc(v.imageUrl)},,\n`;
+                    });
+                }
 
-                p.results.ads.forEach(ad => {
-                    csv += `${meta},${p.pageNumber},ad,${ad.rank},${esc(ad.title)},${esc(ad.url)},${esc(ad.snippet)},\n`;
-                });
+                // Ads Results
+                if (exportAds && p.results.ads) {
+                    p.results.ads.forEach(ad => {
+                        csv += `${meta},${p.pageNumber},ad,${ad.rank},${esc(ad.title)},${esc(ad.url)},${esc(ad.snippet)},${esc(ad.imageUrl)},,\n`;
+                    });
+                }
             }
         }
 
@@ -368,15 +387,12 @@ async function performExportDataAsZip(sessionId) {
             saveAs: true
         }, () => {
             setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
-            
-            // Reset button to original state after successful download initialization
             btn.innerHTML = originalText;
             btn.disabled = false;
             btn.style.backgroundColor = ""; 
         });
 
     } catch (err) {
-        // Reset button on error and inform the user
         btn.innerHTML = originalText;
         btn.disabled = false;
         btn.style.backgroundColor = "";
@@ -388,7 +404,6 @@ async function performExportDataAsZip(sessionId) {
 // --- 3. INITIALIZATION & EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
     initLocalDB(); 
-
 
     // Zoom
     applyZoom(currentZoom);
@@ -405,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    
     setupDragAndDropForKeywords('sessQueries');
     setupDragAndDropForKeywords('addQueryInput');
 
@@ -440,16 +454,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Serp Limit
     document.getElementById('editSaveSerp').addEventListener('change', (e) => {
-            const limitContainer = document.getElementById('editSerpLimitContainer');
-            if (e.target.checked) {
-                alert("⚠️ WARNING: Saving SERPs (Screenshots & HTML) consumes massive amounts of storage and can slow down the extension. Please ensure you set a reasonable limit!");
-                limitContainer.style.display = 'block';
-            } else {
-                limitContainer.style.display = 'none';
-            }
-        });
-
-
+        const limitContainer = document.getElementById('editSerpLimitContainer');
+        if (e.target.checked) {
+            alert("⚠️ WARNING: Saving SERPs (Screenshots & HTML) consumes massive amounts of storage and can slow down the extension. Please ensure you set a reasonable limit!");
+            limitContainer.style.display = 'block';
+        } else {
+            limitContainer.style.display = 'none';
+        }
+    });
 
     // Add Task Config to Session Build
     document.getElementById('addConfigBtn').addEventListener('click', () => {
@@ -488,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const proxyListStr = document.getElementById('proxyList').value;
         const saveSerp = document.getElementById('saveSerp').checked;
         
-        const serpLimit = document.getElementById('sessSerpLimit') ? parseInt(document.getElementById('sessSerpLimit').value) : 50;
+        const serpLimit = document.getElementById('sessSerpLimit') ? parseInt(document.getElementById('sessSerpLimit').value) : 100;
 
         const errorDiv = document.getElementById('createErrorMsg');
         
@@ -503,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 payload: { 
                     name, queries: q, configs: currentConfigs, 
                     resultsLimit: parseInt(document.getElementById('sessLimit').value), 
-                    limitType: document.getElementById('sessLimitType').value, // <--- ADD THIS LINE
+                    limitType: document.getElementById('sessLimitType').value,
                     delays: { 
                         min: parseInt(document.getElementById('sessMin').value) * 1000, 
                         max: parseInt(document.getElementById('sessMax').value) * 1000 
@@ -538,7 +550,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(currentSessionId) performExportDataAsZip(currentSessionId);
     });
     
-    
     document.getElementById('exportAllBtn').addEventListener('click', () => { performFullBackup(); });
     document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
     
@@ -557,9 +568,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	document.getElementById('applyLimitBtn').addEventListener('click', () => {
         const limit = parseInt(document.getElementById('liveLimit').value);
-        const limitType = document.getElementById('liveLimitType').value; // <--- ADD THIS LINE
+        const limitType = document.getElementById('liveLimitType').value;
         if(currentSessionId && limit) {
-            // Include limitType in payload
             chrome.runtime.sendMessage({ action: "UPDATE_LIMIT", payload: { sessionId: currentSessionId, limit: limit, limitType: limitType }});
             alert(`Target Quota updated to ${limit} ${limitType.toLowerCase()}.`);
         }
@@ -633,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveStorageSettingsBtn').addEventListener('click', () => {
         const saveSerp = document.getElementById('editSaveSerp').checked;
-        const serpLimit = document.getElementById('editSessSerpLimit') ? parseInt(document.getElementById('editSessSerpLimit').value) : 50;
+        const serpLimit = document.getElementById('editSessSerpLimit') ? parseInt(document.getElementById('editSessSerpLimit').value) : 100;
         
         if(currentSessionId) {
             chrome.runtime.sendMessage({ 
@@ -646,14 +656,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     document.getElementById('saveSerp').addEventListener('change', (e) => {
-            const limitContainer = document.getElementById('serpLimitContainer');
-            if (e.target.checked) {
-                alert("⚠️ WARNING: Saving SERPs (Screenshots & HTML) consumes massive amounts of storage and can slow down the extension. Please ensure you set a reasonable limit!");
-                limitContainer.style.display = 'block';
-            } else {
-                limitContainer.style.display = 'none';
-            }
-        });
+        const limitContainer = document.getElementById('serpLimitContainer');
+        if (e.target.checked) {
+            alert("⚠️ WARNING: Saving SERPs (Screenshots & HTML) consumes massive amounts of storage and can slow down the extension. Please ensure you set a reasonable limit!");
+            limitContainer.style.display = 'block';
+        } else {
+            limitContainer.style.display = 'none';
+        }
+    });
 
 
     document.getElementById('refreshTasksBtn').addEventListener('click', () => {
@@ -664,17 +674,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const taskContainer = document.getElementById('taskListContainer');
-        taskContainer.addEventListener('click', (e) => {
-            const target = e.target;
-            const action = target.dataset.action; // From your updated renderTasks HTML
-            const index = parseInt(target.dataset.index);
+    taskContainer.addEventListener('click', (e) => {
+        const target = e.target;
+        const action = target.dataset.action; 
+        const index = parseInt(target.dataset.index);
 
-            if (action === 'retry') retryTask(index);
-            else if (action === 'delete') deleteTask(index);
-            else if (action === 'prev') changeTaskPage(-1);
-            else if (action === 'next') changeTaskPage(1);
-        });
-
+        if (action === 'retry') retryTask(index);
+        else if (action === 'delete') deleteTask(index);
+        else if (action === 'prev') changeTaskPage(-1);
+        else if (action === 'next') changeTaskPage(1);
+    });
 
     document.getElementById('queriesAndTasksDetails').addEventListener('toggle', (e) => {
         if (e.target.open && currentSessionId) {
@@ -687,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             currentTaskFilter = e.target.getAttribute('data-filter');
-            currentTaskPage = 1; // NEW: Reset to page 1
+            currentTaskPage = 1; 
             renderTasks();
         });
     });
@@ -701,23 +710,24 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('vbBaseUrl').value = j.request?.baseUrl || "";
             document.getElementById('vbParamQuery').value = j.request?.params?.query || "";
             
-            document.getElementById('vbSelContainer').value = j.selectors?.organic?.container || "";
-            document.getElementById('vbSelTitle').value = j.selectors?.organic?.title || "";
-            document.getElementById('vbSelUrl').value = j.selectors?.organic?.url || "";
+            const mainTarget = j.selectors?.images || j.selectors?.organic || {};
             
-            let snippetSel = j.selectors?.organic?.snippet;
-            document.getElementById('vbSelSnippet').value = (typeof snippetSel === 'object') ? (snippetSel?.selector || "") : (snippetSel || "");
+            document.getElementById('vbSelContainer').value = mainTarget.container || "";
+            document.getElementById('vbSelTitle').value = mainTarget.title || "";
+            document.getElementById('vbSelUrl').value = mainTarget.url || "";
+            
+            let snippetSel = mainTarget.snippet;
+            document.getElementById('vbSelSnippet').value = (typeof snippetSel === 'object' && snippetSel !== null) ? (snippetSel.selector || "") : (snippetSel || "");
             
             document.getElementById('vbSelNext').value = j.selectors?.pagination?.nextButton || "";
 
-            // NEU: Ads
             document.getElementById('vbSelAdContainer').value = j.selectors?.ads?.container || "";
             document.getElementById('vbSelAdTitle').value = j.selectors?.ads?.title || "";
             document.getElementById('vbSelAdUrl').value = j.selectors?.ads?.url || "";
+            
             let adSnippetSel = j.selectors?.ads?.snippet;
-            document.getElementById('vbSelAdSnippet').value = (typeof adSnippetSel === 'object') ? (adSnippetSel?.selector || "") : (adSnippetSel || "");
+            document.getElementById('vbSelAdSnippet').value = (typeof adSnippetSel === 'object' && adSnippetSel !== null) ? (adSnippetSel.selector || "") : (adSnippetSel || "");
 
-            // NEU: AI Overview
             document.getElementById('vbSelAiContainer').value = j.selectors?.ai_overview?.container || "";
             document.getElementById('vbSelAiText').value = j.selectors?.ai_overview?.text?.selector || "";
             
@@ -751,30 +761,41 @@ document.addEventListener('DOMContentLoaded', () => {
             
             j.selectors = j.selectors || {};
             
-            // Organic
-            j.selectors.organic = j.selectors.organic || {};
-            j.selectors.organic.container = document.getElementById('vbSelContainer').value;
-            j.selectors.organic.title = document.getElementById('vbSelTitle').value;
-            j.selectors.organic.url = document.getElementById('vbSelUrl').value;
+            let isImageEngine = !!j.selectors.images;
+            let mainTarget = isImageEngine ? j.selectors.images : (j.selectors.organic || {});
+            
+            mainTarget.container = document.getElementById('vbSelContainer').value;
+            mainTarget.title = document.getElementById('vbSelTitle').value;
+            mainTarget.url = document.getElementById('vbSelUrl').value;
             let snippetVal = document.getElementById('vbSelSnippet').value;
-            if (typeof j.selectors.organic.snippet === 'object') {
-                j.selectors.organic.snippet.selector = snippetVal;
-            } else { j.selectors.organic.snippet = snippetVal; }
+            
+            if (typeof mainTarget.snippet === 'object' && mainTarget.snippet !== null) {
+                mainTarget.snippet.selector = snippetVal;
+            } else { 
+                mainTarget.snippet = snippetVal; 
+            }
+
+            if (isImageEngine) {
+                j.selectors.images = mainTarget;
+            } else {
+                j.selectors.organic = mainTarget;
+            }
             
             j.selectors.pagination = j.selectors.pagination || {};
             j.selectors.pagination.nextButton = document.getElementById('vbSelNext').value;
 
-            // NEU: Ads
             j.selectors.ads = j.selectors.ads || {};
             j.selectors.ads.container = document.getElementById('vbSelAdContainer').value || null;
             j.selectors.ads.title = document.getElementById('vbSelAdTitle').value || null;
             j.selectors.ads.url = document.getElementById('vbSelAdUrl').value || null;
             let adSnippetVal = document.getElementById('vbSelAdSnippet').value;
-            if (typeof j.selectors.ads.snippet === 'object') {
+            
+            if (typeof j.selectors.ads.snippet === 'object' && j.selectors.ads.snippet !== null) {
                 j.selectors.ads.snippet.selector = adSnippetVal || null;
-            } else { j.selectors.ads.snippet = adSnippetVal || null; }
+            } else { 
+                j.selectors.ads.snippet = adSnippetVal || null; 
+            }
 
-            // NEU: AI Overview
             let aiCont = document.getElementById('vbSelAiContainer').value;
             let aiText = document.getElementById('vbSelAiText').value;
             let aiSrcCont = document.getElementById('vbSelAiSourceContainer').value;
@@ -863,9 +884,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('addNewEngineBtn').addEventListener('click', () => {
         currentEditingEngineId = null;
-        document.getElementById('engineJsonEditor').value = `{\n  "manifest_version": 1,\n  "engine": {\n    "id": "new_scraper",\n    "name": "My Custom Engine"\n  },\n  "request": {\n    "baseUrl": "https://{domain}/search",\n    "params": {\n      "query": "q",\n      "country": "gl",\n      "language": "hl"\n    },\n    "features": { "requiresUuleEncoding": false, "urlDecodingMethod": "none" },\n    "supportedCountries": [\n      { "code": "us", "name": "USA", "domain": "www.example.com" }\n    ],\n    "supportedLanguages": [\n      { "code": "en", "name": "English" }\n    ]\n  },\n  "behavior": {},\n  "captcha": {},\n  "selectors": {\n    "pagination": { "nextButton": ".next" },\n    "organic": {\n      "container": ".result",\n      "title": "h2",\n      "url": "a",\n      "snippet": { "selector": ".snippet" }\n    },\n    "ads": { "container": ".ad", "title": "h2", "url": "a", "snippet": { "selector": ".snippet" } },\n    "ai_overview": { "container": null, "text": null, "sources": null }\n  }\n}`;
-        updateVisualBuilderFromJson();
-        
+		document.getElementById('engineJsonEditor').value = `{\n  "manifest_version": 1,\n  "engine": {\n    "id": "new_scraper",\n    "name": "My Custom Engine"\n  },\n  "request": {\n    "baseUrl": "https://{domain}/search",\n    "params": {\n      "query": "q",\n      "country": "gl",\n      "language": "hl"\n    },\n    "features": { "requiresUuleEncoding": false, "urlDecodingMethod": "none" },\n    "supportedCountries": [\n      { "code": "us", "name": "USA", "domain": "www.example.com" }\n    ],\n    "supportedLanguages": [\n      { "code": "en", "name": "English" }\n    ]\n  },\n  "behavior": {},\n  "captcha": {},\n  "selectors": {\n    "pagination": { "nextButton": ".next" },\n    "organic": {\n      "container": ".result",\n      "title": "h2",\n      "url": "a",\n      "snippet": { "selector": ".snippet" }\n    },\n    "ads": { "container": ".ad", "title": "h2", "url": "a", "snippet": { "selector": ".snippet" } },\n    "videos": { "container": null, "title": null, "url": null, "channel": null, "duration": null, "date": null, "image": null },\n    "ai_overview": { "container": null, "text": null, "inline_citations": { "selector": null }, "sources": null }\n  }\n}`;
+				
         document.getElementById('engineListView').style.display = 'none';
         document.getElementById('engineEditView').style.display = 'block';
         resetSandboxUI();
@@ -926,7 +946,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Helper für Sandbox UI
     function logToSandbox(msg, color = "#333") {
         const div = document.getElementById('sandboxLiveLog');
         div.innerHTML += `<div style="border-bottom:1px solid #eee;padding:2px 0; color:${color}">
@@ -942,7 +961,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('sandboxPreviewLabel').style.display = 'none';
     }
 
-    // THE MAGIC SANDBOX EXECUTION
     document.getElementById('runSandboxBtn').addEventListener('click', async () => {
         document.getElementById('sandboxLiveLog').innerHTML = "";
         document.getElementById('sandboxResultsPreview').style.display = 'none';
@@ -984,12 +1002,11 @@ document.addEventListener('DOMContentLoaded', () => {
             logToSandbox(`💉 Injecting content scripts and engine rules...`);
             await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
 
-            // --- PAGINATION LOOP FÜR DIE SANDBOX ---
             let collectedOrganic = [];
             let collectedAds = [];
             let aiOverviewData = null;
             let currentPage = 1;
-            const targetResults = 20; // Sandbox sucht nun solange, bis 20 Ergebnisse erreicht sind
+            const targetResults = 20; 
             const existingUrls = new Set();
             
             while (collectedOrganic.length < targetResults && currentPage <= 5) {
@@ -1006,14 +1023,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response && response.data) {
                     const data = response.data;
                     
-                    const newOrganic = data.organic.filter(r => !existingUrls.has(r.url));
-                    newOrganic.forEach(r => existingUrls.add(r.url));
+                    const newOrganic = (data.organic || []).filter(r => !existingUrls.has(r.url));
+                    const newImages = (data.images || []).filter(r => !existingUrls.has(r.url));
+                    const newVideos = (data.videos || []).filter(r => !existingUrls.has(r.url));
                     
-                    collectedOrganic = collectedOrganic.concat(newOrganic);
-                    collectedAds = collectedAds.concat(data.ads);
+                    newOrganic.forEach(r => existingUrls.add(r.url));
+                    newImages.forEach(r => existingUrls.add(r.url));
+                    newVideos.forEach(r => existingUrls.add(r.url));
+                    
+                    collectedOrganic = collectedOrganic.concat(newOrganic).concat(newImages).concat(newVideos);
+                    collectedAds = collectedAds.concat(data.ads || []);
                     
                     if (data.ai_overview && data.ai_overview.found) {
-                        if (!aiOverviewData) aiOverviewData = data.ai_overview; // Für die finale Vorschau speichern
+                        if (!aiOverviewData) aiOverviewData = data.ai_overview; 
                         const sourceCount = data.ai_overview.sources ? data.ai_overview.sources.length : 0;
                         logToSandbox(`🤖 AI Overview / Search Assist successfully extracted! (${sourceCount} sources found)`, "#17a2b8");
                     }
@@ -1023,13 +1045,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const aiFoundStr = (data.ai_overview && data.ai_overview.found) ? "Yes" : "No";
-                    logToSandbox(`📊 Page ${currentPage} Summary: AI: ${aiFoundStr} | Ads: ${data.ads.length} | New Organic: ${newOrganic.length} (Total: ${collectedOrganic.length}/${targetResults})`);
-                    // ---------------------------------------------
+                    const aiSegs = (data.ai_overview && data.ai_overview.segments) ? data.ai_overview.segments.length : 0;
+                    const totalNew = newOrganic.length + newImages.length + newVideos.length;
+                    
+                    logToSandbox(`📊 Page ${currentPage} Summary: AI: ${aiFoundStr} (${aiSegs} Segs) | Ads: ${data.ads.length} | Img: ${newImages.length} | Vid: ${newVideos.length} | Org: ${newOrganic.length} | New: ${totalNew} (Total: ${collectedOrganic.length}/${targetResults})`);
 
-                    if (newOrganic.length > 0) {
-                        const firstRes = newOrganic[0];
+                    if (totalNew > 0) {
+                        const firstRes = newOrganic.length > 0 ? newOrganic[0] : (newVideos.length > 0 ? newVideos[0] : newImages[0]);
                         const shortSnippet = firstRes.snippet ? firstRes.snippet.substring(0, 60).replace(/\n/g, ' ') + "..." : "No snippet found";
-                        logToSandbox(`📝 Preview Rank ${collectedOrganic.length - newOrganic.length + 1}: "${firstRes.title.substring(0,30)}..." - ${shortSnippet}`, "#555");
+                        logToSandbox(`📝 Preview Rank ${collectedOrganic.length - totalNew + 1}: "${firstRes.title.substring(0,30)}..." - ${shortSnippet}`, "#555");
                     }
 
                     if (collectedOrganic.length >= targetResults) {
@@ -1062,7 +1086,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let html = "";
             
             if (aiOverviewData) {
-                // Hier fügen wir ein pre-Tag für die unformatierte Rohdaten-Vorschau hinzu
                 html += `<div class="sandbox-card" style="border-color:#17a2b8; background:#e0f7fa;">
                     <div class="sandbox-card-title">🤖 AI Overview Detected</div>
                     <div class="sandbox-card-snippet">
@@ -1082,6 +1105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="sandbox-card-title">${res.title}</div>
                     <div class="sandbox-card-url">${res.url}</div>
                     <div class="sandbox-card-snippet">${res.snippet}</div>
+                    ${res.imageUrl ? `<img src="${res.imageUrl}" style="max-width:100%; margin-top:8px; border-radius:4px; border:1px solid #eee;">` : ''}
                 </div>`;
             });
 
@@ -1096,7 +1120,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Start-Up Calls
     chrome.runtime.sendMessage({ action: "GET_SESSIONS" });
     chrome.runtime.sendMessage({ action: "GET_ENGINES" });
 });
@@ -1229,7 +1252,7 @@ function openSession(id) {
     document.getElementById('logContainer').innerHTML = ""; 
     
     cachedTasks = [];
-    currentTaskPage = 1; // Auch die Paginierung wieder auf Seite 1 setzen
+    currentTaskPage = 1; 
     const taskContainer = document.getElementById('taskListContainer');
     if (taskContainer) taskContainer.innerHTML = "<div style='padding:10px;text-align:center'>Loading...</div>";
     const countDisplay = document.getElementById('taskCountDisplay');
@@ -1342,8 +1365,8 @@ function resetCreateForm() {
     document.getElementById('sessName').value = ""; 
     document.getElementById('sessQueries').value = ""; 
     document.getElementById('saveSerp').checked = false;
-    document.getElementById('serpLimitContainer').style.display = 'none'; // + ADD THIS
-    document.getElementById('sessSerpLimit').value = "50";              // + ADD THIS
+    document.getElementById('serpLimitContainer').style.display = 'none'; 
+    document.getElementById('sessSerpLimit').value = "100";              
     document.getElementById('useProxies').checked = false;
     document.getElementById('proxyList').value = "";
     document.getElementById('proxyList').disabled = true;
@@ -1369,10 +1392,8 @@ function renderTasks() {
         return;
     }
 
-    // --- NEW: Pagination Logic ---
     const totalPages = Math.ceil(filtered.length / TASKS_PER_PAGE);
     
-    // Safety checks to keep the page in bounds
     if (currentTaskPage > totalPages) currentTaskPage = totalPages;
     if (currentTaskPage < 1) currentTaskPage = 1;
 
@@ -1407,7 +1428,6 @@ function renderTasks() {
         </div>`;
     });
 
-    // Update Pagination buttons similarly
     if (totalPages > 1) {
         html += `
         <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px; background: #f8f9fa; border-top: 1px solid #eee;">
@@ -1489,7 +1509,6 @@ function setupDragAndDropForKeywords(textareaId) {
     });
 }
 
-// Trigger the hidden file input when the real button is clicked
 document.getElementById('importDesignBtn').addEventListener('click', () => {
     document.getElementById('importDesignInput').click();
 });

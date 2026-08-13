@@ -1,0 +1,80 @@
+{
+  "manifest_version": 1,
+  "engine": {
+    "id": "bing_images",
+    "name": "Bing Images",
+    "author": "RAT System",
+    "version": "1.0",
+    "description": "Scraper for Bing Image Search (Excluding Shop Results)"
+  },
+  "request": {
+    "baseUrl": "https://www.bing.com/images/search",
+    "params": {
+      "query": "q",
+      "country": "cc",
+      "language": "setLang"
+    },
+    "features": {
+      "requiresUuleEncoding": false,
+      "urlDecodingMethod": "bing_base64"
+    },
+    "supportedCountries": [
+      { "code": "au", "name": "Australia" },
+      { "code": "at", "name": "Austria" },
+      { "code": "be", "name": "Belgium" },
+      { "code": "ca", "name": "Canada" },
+      { "code": "fr", "name": "France" },
+      { "code": "de", "name": "Germany" },
+      { "code": "ie", "name": "Ireland" },
+      { "code": "it", "name": "Italy" },
+      { "code": "nl", "name": "Netherlands" },
+      { "code": "nz", "name": "New Zealand" },
+      { "code": "es", "name": "Spain" },
+      { "code": "ch", "name": "Switzerland" },
+      { "code": "gb", "name": "United Kingdom" },
+      { "code": "us", "name": "USA" }
+    ],
+    "supportedLanguages": [
+      { "code": "en", "name": "English" },
+      { "code": "de", "name": "German" },
+      { "code": "fr", "name": "French" },
+      { "code": "it", "name": "Italian" },
+      { "code": "es", "name": "Spanish" },
+      { "code": "nl", "name": "Dutch" }
+    ]
+  },
+  "behavior": {
+    "cookieConsentSelectors": [ "#bnp_btn_accept", ".bnp_btn_accept" ],
+    "popupDismissSelectors": [],
+    "aiExpandSelectors": []
+  },
+  "captcha": {
+    "urlIndicators": [],
+    "textIndicators": [],
+    "selectors": [ ".g-recaptcha", "#recaptcha" ]
+  },
+  "selectors": {
+    "pagination": {
+      "type": "infinite_scroll"
+    },
+    "images": {
+      "mainCol": "#mmreq, .dg_b, #b_results",
+      "container": ".iuscp",
+      "excludeContainers": [
+        ".shoptiles", 
+        ".shop", 
+        "[class*='shop']", 
+        "[data-tag*='shop']", 
+        ".rich-badge", 
+        ".offer"
+      ],
+      "title": ".info, .fileinfo, a.inflnk",
+      "url": "a.inflnk",
+      "image": "img.mimg, img",
+      "snippet": { "selector": ".infsd, .infpd", "minLength": 0 }
+    },
+    "organic": null,
+    "ads": { "container": ".b_ad", "title": null, "url": null, "snippet": { "selector": null } },
+    "ai_overview": { "container": null, "text": null, "inline_citations": { "selector": null }, "sources": null }
+  }
+}

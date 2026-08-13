@@ -63,22 +63,47 @@ class SourcesReset:
         Args:
             db (object): Database object used to interact with the sources and update their status.
         """
+        
+        # NEU: Konsolen-Feedback zu blockierten Jobs unter 10 Minuten
+        try:
+            conn = db.connect_to_db()
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT SUM(cnt) FROM (
+                    SELECT count(*) as cnt FROM result_image WHERE (progress=2 OR progress=-1) AND created_at >= now() - interval '10 minutes'
+                    UNION ALL SELECT count(*) as cnt FROM result_source WHERE (progress=2 OR progress=-1) AND created_at >= now() - interval '10 minutes'
+                    UNION ALL SELECT count(*) as cnt FROM result_ai_source WHERE (progress=2 OR progress=-1) AND created_at >= now() - interval '10 minutes'
+                ) AS t
+            """)
+            waiting = cur.fetchone()[0]
+            conn.close()
+            if waiting and waiting > 0:
+                print(f"INFO: {waiting} Job(s) stecken in Progress 2/-1 fest, sind aber noch keine 10 Min. alt. Sie werden beim nächsten Aufruf ignoriert!")
+        except Exception as e:
+            pass
+            
         sources_pending = db.get_sources_pending(job_server)  # Retrieve all pending sources
-        print(sources_pending)       
+        print(f"Gefundene Jobs, die fuer den Reset qualifiziert sind (> 10 Min alt): {len(sources_pending)}")      
 
         for s in sources_pending:
-            result_source_id = s[0]
-            source_id = s[1]
-            result_id = s[2]
+            # 1. Sicherstellen, dass wir keine IndexErrors werfen
+            raw_composite_id = s[0]  # Das ist z.B. 'result_ai_source:292'
+            source_id = s[1] if len(s) > 1 else None
             
+            # 2. Die Composite-ID mithilfe der DB-Helper-Methode aufsplitten
+            fk_column, result_id = db._parse_id(raw_composite_id)
+            
+            # Da das Skript alt ist und "result_source_id" an manchen Stellen braucht, 
+            # nutzen wir hier die bereinigte 'result_id' als Fallback
+            result_source_id = result_id 
+
             if source_id:
-   
-                print(f"Resetting source ID: {source_id}")
+                print(f"Resetting source ID: {source_id} (Composite: {raw_composite_id})")
                 log = f"Reset \t source \t {source_id} \t"
                 self.logger.write_to_log(log)
                 
-                # Update the source's status in the database
-                counter = db.get_source_counter_result(result_id) + 1
+                # WICHTIG: raw_composite_id übergeben, damit die DB weiß, ob es 'result' oder 'result_ai_source' ist!
+                counter = db.get_source_counter_result(raw_composite_id) + 1
                 progress = 0
                 created_at = datetime.now()
                 
@@ -86,16 +111,22 @@ class SourcesReset:
                 db.delete_source_pending(source_id, progress, created_at)
 
             else:
-                print(f"Resetting source ID: {source_id}")
-                log = f"Reset \t source \t {source_id} \t"
+                print(f"Resetting missing source for entity: {raw_composite_id}")
+                log = f"Reset \t source_failed_missing_id \t {raw_composite_id} \t"
                 self.logger.write_to_log(log)
-                db.delete_result_source_pending(result_source_id)
+                
+                # WICHTIG: Statt den Eintrag zu löschen (was zur Endlosschleife führt),
+                # setzen wir ihn zurück und erhöhen den Counter.
+                counter = db.get_source_counter_result(raw_composite_id) + 1
+                progress = 0
+                created_at = datetime.now()
+                
+                # Aktualisiert den Eintrag in der korrekten Tabelle (result_source oder result_ai_source)
+                db.update_result_source_result(raw_composite_id, progress, counter, created_at)
 
-        db.update_sources_failed(job_server) # Reset all finally failed sources (counter > 10)
+        db.update_sources_failed(job_server) # Reset all finally failed sources (counter >= 3)
 
             
-
-
 
 if __name__ == "__main__":
     """

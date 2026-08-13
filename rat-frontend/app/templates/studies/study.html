@@ -136,9 +136,10 @@
             <div class="flex-grow-1 ms-4">
               <h6 class="mb-1 fw-bold text-dark">
                   Browser Extension
-                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Use the RAT Chrome Extension to scrape search results directly from your browser."></i>
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Use the RAT Chrome Extension to scrape results from search engines directly from your browser."></i>
               </h6>
-              <div class="text-secondary small">Current Version: <strong>1.0</strong></div>
+              <div class="text-secondary small">Current Version: <strong>2.0</strong></div>
+              <div class="text-secondary small"><strong>Always back up your session results before updating your browser extension to a new version.</strong></div>
             </div>
             <div>
               <a href="#" class="btn btn-outline-primary btn-sm me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#installGuideModal">
@@ -167,25 +168,35 @@
           </form>
         </div>
 
-        {% set has_any_data = (results > 0 or results_ai > 0 or results_chatbot > 0 or results_serp > 0 or ai_source_count > 0) %}
+        {% set has_any_data = (results > 0 or results_ai > 0 or results_chatbot > 0 or results_serp > 0 or ai_source_count > 0 or results_image > 0) %}
+        {% set has_scrapeable_data = (results > 0 or ai_source_count > 0 or results_image > 0) %}
 
+        <div id="progress-container" class="{% if not has_scrapeable_data %}d-none{% endif %}">
         <div id="progress-container" class="{% if not has_any_data %}d-none{% endif %}">
             <div id="download-progress-area" class="bg-light p-3 rounded border mb-4">
-            <label class="fw-bold text-dark mb-1 small">
-                <i class="fa-solid fa-spinner fa-spin text-primary me-1" id="scraping-status-icon"></i> Background Download Progress
-                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Shows the background download progress of HTML and screenshots for the uploaded URLs."></i>
-            </label>
+                <label class="fw-bold text-dark mb-1 small">
+                    <i class="fa-solid fa-spinner fa-spin text-primary me-1" id="scraping-status-icon"></i> Background Download Progress
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Shows the background download progress of HTML and screenshots for the uploaded URLs."></i>
+                </label>
                 <div class="progress mt-1" style="height: 25px; border-radius: 6px;">
-                <div id="progress-bar" 
-                        class="progress-bar {% if progress_percent is defined and progress_percent >= 100 %}bg-success{% else %}progress-bar-striped progress-bar-animated{% endif %}" 
-                        role="progressbar"
-                        style="width: {{ progress_percent | default(0) }}%;" 
-                        aria-valuenow="{{ progress_percent | default(0) }}" aria-valuemin="0" aria-valuemax="100">
-                    <span class="progress-bar-text" id="scraping-progress-bar-text">{{ progress_percent | default(0) }}%</span>
+                    <div id="progress-bar" 
+                            class="progress-bar {% if progress_percent is defined and progress_percent >= 100 %}bg-success{% else %}progress-bar-striped progress-bar-animated{% endif %}" 
+                            role="progressbar"
+                            style="width: {{ progress_percent | default(0) }}%;" 
+                            aria-valuenow="{{ progress_percent | default(0) }}" aria-valuemin="0" aria-valuemax="100">
+                        <span class="progress-bar-text" id="scraping-progress-bar-text">{{ progress_percent | default(0) }}%</span>
+                    </div>
                 </div>
+                
+                <!-- === NEW: WARNING FOR FAILED SCRAPES === -->
+                <div id="failed-scrape-warning" class="text-danger small mt-2 fw-bold d-none">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i> 
+                    <span id="failed-scrape-count">0</span> Result(s) failed to download and will be skipped.
                 </div>
+                <!-- ========================================= -->
+
             </div>
-        </div>
+        </div></div>
 
         <hr class="my-4 text-secondary">
 
@@ -203,6 +214,7 @@
                   {% if results_ai > 0 %}<div><i class="fa-solid fa-robot text-secondary me-1"></i><b>AI Overviews: </b> <span id="results-ai-count">{{ results_ai }}</span></div>{% endif %}
                   {% if ai_source_count > 0 %}<div><i class="fa-solid fa-link text-secondary me-1"></i><b>AI Sources: </b> <span id="ai-source-count">{{ ai_source_count }}</span></div>{% endif %}
                   {% if results_chatbot > 0 %}<div><i class="fa-solid fa-message text-secondary me-1"></i><b>Chatbots: </b> <span id="results-chatbot-count">{{ results_chatbot }}</span></div>{% endif %}
+                  {% if results_image > 0 %}<div><i class="fa-regular fa-images text-secondary me-1"></i><b>Images: </b> <span id="results-image-count">{{ results_image }}</span></div>{% endif %}
                 {% else %}
                   <div class="text-secondary" id="no-data-alert-text"><i class="fa-solid fa-inbox me-2"></i> No data uploaded yet.</div>
                 {% endif %}
@@ -263,13 +275,13 @@
         <div class="card-body p-4">
           <p class="text-secondary small mb-3">Select a workflow scenario to adapt the workspace. The interface below will adjust automatically.</p>
           
-          <select id="study-mode-selector" class="form-select form-select-lg border-primary text-dark fw-bold mb-3">
-            <option value="unselected" selected disabled>👉 Step 1: Select a workflow scenario...</option>
-            <option value="custom">Custom Mode / Show All Options</option>
-            <option value="algorithmic">Automated Classifiers</option>
-            <option value="human">Human Assessment Studies</option>
-            <option value="hybrid">Hybrid Research (Automated Classifiers + Human Assessment)</option>
-          </select>
+        <select id="study-mode-selector" name="study_mode" class="form-select form-select-lg border-primary text-dark fw-bold mb-3">
+          <option value="unselected" {% if not study.study_mode or study.study_mode == 'unselected' %}selected{% endif %} disabled>👉 Step 1: Select a workflow scenario...</option>
+          <option value="custom" {% if study.study_mode == 'custom' %}selected{% endif %}>Custom Mode / Show all Options</option>
+          <option value="algorithmic" {% if study.study_mode == 'algorithmic' %}selected{% endif %}>Automatic Classification of Results</option>
+          <option value="human" {% if study.study_mode == 'human' %}selected{% endif %}>Human Assessment Studies</option>
+          <option value="hybrid" {% if study.study_mode == 'hybrid' %}selected{% endif %}>Hybrid Research (Automated Classifiers + Human Assessment)</option>
+        </select>
           
           <div id="mode-description" class="p-3 bg-light border border-secondary rounded small text-dark fw-normal">
               </div>
@@ -285,7 +297,7 @@
                 <i class="fa-solid fa-bolt text-warning me-2"></i> Live Link Mode (Lightweight Study)
               </h6>
               <div class="text-secondary small">
-                Disables background scraping (no screenshots or HTML cached). Participants visit live URLs directly. <b>Note: Disables Automated Classifiers and forces URLs to be visible.</b>
+                Disables background scraping (no screenshots or HTML will be captured). Participants visit live URLs directly. <b>Note: Disables Automated Classifiers and forces URLs to be visible.</b>
               </div>
             </div>
             <div class="form-check form-switch ms-3" style="transform: scale(1.3); transform-origin: right center;">
@@ -298,7 +310,7 @@
           <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseAssessment" aria-expanded="true" aria-controls="collapseAssessment">
             <span class="fw-bold text-dark">
                 <i class="fa-solid fa-users-viewfinder me-2 text-secondary"></i> Human Assessment Settings
-                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure the task environment, layout parameters, and questionnaire surveys for human testers."></i>
+                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Configure the task environment, layout parameters, and questionnaire surveys for study participants."></i>
             </span>
             <i class="fa-solid fa-chevron-down text-secondary"></i>
           </div>
@@ -310,7 +322,7 @@
                 <div class="card-body p-4">
                   <label class="form-label fw-bold text-dark">
                       Task Description Instructions
-                      <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="This text is shown prominently at the top of the participant interface screen during sorting."></i>
+                      <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="This text is shown prominently at the top of the participant interface screen during the assessment."></i>
                   </label>
                   <textarea name="task_description" class="form-control font-monospace text-dark" rows="5" placeholder="e.g. Please evaluate the results for the query [QUERY].">{{ study.task or '' }}</textarea>
                   <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown formatting.</div>
@@ -323,7 +335,7 @@
                     <div class="card-body p-4 d-flex flex-column">
                       <h6 class="fw-bold text-dark">
                           <i class="fa-solid fa-clipboard-list me-2 text-secondary"></i> Study Questionnaire
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create and manage the primary variables/questions that human participants will submit for every individual search item."></i>
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Create and manage the questions that participants will submit for every individual search item."></i>
                       </h6>
                       <div class="text-secondary mb-3 small">
                         {% if study.questions | length == 0 %} No evaluation questions defined yet. {% else %} <span class="badge bg-primary">{{ study.questions | length }} Items Defined</span> {% endif %}
@@ -347,19 +359,19 @@
                     <div class="card-body p-4">
                       <h6 class="fw-bold text-dark mb-3">
                         <i class="fa-solid fa-user-gear me-2 text-secondary"></i> Participant Onboarding & Surveys
-                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Inject questionnaires presented before evaluation blocks start, or run exit surveys at fulfillment."></i>
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Questionnaires presented before evaluation blocks start and surveys at the end of the assessment process."></i>
                       </h6>
 
                       <div class="form-check form-switch mb-3">
                         {{ settings_form.show_description_after_join(class="form-check-input border-secondary", id="show_introduction_checkbox") }}
                         <label class="form-check-label text-dark fw-bold" for="show_introduction_checkbox">
-                          Show a custom welcome landing page / study instruction description to subjects
+                          Show a custom welcome landing page / study instruction description to study participants after they join the study.
                         </label>
                       </div>
 
                       <div class="ps-3 border-start border-3 border-primary mb-4" id="introduction_text_container" style="display: none;">
                         <label class="form-label mb-1 small fw-bold text-dark">Introduction Welcome Text</label>
-                        {{ settings_form.participant_description(class="form-control font-monospace text-dark", rows="4", placeholder="Welcome to the research loop! In this test scenario, you are evaluating...") }}
+                        {{ settings_form.participant_description(class="form-control font-monospace text-dark", rows="4", placeholder="Welcome to the study! In this scenario, you are evaluating...") }}
                         <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown.</div>
                       </div>
 
@@ -370,7 +382,7 @@
 
                       <div class="mb-3">
                         <div class="fw-bold text-dark small mb-2">
-                          <i class="fa-solid fa-arrow-right-to-bracket text-secondary me-1"></i> Pre-Survey (Initial Demographic/Baseline Questionnaire):
+                          <i class="fa-solid fa-arrow-right-to-bracket text-secondary me-1"></i> Pre-Survey (Initial Questionnaire, e.g. Demographics or questions about search engine usage):
                         </div>
                         <div class="d-flex flex-wrap gap-2">
                           <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="btn-add-presurvey">
@@ -408,7 +420,7 @@
                       <div class="mb-3">
                         <label class="form-label mb-1 small fw-bold text-dark">
                             Completion Text (Fulfillment / Goodbye Thank-You Message)
-                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="This prompt is rendered when all assessment blocks and validation surveys complete successfully. Use this to pass reward validation codes."></i>
+                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="This page is rendered when all assessments and validation surveys complete successfully. Use this to pass reward codes or something similar."></i>
                         </label>
                         {{ settings_form.completion_text(class="form-control font-monospace text-dark", rows="4", placeholder="Thank you for participating in our research! Your entries are recorded.") }}
                         <div class="form-text mt-1"><i class="fa-brands fa-markdown me-1"></i> Supports Markdown.</div>
@@ -477,44 +489,64 @@
                 </div>
               </div>
 
-              <div class="row mb-4">
+            <div class="row mb-4">
                 <div class="col-md-12">
                   <div class="card border-secondary shadow-sm bg-white">
                     <div class="card-body p-4">
                       <h6 class="fw-bold text-dark mb-3">
                         <i class="fa-solid fa-list-check me-2 text-secondary"></i> Workload Allocations & Assignment Limits
-                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Control task balanced assignments to mitigate tester fatigue."></i>
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Control task balanced assignments to mitigate fatigue."></i>
                       </h6>                   
                       
+                      <!-- 1. Query Limit -->
                       <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="limit_by_query" name="limit_by_query" {% if study.max_queries_per_participant != -1 %}checked{% endif %}>
+                        <input class="form-check-input border-secondary" type="checkbox" id="limit_by_query" name="limit_by_query" {% if study.limit_by_query %}checked{% endif %}>
                         <label class="form-check-label text-dark fw-bold" for="limit_by_query">
                           Group task sequences by Search Query (Highly Recommended)
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If checked, testers fully analyze individual search engine query blocks together. If unchecked, content mixes randomly."></i>
                         </label>
                       </div>
 
-                      <div class="mt-3 mb-4 ps-2 border-start border-3 border-primary" id="query_limit_container">
+                      <div class="mt-3 mb-4 ps-2 border-start border-3 border-primary" id="query_limit_container" style="display: none;">
                         <label for="max_queries_per_participant" class="form-label mb-1">
                           Max Queries per Participant Session
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Limits how many comprehensive query strings a participant processes. Leave empty for full loop allocation."></i>
                         </label>
                         <input type="number" class="form-control form-control-sm border-secondary w-50" id="max_queries_per_participant" name="max_queries_per_participant" placeholder="Leave empty for ALL queries" value="{{ study.max_queries_per_participant if study.max_queries_per_participant and study.max_queries_per_participant > 0 else '' }}">
                       </div>
 
+                      <!-- 2. Search Depth Limit (only visible if Group by Query is active) -->
+                      <div id="search_depth_wrapper" style="display: none;">
+                        <div class="form-check form-switch mb-2">
+                          <input class="form-check-input border-secondary" type="checkbox" id="limit_search_depth" name="limit_search_depth" {% if study.result_count %}checked{% endif %}>
+                          <label class="form-check-label text-dark fw-bold" for="limit_search_depth">
+                            Limit search depth (Top X items from the original SERP) 
+                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" title="Only evaluate items up to this original rank (e.g., 10 to only include Top-10 results)."></i>
+                          </label>
+                        </div>
+
+                        <div class="mt-2 mb-4 ms-4 ps-2 border-start border-3 border-info" id="search_depth_container" style="display: none;">
+                          <label for="result_count" class="form-label mb-1">
+                            Maximum Rank Depth (e.g. 10 for Page 1)
+                          </label>
+                          <input type="number" class="form-control form-control-sm border-secondary w-50" id="result_count" name="result_count" placeholder="e.g. 10" value="{{ study.result_count if study.result_count else '' }}">
+                        </div>
+                      </div>
+
+                      <!-- 3. Absolute Item Limit -->
                       <div class="form-check form-switch mb-3">
                         {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
                         <label class="form-check-label fw-bold" for="limit_checkbox">
-                          Limit maximum total item nodes displayed per participant
+                          Limit maximum total items displayed per participant independent of query or top X results
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Set a hard cap on how many total items (across all queries and types) a participant evaluates before they are marked as finished."></i>
                         </label>
                       </div>
                       
-                      <div id="item_limit_container" class="ms-4 ps-2 border-start border-3 border-secondary">
+                      <div id="item_limit_container" class="ms-4 ps-2 border-start border-3 border-secondary" style="display: none;">
                         <label for="max_results_per_participant" class="form-label mb-1">
-                          Max Absolute Result Nodes
+                          Max Absolute Result Items
                         </label>
                         {{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary w-50") }}
                       </div>
+
                     </div>
                   </div>
                 </div>
@@ -528,12 +560,12 @@
                       <div>
                         <h6 class="fw-bold text-dark mb-2">
                           <i class="fa-solid fa-list-check me-2 text-secondary"></i> Assessable Result Data Formats
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select format channels targeted for grading. Checked structures process into verification pipelines."></i>
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select the result data types to be included in the assessment, e. g. Organic, Images, AI, etc."></i>
                         </h6>
                         <p class="text-secondary small mb-3">
-                          Select components requiring active human annotation cycles.
+                          Select items to be included in the assessment.
                         </p>
-                        <div class="p-3 border rounded bg-white" style="max-height: 180px; overflow-y: auto;">
+                        <div class="p-3 border rounded bg-white" style="max-height: 220px; overflow-y: auto;">
                           {{ settings_form.assessment_result_types(class="list-unstyled mb-0 text-dark") }}
                         </div>
                       </div>
@@ -547,7 +579,7 @@
                       <div>
                         <h6 class="fw-bold text-dark mb-3">
                           <i class="fa-solid fa-eye me-2 text-secondary"></i> Interface Information Masking & Visibility
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Control specific source attributes visible to participants. Toggling options eliminates domain and brand alignment bias."></i>
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Control specific source attributes visible to participants."></i>
                         </h6>
                         
                         <div class="d-flex flex-column gap-3 mt-2">
@@ -555,6 +587,7 @@
                             {{ settings_form.show_urls(class="form-check-input border-secondary", id="show_urls_checkbox") }}
                             <label class="form-check-label text-dark fw-bold" for="show_urls_checkbox">
                               Show live original URLs / domains to participants
+                              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Toggles the visibility of live original URLs and domains to participants."></i>
                               <span id="show_urls_badge" class="badge bg-light text-secondary border ms-2 d-none"><i class="fa-solid fa-lock"></i> Forced by Live Mode</span>
                             </label>
                           </div>
@@ -562,14 +595,17 @@
                           <div class="form-check form-switch">
                             {{ settings_form.show_ai_sources(class="form-check-input border-secondary", id="show_ai_sources_checkbox") }}
                             <label class="form-check-label text-dark fw-bold" for="show_ai_sources_checkbox">
-                              Show citation source nodes within AI Overviews
+                              Show ai sources used in the ai generated answers
+                              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Decide if you want to show the sources used in the ai generated answers to participants.
+                              "></i>
                             </label>
                           </div>
                           
                           <div class="form-check form-switch">
                             {{ settings_form.assess_failed(class="form-check-input border-secondary", id="assess_failed_checkbox") }}
                             <label class="form-check-label text-dark fw-bold" for="assess_failed_checkbox">
-                              Allow active grading parameters on failed scrapings
+                              Allow asssessments on failed scrapings
+                              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="If a source scraping failed this will show the live URL of the item. Beware it could make it possible that study participants evaluate subpages of a website instead of the original URL."></i>
                             </label>
                           </div>
                         </div>
@@ -589,8 +625,8 @@
       <div class="card mb-4 shadow-sm border-secondary" id="classifiers-card" style="display: none;">
         <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseClassifiers" aria-expanded="true" aria-controls="collapseClassifiers">
           <span class="fw-bold text-dark">
-              <i class="fa-solid fa-robot me-2 text-secondary"></i> Automated Content Classifiers
-              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select metric scripts or analytical parsers to evaluate scraped source HTML automatically."></i>
+              <i class="fa-solid fa-robot me-2 text-secondary"></i> Automated Classifiers
+              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Select classifiers to evaluate scraped source HTML automatically."></i>
           </span>
           <i class="fa-solid fa-chevron-down text-secondary"></i>
         </div>
@@ -600,7 +636,7 @@
             <div id="classifier-progress-wrapper" class="d-none mb-4 p-3 bg-white border rounded shadow-sm">
                 <label class="fw-bold text-dark mb-1 small">
                     <i class="fa-solid fa-spinner fa-spin text-primary me-1" id="clf-status-icon"></i> Classifier Processing Status
-                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Algorithms process successfully downloaded HTML files."></i>
+                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Total progress of all classifiers selected."></i>
                 </label>
                 <div class="progress mt-1" style="height: 22px; border-radius: 6px;">
                     <div id="clf-progress-bar" 
@@ -613,16 +649,127 @@
                 </div>
             </div>
 
-            <p class="small text-secondary mb-3">
-              <i class="fa-solid fa-circle-info me-1"></i> Select built-in algorithms (e.g. SEO Score, Readability) to score HTML content automatically.
-            </p>
-            <div class="card card-body bg-white p-3 border-secondary" style="max-height: 250px; overflow-y: auto;">
-              {{ settings_form.classifiers(class="list-unstyled mb-0 text-dark") }}
+			<p class="small text-secondary mb-3">
+			  <i class="fa-solid fa-circle-info me-1"></i> Select built-in classifiers (e.g. SEO Score, Readability) to score HTML content automatically.
+			</p>
+			
+            <div class="card card-body bg-white p-3 border-secondary" style="max-height: 380px; overflow-y: auto;">
+              <ul class="list-unstyled mb-0 text-dark">
+                {% for subfield in settings_form.classifiers %}
+                  {% set c = all_classifiers | selectattr('id', 'equalto', subfield.data | int) | first %}
+                  
+                  {% if c and c.name != 'universal_llm' %}
+					{% set supported_types = c.resulttypes | map(attribute='name') | list %}
+					<li class="pb-2 mb-2 border-bottom border-light classifier-item" data-supported-types="{{ supported_types | join(',') | lower }}">
+					  <div class="d-flex justify-content-between align-items-center">
+						<div class="form-check m-0">
+						  {{ subfield(class="form-check-input border-secondary classifier-checkbox") }}
+						  
+						  <label class="form-check-label fw-bold text-dark" for="{{ subfield.id }}">
+							{{ subfield.label.text }}
+							
+							<!-- NEW: Badges for supported types -->
+							<div class="mt-1">
+							  {% for rt in c.resulttypes %}
+								<span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.7rem;">
+								  <i class="fa-solid fa-tag me-1"></i>{{ rt.display or rt.name | title }}
+								</span>
+							  {% endfor %}
+							</div>
+						  </label>
+						</div>
+						
+						{% if c.description and c.description.strip() %}
+						<button type="button" class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" 
+								data-bs-toggle="collapse" 
+								data-bs-target="#desc_clf_{{ c.id }}" 
+								aria-expanded="false">
+						  <i class="fa-solid fa-circle-info me-1"></i> Description
+						</button>
+						{% endif %}
+					  </div>
+					  
+					  {% if c.description and c.description.strip() %}
+					  <div class="collapse mt-2 text-secondary small p-2 bg-light rounded" id="desc_clf_{{ c.id }}">
+						<div class="mb-2 text-dark">{{ c.description }}</div>
+						{% if c.description_url %}
+						<div>
+						  <a href="{{ c.description_url }}" target="_blank" class="text-primary fw-bold text-decoration-underline small">
+							<i class="fa-solid fa-book-open me-1"></i> Read Knowledge Base
+						  </a>
+						</div>
+						{% endif %}
+					  </div>
+					  {% endif %}
+					</li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
             </div>
-          </div>
-        </div>
-      </div>
+			
+            <hr class="text-secondary my-4">
+            
+            {% set llm_clf = all_classifiers | selectattr('name', 'equalto', 'universal_llm') | first %}
+            
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold text-dark mb-0 small">
+                  <i class="fa-solid fa-brain me-2 text-primary"></i> Custom LLM Content Analysis (OpenAI-Compatible API)
+                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Deploy dynamic generative AI prompt instructions onto your scraped web pages using any OpenAI-compliant API endpoint (e.g., local Ollama instance or cloud routers)."></i>
+              </h6>
+              
+              {% if llm_clf and llm_clf.description and llm_clf.description.strip() %}
+              <button type="button" class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" 
+                      data-bs-toggle="collapse" 
+                      data-bs-target="#desc_clf_llm" 
+                      aria-expanded="false">
+                <i class="fa-solid fa-circle-info me-1"></i> Description
+              </button>
+              {% endif %}
+            </div>
 
+            {% if llm_clf and llm_clf.description and llm_clf.description.strip() %}
+            <div class="collapse mb-3 text-secondary small p-2 bg-light rounded" id="desc_clf_llm">
+              <div class="mb-2 text-dark">{{ llm_clf.description }}</div>
+              
+              {% if llm_clf.description_url %}
+              <div>
+                <a href="{{ llm_clf.description_url }}" 
+                   target="_blank" 
+                   class="text-primary fw-bold text-decoration-underline small">
+                  <i class="fa-solid fa-book-open me-1"></i> Read Knowledge Base documentation
+                </a>
+              </div>
+              {% else %}
+              <div>
+                <span class="text-muted small"><i class="fa-solid fa-book text-muted me-1"></i> No manual page linked yet.</span>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <p class="small text-secondary mb-3">
+              <i class="fa-solid fa-circle-info me-1"></i> Add prompt rules to process the cleaned visible text of pages through large language models.
+            </p>
+
+            <input type="hidden" name="llm_classifiers_json" id="llm_classifiers_hidden" value="{{ study.llm_classifiers_json or '' }}">
+
+			<div id="llm-tasks-container" class="mb-3 d-flex flex-column gap-2">
+                </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="openLlmTaskModal()">
+                    <i class="fa-solid fa-plus me-1"></i> Add LLM Analysis Task
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-info fw-bold" data-bs-toggle="modal" data-bs-target="#llmGuideModal">
+                    <i class="fa-solid fa-book-open-reader me-1"></i> Setup Guide (Ollama & Cloud APIs)
+                </button>
+            </div>
+        </div>
+      </div></div>
+
+         
+ 
+      
       <div id="ui-warning-unsaved-bottom" class="alert alert-warning border-warning d-none align-items-center floating-save-warning" style="background-color: #fff3cd;">
           <i class="fa-solid fa-triangle-exclamation fs-4 me-3 text-warning"></i>
           <div class="text-dark flex-grow-1">
@@ -651,6 +798,18 @@
             
             <div id="smart-lock-warnings-container" class="mb-4"></div>
 
+            <div class="mb-4 p-3 bg-light border border-info rounded shadow-sm">
+            <h6 class="fw-bold text-info mb-2"><i class="fa-solid fa-flask me-2"></i> Pretest & Preview</h6>
+            <p class="text-muted small mb-3">Test your study with the pretest and posttest surveys.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{{ url_for('preview_welcome', study_id=study.id) }}" class="btn btn-sm btn-outline-info" target="_blank"><i class="fa-solid fa-door-open me-1"></i> Test Welcome Page</a>
+          <a href="{{ url_for('preview_survey', study_id=study.id, survey_type='pre') }}" class="btn btn-sm btn-outline-info" target="_blank"><i class="fa-solid fa-eye me-1"></i> Test Pre-Survey</a>
+          <a href="{{ url_for('preview_assessment', study_id=study.id) }}" class="btn btn-sm btn-outline-info" target="_blank"><i class="fa-solid fa-magnifying-glass me-1"></i> Test Assessment</a>
+          <a href="{{ url_for('preview_survey', study_id=study.id, survey_type='post') }}" class="btn btn-sm btn-outline-info" target="_blank"><i class="fa-solid fa-eye me-1"></i> Test Post-Survey</a>
+          <a href="{{ url_for('preview_completed', study_id=study.id) }}" class="btn btn-sm btn-outline-info" target="_blank"><i class="fa-solid fa-flag-checkered me-1"></i> Test End Page</a>
+      </div>
+    </div>
+
             <div class="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center p-3 bg-light border rounded shadow-sm">
                 <div>
                     <h6 class="fw-bold text-dark mb-1">Participant Invitation</h6>
@@ -671,7 +830,7 @@
 
     <div class="card mb-5 border-secondary shadow-sm">
       <div class="card-header bg-white border-bottom text-dark fw-bold d-flex align-items-center py-3">
-        <i class="fa-solid fa-chart-line me-2 text-secondary"></i> Results & Export Data Matrix
+        <i class="fa-solid fa-chart-line me-2 text-secondary"></i> Results & Export Data
       </div>
       <div class="card-body p-4">
         
@@ -686,7 +845,7 @@
                     Analysis Dashboard
                     <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="View interactive charts and statistical breakdowns of your collected data and participant answers."></i>
                 </h6>
-                <p class="card-text text-secondary mb-4 small">View SEO metrics, classifier statistics, and result overlap analysis.</p>
+                <p class="card-text text-secondary mb-4 small">View classifier results, assessment results, statistics, and result overlap analysis.</p>
                 <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-outline-success btn-sm w-100 fw-bold">View Analysis</a>
               </div>
             </div>
@@ -774,6 +933,105 @@
   </div>
 </div>
 
+<div class="modal fade" id="llmGuideModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow border-0">
+      <div class="modal-header bg-light">
+        <h6 class="modal-title fw-bold text-dark">
+            <i class="fa-solid fa-book-open-reader me-2 text-info"></i> LLM Setup & Connection Guide
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4 text-dark bg-white">
+        
+        <p class="text-secondary small mb-4">
+            The Universal LLM Classifier uses the OpenAI-compatible API standard. This allows you to connect almost any AI model in the world—either running locally on your hardware (free and private) or via cloud providers.
+        </p>
+
+        <ul class="nav nav-tabs mb-3" id="llmGuideTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="ollama-tab" data-bs-toggle="tab" data-bs-target="#ollama-guide" type="button" role="tab">
+                <i class="fa-solid fa-server me-1"></i> Local (Ollama)
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="openrouter-tab" data-bs-toggle="tab" data-bs-target="#openrouter-guide" type="button" role="tab">
+                <i class="fa-solid fa-cloud me-1"></i> Cloud (APIs)
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content border border-top-0 rounded-bottom p-3 bg-light">
+          
+        <div class="tab-pane fade show active" id="ollama-guide" role="tabpanel">
+            <h6 class="fw-bold text-dark mb-3">Running free local models via Ollama & ngrok</h6>
+            
+            <p class="small text-secondary mb-3">Ensure <a href="https://ollama.com" target="_blank">Ollama</a> is installed and running on your machine. You must pull a model first (e.g., run <code>ollama run llama3</code> in your terminal).</p>
+            
+            <div class="alert alert-info border-info small shadow-sm mb-3">
+                <strong><i class="fa-solid fa-triangle-exclamation me-1"></i> Remote Connection Required:</strong> Because this platform is hosted remotely, it cannot read <code>localhost</code> directly from your browser. You must bridge your local Ollama port to the web using a secure tunnel like <strong>ngrok</strong>.
+            </div>
+
+            <ol class="list-group list-group-numbered list-group-flush mb-4 small text-dark border shadow-sm rounded bg-white">
+                <li class="list-group-item py-2"><strong>Configure Ollama:</strong> Set your machine's environment variable to <code>OLLAMA_HOST=0.0.0.0</code> and restart the Ollama application to allow external traffic.</li>
+                <li class="list-group-item py-2"><strong>Start ngrok:</strong> Download ngrok, add your authtoken, and run the following command in your terminal: <br><code>ngrok http 11434 --host-header="localhost:11434"</code></li>
+                <li class="list-group-item py-2 border-bottom-0"><strong>Copy the Tunnel URL:</strong> Grab the public forwarding URL provided by the ngrok terminal window (e.g., <code>https://abcd-123.ngrok-free.app</code>).</li>
+            </ol>
+
+            <ul class="list-group list-group-flush border shadow-sm rounded">
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">API Base URL</span>
+                    <code class="fs-6 user-select-all">https://&lt;your-ngrok-url&gt;/v1</code>
+                    <div class="small text-muted mt-1"><em>Note: If RAT is running inside Docker, use <code>http://host.docker.internal:11434/v1</code> or your host IP. Otherwise, use your ngrok URL. The <code>/v1</code> at the end is mandatory!</em></div>
+                </li>
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">API Key</span>
+                    <span class="text-dark small"><em>Leave this field blank. Ollama does not require authentication.</em></span>
+                </li>
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">Model Identifier</span>
+                    <span class="small text-muted"><code>llama3.2:latest</code> <span class="small text-muted">(or <code>gemma4:26b</code>, <code>gpt-oss:20b</code>)</span>
+                </li>
+            </ul>
+          </div>
+
+		<div class="tab-pane fade" id="openrouter-guide" role="tabpanel">
+            <h6 class="fw-bold text-dark mb-3">Connecting to Cloud APIs (OpenRouter, Groq, OpenAI, etc.)</h6>
+            <p class="small text-secondary mb-3">The Universal LLM tool supports <strong>any</strong> platform that uses the OpenAI API standard. This includes aggregators like <a href="https://openrouter.ai" target="_blank">OpenRouter</a>, lightning-fast LPUs like <a href="https://groq.com/" target="_blank">Groq</a>, or generic OpenAI/DeepSeek endpoints.</p>
+
+            <ul class="list-group list-group-flush border shadow-sm rounded">
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">API Base URL (Examples)</span>
+                    <ul class="mb-0 small text-dark ps-3">
+                        <li>OpenRouter: <code>https://openrouter.ai/api/v1</code></li>
+                        <li>Groq: <code>https://api.groq.com/openai/v1</code></li>
+                        <li>Together AI: <code>https://api.together.xyz/v1</code></li>
+                        <li>OpenAI: <code>https://api.openai.com/v1</code></li>
+                    </ul>
+                </li>
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">API Key</span>
+                    <code class="fs-6">sk-...</code>
+                    <div class="small text-muted mt-1">Generate this key in the developer console of your chosen provider.</div>
+                </li>
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">Model Identifier</span>
+                    <code class="fs-6 user-select-all">llama3-8b-8192</code> <span class="small text-muted">(Depends completely on the provider)</span>
+                    <div class="small text-muted mt-1">Check your provider's documentation for the exact model string. OpenRouter usually requires an author prefix (e.g. <code>meta-llama/llama-3-8b-instruct</code>).</div>
+                </li>
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+      <div class="modal-footer border-0 bg-white">
+        <button type="button" class="btn btn-primary fw-bold px-4" data-bs-dismiss="modal">Got it!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="surveyBuilderModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
@@ -795,6 +1053,99 @@
                 <i class="fa-solid fa-floppy-disk me-1"></i> Update Survey (Save later)
             </button>
         </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="llmTaskModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="llmModalTitle">Add LLM Analysis Task</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+		<div class="modal-body text-dark">
+        <form onsubmit="return false;" autocomplete="off">
+            <input type="hidden" id="llm_edit_id">
+            
+            <div class="mb-3 form-check form-switch mt-2">
+              <input class="form-check-input border-secondary" type="checkbox" id="llm_active" checked>
+              <label class="form-check-label fw-bold small text-dark" for="llm_active">Activate Task (Active)</label>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold small">Display Name / Column Title</label>
+              <input type="text" id="llm_display_name" class="form-control form-control-sm" autocomplete="off" placeholder="e.g. Political Bias or Sentiment">
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold small">API Base URL</label>
+              <input type="text" id="llm_base_url" class="form-control form-control-sm" autocomplete="off" placeholder="e.g. http://localhost:11434/v1 or https://api.openai.com/v1">
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold small">API Key</label>
+              <input type="password" id="llm_api_key" class="form-control form-control-sm" autocomplete="off" placeholder="Enter API Key" autocomplete="new-password">
+              <div id="llm_key_status" class="form-text text-success small d-none">
+                  <i class="fa-solid fa-lock me-1"></i> Securely encrypted key already saved. Leave blank to keep existing.
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold small">Model Identifier</label>
+              <input type="text" id="llm_model" class="form-control form-control-sm" autocomplete="off" placeholder="e.g. llama3.2:latest or google/gemini-3.1-flash-lite">
+            </div>
+		            
+			<div class="mb-3">
+              <label class="form-label fw-bold small">Target Data (Apply prompt to:)</label>
+              <select id="llm_target_type" class="form-select form-select-sm border-secondary text-dark">
+                <option value="all">All compatible (Organic, AI Answers, AI Sources)</option>
+                <option value="organic">Only Organic Results</option>
+                <option value="ai_overview">Only AI Answers</option>
+                <option value="ai_source">Only AI Sources</option>
+              </select>
+            </div>			
+            
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold small">Max Input Length (Chars)</label>
+                <input type="number" id="llm_max_context" class="form-control form-control-sm border-secondary" value="3000" min="100">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold small">Max Output Tokens</label>
+                <input type="number" id="llm_max_tokens" class="form-control form-control-sm border-secondary" value="250" min="1">
+              </div>
+              <div class="col-12">
+                <div class="form-text text-warning small fw-bold mt-1">
+                  <i class="fa-solid fa-triangle-exclamation"></i> Warning: Increasing these values significantly impacts processing time, VRAM usage, and API costs!
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label fw-bold small">Analysis Prompt / Instructions</label>
+              <textarea id="llm_prompt" class="form-control form-control-sm font-monospace" rows="4" autocomplete="off" placeholder="Analyze the web page text..."></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold small">System Prompt / Role Definition (Optional)</label>
+              <textarea id="llm_system_prompt" class="form-control form-control-sm font-monospace text-secondary" rows="3" autocomplete="off" placeholder="e.g. You are an expert linguist... (Leave blank for default behavior)"></textarea>
+            </div>
+
+        </form>
+      </div>
+		<div class="modal-footer border-0 d-flex justify-content-between align-items-center bg-light">
+        <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-outline-info fw-bold" onclick="testLlmConnection()" id="btn-test-llm">
+                <i class="fa-solid fa-wifi me-1"></i> Test Connection
+            </button>
+            <span id="test-connection-status" class="ms-2 small fw-bold"></span>
+        </div>
+        <div>
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="saveLlmTask()"><i class="fa-solid fa-check me-1"></i> Save Task</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -841,7 +1192,11 @@
       return new bootstrap.Tooltip(tooltipTriggerEl)
     });
 
-    surveyModal = new bootstrap.Modal(document.getElementById('surveyBuilderModal'));
+	surveyModal = new bootstrap.Modal(document.getElementById('surveyBuilderModal'));
+    
+    llmModal = new bootstrap.Modal(document.getElementById('llmTaskModal'));
+    renderLlmTasks();
+    document.getElementById('llm_classifiers_hidden')?.addEventListener('change', () => { isDirty = true; updateUIState(); });
     document.getElementById('btn-add-presurvey')?.addEventListener('click', () => openSurveyBuilder('pre'));
     document.getElementById('btn-add-postsurvey')?.addEventListener('click', () => openSurveyBuilder('post'));
     updateSurveyBadges();
@@ -872,25 +1227,42 @@
     const itemLimitContainer = document.getElementById('item_limit_container');
     const limitByQueryCheckbox = document.getElementById('limit_by_query');
     const queryLimitContainer = document.getElementById('query_limit_container');
+    const searchDepthWrapper = document.getElementById('search_depth_wrapper');
     
     if (limitCheckbox && itemLimitContainer) {
       limitCheckbox.addEventListener('change', () => { itemLimitContainer.style.display = limitCheckbox.checked ? 'block' : 'none'; });
       itemLimitContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
     }
 
-    if (limitByQueryCheckbox && queryLimitContainer) {
+    // Unified logic to control nested configurations based on Group-By-Query checkbox
+    if (limitByQueryCheckbox) {
         function toggleLimitModeUI() {
-            if (limitByQueryCheckbox.checked) {
-                queryLimitContainer.style.opacity = '1';
-                if(itemLimitContainer) itemLimitContainer.style.opacity = '0.6';
-            } else {
-                queryLimitContainer.style.opacity = '0.3';
-                if(itemLimitContainer) itemLimitContainer.style.opacity = '1';
+            const isChecked = limitByQueryCheckbox.checked;
+            
+            if (queryLimitContainer) {
+                queryLimitContainer.style.display = isChecked ? 'block' : 'none';
+                queryLimitContainer.style.opacity = isChecked ? '1' : '0.3';
+            }
+            if (searchDepthWrapper) {
+                searchDepthWrapper.style.display = isChecked ? 'block' : 'none';
+            }
+            if (itemLimitContainer) {
+                itemLimitContainer.style.opacity = isChecked ? '0.6' : '1';
             }
         }
         limitByQueryCheckbox.addEventListener('change', toggleLimitModeUI);
-        toggleLimitModeUI();
+        toggleLimitModeUI(); // Execute initially when loading the page
     }
+
+    const searchDepthCheckbox = document.getElementById('limit_search_depth');
+    const searchDepthContainer = document.getElementById('search_depth_container');
+    
+    if (searchDepthCheckbox && searchDepthContainer) {
+      searchDepthCheckbox.addEventListener('change', () => { 
+          searchDepthContainer.style.display = searchDepthCheckbox.checked ? 'block' : 'none'; 
+      });
+      searchDepthContainer.style.display = searchDepthCheckbox.checked ? 'block' : 'none';
+    }    
 
     const rangesWrapper = document.getElementById('ranges-wrapper');
     const addRangeBtn = document.getElementById('add-range-btn');
@@ -1057,7 +1429,7 @@
         if (!isLiveModeActive && currentScrapingProgress < 100 && checkedTypes.includes('organic') && studyTemplates[selectedMode].showHuman) {
             isLocked = true;
             warningsContainer.innerHTML += `
-                <div class="text-secondary fw-bold small mb-2"><i class="fa-solid fa-hourglass-half me-1"></i> <strong>Scraping Assets Incomplete:</strong> Waiting for system asset downloads to achieve full compilation (100%) before testing.</div>`;
+                <div class="text-secondary fw-bold small mb-2"><i class="fa-solid fa-hourglass-half me-1"></i> <strong>Scraping Incomplete:</strong> Waiting for system to finish scraping result items (100%) before you can invite participants.</div>`;
         }
 
         if (isLocked) {
@@ -1127,17 +1499,21 @@
           resultsChatbotCount: document.getElementById('results-chatbot-count'),
           resultsSerpCount: document.getElementById('results-serp-count'),
           aiSourceCount: document.getElementById('ai-source-count'),
+          resultsImageCount: document.getElementById('results-image-count'), 
           progressContainer: document.getElementById('progress-container'),
           progressBar: document.getElementById('progress-bar'),
           progressBarText: document.getElementById('scraping-progress-bar-text')
         };
 
-      // 1. Zähler für hochgeladene/gescrapte Daten aktualisieren
-      const hasAnyData = (data.results > 0 || data.results_ai > 0 || data.results_chatbot > 0 || data.results_serp > 0 || data.ai_source_count > 0);
+      // 1. Update counters for uploaded/scraped data
+      const hasScrapeableData = (data.results > 0 || data.ai_source_count > 0);
       
-      if (hasAnyData && uiElements.progressContainer) {
+      if (hasScrapeableData && uiElements.progressContainer) {
           uiElements.progressContainer.classList.remove('d-none');
           uiElements.progressContainer.classList.add('d-block');
+      } else if (uiElements.progressContainer) {
+          uiElements.progressContainer.classList.add('d-none');
+          uiElements.progressContainer.classList.remove('d-block');
       }
 
       if (data.results > 0 && uiElements.resultsCount) uiElements.resultsCount.textContent = data.results;
@@ -1147,7 +1523,7 @@
       if (data.ai_source_count > 0 && uiElements.aiSourceCount) uiElements.aiSourceCount.textContent = data.ai_source_count;
 
       
-      // 2. Scraping Progress Bar aktualisieren (oberer Balken)
+      // 2. Update Scraping Progress Bar (top bar)
       const scrapingIcon = document.getElementById('scraping-status-icon');
       if (uiElements.progressBar) {
         const percentage = data.progress_percent;
@@ -1158,15 +1534,15 @@
         if (percentage >= 100) {
           uiElements.progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
           uiElements.progressBar.classList.add('bg-success');
-          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-circle-check text-success me-1'; // Grüner Haken bei 100%
+          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-circle-check text-success me-1'; // Green checkmark at 100%
         } else {
           uiElements.progressBar.classList.add('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
           uiElements.progressBar.classList.remove('bg-success');
-          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1'; // Spinner während des Ladens
+          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1'; // Spinner while loading
         }
       }
 
-      // 3. Classifier Progress Bar aktualisieren (unterer Balken in der Card)
+      // 3. Update Classifier Progress Bar (bottom bar in the card)
       const clfWrapper = document.getElementById('classifier-progress-wrapper');
       const clfBar = document.getElementById('clf-progress-bar');
       const clfText = document.getElementById('clf-progress-bar-text');
@@ -1178,10 +1554,6 @@
               
               let clfPercent = data.clf_progress_percent;
               
-              if (data.progress_percent < 100 && clfPercent >= 90) {
-                  clfPercent = data.progress_percent;
-              }
-
               clfBar.style.width = clfPercent + '%';
               clfBar.setAttribute('aria-valuenow', clfPercent);
               clfText.textContent = clfPercent + '%';
@@ -1189,22 +1561,32 @@
               if (clfPercent >= 100) {
                   clfBar.classList.remove('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
                   clfBar.classList.add('bg-success');
-                  if (clfIcon) clfIcon.className = 'fa-solid fa-circle-check text-success me-1'; // Grüner Haken
+                  if (clfIcon) clfIcon.className = 'fa-solid fa-circle-check text-success me-1'; // Green checkmark
               } else {
                   clfBar.classList.add('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
                   clfBar.classList.remove('bg-success');
-                  if (clfIcon) clfIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1'; // Ladesymbol
+                  if (clfIcon) clfIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1'; // Loading symbol
               }
           } else {
               clfWrapper.classList.add('d-none');
           }
       }
 
-      // 4. Status und Locks aktualisieren
+      const failedWarning = document.getElementById('failed-scrape-warning');
+      const failedCount = document.getElementById('failed-scrape-count');
+      
+      if (data.failed_scrape_count > 0) {
+          if (failedWarning) failedWarning.classList.remove('d-none');
+          if (failedCount) failedCount.textContent = data.failed_scrape_count;
+      } else {
+          if (failedWarning) failedWarning.classList.add('d-none');
+      }
+
+      // 4. Update status and locks
       currentScrapingProgress = data.progress_percent;
       updateUIState();
 
-      // 5. Reload der Seite, wenn alles fertig ist (Statuswechsel)
+      // 5. Reload the page when everything is finished (status change)
       const hasStaticOnly = (data.results === 0 && (data.results_ai > 0 || data.results_chatbot > 0 || data.results_serp > 0));
       const isReady = (data.status === 2 || hasStaticOnly);
 
@@ -1224,7 +1606,274 @@
     fetchStatus();
     setInterval(fetchStatus, 4000);
     {% endif %}
+	
+	// --- DYNAMIC CLASSIFIER GROUPING & FILTERING ---
+  function updateClassifierVisibility() {
+      // 1. Get all selected ResultTypes from the form above
+      const checkedTypes = Array.from(document.querySelectorAll('input[name="assessment_result_types"]:checked'))
+                                .map(cb => cb.value.toLowerCase());
+
+      const classifierItems = document.querySelectorAll('.classifier-item');
+      
+      classifierItems.forEach(item => {
+          const supportedTypesStr = item.getAttribute('data-supported-types');
+          if (!supportedTypesStr) return;
+          
+          const supportedTypes = supportedTypesStr.split(',');
+          const cb = item.querySelector('.classifier-checkbox');
+          
+          // 2. Check if there is an overlap (Classifier supports at least one of the active ResultTypes)
+          const isApplicable = checkedTypes.some(type => supportedTypes.includes(type));
+          
+          // 3. Update UI
+          if (!isApplicable && checkedTypes.length > 0) {
+              item.style.opacity = '0.4'; // Gray out
+              item.style.pointerEvents = 'none'; // Prevent clicks
+              if (cb) {
+                  cb.checked = false; // Remove checkmark
+                  // To trigger the form save event (isDirty) in case it was checked:
+                  cb.dispatchEvent(new Event('change', { bubbles: true })); 
+              }
+              item.setAttribute('title', 'Not applicable for the selected Result Data Formats.');
+          } else {
+              item.style.opacity = '1';
+              item.style.pointerEvents = 'auto';
+              item.removeAttribute('title');
+          }
+      });
+  }
+
+  // Attach event listeners to the ResultType checkboxes
+  document.querySelectorAll('input[name="assessment_result_types"]').forEach(cb => {
+      cb.addEventListener('change', updateClassifierVisibility);
+  });
+  
+  // Execute initially when loading the page
+  updateClassifierVisibility();
+	
   }); 
+
+// --- LLM TASK MANAGEMENT FUNCTIONS ---
+  let llmModal;
+  
+  function getLlmTasks() {
+      const val = document.getElementById('llm_classifiers_hidden').value;
+      if (!val || val.trim() === '') return [];
+      try { return JSON.parse(val); } catch(e) { return []; }
+  }
+
+	function renderLlmTasks() {
+      const container = document.getElementById('llm-tasks-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const tasks = getLlmTasks();
+      
+      if (tasks.length === 0) {
+          container.innerHTML = '<div class="text-muted small py-1"><i class="fa-solid fa-info-circle me-1"></i> No custom LLM tasks active for this study setup.</div>';
+          return;
+      }
+      
+      // NEW: Small mapping for readable labels
+      const typeLabels = {
+          'all': 'All Data', 'organic': 'Organic', 'ai_overview': 'AI Overviews', 
+          'chatbot': 'Chatbots', 'ai_source': 'AI Sources'
+      };
+
+      tasks.forEach(t => {
+          const targetLabel = t.target_type ? typeLabels[t.target_type] : 'All Data'; 
+          const isActive = t.active !== false; // Default is true
+          const activeBadge = isActive ? '<span class="badge bg-success border mx-1">Active</span>' : '<span class="badge bg-danger border mx-1">Inactive</span>';
+          const rowStyle = isActive ? '' : 'opacity: 0.6;';
+
+          const row = document.createElement('div');
+          row.className = 'd-flex justify-content-between align-items-center p-2 bg-white border rounded shadow-sm small text-dark mb-2';
+          row.style = rowStyle;
+          row.innerHTML = `
+              <div>
+                  <strong><i class="fa-solid fa-brain text-primary me-1"></i> ${t.display_name}</strong> 
+                  ${activeBadge}
+                  <span class="badge bg-light text-secondary border mx-1">${targetLabel}</span> <!-- NEW: BADGE -->
+                  <span class="text-muted">(${t.model} via ${t.base_url})</span>
+              </div>
+              <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary border-0 py-0 px-1" onclick="openLlmTaskModal('${t.id}')"><i class="fa-solid fa-pencil"></i></button>
+                  <button type="button" class="btn btn-sm btn-outline-danger border-0 py-0 px-1" onclick="deleteLlmTask('${t.id}')"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+          `;
+          container.appendChild(row);
+      });
+  }
+
+	function openLlmTaskModal(id = null) {
+      document.getElementById('llm_edit_id').value = id || '';
+      document.getElementById('llm_active').checked = true;
+      document.getElementById('llm_display_name').value = '';
+      document.getElementById('llm_base_url').value = '';
+      document.getElementById('llm_api_key').value = '';
+      document.getElementById('llm_model').value = '';
+      document.getElementById('llm_system_prompt').value = '';
+      document.getElementById('llm_prompt').value = '';
+      document.getElementById('llm_target_type').value = 'all';
+      
+      // NEW: Set default values
+      document.getElementById('llm_max_context').value = 3000;
+      document.getElementById('llm_max_tokens').value = 250;
+      
+      document.getElementById('test-connection-status').innerHTML = '';
+      
+      const keyStatus = document.getElementById('llm_key_status');
+      keyStatus.classList.add('d-none');
+      
+      if (id) {
+          document.getElementById('llmModalTitle').innerText = 'Edit LLM Analysis Task';
+          const tasks = getLlmTasks();
+          const task = tasks.find(t => t.id === id);
+          if (task) {
+              document.getElementById('llm_active').checked = task.active !== false;
+              document.getElementById('llm_display_name').value = task.display_name;
+              document.getElementById('llm_base_url').value = task.base_url;
+              document.getElementById('llm_model').value = task.model;
+              document.getElementById('llm_system_prompt').value = task.system_prompt || '';
+              document.getElementById('llm_prompt').value = task.prompt;
+              if (task.target_type) { document.getElementById('llm_target_type').value = task.target_type; } 
+              
+              // NEW: Load values (with fallback to default if it's an old task)
+              document.getElementById('llm_max_context').value = task.max_context || 3000;
+              document.getElementById('llm_max_tokens').value = task.max_tokens || 250;
+              
+              if (task.api_key) {
+                  keyStatus.classList.remove('d-none');
+                  document.getElementById('llm_api_key').placeholder = '•••••••• (Leave blank to keep existing)';
+              }
+          }
+      } else {
+          document.getElementById('llmModalTitle').innerText = 'Add LLM Analysis Task';
+          document.getElementById('llm_api_key').placeholder = 'Enter API Key';
+      }
+      llmModal.show();
+  }
+
+	function saveLlmTask() {
+      const id = document.getElementById('llm_edit_id').value;
+      const active = document.getElementById('llm_active').checked;
+      const display_name = document.getElementById('llm_display_name').value.trim();
+      const base_url = document.getElementById('llm_base_url').value.trim();
+      const api_key = document.getElementById('llm_api_key').value;
+      const model = document.getElementById('llm_model').value.trim();
+      const system_prompt = document.getElementById('llm_system_prompt').value.trim();
+      const prompt = document.getElementById('llm_prompt').value.trim();
+      const target_type = document.getElementById('llm_target_type').value; 
+      
+      // NEW: Read values as integer
+      const max_context = parseInt(document.getElementById('llm_max_context').value) || 3000;
+      const max_tokens = parseInt(document.getElementById('llm_max_tokens').value) || 250;
+      
+      if (!display_name || !base_url || !model || !prompt) {
+          alert('Please fulfill all required structural parameters.');
+          return;
+      }
+      
+      let tasks = getLlmTasks();
+      
+      if (id) {
+          const task = tasks.find(t => t.id === id);
+          if (task) {
+              task.active = active;
+              task.display_name = display_name;
+              task.base_url = base_url;
+              task.model = model;
+              task.system_prompt = system_prompt;
+              task.prompt = prompt;
+              task.target_type = target_type; 
+              task.max_context = max_context; // NEW
+              task.max_tokens = max_tokens;   // NEW
+              task.api_key = api_key ? api_key : "PLACEHOLDER_EXISTING_KEY";
+          }
+      } else {
+          const newTask = {
+              id: 'llm_' + Math.random().toString(36).substr(2, 9),
+              active: active,
+              display_name: display_name,
+              base_url: base_url,
+              api_key: api_key,
+              model: model,
+              prompt: prompt,
+              system_prompt: system_prompt,
+              target_type: target_type,
+              max_context: max_context, // NEW
+              max_tokens: max_tokens    // NEW
+          };
+          tasks.push(newTask);
+      }
+      
+      const hiddenInput = document.getElementById('llm_classifiers_hidden');
+      hiddenInput.value = JSON.stringify(tasks, null, 2);
+      hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      renderLlmTasks();
+      llmModal.hide();
+  }
+  
+  async function testLlmConnection() {
+      const btn = document.getElementById('btn-test-llm');
+      const statusText = document.getElementById('test-connection-status');
+      
+      const base_url = document.getElementById('llm_base_url').value.trim();
+      const api_key = document.getElementById('llm_api_key').value;
+      const model = document.getElementById('llm_model').value.trim();
+      const task_id = document.getElementById('llm_edit_id').value;
+      
+      if (!base_url || !model) {
+          statusText.innerHTML = '<span class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> URL and Model required.</span>';
+          return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Testing...';
+      statusText.innerHTML = '';
+
+      try {
+          const response = await fetch("{{ url_for('test_llm_connection') }}", {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              },
+              body: JSON.stringify({
+                  study_id: "{{ study.id }}",
+                  task_id: task_id,
+                  base_url: base_url,
+                  api_key: api_key,
+                  model: model
+              })
+          });
+
+          const data = await response.json();
+          
+          if (data.success) {
+              statusText.innerHTML = '<span class="text-success"><i class="fa-solid fa-check-circle"></i> Success!</span>';
+          } else {
+              statusText.innerHTML = `<span class="text-danger" title="${data.message}"><i class="fa-solid fa-circle-xmark"></i> Failed. Check inputs.</span>`;
+              alert("Connection failed:\n" + data.message);
+          }
+      } catch (error) {
+          statusText.innerHTML = '<span class="text-danger"><i class="fa-solid fa-circle-xmark"></i> Network error.</span>';
+      } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Test Connection';
+      }
+  }
+  
+  function deleteLlmTask(id) {
+      if (confirm('Are you sure you want to remove this LLM analysis task from execution?')) {
+          let tasks = getLlmTasks();
+          tasks = tasks.filter(t => t.id !== id);
+          const hiddenInput = document.getElementById('llm_classifiers_hidden');
+          hiddenInput.value = tasks.length > 0 ? JSON.stringify(tasks, null, 2) : '';
+          hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+          renderLlmTasks();
+      }
+  }
 
 // --- 4. SURVEY BUILDER FUNCTIONS ---
 function openSurveyBuilder(type) {
@@ -1284,6 +1933,7 @@ function addNewSurveyQuestion(data = null) {
                         <option value="multiple_choice" ${type === 'multiple_choice' ? 'selected' : ''}>Multiple Choice</option>
                         <option value="likert_scale" ${type === 'likert_scale' ? 'selected' : ''}>Likert Scale</option>
                         <option value="scale_number" ${type === 'scale_number' ? 'selected' : ''}>Slider</option>
+                        <option value="heading" ${type === 'heading' ? 'selected' : ''}>Heading</option>
                     </select>
                 </div>
             </div>
@@ -1296,10 +1946,10 @@ function addNewSurveyQuestion(data = null) {
                 </select>
             </div>
 
-            <div class="mt-2 form-check form-switch">
-                <input class="form-check-input q-mandatory" type="checkbox" id="mand_${qId}" ${mandatory ? 'checked' : ''}>
-                <label class="form-check-label small" for="mand_${qId}">Mandatory</label>
-            </div>
+        <div class="mt-2 form-check form-switch mandatory-area" style="display: ${type === 'heading' ? 'none' : 'block'};">
+            <input class="form-check-input q-mandatory" type="checkbox" id="mand_${qId}" ${mandatory ? 'checked' : ''}>
+            <label class="form-check-label small" for="mand_${qId}">Mandatory</label>
+        </div>
             
             <div class="options-area mt-3 p-2 bg-light border rounded" style="display: ${['single_choice', 'multiple_choice', 'likert_scale'].includes(type) ? 'block' : 'none'};">
                 <label class="form-label small fw-bold mb-1">Answer Options</label>
@@ -1331,6 +1981,7 @@ function toggleOptionsArea(selectElement) {
     const optionsArea = card.querySelector('.options-area');
     const orientationArea = card.querySelector('.orientation-area');
     const sliderArea = card.querySelector('.slider-options-area');
+    const mandatoryArea = card.querySelector('.mandatory-area');
     const type = selectElement.value;
     
     if (['single_choice', 'multiple_choice', 'likert_scale'].includes(type)) {
@@ -1340,6 +1991,7 @@ function toggleOptionsArea(selectElement) {
 
     if (type === 'likert_scale' && orientationArea) orientationArea.style.display = 'block'; else if (orientationArea) orientationArea.style.display = 'none';
     if (type === 'scale_number' && sliderArea) sliderArea.style.display = 'block'; else if (sliderArea) sliderArea.style.display = 'none';
+    if (mandatoryArea) mandatoryArea.style.display = type === 'heading' ? 'none' : 'block';
 }
 
 function addOptionToCard(buttonElement, optValue = '', optLabel = '') {
