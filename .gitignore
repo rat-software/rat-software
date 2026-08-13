@@ -20,6 +20,10 @@ extension_downloads.csv
 nohup.out
 **/tmp_uploads
 **/test-sources/
+.env
+.Zone.Identifier
+*.Identifier
+
 
 # Virtuelle Umgebungen (lokal, nicht versionieren)
 venv_rat/
