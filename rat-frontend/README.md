@@ -24,7 +24,7 @@ source venv_rat-frontend/bin/activate
 Ensure you have the latest pip version and install the required packages:
 ```bash
 python -m pip install --upgrade pip
-python -m pip install -r requirements_rat_frontend.txt
+python -m pip install -r requirements.txt
 ```
 
 ---

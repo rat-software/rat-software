@@ -5,6 +5,13 @@
 {% block content %}
 <h1 class="sr-only">Study Introduction</h1>
 
+<!-- NEW: Pretest Banner -->
+{% if is_preview %}
+<div class="alert alert-info text-center fw-bold shadow-sm mb-4">
+    <i class="fa-solid fa-flask me-2"></i> PRETEST-MODE: This is a preview of the introduction screen.
+</div>
+{% endif %}
+
 <div class="row mt-4">
   <div class="col-lg-8 offset-lg-2">
     <div class="card shadow-sm border-primary">
@@ -20,7 +27,7 @@
         <hr class="my-4 text-secondary">
         
         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <a href="{{ next_url }}" class="btn btn-primary btn-lg fw-bold px-5">
+            <a href="{{ next_url }}" class="btn btn-primary btn-lg fw-bold px-5" {% if is_preview %}onclick="event.preventDefault(); alert('Pretest: A real participant would now be redirected to the pre-survey or the first task.');"{% endif %}>
                 Continue <i class="fa-solid fa-arrow-right ms-2"></i>
             </a>
         </div>

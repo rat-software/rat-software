@@ -5,6 +5,12 @@
 {% block content %}
 <h1 class="sr-only">{{ title }}</h1>
 
+{% if is_preview %}
+<div class="alert alert-info text-center fw-bold shadow-sm mt-3 mb-1">
+    <i class="fa-solid fa-flask me-2"></i> PRETEST MODE: This is a preview. Answers will not be saved.
+</div>
+{% endif %}
+
 <div class="row mt-4 mb-5">
   <div class="col-lg-8 offset-lg-2">
     <div class="card shadow-sm border-secondary">
@@ -21,6 +27,11 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             {% for q in questions %}
+            {% if q.type == 'heading' %}
+            <div class="mt-5 mb-4 border-bottom pb-2">
+                <h4 class="text-primary fw-bold">{{ q.title }}</h4>
+            </div>
+            {% else %}
             <div class="mb-4 survey-question-block" data-mandatory="{{ 'true' if q.mandatory else 'false' }}" data-qid="{{ q.id }}">
                 
                 <label class="form-label fw-bold text-dark mb-2" style="font-size: 1.05rem;">
@@ -109,6 +120,7 @@
 
                 <div class="invalid-feedback fw-bold mt-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> This field is required.</div>
             </div>
+            {% endif %}
             {% endfor %}
 
             <hr class="my-4 text-secondary">
@@ -169,6 +181,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Scroll to the first error
             const firstError = document.querySelector('.is-invalid');
             if (firstError) firstError.scrollIntoView({behavior: 'smooth', block: 'center'});
+        } else {
+            {% if is_preview %}
+            event.preventDefault();
+            alert('Pretest successful! The validation has been passed.\n\nIn a real study, the participant would now be directed to the next step.');
+            {% endif %}
         }
     });
 });

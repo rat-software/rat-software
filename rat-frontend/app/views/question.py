@@ -1,3 +1,11 @@
+"""
+Question configuration routing module for the RAT application.
+
+Manages backend interfaces for creating research questionnaire tasks, displaying 
+paginated question views, updating dependent choice lists, and structuring full study schema 
+transfers using automated JSON serialization wrappers.
+"""
+
 from .. import app, db
 from ..forms import QuestionForm, ConfirmationForm, ImportQuestionsForm
 from ..models import Study, Option, QuestionType, Question
@@ -11,7 +19,13 @@ from datetime import datetime
 @login_required
 def questions(id):
     """
-    Displays a paginated list of questions for a specific study.
+    Displays a paginated list of evaluation questions created for a specific study.
+
+    Args:
+        id (str or int): The unique identifier matching the target Study record.
+
+    Returns:
+        str: Rendered HTML workspace page displaying the study questions list.
     """
     study = Study.query.get_or_404(id)
     page = request.args.get('page', 1, type=int)
@@ -26,7 +40,13 @@ def questions(id):
 @login_required
 def question(id):
     """
-    Displays details of a specific question, including its options.
+    Displays option choice criteria and configuration properties for a single question.
+
+    Args:
+        id (str or int): The unique database identifier matching the target Question record.
+
+    Returns:
+        str: Rendered detailed details screen template context framework.
     """
     question = Question.query.get_or_404(id)
     form = get_options(question)
@@ -40,7 +60,16 @@ def question(id):
 @login_required
 def new_question(id):
     """
-    Handles the creation of a new question for a specific study. 
+    Coordinates form evaluations to insert a brand new survey question item into a study loop.
+
+    Parses option lists dynamically depending on structural presentation choices 
+    (Likert matrices, standard checkbox controls, numeric ranges) and assigns sequential order indicators.
+
+    Args:
+        id (str or int): The unique identifier matching the targeted Study profile.
+
+    Returns:
+        Response: Relational view redirections or the question design sheet workspace.
     """
     study = Study.query.get(id)
     q_count = db.session.query(Question).filter(Question.study == study).count()
@@ -100,7 +129,13 @@ def new_question(id):
 @login_required
 def delete_question(id):
     """
-    Handles the deletion of a specific question and its associated options and answers.
+    Deletes an evaluation question along with all matching submission rows and option lists.
+
+    Args:
+        id (str or int): The unique database identifier tracking the target Question record.
+
+    Returns:
+        str: Rendered validation warning workspace or targeted view redirections.
     """
     question = Question.query.get_or_404(id)
     form = ConfirmationForm()
@@ -129,7 +164,13 @@ def delete_question(id):
 @login_required
 def export_questions_json(id):
     """
-    Exports all questions and options for a study as a JSON file.
+    Exports the complete structure list of questions and related options into a JSON document.
+
+    Args:
+        id (str or int): The unique database identifier tracking the target Study profile.
+
+    Returns:
+        Response: A Flask download stream passing the serialized JSON text attachment.
     """
     study = Study.query.get_or_404(id)
     questions = Question.query.filter_by(study_id=study.id).order_by(Question.position).all()
@@ -172,7 +213,16 @@ def export_questions_json(id):
 @login_required
 def import_questions_json(id):
     """
-    Imports questions from a JSON file. Checks for duplicates based on title.
+    Parses an uploaded JSON document to batch insert questions into a research study.
+
+    Evaluates schemas for missing database category lookups and ignores structural conflicts 
+    if a matching text item exists inside the destination tables.
+
+    Args:
+        id (str or int): The unique database identifier tracking the target destination Study.
+
+    Returns:
+        str: Rendered target file capture blueprint or forward route instructions.
     """
     study = Study.query.get_or_404(id)
     form = ImportQuestionsForm()

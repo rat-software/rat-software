@@ -28,8 +28,7 @@ source venv_rat_backend/bin/activate
 # 4. Install All Backend Dependencies
 echo "📦 Installing combined requirements..."
 pip install --upgrade pip
-# This assumes you have a unified requirements.txt in the backend root
-pip install -r requirements_rat_backend.txt
+pip install -r requirements.txt
 
 echo ""
 echo "✅ Unified Backend Setup complete!"

@@ -1,5 +1,5 @@
 /**
- * @file background.js - Version 2.0 (Plugin Engine Ready)
+ * @file background.js - Version 2.0 (Plugin Engine Ready with Video Support)
  * Core Service Worker for the Result Assessment Tool (RAT).
  * Handles persistence (IndexedDB), proxy rotation, and the main scraping queue.
  * Now dynamically loads JSON scrapers (Engines) instead of hardcoding logic.
@@ -98,7 +98,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // --- 2. INITIALIZATION (DB & ENGINES) ---
 async function initDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 8); // Versionsnummer beibehalten
+        const request = indexedDB.open(DB_NAME, 8);
 
         request.onupgradeneeded = (event) => {
             db = event.target.result;
@@ -110,9 +110,7 @@ async function initDB() {
 
         request.onsuccess = async (event) => {
             db = event.target.result;
-            
             await syncDefaultEngines();
-            
             resolve();
         };
 
@@ -125,7 +123,6 @@ async function initDB() {
 
 // --- HELPER FUNCTION ---
 async function syncDefaultEngines() {
-    // 1. Retrieve a list of all engine IDs currently in the database
     const existingEngineIds = await new Promise((resolve) => {
         const tx = db.transaction(STORE_ENGINES, "readonly");
         const req = tx.objectStore(STORE_ENGINES).getAllKeys();
@@ -135,7 +132,6 @@ async function syncDefaultEngines() {
 
     let engineFilesToLoad = [];
     
-    // 2. Load the table of contents (index.json) from the folder
     try {
         const indexUrl = chrome.runtime.getURL('engines/index.json');
         const indexResponse = await fetch(indexUrl);
@@ -143,12 +139,11 @@ async function syncDefaultEngines() {
         engineFilesToLoad = await indexResponse.json();
     } catch (err) {
         console.error("❌ Could not load engines/index.json:", err);
-        return; // Abort if the index file is missing
+        return;
     }
 
     const enginesToSave = [];
 
-    // 3. Load all JSONs based on the index file
     for (const fileName of engineFilesToLoad) {
         try {
             const url = chrome.runtime.getURL(`engines/${fileName}`);
@@ -156,7 +151,6 @@ async function syncDefaultEngines() {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const engineJson = await response.json();
             
-            // Check if the engine is already in the DB
             if (!existingEngineIds.includes(engineJson.engine.id)) {
                 enginesToSave.push(engineJson);
             }
@@ -165,9 +159,8 @@ async function syncDefaultEngines() {
         }
     }
 
-    if (enginesToSave.length === 0) return; // Nothing new to add!
+    if (enginesToSave.length === 0) return;
 
-    // 4. Save ONLY the new engines to the database
     return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_ENGINES, "readwrite");
         const store = tx.objectStore(STORE_ENGINES);
@@ -319,7 +312,6 @@ async function handleCaptchaEvent(sessionId, tabId) {
     const s = await getSession(sessionId);
     if (!s || s.status !== "RUNNING") return;
 
-    // Load the current engine config
     const currentTask = s.tasks[s.currentIndex];
     let engineConfig = null;
     if (currentTask && currentTask.config && currentTask.config.engineId) {
@@ -514,15 +506,13 @@ async function resetSingleTask(payload) {
 
     const task = session.tasks[taskIndex];
     if (task) {
-        task.status = "OPEN";         // Re-enable the task
-        task.retryCount = 0;          // Reset its attempt counter
-        task.pages = [];              // Optional: Clear any partial data from previous fails
-        task.totalOrganic = 0;        // Reset count for a clean start
+        task.status = "OPEN";         
+        task.retryCount = 0;          
+        task.pages = [];              
+        task.totalOrganic = 0;        
         
-        await saveSession(session);   // Persist change to database
+        await saveSession(session);   
         logToSession(sessionId, `🔄 Task Reset: "${task.term}" is back in the queue.`);
-        
-        // Refresh the UI counts
         broadcastSessionStatus(sessionId);
     }
 }
@@ -598,7 +588,7 @@ async function createNewSession(payload) {
 
     const session = { 
         id, name, status: "OPEN", tasks, currentIndex: 0, globalCount: resultsLimit, 
-        limitType: limitType || "RESULTS", // <--- ADDED
+        limitType: limitType || "RESULTS",
         delays, settings, originalConfigs: configs, originalQueries: queries
     };
     
@@ -654,7 +644,6 @@ async function processQueue(sessionId) {
     const currentTask = session.tasks[nextIdx];
     await saveSession(session);
 
-    // Load the engine configuration for the current task
     const engineConfig = await getEngine(currentTask.config.engineId);
     if (!engineConfig) {
         logToSession(sessionId, `❌ ERROR: Plugin for '${currentTask.config.engineId}' not found!`, "ERROR");
@@ -675,7 +664,6 @@ async function processQueue(sessionId) {
 
     let tabId = null;
     try {
-        // Load the search page with the correct URL built from the engine config and search term
         const url = buildSearchUrl(currentTask.term, currentTask.config, engineConfig);
         logToSession(sessionId, `🔗 INITIALIZING: ${url}`);
 
@@ -701,7 +689,6 @@ async function processQueue(sessionId) {
             await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
             await sleep(getRandomDelay(2000, 4000));
 
-            // Pre-check for CAPTCHA before doing anything on the page
             let preCheck = await chrome.tabs.sendMessage(tabId, { action: "CHECK_CAPTCHA", payload: { config: engineConfig } }).catch(() => null);
             if (preCheck && preCheck.isCaptcha) {
                 await handleCaptchaEvent(sessionId, tabId);
@@ -714,10 +701,7 @@ async function processQueue(sessionId) {
 
             if (await isPaused(sessionId)) break;
 
-            // Determine the limit (default to 50 if it's missing)
             const serpLimit = session.settings && session.settings.serpLimit ? session.settings.serpLimit : 50;
-
-            // Only save the SERP if the toggle is on AND we haven't hit the limit for this task yet
             const shouldSaveSerp = session.settings && 
                                 (session.settings.saveSerp || session.settings.saveScreenshots || session.settings.saveHtml) && 
                                 (currentTask.pages.length < serpLimit);
@@ -740,21 +724,38 @@ async function processQueue(sessionId) {
 
             if (response && response.data) {
                 const data = response.data;
-                const newOrganic = data.organic.filter(r => !existingUrls.has(r.url));
+                
+                // Handle Organic, Images, and Videos
+                const newOrganic = (data.organic || []).filter(r => !existingUrls.has(r.url));
+                const newImages = (data.images || []).filter(r => !existingUrls.has(r.url));
+                const newVideos = (data.videos || []).filter(r => !existingUrls.has(r.url));
+                
                 newOrganic.forEach(r => existingUrls.add(r.url));
+                newImages.forEach(r => existingUrls.add(r.url));
+                newVideos.forEach(r => existingUrls.add(r.url));
 
                 let finalOrganicForPage = newOrganic;
+                let finalImagesForPage = newImages;
+                let finalVideosForPage = newVideos;
                 
+                // Enforce limits across all result types
                 if (limitMode === "RESULTS") {
                     const remainingQuota = session.globalCount - collectedOrganic;
                     finalOrganicForPage = newOrganic.slice(0, Math.max(0, remainingQuota));
+                    finalImagesForPage = newImages.slice(0, Math.max(0, remainingQuota - finalOrganicForPage.length));
+                    finalVideosForPage = newVideos.slice(0, Math.max(0, remainingQuota - finalOrganicForPage.length - finalImagesForPage.length));
                 }
                 data.organic = finalOrganicForPage;
+                data.images = finalImagesForPage;
+                data.videos = finalVideosForPage;
 
+                // --- NEW DETAILED LOGGING ---
                 const aiFound = (data.ai_overview && data.ai_overview.found) ? "YES" : "NO";
+                const aiSegs = (data.ai_overview && data.ai_overview.segments) ? data.ai_overview.segments.length : 0;
                 const adsCount = data.ads ? data.ads.length : 0;
+                const totalNew = finalOrganicForPage.length + finalImagesForPage.length + finalVideosForPage.length;
 
-                logToSession(sessionId, `📊 P${currentPage}: AI: ${aiFound} | Ads: ${adsCount} | New: ${finalOrganicForPage.length}`);
+                logToSession(sessionId, `📊 P${currentPage}: AI: ${aiFound} (${aiSegs} Segs) | Ads: ${adsCount} | Img: ${finalImagesForPage.length} | Vid: ${finalVideosForPage.length} | Org: ${finalOrganicForPage.length} | New: ${totalNew}`);
 
                 let htmlToStore = null;
                 if (shouldSaveSerp) {
@@ -764,7 +765,7 @@ async function processQueue(sessionId) {
                 await savePageContent(sessionId, nextIdx, currentPage, { html: htmlToStore, screenshot: screenshotData });
                 currentTask.pages.push({ pageNumber: currentPage, results: data });
                 
-                collectedOrganic += finalOrganicForPage.length;
+                collectedOrganic += totalNew;
                 currentTask.totalOrganic = collectedOrganic;
 
                 await saveSession(session);
@@ -831,7 +832,6 @@ async function processQueue(sessionId) {
 
 // --- 8. UTILITIES ---
 function buildSearchUrl(term, taskConfig, engineConfig) {
-    // encodeURIComponent wurde hier entfernt, da searchParams das automatisch (und besser) macht!
     const reqData = engineConfig.request;
     
     let u = reqData.baseUrl.replace("{domain}", taskConfig.domain || "");
@@ -919,7 +919,6 @@ async function handleRetry(sessionId, session, task, errorMsg) {
         task.status = "OPEN";
     }
 
-    // CRITICAL FIX: The database must be updated here!
     await saveSession(session); 
     await sleep(5000);
 }
@@ -983,7 +982,7 @@ async function updateSessionLimit(payload) {
     const s = await getSession(payload.sessionId);
     if (s) {
         s.globalCount = parseInt(payload.limit);
-        if (payload.limitType) s.limitType = payload.limitType; // <--- ADDED
+        if (payload.limitType) s.limitType = payload.limitType;
         await saveSession(s);
         logToSession(payload.sessionId, `🎯 Limit updated to ${s.globalCount} ${s.limitType === 'PAGES' ? 'Pages' : 'Results'}`);
         broadcastSessionStatus(payload.sessionId);
@@ -997,7 +996,7 @@ async function updateSessionStorageSettings(payload) {
 
     if (!session.settings) session.settings = {};
     session.settings.saveSerp = !!saveSerp;
-    if (serpLimit !== undefined) session.settings.serpLimit = serpLimit; // NEW: Save the limit
+    if (serpLimit !== undefined) session.settings.serpLimit = serpLimit;
     session.settings.saveScreenshots = false; 
     session.settings.saveHtml = false;
 

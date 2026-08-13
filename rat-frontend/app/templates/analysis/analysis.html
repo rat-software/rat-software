@@ -8,13 +8,11 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
 <style>
-  /* KORRIGIERTES CSS FÜR TABS */
   .card-header {
     background-color: white;
     padding-bottom: 0 !important;
     border-bottom: 1px solid #dee2e6;
   }
-
   .crd-header-title {
     font-size: 1.1rem;
     font-weight: 600;
@@ -23,53 +21,23 @@
     display: flex;
     align-items: center;
   }
-
   .card-header-tabs {
     margin-bottom: -1px;
     border-bottom: 0;
   }
-
-  .nav-link {
-    color: #6c757d;
-    cursor: pointer;
-  }
-
-  .nav-link:hover {
-    border-color: #e9ecef #e9ecef #dee2e6;
-  }
-
+  .nav-link { color: #6c757d; cursor: pointer; }
+  .nav-link:hover { border-color: #e9ecef #e9ecef #dee2e6; }
   .nav-link.active {
-    color: #000;
-    font-weight: 600;
-    background-color: #fff;
+    color: #000; font-weight: 600; background-color: #fff;
     border-color: #dee2e6 #dee2e6 #fff;
   }
-
-  /* NEW: Custom Dashboard Styles */
-  .drag-handle {
-    cursor: grab;
-    color: #adb5bd;
-    margin-right: 10px;
-  }
-  .drag-handle:active {
-    cursor: grabbing;
-  }
-  .sortable-ghost {
-    opacity: 0.4;
-    border: 2px dashed #007bff;
-    background-color: #f8f9fa;
-  }
+  .drag-handle { cursor: grab; color: #adb5bd; margin-right: 10px; }
+  .drag-handle:active { cursor: grabbing; }
+  .sortable-ghost { opacity: 0.4; border: 2px dashed #007bff; background-color: #f8f9fa; }
+  .tooltip-icon { color: #6c757d; margin-left: 8px; font-size: 0.9rem; cursor: help; }
+  .tooltip-icon:hover { color: #0d6efd; }
   
-  /* Tooltip Icon Styling */
-  .tooltip-icon {
-      color: #6c757d;
-      margin-left: 8px;
-      font-size: 0.9rem;
-      cursor: help;
-  }
-  .tooltip-icon:hover {
-      color: #0d6efd;
-  }
+  .rat-pagination-info { font-size: 0.85rem; font-weight: 600; color: #6c757d; }
 </style>
 {% endblock %}
 
@@ -93,13 +61,18 @@
       </button>
       <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 250px;">
         <li><h6 class="dropdown-header">Show / Hide Cards</h6></li>
-        <div id="widget-toggle-list" style="max-height: 300px; overflow-y: auto;">
-          </div>
+        <div id="widget-toggle-list" style="max-height: 300px; overflow-y: auto;"></div>
         <li><hr class="dropdown-divider"></li>
         <li><button class="dropdown-item text-danger fw-bold" onclick="resetDashboardLayout()"><i class="fa-solid fa-rotate-right me-2"></i>Reset Layout</button></li>
       </ul>
     </div>
-
+    {% if has_classifier_errors %}
+    <form action="{{ url_for('retry_classifier_errors', id=study.id) }}" method="POST" class="d-inline-block me-2" onsubmit="return confirm('Do you want to retry all failed AI and classifier tasks?\n\nTip: If you encountered invalid JSON errors, make sure you increased the Max Tokens limit in the Study Settings before retrying.');">
+      <button type="submit" class="btn btn-warning fw-bold text-dark shadow-sm">
+        <i class="fa-solid fa-rotate-right me-2"></i> Retry Errors
+      </button>
+    </form>
+    {% endif %}
     <a href="{{ url_for('export', id=study.id) }}" class="btn btn-primary fw-bold">
       <i class="fa-solid fa-file-export me-2"></i> Export Report
     </a>
@@ -112,8 +85,7 @@
     <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="crd-header-title drag-handle">
-            <i class="fa-solid fa-grip-vertical"></i> 
-            Results Statistics
+            <i class="fa-solid fa-grip-vertical"></i> Results Statistics
             <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Overview of collected data amounts and processing status."></i>
         </div>
         <div class="py-2">
@@ -132,9 +104,8 @@
     <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="crd-header-title drag-handle">
-            <i class="fa-solid fa-grip-vertical"></i> 
-            Evaluation Statistics
-            <i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Summary of human assessment progress and completion rates."></i>
+            <i class="fa-solid fa-grip-vertical"></i> Evaluation Statistics
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Summary of human assessment progress and completion rates."></i>
         </div>
         <div class="py-2">
           <table class="table table-striped table-borderless">
@@ -146,10 +117,13 @@
           {% if evaluation_stats.breakdown %}
           <hr class="my-2">
           <div class="fw-bold small mb-2 text-muted">Completed Evaluations by Type</div>
-          <table class="table table-striped table-borderless table-sm">
+          <table class="table table-striped table-borderless table-sm rat-datatable">
+            <thead class="table-light"><tr><th>Type</th><th>Count</th></tr></thead>
+            <tbody>
             {% for item in evaluation_stats.breakdown %}
             <tr><td>{{ item.type }}</td><td>{{ item.count }}</td></tr>
             {% endfor %}
+            </tbody>
           </table>
           <div class="mt-3" style="max-width: 250px; margin: auto;">
             <canvas id="evaluationChart"></canvas>
@@ -161,64 +135,54 @@
   </div>
   {% endif %}
   
-	{% if query_eval_stats %}
-	  <div class="col-12 pb-4 dashboard-widget" data-widget-id="w-query-eval" data-widget-title="Query Evaluation Monitor">
-		<div class="card h-100 shadow-sm border-0">
-		  <div class="card-body">
-			<div class="crd-header-title drag-handle">
-				<i class="fa-solid fa-grip-vertical"></i> 
-				Query Evaluation Monitor
-				<i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Live-Tracking der Arbeitslast: Zeigt an, wie viele Teilnehmer eine bestimmte Suchanfrage bereits bewertet haben. Hilft bei der Überprüfung des Load-Balancers."></i>
-			</div>
-			
-			<div class="table-responsive mt-3">
-			  <table class="table table-hover table-striped table-sm border" id="queryEvalTable">
-				<thead class="table-light">
-				  <tr>
-					<th onclick="sortTable(0)" style="cursor:pointer; width: 35%;">Search Query <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
-					<th onclick="sortTable(1)" style="cursor:pointer;" class="text-center">Items <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
-					<th onclick="sortTable(2)" style="cursor:pointer;" class="text-center">Users Finished <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
-					<th onclick="sortTable(3)" style="cursor:pointer;" class="text-center">Active (Open) <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
-					<th onclick="sortTable(4)" style="cursor:pointer;">Progress <i class="fa-solid fa-sort ms-1 text-muted"></i></th>
-				  </tr>
-				</thead>
-				<tbody id="queryEvalTableBody">
-				  {% for q in query_eval_stats %}
-				  <tr>
-					<td class="fw-bold">{{ q.query_text }}</td>
-					<td class="text-center">{{ q['items'] }}</td>
-					<td class="text-center">
-						<span class="badge {% if q.participants_count > 0 %}bg-success{% else %}bg-secondary{% endif %}">
-							<i class="fa-solid fa-user me-1"></i> {{ q.participants_count }}
-						</span>
-					</td>
-					<td class="text-center text-warning fw-bold">{{ q.open_answers }}</td>
-					<td data-sort="{{ q.progress_pct }}">
-					  <div class="d-flex align-items-center">
-						<div class="progress flex-grow-1 me-2" style="height: 10px;">
-						  <div class="progress-bar bg-primary" style="width: {{ q.progress_pct }}%;"></div>
-						</div>
-						<span class="small text-muted" style="min-width: 40px;">{{ q.progress_pct }}%</span>
-					  </div>
-					</td>
-				  </tr>
-				  {% endfor %}
-				</tbody>
-			  </table>
-			</div>
-			
-			<div class="d-flex justify-content-between align-items-center mt-2">
-				<span class="small text-muted" id="queryPageInfo"></span>
-				<div class="btn-group btn-group-sm">
-					<button class="btn btn-outline-secondary" id="btnPrevQuery" onclick="changePage(-1)">Previous</button>
-					<button class="btn btn-outline-secondary" id="btnNextQuery" onclick="changePage(1)">Next</button>
-				</div>
-			</div>
-
-		  </div>
-		</div>
-	  </div>
-	{% endif %}	  
+  {% if query_eval_stats %}
+  <div class="col-12 pb-4 dashboard-widget" data-widget-id="w-query-eval" data-widget-title="Query Evaluation Monitor">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-body">
+        <div class="crd-header-title drag-handle">
+            <i class="fa-solid fa-grip-vertical"></i> Query Evaluation Monitor
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Live-Tracking der Arbeitslast: Zeigt an, wie viele Teilnehmer eine bestimmte Suchanfrage bereits bewertet haben. Hilft bei der Überprüfung des Load-Balancers."></i>
+        </div>
+        
+        <div class="table-responsive mt-3">
+          <table class="table table-hover table-striped table-sm border rat-datatable">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 35%;">Search Query</th>
+                <th class="text-center">Items</th>
+                <th class="text-center">Users Finished</th>
+                <th class="text-center">Active (Open)</th>
+                <th>Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for q in query_eval_stats %}
+              <tr>
+                <td class="fw-bold">{{ q.query_text }}</td>
+                <td class="text-center">{{ q['items'] }}</td>
+                <td class="text-center">
+                    <span class="badge {% if q.participants_count > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                        <i class="fa-solid fa-user me-1"></i> {{ q.participants_count }}
+                    </span>
+                </td>
+                <td class="text-center text-warning fw-bold">{{ q.open_answers }}</td>
+                <td data-sort="{{ q.progress_pct }}">
+                  <div class="d-flex align-items-center">
+                    <div class="progress flex-grow-1 me-2" style="height: 10px;">
+                      <div class="progress-bar bg-primary" style="width: {{ q.progress_pct }}%;"></div>
+                    </div>
+                    <span class="small text-muted" style="min-width: 40px;">{{ q.progress_pct }}%</span>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}	  
 
   {% if answer_stats %}
   {% for question in answer_stats %}
@@ -226,9 +190,8 @@
     <div class="card h-100 shadow-sm border-0">
       <div class="card-header bg-white border-bottom-0 pt-3">
         <div class="crd-header-title drag-handle">
-            <i class="fa-solid fa-grip-vertical"></i> 
-            {{ question.title }}
-            <i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Distribution of participant answers for this specific question, categorized by result type."></i>
+            <i class="fa-solid fa-grip-vertical"></i> {{ question.title }}
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Distribution of participant answers for this specific question."></i>
         </div>
         <ul class="nav nav-tabs card-header-tabs" id="qTab-{{ question.question_id }}" role="tablist">
           {% for type_name in question.by_type.keys() %}
@@ -251,11 +214,11 @@
 
             <div class="py-2">
               {% if question.type in ['likert_scale', 'true_false', 'multiple_choice'] %}
-              <table class="table table-striped table-borderless table-sm">
-                <thead><tr><th>Answer</th>{% if question.type == 'likert_scale' %}<th>Value</th>{% endif %}<th>Count</th><th>Share</th></tr></thead>
+              <table class="table table-striped table-borderless table-sm rat-datatable">
+                <thead class="table-light"><tr><th>Answer</th>{% if question.type == 'likert_scale' %}<th>Value</th>{% endif %}<th>Count</th><th>Share</th></tr></thead>
                 <tbody>
                   {% for item in type_data.distribution %}
-                  <tr><td>{{ item.label }}</td>{% if question.type == 'likert_scale' %}<td>{{ item.value }}</td>{% endif %}<td>{{ item.count }}</td><td>{{ item.percentage | round(1) }}%</td></tr>
+                  <tr><td>{{ item.label }}</td>{% if question.type == 'likert_scale' %}<td>{{ item.value }}</td>{% endif %}<td>{{ item.count }}</td><td data-sort="{{ item.percentage }}">{{ item.percentage | round(1) }}%</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -311,19 +274,20 @@
   {% endif %}
 
   {% if overlap_list %}
-  <div class="col-12 pb-4 dashboard-widget" data-widget-id="w-overlap" data-widget-title="Results Overlap">
+  <div class="col-12 pb-4 dashboard-widget" data-widget-id="w-overlap" data-widget-title="Organic Results Overlap">
     <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="crd-header-title drag-handle">
-            <i class="fa-solid fa-grip-vertical"></i> 
-            Overlap between Search Engines
-            <i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Measures how many exact same URLs appear in multiple search engines. High overlap means the engines deliver similar results."></i>
+            <i class="fa-solid fa-grip-vertical"></i> Organic Results Overlap between Search Engines
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Measures how many exact same URLs appear in multiple search engines."></i>
         </div>
-        <table class="table table-striped table-borderless mt-2">
-          <tr><th>Search Engine Pair</th><th>SE 1 exclusive</th><th>SE 2 exclusive</th><th>Overlap</th><th>Total</th></tr>
+        <table class="table table-striped table-borderless mt-2 rat-datatable">
+          <thead class="table-light"><tr><th>Search Engine Pair</th><th>SE 1 exclusive</th><th>SE 2 exclusive</th><th>Overlap</th><th>Total</th></tr></thead>
+          <tbody>
           {% for overlap in overlap_list %}
           <tr><td>{{ overlap["SE_Pair"] }}</td><td>{{ overlap["SE_1 exclusive"] }}</td><td>{{ overlap["SE_2 exclusive"] }}</td><td>{{ overlap["Overlap"] }}</td><td>{{ overlap["Total"] }}</td></tr>
           {% endfor %}
+          </tbody>
         </table>
         <div class="mt-4"><canvas id="overlapChart"></canvas></div>
       </div>
@@ -332,27 +296,88 @@
   {% endif %}
 
   {% if classifier_stats %}
-  {% for classifier_name, data_bundle in classifier_stats.items() %}
+  {% for classifier_name, types_bundle in classifier_stats.items() %}
   <div class="col-md-6 pb-4 dashboard-widget" data-widget-id="w-class-{{ classifier_name | slugify }}" data-widget-title="Class: {{ classifier_name }}">
     <div class="card h-100 shadow-sm border-0">
-      <div class="card-body d-flex flex-column">
+      
+      <div class="card-header bg-white border-bottom-0 pt-3">
         <div class="crd-header-title drag-handle">
-            <i class="fa-solid fa-grip-vertical"></i> 
-            Classifier: {{ classifier_name }}
-            <i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Distribution of scores/labels assigned by this automated background algorithm."></i>
+            <i class="fa-solid fa-grip-vertical"></i> Classifier: {{ classifier_name }}
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Distribution of scores/labels assigned by this automated algorithm."></i>
         </div>
-        <div class="py-2 flex-grow-1">
-          <table class="table table-striped table-borderless">
-            <thead><tr><th>Group</th><th>Count</th><th>Share</th></tr></thead>
-            <tbody>
-              {% for group_name, group_data in data_bundle.grouped_stats.items() %}
-              {% if group_data.count > 0 %}
-              <tr><td>{{ group_name | replace("_", " ") | capitalize }}</td><td>{{ group_data.count }}</td><td>{{ group_data.percentage | round(1) }}%</td></tr>
+        <ul class="nav nav-tabs card-header-tabs" id="clfTab-{{ classifier_name | slugify }}" role="tablist">
+          {% for source_type in types_bundle.source_types.keys() | sort %}
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {% if loop.first %}active{% endif %}"
+              id="tab-clf-{{ classifier_name | slugify }}-{{ source_type | slugify }}" data-bs-toggle="tab"
+              data-bs-target="#pane-clf-{{ classifier_name | slugify }}-{{ source_type | slugify }}" type="button" role="tab">
+              {{ source_type }}
+            </button>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="card-body d-flex flex-column pt-3">
+        <div class="tab-content flex-grow-1" id="clfTabContent-{{ classifier_name | slugify }}">
+          {% for source_type in types_bundle.source_types.keys() | sort %}
+          {% set source_data = types_bundle.source_types[source_type] %}
+          <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+            id="pane-clf-{{ classifier_name | slugify }}-{{ source_type | slugify }}" role="tabpanel">
+
+            <div class="py-2">
+              {% if types_bundle.is_json %}
+                  <div class="mb-3 d-flex align-items-center">
+                      <label class="me-2 fw-bold small text-muted">Group by Key:</label>
+                      <select class="form-select form-select-sm w-auto json-key-selector" data-target="clf-container-{{ classifier_name | slugify }}-{{ source_type | slugify }}">
+                          {% for key in types_bundle.available_keys %}
+                          <option value="{{ key | slugify }}">{{ key }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+                  <div id="clf-container-{{ classifier_name | slugify }}-{{ source_type | slugify }}">
+                      {% for key in types_bundle.available_keys %}
+                      {% set key_data = source_data.json_keys.get(key) %}
+                      <div class="json-key-view" data-key="{{ key | slugify }}" {% if not loop.first %}style="display: none;"{% endif %}>
+                          {% if key_data %}
+                          <table class="table table-striped table-borderless rat-datatable">
+                            <thead class="table-light"><tr><th>Group</th><th>Count</th><th>Share</th></tr></thead>
+                            <tbody>
+                              {% for group_name, group_data in key_data.grouped_stats.items() %}
+                              <tr>
+                                <td style="max-width:300px; white-space:normal; word-wrap:break-word;">{{ group_name | replace("_", " ") | capitalize }}</td>
+                                <td>{{ group_data.count }}</td>
+                                <td data-sort="{{ group_data.percentage }}">{{ group_data.percentage | round(1) }}%</td>
+                              </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                          <div class="mt-3"><canvas id="classifierChart-{{ classifier_name | slugify }}-{{ source_type | slugify }}-{{ key | slugify }}"></canvas></div>
+                          {% else %}
+                          <p class="text-muted small">No data for this key in this source.</p>
+                          {% endif %}
+                      </div>
+                      {% endfor %}
+                  </div>
+              {% else %}
+                  {% set classic_data = source_data.classic %}
+                  <table class="table table-striped table-borderless rat-datatable">
+                    <thead class="table-light"><tr><th>Group</th><th>Count</th><th>Share</th></tr></thead>
+                    <tbody>
+                      {% for group_name, group_data in classic_data.grouped_stats.items() %}
+                      <tr>
+                        <td style="max-width:300px; white-space:normal; word-wrap:break-word;">{{ group_name | replace("_", " ") | capitalize }}</td>
+                        <td>{{ group_data.count }}</td>
+                        <td data-sort="{{ group_data.percentage }}">{{ group_data.percentage | round(1) }}%</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  <div class="mt-3"><canvas id="classifierChart-{{ classifier_name | slugify }}-{{ source_type | slugify }}"></canvas></div>
               {% endif %}
-              {% endfor %}
-            </tbody>
-          </table>
-          <div class="mt-3"><canvas id="classifierChart-{{ classifier_name | slugify }}"></canvas></div>
+            </div>
+          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -360,38 +385,35 @@
   {% endfor %}
   {% endif %}
 
-{% if top_domains %}
+  {% if top_domains %}
   {% if top_domains.standard_results %}
   <div class="col-md-6 pb-4 dashboard-widget" data-widget-id="w-dom-org" data-widget-title="Top Domains (Organic)">
     <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="crd-header-title drag-handle">
-            <i class="fa-solid fa-grip-vertical"></i> 
-            Top Domains (Organic)
-            <i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Most frequent domains across all organic results collected by the extension."></i>
+            <i class="fa-solid fa-grip-vertical"></i> Top Domains (Organic)
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Most frequent domains across all organic results."></i>
         </div>
         <div class="py-2">
-          <table class="table table-striped table-borderless table-sm" style="table-layout: fixed;">
-            <thead>
-              <tr>
-                <th style="width: 55%;">Domain</th>
-                <th style="width: 15%;">Count</th>
-                <th style="width: 15%;">Share</th>
-                <th style="width: 15%;">Avg. Pos</th>
-              </tr>
+          <table class="table table-striped table-borderless table-sm rat-datatable" style="table-layout: fixed;">
+            <thead class="table-light">
+              <tr><th style="width: 55%;">Domain</th><th style="width: 15%;">Count</th><th style="width: 15%;">Share</th><th style="width: 15%;">Avg. Pos</th></tr>
             </thead>
             <tbody>
               {% for item in top_domains.standard_results %}
               <tr>
                 <td class="text-truncate" title="{{ item.domain }}">{{ item.domain }}</td>
                 <td>{{ item.count }}</td>
-                <td>{{ item.percentage | round(1) }}%</td>
-                <td>{% if item.avg_position is not none %}{{ item.avg_position | round(1) }}{% else %}N/A{% endif %}</td>
+                <td data-sort="{{ item.percentage }}">{{ item.percentage | round(1) }}%</td>
+                <td data-sort="{% if item.avg_position is not none %}{{ item.avg_position }}{% else %}999{% endif %}">{% if item.avg_position is not none %}{{ item.avg_position | round(1) }}{% else %}N/A{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
-          <div class="mt-4"><canvas id="topDomainsChart"></canvas></div>
+          <div class="mt-4 pt-3 border-top">
+            <p class="text-muted small fw-bold mb-2"><i class="fa-solid fa-chart-bar me-1"></i> Top 10 Overview</p>
+            <canvas id="topDomainsChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -403,30 +425,28 @@
     <div class="card h-100 shadow-sm border-0">
       <div class="card-body">
         <div class="crd-header-title drag-handle">
-            <i class="fa-solid fa-grip-vertical"></i> 
-            Top Domains (AI Sources)
-            <i class="fa-solid fa-circle-question tooltip-icon " data-bs-toggle="tooltip" data-bs-placement="top" title="Most frequent domains cited as references within the collected AI Overviews."></i>
+            <i class="fa-solid fa-grip-vertical"></i> Top Domains (AI Sources)
+            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Most frequent domains cited as references within AI Overviews."></i>
         </div>
         <div class="py-2">
-          <table class="table table-striped table-borderless table-sm" style="table-layout: fixed;">
-            <thead>
-              <tr>
-                <th style="width: 55%;">Domain</th>
-                <th style="width: 15%;">Count</th>
-                <th style="width: 15%;">Share</th>
-              </tr>
+          <table class="table table-striped table-borderless table-sm rat-datatable" style="table-layout: fixed;">
+            <thead class="table-light">
+              <tr><th style="width: 55%;">Domain</th><th style="width: 15%;">Count</th><th style="width: 15%;">Share</th></tr>
             </thead>
             <tbody>
               {% for item in top_domains.ai_sources %}
               <tr>
                 <td class="text-truncate" title="{{ item.domain }}">{{ item.domain }}</td>
                 <td>{{ item.count }}</td>
-                <td>{{ item.percentage | round(1) }}%</td>
+                <td data-sort="{{ item.percentage }}">{{ item.percentage | round(1) }}%</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
-          <div class="mt-4"><canvas id="topDomainsAiChart"></canvas></div>
+          <div class="mt-4 pt-3 border-top">
+            <p class="text-muted small fw-bold mb-2"><i class="fa-solid fa-chart-bar me-1"></i> Top 10 Overview</p>
+            <canvas id="topDomainsAiChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -454,15 +474,12 @@
     function saveDashboardLayout() {
       const layout = [];
       document.querySelectorAll('.dashboard-widget').forEach(widget => {
-        layout.push({
-          id: widget.dataset.widgetId,
-          visible: widget.style.display !== 'none'
-        });
+        layout.push({ id: widget.dataset.widgetId, visible: widget.style.display !== 'none' });
       });
       localStorage.setItem(storageKey, JSON.stringify(layout));
     }
 
-    function resetDashboardLayout() {
+    window.resetDashboardLayout = function() {
       localStorage.removeItem(storageKey);
       location.reload(); 
     }
@@ -515,59 +532,43 @@
     });
 
     // --- CHART LOGIC ---
-    function slugify(text) {
-      return text.toString().toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
-    }
-
-    function truncateLabel(text, maxLength = 35) {
-        if (!text) return "";
-        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-    }
+    function slugify(text) { return text.toString().toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, ''); }
+    function truncateLabel(text, maxLength = 35) { return (!text) ? "" : (text.length > maxLength ? text.substring(0, maxLength) + '...' : text); }
 
     {% if evaluation_stats and evaluation_stats.breakdown %}
     const evalData = {{ evaluation_stats.breakdown | tojson }};
     new Chart(document.getElementById('evaluationChart'), {
       type: 'doughnut',
-      data: {
-        labels: evalData.map(item => item.type),
-        datasets: [{ data: evalData.map(item => item.count), backgroundColor: ['rgba(40, 167, 69, 0.7)', 'rgba(220, 53, 69, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(0, 123, 255, 0.7)'] }]
-      },
+      data: { labels: evalData.map(item => item.type), datasets: [{ data: evalData.map(item => item.count), backgroundColor: ['rgba(40, 167, 69, 0.7)', 'rgba(220, 53, 69, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(0, 123, 255, 0.7)'] }] },
       options: { responsive: true, plugins: { legend: { position: 'top' } } }
     });
     {% endif %}
 
     {% if top_domains and top_domains.standard_results %}
-    const topDomainsData = {{ top_domains.standard_results | tojson }};
+    // LIMIT ON TOP 10 FOR THE CHART
+    const topDomainsData = {{ top_domains.standard_results | tojson }}.slice(0, 10);
     new Chart(document.getElementById('topDomainsChart'), {
       type: 'bar',
-      data: { 
-          labels: topDomainsData.map(i => truncateLabel(i.domain)), 
-          datasets: [{ label: 'Total Count', data: topDomainsData.map(i => i.count), backgroundColor: 'rgba(0, 123, 255, 0.7)' }] 
-      },
+      data: { labels: topDomainsData.map(i => truncateLabel(i.domain)), datasets: [{ label: 'Total Count', data: topDomainsData.map(i => i.count), backgroundColor: 'rgba(0, 123, 255, 0.7)' }] },
       options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
     });
     {% endif %}
-
 
     {% if top_domains and top_domains.ai_sources %}
-    const topDomainsAiData = {{ top_domains.ai_sources | tojson }};
+    // LIMIT ON TOP 10 FOR THE CHART
+    const topDomainsAiData = {{ top_domains.ai_sources | tojson }}.slice(0, 10);
     new Chart(document.getElementById('topDomainsAiChart'), {
       type: 'bar',
-      data: { 
-          labels: topDomainsAiData.map(i => truncateLabel(i.domain)), 
-          datasets: [{ label: 'Total Count', data: topDomainsAiData.map(i => i.count), backgroundColor: 'rgba(40, 167, 69, 0.7)' }] 
-      },
+      data: { labels: topDomainsAiData.map(i => truncateLabel(i.domain)), datasets: [{ label: 'Total Count', data: topDomainsAiData.map(i => i.count), backgroundColor: 'rgba(40, 167, 69, 0.7)' }] },
       options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
     });
     {% endif %}
-
 
     {% if overlap_list %}
     const overlapData = {{ overlap_list | tojson }};
     const overlapCanvas = document.getElementById('overlapChart');
     overlapCanvas.parentElement.style.height = `${80 + (overlapData.length * 90)}px`;
     const toPercent = (value, total) => (total > 0 ? (value / total) * 100 : 0);
-
     new Chart(overlapCanvas, {
       type: 'bar',
       data: {
@@ -584,33 +585,85 @@
 
     {% if classifier_stats %}
     const classifierData = {{ classifier_stats | tojson }};
-    for (const classifierName in classifierData) {
-      const dataBundle = classifierData[classifierName];
-      if (dataBundle.numeric_raw_stats && dataBundle.numeric_raw_stats.length > 0) {
-        const canvas = document.getElementById(`classifierChart-${slugify(classifierName)}`);
-        if (canvas) {
-          const numBins = 20; const binWidth = 100 / numBins;
-          const bins = Array(numBins).fill(0); const binLabels = [];
-          for (const item of dataBundle.numeric_raw_stats) {
-            const binIndex = Math.min(numBins - 1, Math.floor(item.value / binWidth));
-            bins[binIndex] += item.count;
-          }
-          for (let i = 0; i < numBins; i++) {
-            const start = i * binWidth;
-            binLabels.push(`${start}-${start + binWidth - 1}`);
-          }
-          new Chart(canvas, {
-            type: 'bar',
-            data: {
-              labels: binLabels,
-              datasets: [{ label: 'Count', data: bins, backgroundColor: 'rgba(23, 162, 184, 0.7)', borderColor: 'rgba(23, 162, 184, 1)', borderWidth: 1 },
-              { type: 'line', label: 'Trend', data: bins, borderColor: 'rgba(220, 53, 69, 0.9)', fill: false, tension: 0.4 }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-          });
+    
+    function renderClassifierChart(canvasId, dataBundle) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !dataBundle || !dataBundle.numeric_raw_stats || dataBundle.numeric_raw_stats.length === 0) return;
+
+        if (dataBundle.needs_bucketing) {
+            const numBins = 20; const binWidth = 100 / numBins;
+            const bins = Array(numBins).fill(0); const binLabels = [];
+            for (const item of dataBundle.numeric_raw_stats) {
+              const binIndex = Math.min(numBins - 1, Math.floor(item.value / binWidth));
+              bins[binIndex] += item.count;
+            }
+            for (let i = 0; i < numBins; i++) {
+              const start = i * binWidth;
+              binLabels.push(`${start}-${start + binWidth - 1}`);
+            }
+            new Chart(canvas, {
+              type: 'bar',
+              data: {
+                labels: binLabels,
+                datasets: [{ label: 'Count', data: bins, backgroundColor: 'rgba(23, 162, 184, 0.7)', borderColor: 'rgba(23, 162, 184, 1)', borderWidth: 1 },
+                { type: 'line', label: 'Trend', data: bins, borderColor: 'rgba(220, 53, 69, 0.9)', fill: false, tension: 0.4 }]
+              },
+              options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        } else {
+            const labels = [];
+            const counts = [];
+            for (const item of dataBundle.numeric_raw_stats) {
+                labels.push(item.value.toString());
+                counts.push(item.count);
+            }
+            new Chart(canvas, {
+              type: 'bar',
+              data: {
+                labels: labels,
+                datasets: [{ label: 'Count', data: counts, backgroundColor: 'rgba(23, 162, 184, 0.7)', borderColor: 'rgba(23, 162, 184, 1)', borderWidth: 1 }]
+              },
+              options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
         }
+    }
+
+    for (const classifierName in classifierData) {
+      const typesBundle = classifierData[classifierName];
+      for (const sourceType in typesBundle.source_types) {
+          const sourceData = typesBundle.source_types[sourceType];
+          
+          if (typesBundle.is_json) {
+              for (const key in sourceData.json_keys) {
+                  const dataBundle = sourceData.json_keys[key];
+                  const canvasId = `classifierChart-${slugify(classifierName)}-${slugify(sourceType)}-${slugify(key)}`;
+                  renderClassifierChart(canvasId, dataBundle);
+              }
+          } else {
+              const dataBundle = sourceData.classic;
+              const canvasId = `classifierChart-${slugify(classifierName)}-${slugify(sourceType)}`;
+              renderClassifierChart(canvasId, dataBundle);
+          }
       }
     }
+
+    // UI Toggle for JSON Key Groups
+    document.querySelectorAll('.json-key-selector').forEach(select => {
+        select.addEventListener('change', function() {
+            const targetContainerId = this.dataset.target;
+            const selectedKey = this.value;
+            const container = document.getElementById(targetContainerId);
+            if (container) {
+                container.querySelectorAll('.json-key-view').forEach(view => {
+                    if (view.dataset.key === selectedKey) {
+                        view.style.display = 'block';
+                    } else {
+                        view.style.display = 'none';
+                    }
+                });
+            }
+        });
+    });
     {% endif %}
 
     {% if answer_stats %}
@@ -638,18 +691,15 @@
             const binWidth = binCount > 0 ? (max - min) / binCount : 1;
             const bins = Array(binCount).fill(0);
             const binLabels = [];
-
             values.forEach(val => {
               let binIndex = binWidth > 0 ? Math.floor((val - min) / binWidth) : 0;
               if (val === max) binIndex = binCount - 1;
               if (binIndex >= 0 && binIndex < binCount) bins[binIndex]++;
             });
-
             for (let i = 0; i < binCount; i++) {
               const binStart = min + i * binWidth;
               binLabels.push(`${binStart.toFixed(0)}-${(binStart + binWidth).toFixed(0)}`);
             }
-
             new Chart(canvas, {
               type: 'bar',
               data: { labels: binLabels, datasets: [{ label: 'Number of Answers', data: bins, backgroundColor: 'rgba(0, 123, 255, 0.7)' }] },
@@ -684,74 +734,115 @@
     });
     {% endif %}
   });
-  
-  // Vanilla JS Paginierung und Sortierung für die Query Tabelle
-    let currentQPage = 1;
-    const rowsPerPage = 10;
-    let tableRows = [];
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const tbody = document.getElementById("queryEvalTableBody");
-        if(tbody) {
-            tableRows = Array.from(tbody.getElementsByTagName("tr"));
-            renderTable();
-        }
-    });
 
-    function renderTable() {
-        const tbody = document.getElementById("queryEvalTableBody");
-        const pageInfo = document.getElementById("queryPageInfo");
-        const totalPages = Math.ceil(tableRows.length / rowsPerPage);
-        
-        // Hide all
-        tableRows.forEach(row => row.style.display = "none");
-        
-        // Show current page
-        const start = (currentQPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        tableRows.slice(start, end).forEach(row => row.style.display = "");
-        
-        // Update info & buttons
-        pageInfo.innerText = `Showing ${start + 1} to ${Math.min(end, tableRows.length)} of ${tableRows.length} queries`;
-        document.getElementById("btnPrevQuery").disabled = currentQPage === 1;
-        document.getElementById("btnNextQuery").disabled = currentQPage === totalPages || totalPages === 0;
-        
-        // Append sorted rows
-        tableRows.forEach(row => tbody.appendChild(row));
-    }
+  // --- GENERIC TABLE PAGINATION & SORTING LOGIC ---
+  document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll('.rat-datatable').forEach(table => {
+          initRatTable(table);
+      });
+  });
 
-    function changePage(direction) {
-        currentQPage += direction;
-        renderTable();
-    }
+  function initRatTable(table) {
+      const tbody = table.querySelector('tbody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const rowsPerPage = 10;
+      
+      let currentPage = 1;
+      let renderFunc = null;
 
-    function sortTable(columnIndex) {
-        const isNumeric = [1, 2, 3, 4].includes(columnIndex);
-        let ascending = document.getElementById("queryEvalTable").dataset.sortOrder !== "asc";
-        
-        tableRows.sort((a, b) => {
-            let valA = a.cells[columnIndex].innerText.trim();
-            let valB = b.cells[columnIndex].innerText.trim();
-            
-            // Für die Progress-Bar Spalte das data-sort Attribut verwenden
-            if(columnIndex === 4) {
-                valA = parseFloat(a.cells[columnIndex].getAttribute('data-sort'));
-                valB = parseFloat(b.cells[columnIndex].getAttribute('data-sort'));
-            } else if (isNumeric) {
-                valA = parseFloat(valA.replace(/[^0-9.-]+/g,"")) || 0;
-                valB = parseFloat(valB.replace(/[^0-9.-]+/g,"")) || 0;
-            }
+      if (rows.length > rowsPerPage) {
+          // Pagination UI zusammenbauen
+          const wrapper = document.createElement('div');
+          wrapper.className = 'd-flex justify-content-between align-items-center mt-3 pt-2 border-top';
+          
+          const info = document.createElement('span');
+          info.className = 'rat-pagination-info';
+          
+          const btnGroup = document.createElement('div');
+          btnGroup.className = 'btn-group btn-group-sm';
+          
+          const prevBtn = document.createElement('button');
+          prevBtn.className = 'btn btn-outline-secondary';
+          prevBtn.innerHTML = '<i class="fa-solid fa-angle-left"></i> Prev';
+          
+          const nextBtn = document.createElement('button');
+          nextBtn.className = 'btn btn-outline-secondary';
+          nextBtn.innerHTML = 'Next <i class="fa-solid fa-angle-right"></i>';
 
-            if (valA < valB) return ascending ? -1 : 1;
-            if (valA > valB) return ascending ? 1 : -1;
-            return 0;
-        });
+          btnGroup.appendChild(prevBtn);
+          btnGroup.appendChild(nextBtn);
+          wrapper.appendChild(info);
+          wrapper.appendChild(btnGroup);
+          table.parentNode.insertBefore(wrapper, table.nextSibling);
 
-        document.getElementById("queryEvalTable").dataset.sortOrder = ascending ? "asc" : "desc";
-        currentQPage = 1; // Nach dem Sortieren auf Seite 1 zurückspringen
-        renderTable();
-    }
-	
-  
+          renderFunc = function() {
+              const totalPages = Math.ceil(rows.length / rowsPerPage);
+              rows.forEach(r => r.style.display = 'none');
+              
+              const start = (currentPage - 1) * rowsPerPage;
+              const end = start + rowsPerPage;
+              rows.slice(start, end).forEach(r => r.style.display = '');
+
+              info.innerText = `Showing ${start + 1} to ${Math.min(end, rows.length)} of ${rows.length}`;
+              prevBtn.disabled = currentPage === 1;
+              nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+              rows.forEach(r => tbody.appendChild(r)); // DOM-Reihenfolge beibehalten
+          };
+
+          prevBtn.addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderFunc(); }});
+          nextBtn.addEventListener('click', () => { if(currentPage < Math.ceil(rows.length / rowsPerPage)) { currentPage++; renderFunc(); }});
+      }
+
+      const headers = table.querySelectorAll('thead th');
+      headers.forEach((th, index) => {
+          if(th.classList.contains('no-sort')) return;
+          
+          th.style.cursor = 'pointer';
+          th.classList.add('user-select-none');
+          if(!th.querySelector('i.fa-sort')) {
+              th.innerHTML += ' <i class="fa-solid fa-sort ms-1 text-muted" style="font-size:0.8em"></i>';
+          }
+
+          th.addEventListener('click', () => {
+              const ascending = th.dataset.sortOrder !== 'asc';
+              headers.forEach(h => h.dataset.sortOrder = '');
+              th.dataset.sortOrder = ascending ? 'asc' : 'desc';
+
+              rows.sort((a, b) => {
+                  let cellA = a.cells[index];
+                  let cellB = b.cells[index];
+                  if(!cellA || !cellB) return 0;
+
+                  let valA = cellA.getAttribute('data-sort') || cellA.innerText.trim();
+                  let valB = cellB.getAttribute('data-sort') || cellB.innerText.trim();
+
+                  const isNumA = /^[-0-9.,%\s]+$/.test(valA);
+                  const isNumB = /^[-0-9.,%\s]+$/.test(valB);
+
+                  if(isNumA && isNumB) {
+                      let numA = parseFloat(valA.replace(/[^0-9.-]+/g,""));
+                      let numB = parseFloat(valB.replace(/[^0-9.-]+/g,""));
+                      if(!isNaN(numA) && !isNaN(numB)) {
+                          return ascending ? numA - numB : numB - numA;
+                      }
+                  }
+
+                  valA = valA.toLowerCase(); 
+                  valB = valB.toLowerCase();
+                  if (valA < valB) return ascending ? -1 : 1;
+                  if (valA > valB) return ascending ? 1 : -1;
+                  return 0;
+              });
+
+              currentPage = 1;
+              if(renderFunc) renderFunc();
+              else rows.forEach(r => tbody.appendChild(r));
+          });
+      });
+
+      if(renderFunc) renderFunc();
+  }
 </script>
 {% endblock %}

@@ -1,6 +1,8 @@
 import psycopg2
 from psycopg2.extras import execute_values, RealDictCursor, DictCursor
 from datetime import datetime
+import hashlib
+import json
 
 class DB:
     """
@@ -51,194 +53,351 @@ class DB:
                     self.conn.close()
 
         return ConnectionManager(self.db_cnf)
+        
+    def _parse_id(self, composite_id):
+        # Debugging: Was kommt hier an?
+        
+        if isinstance(composite_id, str) and ':' in composite_id:
+            fk_column, real_id = composite_id.split(':')
+            return fk_column, int(real_id)
+        
+        # Wenn wir hier landen, ist die ID kein "Typ:ID"-String
+        return 'result', int(composite_id)
     
 
     def get_classifiers(self):
-        """
-        Get the classifiers from the database, but ONLY for studies that
-        actually have pending results or dead sources to flag.
-        This completely eliminates the bottleneck of iterating through old, finished studies.
-        """
-        from psycopg2.extras import RealDictCursor
-        
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
-            
-            # The EXISTS clause acts like a high-speed radar. 
-            # It only returns the classifier/study combo if there is at least ONE 
-            # row that actually requires processing by the Python script.
             cur.execute("""
                 SELECT classifier.id, classifier.name, classifier_study.study 
                 FROM classifier
                 JOIN classifier_study ON classifier.id = classifier_study.classifier
-                WHERE EXISTS (
-                    SELECT 1 
-                    FROM result
-                    JOIN result_source ON result_source.result = result.id
-                    JOIN source ON result_source.source = source.id
-                    LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = classifier.id
-                    WHERE result.study = classifier_study.study
-                      AND (
-                          -- Condition 1: Fresh, unclassified sources
-                          (source.progress = 1 AND cr.id IS NULL)
-                          OR
-                          -- Condition 2: Dead sources that need the 'source_failed' flag
-                          (source.progress = -1 AND result_source.counter >= %s AND (cr.value IS NULL OR cr.value IN ('error', 'classifier_error', 'in process')))
-                      )
-                )
-                ORDER BY classifier_study.study DESC
-            """, (self.max_counter,))
-            
+                LEFT JOIN study ON classifier_study.study = study.id
+                WHERE 
+                
+                -- === 1. ALTE LOGIK FÜR NORMALE CLASSIFIER (Bleibt komplett unangetastet) ===
+                (classifier.name != 'universal_llm' AND (
+                    EXISTS (
+                        SELECT 1 
+                        FROM result
+                        JOIN result_source ON result_source.result = result.id
+                        JOIN source ON result_source.source = source.id
+                        LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = classifier.id
+                        WHERE result.study = classifier_study.study
+                          AND (
+                              (source.progress = 1 AND (cr.id IS NULL OR cr.value IN ('skipped_timeout', 'error')))
+                              OR
+                              (source.progress = -1 AND result_source.counter >= %s AND (cr.value IS NULL OR cr.value IN ('error', 'classifier_error', 'in process', 'skipped_timeout')))
+                          )
+                    ) OR EXISTS (
+                        SELECT 1 FROM result_ai
+                        LEFT JOIN classifier_result cr ON cr.result_ai = result_ai.id AND cr.classifier = classifier.id
+                        WHERE result_ai.study = classifier_study.study 
+                          AND (cr.id IS NULL OR cr.value IN ('skipped_timeout', 'error'))
+                    ) OR EXISTS (
+                        SELECT 1 FROM result_chatbot
+                        LEFT JOIN classifier_result cr ON cr.result_chatbot = result_chatbot.id AND cr.classifier = classifier.id
+                        WHERE result_chatbot.study = classifier_study.study 
+                          AND (cr.id IS NULL OR cr.value IN ('skipped_timeout', 'error'))
+                    ) OR EXISTS (
+                        SELECT 1 
+                        FROM result_ai_source ras
+                        LEFT JOIN source ON ras.source = source.id
+                        LEFT JOIN classifier_result cr ON cr.result_ai_source = ras.id AND cr.classifier = classifier.id
+                        WHERE ras.study = classifier_study.study
+                        AND (
+                            (ras.progress = 1 AND (cr.id IS NULL OR cr.value IN ('skipped_timeout', 'error')))
+                            OR
+                            (ras.progress = -1 AND ras.counter >= %s AND (cr.value IS NULL OR cr.value IN ('error', 'classifier_error', 'in process', 'skipped_timeout')))
+                        )
+                    )
+                ))
+
+                -- === 2. NEUE LOGIK FÜR DEN UNIVERSAL LLM ===
+                OR (classifier.name = 'universal_llm' AND (
+                    (
+                        EXISTS (SELECT 1 FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'organic') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        AND EXISTS (
+                            SELECT 1 FROM result r
+                            JOIN result_source rs ON rs.result = r.id
+                            JOIN source s ON rs.source = s.id
+                            WHERE r.study = classifier_study.study AND s.progress = 1
+                            AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = classifier.id AND ci.result = r.id) < (SELECT COUNT(*) FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'organic') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        )
+                    ) OR (
+                        EXISTS (SELECT 1 FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'ai_overview') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        AND EXISTS (
+                            SELECT 1 FROM result_ai rai
+                            WHERE rai.study = classifier_study.study
+                            AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = classifier.id AND ci.result_ai = rai.id) < (SELECT COUNT(*) FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'ai_overview') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        )
+                    ) OR (
+                        EXISTS (SELECT 1 FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'chatbot') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        AND EXISTS (
+                            SELECT 1 FROM result_chatbot rcb
+                            WHERE rcb.study = classifier_study.study
+                            AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = classifier.id AND ci.result_chatbot = rcb.id) < (SELECT COUNT(*) FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'chatbot') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        )
+                    ) OR (
+                        EXISTS (SELECT 1 FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'ai_source') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        AND EXISTS (
+                            SELECT 1 FROM result_ai_source ras
+                            JOIN source s ON ras.source = s.id
+                            WHERE ras.study = classifier_study.study AND s.progress = 1
+                            AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = classifier.id AND ci.result_ai_source = ras.id) < (SELECT COUNT(*) FROM json_array_elements(CASE WHEN study.llm_classifiers_json IS NULL OR study.llm_classifiers_json = '' THEN '[]' ELSE study.llm_classifiers_json END::json) AS j WHERE (j->>'target_type' IN ('all', 'ai_source') OR j->>'target_type' IS NULL) AND COALESCE((j->>'active')::boolean, true) = true)
+                        )
+                    )
+                ))
+                ORDER BY RANDOM()
+            """, (self.max_counter, self.max_counter))
             conn.commit()
             classifiers = cur.fetchall()
-            
         return classifiers
 
     def get_search_engines(self, results):
         """
-        Get search engines for results.
-
-        Args:
-            results (list): List of results.
-
-        Returns:
-            list: Updated list of results with search engines.
+        Get search engines for results dynamically matching the correct tables
+        using the new denormalized 'engine_text' column.
         """
+        # Whitelist der erlaubten Tabellen zur Sicherheit (verhindert SQL-Injection durch String-Formatierung)
+        allowed_tables = ['result', 'result_ai', 'result_ai_source', 'result_chatbot', 'serp']
+        
         with self.connect_to_db() as conn:
             for result in results:
-                result_id = result['id']
+                fk_column, real_id = self._parse_id(result['id'])
+                
+                if fk_column not in allowed_tables:
+                    result['searchengine'] = "N/A"
+                    continue
+                    
                 cur = conn.cursor(cursor_factory=RealDictCursor)
-                cur.execute("SELECT searchengine.name FROM result, scraper, searchengine WHERE result.scraper = scraper.id AND scraper.searchengine = searchengine.id AND result.id = %s", (result_id,))
-                conn.commit()
-                searchengine = cur.fetchone()
-                result['searchengine'] = searchengine['name'] if searchengine else "N/A"
+                
+                try:
+                    # Wir lesen das Feld 'engine_text' direkt aus der passenden Tabelle
+                    query = f"SELECT engine_text FROM {fk_column} WHERE id = %s"
+                    cur.execute(query, (real_id,))
+                    row = cur.fetchone()
+                    
+                    if row and row['engine_text']:
+                        # Weist den String (z.B. "google_us_en") direkt zu
+                        result['searchengine'] = row['engine_text']
+                    else:
+                        result['searchengine'] = "N/A"
+                        
+                except Exception as e:
+                    print(f"Warning: Could not fetch engine_text for {fk_column}:{real_id} - {e}")
+                    result['searchengine'] = "N/A"
+                    
         return results
 
-    def get_queries(self, results):
-        """
-        Get queries for results.
-
-        Args:
-            results (list): List of results.
-
-        Returns:
-            list: Updated list of results with queries.
-        """
-        with self.connect_to_db() as conn:
-            for result in results:
-                result_id = result['id']
-                cur = conn.cursor(cursor_factory=RealDictCursor)
-                cur.execute("SELECT query.query FROM query, result WHERE result.query = query.id AND result.id = %s", (result_id,))
-                conn.commit()
-                query = cur.fetchone()
-                result['query'] = query['query'] if query else "N/A"
-        return results
-
-    def get_results(self, classifier_id, study_id):     
-        """
-        Get the results for a given classifier ID.
-        Only feeds fully successful scrapes (progress = 1) to the classifiers.
-        """
+    def get_results(self, classifier_id, study_id):  
         from psycopg2.extras import RealDictCursor
         
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
             
-            cur.execute("""
-                SELECT DISTINCT ON (result.id)
-                       result.id, result.url, result.main, result.position, result.title, result.description, result.ip, 
-                       result.final_url, source.file_path, source.content_type, source.error_code, source.status_code, 
-                       result_source.source, classifier_study.classifier
-                FROM result
-                JOIN result_source ON result_source.result = result.id
-                JOIN source ON result_source.source = source.id
-                JOIN classifier_study ON result.study = classifier_study.study
-                LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = %s
-                WHERE classifier_study.classifier = %s 
-                  AND result.study = %s
-                  AND source.progress = 1 
-                  AND cr.id IS NULL
-                ORDER BY result.id, result.created_at
-                LIMIT 10
-            """, (classifier_id, classifier_id, study_id))
+            # 1. Classifier-Typ prüfen
+            cur.execute("SELECT name FROM classifier WHERE id = %s", (classifier_id,))
+            clf_row = cur.fetchone()
+            is_llm = clf_row and clf_row['name'] == 'universal_llm'
             
+            if is_llm:
+                config_str = self.get_study_llm_config(study_id)
+                llm_tasks = json.loads(config_str) if config_str else []
+                
+                # Dynamisches Auszählen der Zielvorgaben aus der GUI
+                num_organic = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'organic', None) and t.get('active', True))
+                num_source = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'ai_source') and t.get('active', True))
+                num_ai = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'ai_overview') and t.get('active', True))
+                num_chatbot = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'chatbot') and t.get('active', True))
+                
+                # SQL-Filter schalten ab, wenn keine Tasks für diesen Typ existieren ("AND FALSE")
+                filter_r = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result = r.id) < {num_organic}" if num_organic > 0 else "AND FALSE"
+                filter_ras = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result_ai_source = ras.id) < {num_source}" if num_source > 0 else "AND FALSE"
+                filter_rai = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result_ai = rai.id) < {num_ai}" if num_ai > 0 else "AND FALSE"
+                filter_rcb = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result_chatbot = rcb.id) < {num_chatbot}" if num_chatbot > 0 else "AND FALSE"
+                
+                # HIER IST DER FIX: Die alte, globale Tabelle wird für den LLM bedingungslos durchgelassen!
+                check_organic = "AND TRUE"
+                check_source = "AND TRUE"
+                check_ai = "AND TRUE"
+                check_chatbot = "AND TRUE"
+            else:
+                filter_r = filter_ras = filter_rai = filter_rcb = "AND cr.id IS NULL"
+                
+                # FIX: Exaktes IN-Matching statt ungenauer LIKE-Suchen verhindert das Überlappen der Tabellen
+                check_organic = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'organic')"
+                check_source  = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'ai sources')"
+                check_ai      = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'ai')"
+                check_chatbot = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'chatbot')"
+                        
+            # 3. SQL UNION Query (ersetzt nun die harten EXISTS-Befehle durch unsere Variablen)
+            query = f"""
+                    WITH allowed_types AS (
+                        SELECT TRIM(LOWER(rt.name)) as type_name
+                        FROM classifier_resulttype crt
+                        JOIN resulttype rt ON crt.resulttype = rt.id
+                        WHERE crt.classifier = %s
+                    )
+                    
+                    -- Block 1: Organic Results
+                    SELECT r.id, r.url, r.main, r.position, r.title, r.description, r.ip, r.final_url,
+                        s.file_path, s.content_type, s.error_code, s.status_code, 
+                        rs.source, r.result_type_text, NULL as answer, 'result' as fk_column, r.created_at,
+                        q.query
+                    FROM result r
+                    JOIN result_source rs ON rs.result = r.id
+                    JOIN source s ON rs.source = s.id
+                    LEFT JOIN classifier_result cr ON cr.result = r.id AND cr.classifier = %s
+                    LEFT JOIN query q ON r.query = q.id
+                    WHERE r.study = %s AND s.progress = 1 
+                    {filter_r}
+                    {check_organic}
+                    
+                    UNION ALL
+                    
+                    -- Block 2: AI Sources
+                    SELECT ras.id, ras.url, ras.main, ras.position, ras.title, ras.description, ras.ip, ras.final_url,
+                        s.file_path, s.content_type, s.error_code, s.status_code, 
+                        ras.source, ras.result_type_text, NULL as answer, 'result_ai_source' as fk_column, ras.created_at,
+                        q.query
+                    FROM result_ai_source ras
+                    JOIN source s ON ras.source = s.id
+                    LEFT JOIN classifier_result cr ON cr.result_ai_source = ras.id AND cr.classifier = %s
+                    LEFT JOIN query q ON ras.query = q.id
+                    WHERE ras.study = %s AND ras.progress = 1
+                    {filter_ras}
+                    {check_source}
+                    
+                    UNION ALL
+                                      
+                    -- Block 3: AI Overviews 
+                    SELECT rai.id, 'ai://overview' as url, NULL as main, NULL as position, NULL as title, NULL as description, NULL as ip, NULL as final_url,
+                        'DB_TEXT:' || COALESCE(rai.answer, '') as file_path, 'text/html' as content_type, NULL as error_code, 200 as status_code,
+                        NULL as source, rai.result_type_text, rai.answer, 'result_ai' as fk_column, rai.created_at,
+                        q.query
+                    FROM result_ai rai
+                    LEFT JOIN classifier_result cr ON cr.result_ai = rai.id AND cr.classifier = %s
+                    LEFT JOIN query q ON rai.query = q.id
+                    WHERE rai.study = %s
+                    {filter_rai}
+                    {check_ai}
+                    
+                    UNION ALL
+                    
+                    -- Block 4: Chatbots 
+                    SELECT rcb.id, 'ai://chatbot' as url, NULL as main, NULL as position, NULL as title, NULL as description, NULL as ip, NULL as final_url,
+                        'DB_TEXT:' || COALESCE(rcb.answer, '') as file_path, 'text/html' as content_type, NULL as error_code, 200 as status_code,
+                        NULL as source, rcb.result_type_text, rcb.answer, 'result_chatbot' as fk_column, rcb.created_at,
+                        q.query
+                    FROM result_chatbot rcb
+                    LEFT JOIN classifier_result cr ON cr.result_chatbot = rcb.id AND cr.classifier = %s
+                    LEFT JOIN query q ON rcb.query = q.id
+                    WHERE rcb.study = %s
+                    {filter_rcb}
+                    {check_chatbot}
+                    
+                    ORDER BY created_at
+                    LIMIT 10
+                """
+            
+            cur.execute(query, (
+                classifier_id, 
+                classifier_id, study_id, 
+                classifier_id, study_id, 
+                classifier_id, study_id, 
+                classifier_id, study_id
+            ))
+            raw_results = cur.fetchall()
+            
+            # --- AUTO-LOCKING FIX FÜR LLM ---
+            locked_results = []
+            for r in raw_results:
+                fk_column = r['fk_column']
+                real_id = r['id']
+                composite_id = f"{fk_column}:{real_id}"
+                
+                if not is_llm:
+                    cur.execute(f"SELECT id, value FROM classifier_result WHERE classifier = %s AND {fk_column} = %s FOR UPDATE", (classifier_id, real_id))
+                    row = cur.fetchone()
+                    
+                    locked = False
+                    if row:
+                        if row['value'] != 'in process':
+                            cur.execute("UPDATE classifier_result SET value = 'in process', created_at = %s, job_server = %s WHERE id = %s RETURNING id", (datetime.now(), self.job_server, row['id']))
+                            if cur.fetchone(): locked = True
+                    else:
+                        cur.execute(f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server) VALUES (%s, 'in process', %s, %s, %s) RETURNING id", (classifier_id, real_id, datetime.now(), self.job_server))
+                        if cur.fetchone(): locked = True
+                        
+                    if locked:
+                        r['id'] = composite_id
+                        locked_results.append(r)
+                else:
+                    # Für LLM umgehen wir den exklusiven globalen Lock, damit Worker 
+                    # die Indikatoren einzeln auf "in process" setzen können.
+                    r['id'] = composite_id
+                    locked_results.append(r)
+                    
             conn.commit()
-            results = cur.fetchall()
             
-        # Assuming you have these helper functions elsewhere in your class
         if hasattr(self, 'get_search_engines'):
-            results = self.get_search_engines(results)
-        if hasattr(self, 'get_queries'):
-            results = self.get_queries(results)
+            locked_results = self.get_search_engines(locked_results)
             
-        return results
+        return locked_results
 
     def insert_classification_result(self, classifier_id, value, result, job_server):
-        """
-        Insert a classification result into the database.
-        Returns True if successfully locked, False if another instance beat us to it.
-        """
+        fk_column, real_id = self._parse_id(result)
         try:
             created_at = datetime.now()
             with self.connect_to_db() as conn:
-                cur = conn.cursor(cursor_factory=DictCursor)
-                cur.execute("INSERT INTO classifier_result (classifier, value, result, created_at, job_server) VALUES (%s, %s, %s, %s, %s);", 
-                            (classifier_id, value, result, created_at, job_server))
+                cur = conn.cursor()
+                cur.execute(f"UPDATE classifier_result SET value = %s, created_at = %s, job_server = %s WHERE classifier = %s AND {fk_column} = %s AND value IN ('in process', 'skipped_timeout', 'error', 'source_failed') RETURNING id", (value, created_at, job_server, classifier_id, real_id))
+                if not cur.fetchone():
+                    cur.execute(f"SELECT id FROM classifier_result WHERE classifier = %s AND {fk_column} = %s", (classifier_id, real_id))
+                    if not cur.fetchone():
+                        cur.execute(f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server) VALUES (%s, %s, %s, %s, %s)", (classifier_id, value, real_id, created_at, job_server))
                 conn.commit()
-            return True # Sperre erfolgreich gesetzt!
+            return True 
         except Exception as e:
-            # '23505' ist der standardisierte PostgreSQL-Fehlercode für unique_violation
-            if hasattr(e, 'pgcode') and e.pgcode == '23505':
-                return False # Ein anderer Worker war schneller, sauber abbrechen ohne Crash
-            
             print(f"Error inserting classification result: {e}")
             return False
 
     def insert_indicator(self, indicator, value, classifier_id, result, job_server):
-        """
-        Insert an indicator into the database.
-
-        Args:
-            indicator (str): Indicator name.
-            value (str): Value of the indicator.
-            classifier_id (int): ID of the classifier.
-            result (int): ID of the result.
-
-        Returns:
-            None
-        """
+        fk_column, real_id = self._parse_id(result)
         try:
             created_at = datetime.now()
             with self.connect_to_db() as conn:
                 cur = conn.cursor(cursor_factory=DictCursor)
-                cur.execute("INSERT INTO classifier_indicator (indicator, value, classifier, result, created_at, job_server) VALUES (%s, %s, %s, %s, %s, %s);", 
-                            (indicator, value, classifier_id, result, created_at, job_server))
+                cur.execute(f"SELECT id FROM classifier_indicator WHERE classifier = %s AND {fk_column} = %s AND indicator = %s", (classifier_id, real_id, indicator))
+                if cur.fetchone():
+                    cur.execute(f"UPDATE classifier_indicator SET value = %s, created_at = %s WHERE classifier = %s AND {fk_column} = %s AND indicator = %s", (value, created_at, classifier_id, real_id, indicator))
+                else:
+                    cur.execute(f"INSERT INTO classifier_indicator (indicator, value, classifier, {fk_column}, created_at, job_server) VALUES (%s, %s, %s, %s, %s, %s)", (indicator, value, classifier_id, real_id, created_at, job_server))
                 conn.commit()
         except Exception as e:
             print(f"Error inserting indicator: {e}")
-
-    def update_classification_result(self, value, result_id, classifier_id):
-        """
-        Update a classification result in the database.
-
-        Args:
-            classifier_id (int): ID of the classifier.
-            value (str): Updated value of the classification.
-            result (int): ID of the result.
-
-        Returns:
-            None
-        """
+            
+    def update_classification_result(self, value, composite_id, classifier_id):
+        fk_column, real_id = self._parse_id(composite_id)
         try:
             created_at = datetime.now()
             with self.connect_to_db() as conn:
-                cur = conn.cursor(cursor_factory=DictCursor)
-                cur.execute("UPDATE classifier_result SET value=%s, created_at=%s WHERE result = %s and classifier_result.classifier =%s", 
-                            (value, created_at, result_id, classifier_id))
+                cur = conn.cursor()
+                
+                # 1. Versuche das Update durchzuführen und lass dir die ID zurückgeben (RETURNING id)
+                query = f"UPDATE classifier_result SET value=%s, created_at=%s WHERE {fk_column} = %s AND classifier = %s RETURNING id"
+                cur.execute(query, (value, created_at, real_id, classifier_id))
+                
+                # 2. NEU: Wenn kein Datensatz zum Updaten gefunden wurde (fetchone ist None), lege ihn an!
+                if not cur.fetchone():
+                    insert_query = f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server) VALUES (%s, %s, %s, %s, %s)"
+                    cur.execute(insert_query, (classifier_id, value, real_id, created_at, getattr(self, 'job_server', 'unknown_server')))
+                    
                 conn.commit()
         except Exception as e:
             print(f"Error updating classification result: {e}")
-
+            
     def reset_classifiers(self, result):
         """
         Reset the classifiers for a given result.
@@ -251,7 +410,7 @@ class DB:
         """
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("DELETE FROM classifier_indicator WHERE result = %s", (result,))
+            cur.execute("DELETE FROM classifier_indicator WHERE result = %s AND value = 'in process'", (result,))
             cur.execute("DELETE FROM classifier_result WHERE result = %s", (result,))
             cur.execute("DELETE FROM classifier_result WHERE value = 'in process' AND result = %s", (result,))
             conn.commit()
@@ -273,23 +432,12 @@ class DB:
             self.reset_classifiers(result)
 
     def check_classification_result(self, classifier, result):
-        """
-        Check if a result is already declared as a scraping job.
-
-        Args:
-            classifier (int): ID of the classifier.
-            result (int): ID of the result.
-
-        Returns:
-            bool: True if the result is already declared, False otherwise.
-        """
+        fk_column, real_id = self._parse_id(result)
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("SELECT id FROM classifier_result WHERE classifier = %s AND result = %s", 
-                        (classifier, result))
+            cur.execute(f"SELECT id FROM classifier_result WHERE classifier = %s AND {fk_column} = %s", (classifier, real_id))
             conn.commit()
-            check_progress = cur.fetchall()
-        return bool(check_progress)
+            return bool(cur.fetchall())
     
     def check_classification_result_not_in_process(self, classifier, result):
         """
@@ -297,37 +445,33 @@ class DB:
 
         Args:
             classifier (int): ID of the classifier.
-            result (int): ID of the result.
+            result (int/str): ID of the result (can be composite like 'result:477').
 
         Returns:
-            bool: True if the result is already declared, False otherwise.
+            list: List of dictionaries containing the ID if found.
         """
+        # NEU: Parse die zusammengesetzte ID
+        fk_column, real_id = self._parse_id(result)
+        
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("SELECT id FROM classifier_result WHERE classifier = %s AND result = %s AND value !='in process'", 
-                        (classifier, result))
+            # NEU: Nutze {fk_column} dynamisch und übergebe real_id
+            cur.execute(f"SELECT id FROM classifier_result WHERE classifier = %s AND {fk_column} = %s AND value !='in process'", 
+                        (classifier, real_id))
             conn.commit()
             check_progress = cur.fetchall()
         return check_progress
 
     def check_indicator_result(self, classifier, result, indicator, value):
-        """
-        Check if a result is already declared as a classifier job.
-
-        Args:
-            classifier (int): ID of the classifier.
-            result (int): ID of the result.
-
-        Returns:
-            bool: True if the result is already declared, False otherwise.
-        """
+        fk_column, real_id = self._parse_id(result)
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("SELECT id FROM classifier_indicator WHERE classifier = %s AND result = %s AND indicator = %s AND value = %s", 
-                        (classifier, result , indicator, value))
+            if value is None:
+                cur.execute(f"SELECT id FROM classifier_indicator WHERE classifier = %s AND {fk_column} = %s AND indicator = %s", (classifier, real_id, indicator))
+            else:
+                cur.execute(f"SELECT id FROM classifier_indicator WHERE classifier = %s AND {fk_column} = %s AND indicator = %s AND value = %s", (classifier, real_id, indicator, value))
             conn.commit()
-            check_progress = cur.fetchall()
-        return bool(check_progress)
+            return bool(cur.fetchall())
 
     def check_source_duplicates(self, source):
         """
@@ -366,37 +510,28 @@ class DB:
     def get_classifier_result(self, result):
         """
         Get the classifier result for a given result ID.
-
-        Args:
-            result (int): ID of the result.
-
-        Returns:
-            list: List of classifier results for the given result ID.
         """
+        fk_column, real_id = self._parse_id(result)
+        
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("SELECT value FROM classifier_result WHERE result = %s and value !='in process'", 
-                        (result,))
+            cur.execute(f"SELECT value FROM classifier_result WHERE {fk_column} = %s and value !='in process'", 
+                        (real_id,))
             conn.commit()
             result_sources = cur.fetchall()
         return result_sources
 
-    def get_indicators(self, result):
-        """
-        Get the indicators for a given result ID.
-
-        Args:
-            result (int): ID of the result.
-
-        Returns:
-            list: List of indicators for the given result ID.
-        """
+    def get_indicators(self, composite_id):
+        # 1. Spalte und ID extrahieren (z.B. "result_ai", 30)
+        fk_column, real_id = self._parse_id(composite_id)
+        
         with self.connect_to_db() as conn:
             cur = conn.cursor(cursor_factory=DictCursor)
-            cur.execute("SELECT * FROM classifier_indicator WHERE result = %s", (result,))
+            # 2. Dynamisch in der korrekten Spalte suchen
+            query = f"SELECT * FROM classifier_indicator WHERE {fk_column} = %s"
+            cur.execute(query, (real_id,))
             conn.commit()
-            result_indicators = cur.fetchall()
-        return result_indicators
+            return cur.fetchall()
 
     def deleteClassifierDuplicates(self):
         """
@@ -420,34 +555,81 @@ class DB:
 
 
     def flag_dead_sources(self, classifier_id, study_id, job_server):
-        """
-        Central method: Finds all results whose source permanently failed 
-        (progress = -1 and counter >= self.max_counter) and marks them in 
-        classifier_result as 'source_failed'.
-        """
-        with self.connect_to_db() as conn:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cur.execute("""
-                SELECT result.id, cr.id as cr_id 
-                FROM result
-                JOIN result_source ON result_source.result = result.id
-                JOIN source ON result_source.source = source.id
-                LEFT JOIN classifier_result cr ON cr.result = result.id AND cr.classifier = %s
-                WHERE result.study = %s
-                  AND source.progress = -1 
-                  AND result_source.counter >= %s
-                  AND (cr.value IS NULL OR cr.value IN ('error', 'classifier_error', 'in process'))
-            """, (classifier_id, study_id, self.max_counter))
-            
-            dead_results = cur.fetchall()
-            
-        # Register the final failure for all found dead sources
-        for row in dead_results:
-            result_id = row['id']
-            if row['cr_id']:
-                self.update_classification_result('source_failed', result_id, classifier_id)
-            else:
-                self.insert_classification_result(classifier_id, 'source_failed', result_id, job_server)            
+        try:
+            with self.connect_to_db() as conn:
+                cur = conn.cursor()
+                
+                # ==========================================
+                # 1. Dead Organic Sources
+                # ==========================================
+                
+                # A) Existierende Einträge updaten
+                cur.execute('''
+                    UPDATE classifier_result 
+                    SET value = 'source_failed', created_at = NOW(), job_server = %s
+                    WHERE classifier = %s 
+                      AND value IN ('error', 'classifier_error', 'in process')
+                      AND result IN (
+                          SELECT result.id 
+                          FROM result
+                          JOIN result_source ON result_source.result = result.id
+                          JOIN source ON result_source.source = source.id
+                          WHERE result.study = %s AND source.progress = -1 AND result_source.counter >= %s
+                      )
+                ''', (job_server, classifier_id, study_id, self.max_counter))
+                
+                # B) Neue Einträge einfügen (mit Type Casting ::integer / ::varchar)
+                cur.execute('''
+                    INSERT INTO classifier_result (classifier, value, result, created_at, job_server)
+                    SELECT %s::integer, 'source_failed', result.id, NOW(), %s::varchar
+                    FROM result
+                    JOIN result_source ON result_source.result = result.id
+                    JOIN source ON result_source.source = source.id
+                    WHERE result.study = %s AND source.progress = -1 AND result_source.counter >= %s
+                      AND NOT EXISTS (
+                          SELECT 1 FROM classifier_result cr 
+                          WHERE cr.classifier = %s AND cr.result = result.id
+                      )
+                ''', (classifier_id, job_server, study_id, self.max_counter, classifier_id))
+
+                # ==========================================
+                # 2. Dead AI Sources
+                # ==========================================
+                
+                # A) Existierende Einträge updaten
+                cur.execute('''
+                    UPDATE classifier_result 
+                    SET value = 'source_failed', created_at = NOW(), job_server = %s
+                    WHERE classifier = %s 
+                      AND value IN ('error', 'classifier_error', 'in process')
+                      AND result_ai_source IN (
+                          SELECT ras.id 
+                          FROM result_ai_source ras
+                          LEFT JOIN source ON ras.source = source.id
+                          WHERE ras.study = %s AND ras.counter >= %s
+                            AND (source.progress = -1)
+                      )
+                ''', (job_server, classifier_id, study_id, self.max_counter))
+                
+                # B) Neue Einträge einfügen (mit Type Casting ::integer / ::varchar)
+                cur.execute('''
+                    INSERT INTO classifier_result (classifier, value, result_ai_source, created_at, job_server)
+                    SELECT %s::integer, 'source_failed', ras.id, NOW(), %s::varchar
+                    FROM result_ai_source ras
+                    LEFT JOIN source ON ras.source = source.id
+                    WHERE ras.study = %s AND ras.counter >= %s
+                      AND (source.progress = -1)
+                      AND NOT EXISTS (
+                          SELECT 1 FROM classifier_result cr 
+                          WHERE cr.classifier = %s AND cr.result_ai_source = ras.id
+                      )
+                ''', (classifier_id, job_server, study_id, self.max_counter, classifier_id))
+                
+                conn.commit()
+                
+        except Exception as e:
+            # Jetzt wird der Fehler geworfen und im Log angezeigt, statt das Programm stumm sterben zu lassen
+            print(f"❌ Error in flag_dead_sources: {str(e)}")
 
     def check_db_connection(self):
         """
@@ -462,3 +644,83 @@ class DB:
         except Exception as e:
             print(f"Error checking DB connection: {e}")
             return False
+            
+    def get_study_llm_config(self, study_id):
+            """
+            Lädt die LLM JSON-Konfiguration für eine spezifische Studie aus der Datenbank.
+            Wird von universal_llm.py benötigt, um die Tasks und Prompts zu kennen.
+            """
+            from psycopg2.extras import DictCursor
+            try:
+                with self.connect_to_db() as conn:
+                    cur = conn.cursor(cursor_factory=DictCursor)
+                    cur.execute("SELECT llm_classifiers_json FROM study WHERE id = %s", (study_id,))
+                    row = cur.fetchone()
+                    
+                    if row and row['llm_classifiers_json']:
+                        return row['llm_classifiers_json']
+                    return None
+            except Exception as e:
+                print(f"Error fetching LLM config for study {study_id}: {e}")
+                return None
+                
+                
+            
+    def count_indicators(self, result_id, classifier_id):
+        fk_column, real_id = self._parse_id(result_id)
+        with self.connect_to_db() as conn:
+            cur = conn.cursor()
+            cur.execute(f"SELECT count(*) FROM classifier_indicator WHERE {fk_column} = %s AND classifier = %s", (real_id, classifier_id))
+            return cur.fetchone()[0]
+
+    def get_ai_segment_text_for_source(self, source_id):
+            """
+            Lädt den Text des AI-Segments, das mit dieser Quelle verknüpft ist.
+            """
+            # Sicherstellen, dass wir die echte ID haben (falls "result_ai_source:123" übergeben wird)
+            fk_column, real_id = self._parse_id(source_id)
+            
+            try:
+                with self.connect_to_db() as conn:
+                    cur = conn.cursor(cursor_factory=DictCursor)
+                    # Holt den Text über die Many-to-Many Zuordnungstabelle
+                    cur.execute("""
+                        SELECT ras.text 
+                        FROM result_ai_segment ras
+                        JOIN ai_segment_source ass ON ras.id = ass.segment_id
+                        WHERE ass.source_id = %s
+                        LIMIT 1
+                    """, (real_id,))
+                    row = cur.fetchone()
+                    return row['text'] if row and row['text'] else ""
+            except Exception as e:
+                print(f"Error fetching AI segment text: {e}")
+                return ""
+
+    def get_sibling_sources_for_segment(self, source_id):
+        """
+        Sucht andere AI-Quellen (Siblings), die mit demselben Text-Segment verknüpft sind.
+        Gibt deren IDs und den Dateipfad zum HTML-Quellcode zurück.
+        """
+        fk_column, real_id = self._parse_id(source_id)
+        
+        try:
+            with self.connect_to_db() as conn:
+                cur = conn.cursor(cursor_factory=DictCursor)
+                # Sucht nach allen Quellen, die am selben Segment hängen, außer sich selbst
+                cur.execute("""
+                    SELECT ras.id, src.file_path
+                    FROM result_ai_source ras
+                    JOIN source src ON ras.source = src.id
+                    JOIN ai_segment_source ass ON ras.id = ass.source_id
+                    WHERE ass.segment_id IN (
+                        SELECT segment_id FROM ai_segment_source WHERE source_id = %s
+                    )
+                    AND ras.id != %s
+                """, (real_id, real_id))
+                
+                # Wir geben eine Liste von Dictionaries zurück
+                return [dict(row) for row in cur.fetchall()]
+        except Exception as e:
+            print(f"Error fetching sibling sources: {e}")
+            return []

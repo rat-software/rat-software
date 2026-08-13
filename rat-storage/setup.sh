@@ -28,6 +28,6 @@ python3.12 -m venv venv_rat_storage
 echo "📦 Installing packages..."
 # Use the direct path to the venv python to ensure it doesn't use system python
 ./venv_rat_storage/bin/pip install --upgrade pip
-./venv_rat_storage/bin/pip install -r requirements_rat_storage.txt
+./venv_rat_storage/bin/pip install -r requirements.txt
 
 echo "✅ Setup complete! Use 'source venv_rat_storage/bin/activate' to start."

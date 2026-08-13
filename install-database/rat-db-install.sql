@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict PyGKmeq8wMzRYGVZ9HYaZTylgrhDCeogW2fNRW5H2mg2iZA6Ovkn3I6vZK3YgWm
+\restrict GINCMHTcoTH5rtE75HGrb5cbVEuzCMskr8V029YLptRDeXidXZZbe7NCd3qgv4x
 
 -- Dumped from database version 18.4 (Ubuntu 18.4-0ubuntu0.26.04.1)
 -- Dumped by pg_dump version 18.3
 
--- Started on 2026-06-05 14:07:09
+-- Started on 2026-08-13 11:15:40
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -26,7 +26,18 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- TOC entry 219 (class 1259 OID 18575)
+-- TOC entry 219 (class 1259 OID 69781)
+-- Name: ai_segment_source; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_segment_source (
+    segment_id integer NOT NULL,
+    source_id integer NOT NULL
+);
+
+
+--
+-- TOC entry 220 (class 1259 OID 69786)
 -- Name: alembic_version; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -36,7 +47,7 @@ CREATE TABLE public.alembic_version (
 
 
 --
--- TOC entry 220 (class 1259 OID 18579)
+-- TOC entry 221 (class 1259 OID 69790)
 -- Name: answer; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -54,12 +65,14 @@ CREATE TABLE public.answer (
     result_ai integer,
     result_chatbot integer,
     result_serp integer,
-    result_type_text character varying(50)
+    result_type_text character varying(50),
+    result_ai_source integer,
+    result_image integer
 );
 
 
 --
--- TOC entry 221 (class 1259 OID 18585)
+-- TOC entry 222 (class 1259 OID 69796)
 -- Name: answer_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -73,8 +86,8 @@ CREATE SEQUENCE public.answer_id_seq
 
 
 --
--- TOC entry 3826 (class 0 OID 0)
--- Dependencies: 221
+-- TOC entry 3965 (class 0 OID 0)
+-- Dependencies: 222
 -- Name: answer_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -82,7 +95,7 @@ ALTER SEQUENCE public.answer_id_seq OWNED BY public.answer.id;
 
 
 --
--- TOC entry 222 (class 1259 OID 18586)
+-- TOC entry 223 (class 1259 OID 69797)
 -- Name: classifier; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -90,12 +103,14 @@ CREATE TABLE public.classifier (
     id integer NOT NULL,
     name character varying,
     display_name character varying(255),
-    display boolean DEFAULT true
+    display boolean DEFAULT true,
+    description character varying,
+    description_url character varying
 );
 
 
 --
--- TOC entry 223 (class 1259 OID 18593)
+-- TOC entry 224 (class 1259 OID 69804)
 -- Name: classifier_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -109,8 +124,8 @@ CREATE SEQUENCE public.classifier_id_seq
 
 
 --
--- TOC entry 3827 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 3966 (class 0 OID 0)
+-- Dependencies: 224
 -- Name: classifier_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -118,7 +133,7 @@ ALTER SEQUENCE public.classifier_id_seq OWNED BY public.classifier.id;
 
 
 --
--- TOC entry 224 (class 1259 OID 18594)
+-- TOC entry 225 (class 1259 OID 69805)
 -- Name: classifier_indicator; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -130,12 +145,16 @@ CREATE TABLE public.classifier_indicator (
     result integer,
     classifier integer,
     job_server character varying,
-    study integer
+    study integer,
+    result_ai integer,
+    result_chatbot integer,
+    result_ai_source integer,
+    result_image integer
 );
 
 
 --
--- TOC entry 225 (class 1259 OID 18601)
+-- TOC entry 226 (class 1259 OID 69812)
 -- Name: classifier_indicator_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -149,8 +168,8 @@ CREATE SEQUENCE public.classifier_indicator_id_seq
 
 
 --
--- TOC entry 3828 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 3967 (class 0 OID 0)
+-- Dependencies: 226
 -- Name: classifier_indicator_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -158,7 +177,7 @@ ALTER SEQUENCE public.classifier_indicator_id_seq OWNED BY public.classifier_ind
 
 
 --
--- TOC entry 226 (class 1259 OID 18602)
+-- TOC entry 227 (class 1259 OID 69813)
 -- Name: classifier_result; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -169,12 +188,16 @@ CREATE TABLE public.classifier_result (
     result integer,
     classifier integer,
     job_server character varying,
-    study integer
+    study integer,
+    result_ai integer,
+    result_chatbot integer,
+    result_ai_source integer,
+    result_image integer
 );
 
 
 --
--- TOC entry 227 (class 1259 OID 18609)
+-- TOC entry 228 (class 1259 OID 69820)
 -- Name: classifier_result_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -188,8 +211,8 @@ CREATE SEQUENCE public.classifier_result_id_seq
 
 
 --
--- TOC entry 3829 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 3968 (class 0 OID 0)
+-- Dependencies: 228
 -- Name: classifier_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -197,7 +220,18 @@ ALTER SEQUENCE public.classifier_result_id_seq OWNED BY public.classifier_result
 
 
 --
--- TOC entry 228 (class 1259 OID 18610)
+-- TOC entry 229 (class 1259 OID 69821)
+-- Name: classifier_resulttype; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.classifier_resulttype (
+    classifier integer NOT NULL,
+    resulttype integer NOT NULL
+);
+
+
+--
+-- TOC entry 230 (class 1259 OID 69826)
 -- Name: classifier_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -208,7 +242,7 @@ CREATE TABLE public.classifier_study (
 
 
 --
--- TOC entry 229 (class 1259 OID 18613)
+-- TOC entry 231 (class 1259 OID 69829)
 -- Name: classifier_study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -222,7 +256,7 @@ CREATE SEQUENCE public.classifier_study_id_seq
 
 
 --
--- TOC entry 230 (class 1259 OID 18614)
+-- TOC entry 232 (class 1259 OID 69830)
 -- Name: country; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -234,7 +268,7 @@ CREATE TABLE public.country (
 
 
 --
--- TOC entry 231 (class 1259 OID 18620)
+-- TOC entry 233 (class 1259 OID 69836)
 -- Name: country_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -248,8 +282,8 @@ CREATE SEQUENCE public.country_id_seq
 
 
 --
--- TOC entry 3830 (class 0 OID 0)
--- Dependencies: 231
+-- TOC entry 3969 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: country_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -257,7 +291,7 @@ ALTER SEQUENCE public.country_id_seq OWNED BY public.country.id;
 
 
 --
--- TOC entry 232 (class 1259 OID 18621)
+-- TOC entry 234 (class 1259 OID 69837)
 -- Name: option; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -271,7 +305,7 @@ CREATE TABLE public.option (
 
 
 --
--- TOC entry 233 (class 1259 OID 18627)
+-- TOC entry 235 (class 1259 OID 69843)
 -- Name: option_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -285,8 +319,8 @@ CREATE SEQUENCE public.option_id_seq
 
 
 --
--- TOC entry 3831 (class 0 OID 0)
--- Dependencies: 233
+-- TOC entry 3970 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: option_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -294,7 +328,7 @@ ALTER SEQUENCE public.option_id_seq OWNED BY public.option.id;
 
 
 --
--- TOC entry 234 (class 1259 OID 18628)
+-- TOC entry 236 (class 1259 OID 69844)
 -- Name: participant; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -310,7 +344,7 @@ CREATE TABLE public.participant (
 
 
 --
--- TOC entry 235 (class 1259 OID 18634)
+-- TOC entry 237 (class 1259 OID 69850)
 -- Name: participant_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -324,8 +358,8 @@ CREATE SEQUENCE public.participant_id_seq
 
 
 --
--- TOC entry 3832 (class 0 OID 0)
--- Dependencies: 235
+-- TOC entry 3971 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: participant_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -333,7 +367,7 @@ ALTER SEQUENCE public.participant_id_seq OWNED BY public.participant.id;
 
 
 --
--- TOC entry 236 (class 1259 OID 18635)
+-- TOC entry 238 (class 1259 OID 69851)
 -- Name: participant_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -344,7 +378,7 @@ CREATE TABLE public.participant_study (
 
 
 --
--- TOC entry 237 (class 1259 OID 18640)
+-- TOC entry 239 (class 1259 OID 69856)
 -- Name: qs_geotarget; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -359,7 +393,7 @@ CREATE TABLE public.qs_geotarget (
 
 
 --
--- TOC entry 238 (class 1259 OID 18646)
+-- TOC entry 240 (class 1259 OID 69862)
 -- Name: qs_geotarget_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -373,8 +407,8 @@ CREATE SEQUENCE public.qs_geotarget_id_seq
 
 
 --
--- TOC entry 3833 (class 0 OID 0)
--- Dependencies: 238
+-- TOC entry 3972 (class 0 OID 0)
+-- Dependencies: 240
 -- Name: qs_geotarget_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -382,7 +416,7 @@ ALTER SEQUENCE public.qs_geotarget_id_seq OWNED BY public.qs_geotarget.id;
 
 
 --
--- TOC entry 239 (class 1259 OID 18647)
+-- TOC entry 241 (class 1259 OID 69863)
 -- Name: qs_keyword; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -398,7 +432,7 @@ CREATE TABLE public.qs_keyword (
 
 
 --
--- TOC entry 240 (class 1259 OID 18654)
+-- TOC entry 242 (class 1259 OID 69870)
 -- Name: qs_keyword_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -412,8 +446,8 @@ CREATE SEQUENCE public.qs_keyword_id_seq
 
 
 --
--- TOC entry 3834 (class 0 OID 0)
--- Dependencies: 240
+-- TOC entry 3973 (class 0 OID 0)
+-- Dependencies: 242
 -- Name: qs_keyword_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -421,7 +455,7 @@ ALTER SEQUENCE public.qs_keyword_id_seq OWNED BY public.qs_keyword.id;
 
 
 --
--- TOC entry 241 (class 1259 OID 18655)
+-- TOC entry 243 (class 1259 OID 69871)
 -- Name: qs_keyword_idea; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -437,7 +471,7 @@ CREATE TABLE public.qs_keyword_idea (
 
 
 --
--- TOC entry 242 (class 1259 OID 18661)
+-- TOC entry 244 (class 1259 OID 69877)
 -- Name: qs_keyword_ideas_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -451,8 +485,8 @@ CREATE SEQUENCE public.qs_keyword_ideas_id_seq
 
 
 --
--- TOC entry 3835 (class 0 OID 0)
--- Dependencies: 242
+-- TOC entry 3974 (class 0 OID 0)
+-- Dependencies: 244
 -- Name: qs_keyword_ideas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -460,7 +494,7 @@ ALTER SEQUENCE public.qs_keyword_ideas_id_seq OWNED BY public.qs_keyword_idea.id
 
 
 --
--- TOC entry 243 (class 1259 OID 18662)
+-- TOC entry 245 (class 1259 OID 69878)
 -- Name: qs_language_code; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -472,7 +506,7 @@ CREATE TABLE public.qs_language_code (
 
 
 --
--- TOC entry 244 (class 1259 OID 18668)
+-- TOC entry 246 (class 1259 OID 69884)
 -- Name: qs_language_code_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -486,8 +520,8 @@ CREATE SEQUENCE public.qs_language_code_id_seq
 
 
 --
--- TOC entry 3836 (class 0 OID 0)
--- Dependencies: 244
+-- TOC entry 3975 (class 0 OID 0)
+-- Dependencies: 246
 -- Name: qs_language_code_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -495,7 +529,7 @@ ALTER SEQUENCE public.qs_language_code_id_seq OWNED BY public.qs_language_code.i
 
 
 --
--- TOC entry 245 (class 1259 OID 18669)
+-- TOC entry 247 (class 1259 OID 69885)
 -- Name: qs_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -510,7 +544,7 @@ CREATE TABLE public.qs_study (
 
 
 --
--- TOC entry 246 (class 1259 OID 18678)
+-- TOC entry 248 (class 1259 OID 69894)
 -- Name: qs_study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -524,8 +558,8 @@ CREATE SEQUENCE public.qs_study_id_seq
 
 
 --
--- TOC entry 3837 (class 0 OID 0)
--- Dependencies: 246
+-- TOC entry 3976 (class 0 OID 0)
+-- Dependencies: 248
 -- Name: qs_study_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -533,42 +567,18 @@ ALTER SEQUENCE public.qs_study_id_seq OWNED BY public.qs_study.id;
 
 
 --
--- TOC entry 247 (class 1259 OID 18679)
+-- TOC entry 249 (class 1259 OID 69895)
 -- Name: qs_study_user; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.qs_study_user (
     qs_study integer NOT NULL,
-    "user" integer NOT NULL,
-    id integer NOT NULL
+    "user" integer NOT NULL
 );
 
 
 --
--- TOC entry 248 (class 1259 OID 18685)
--- Name: qs_study_user_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.qs_study_user_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- TOC entry 3838 (class 0 OID 0)
--- Dependencies: 248
--- Name: qs_study_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.qs_study_user_id_seq OWNED BY public.qs_study_user.id;
-
-
---
--- TOC entry 249 (class 1259 OID 18686)
+-- TOC entry 250 (class 1259 OID 69900)
 -- Name: query; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -585,7 +595,7 @@ CREATE TABLE public.query (
 
 
 --
--- TOC entry 250 (class 1259 OID 18693)
+-- TOC entry 251 (class 1259 OID 69907)
 -- Name: query_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -599,8 +609,8 @@ CREATE SEQUENCE public.query_id_seq
 
 
 --
--- TOC entry 3839 (class 0 OID 0)
--- Dependencies: 250
+-- TOC entry 3977 (class 0 OID 0)
+-- Dependencies: 251
 -- Name: query_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -608,7 +618,7 @@ ALTER SEQUENCE public.query_id_seq OWNED BY public.query.id;
 
 
 --
--- TOC entry 251 (class 1259 OID 18694)
+-- TOC entry 252 (class 1259 OID 69908)
 -- Name: question; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -624,7 +634,7 @@ CREATE TABLE public.question (
 
 
 --
--- TOC entry 252 (class 1259 OID 18700)
+-- TOC entry 253 (class 1259 OID 69914)
 -- Name: question_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -638,8 +648,8 @@ CREATE SEQUENCE public.question_id_seq
 
 
 --
--- TOC entry 3840 (class 0 OID 0)
--- Dependencies: 252
+-- TOC entry 3978 (class 0 OID 0)
+-- Dependencies: 253
 -- Name: question_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -647,7 +657,7 @@ ALTER SEQUENCE public.question_id_seq OWNED BY public.question.id;
 
 
 --
--- TOC entry 253 (class 1259 OID 18701)
+-- TOC entry 254 (class 1259 OID 69915)
 -- Name: question_result; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -658,7 +668,7 @@ CREATE TABLE public.question_result (
 
 
 --
--- TOC entry 254 (class 1259 OID 18706)
+-- TOC entry 255 (class 1259 OID 69920)
 -- Name: questiontype; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -670,7 +680,7 @@ CREATE TABLE public.questiontype (
 
 
 --
--- TOC entry 255 (class 1259 OID 18712)
+-- TOC entry 256 (class 1259 OID 69926)
 -- Name: questiontype_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -684,8 +694,8 @@ CREATE SEQUENCE public.questiontype_id_seq
 
 
 --
--- TOC entry 3841 (class 0 OID 0)
--- Dependencies: 255
+-- TOC entry 3979 (class 0 OID 0)
+-- Dependencies: 256
 -- Name: questiontype_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -693,7 +703,7 @@ ALTER SEQUENCE public.questiontype_id_seq OWNED BY public.questiontype.id;
 
 
 --
--- TOC entry 256 (class 1259 OID 18713)
+-- TOC entry 257 (class 1259 OID 69927)
 -- Name: range_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -706,7 +716,7 @@ CREATE TABLE public.range_study (
 
 
 --
--- TOC entry 257 (class 1259 OID 18717)
+-- TOC entry 258 (class 1259 OID 69931)
 -- Name: range_study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -720,8 +730,8 @@ CREATE SEQUENCE public.range_study_id_seq
 
 
 --
--- TOC entry 3842 (class 0 OID 0)
--- Dependencies: 257
+-- TOC entry 3980 (class 0 OID 0)
+-- Dependencies: 258
 -- Name: range_study_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -729,7 +739,7 @@ ALTER SEQUENCE public.range_study_id_seq OWNED BY public.range_study.id;
 
 
 --
--- TOC entry 258 (class 1259 OID 18718)
+-- TOC entry 259 (class 1259 OID 69932)
 -- Name: result; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -758,7 +768,7 @@ CREATE TABLE public.result (
 
 
 --
--- TOC entry 259 (class 1259 OID 18725)
+-- TOC entry 260 (class 1259 OID 69939)
 -- Name: result_ai; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -777,7 +787,7 @@ CREATE TABLE public.result_ai (
 
 
 --
--- TOC entry 260 (class 1259 OID 18732)
+-- TOC entry 261 (class 1259 OID 69946)
 -- Name: result_ai_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -791,8 +801,8 @@ CREATE SEQUENCE public.result_ai_id_seq
 
 
 --
--- TOC entry 3843 (class 0 OID 0)
--- Dependencies: 260
+-- TOC entry 3981 (class 0 OID 0)
+-- Dependencies: 261
 -- Name: result_ai_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -800,7 +810,43 @@ ALTER SEQUENCE public.result_ai_id_seq OWNED BY public.result_ai.id;
 
 
 --
--- TOC entry 261 (class 1259 OID 18733)
+-- TOC entry 262 (class 1259 OID 69947)
+-- Name: result_ai_segment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.result_ai_segment (
+    id integer NOT NULL,
+    text text,
+    "position" integer,
+    result_ai integer
+);
+
+
+--
+-- TOC entry 263 (class 1259 OID 69953)
+-- Name: result_ai_segment_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.result_ai_segment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 3982 (class 0 OID 0)
+-- Dependencies: 263
+-- Name: result_ai_segment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.result_ai_segment_id_seq OWNED BY public.result_ai_segment.id;
+
+
+--
+-- TOC entry 264 (class 1259 OID 69954)
 -- Name: result_ai_source; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -826,12 +872,13 @@ CREATE TABLE public.result_ai_source (
     query integer,
     country integer,
     result_type_text character varying(50),
-    engine_text character varying(100)
+    engine_text character varying(100),
+    source_type character varying(50)
 );
 
 
 --
--- TOC entry 262 (class 1259 OID 18741)
+-- TOC entry 265 (class 1259 OID 69962)
 -- Name: result_ai_sources_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -845,8 +892,8 @@ CREATE SEQUENCE public.result_ai_sources_id_seq
 
 
 --
--- TOC entry 3844 (class 0 OID 0)
--- Dependencies: 262
+-- TOC entry 3983 (class 0 OID 0)
+-- Dependencies: 265
 -- Name: result_ai_sources_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -854,7 +901,7 @@ ALTER SEQUENCE public.result_ai_sources_id_seq OWNED BY public.result_ai_source.
 
 
 --
--- TOC entry 263 (class 1259 OID 18742)
+-- TOC entry 266 (class 1259 OID 69963)
 -- Name: result_chatbot; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -873,7 +920,7 @@ CREATE TABLE public.result_chatbot (
 
 
 --
--- TOC entry 264 (class 1259 OID 18749)
+-- TOC entry 267 (class 1259 OID 69970)
 -- Name: result_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -887,8 +934,8 @@ CREATE SEQUENCE public.result_id_seq
 
 
 --
--- TOC entry 3845 (class 0 OID 0)
--- Dependencies: 264
+-- TOC entry 3984 (class 0 OID 0)
+-- Dependencies: 267
 -- Name: result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -896,7 +943,56 @@ ALTER SEQUENCE public.result_id_seq OWNED BY public.result.id;
 
 
 --
--- TOC entry 265 (class 1259 OID 18750)
+-- TOC entry 295 (class 1259 OID 80212)
+-- Name: result_image; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.result_image (
+    id integer NOT NULL,
+    title text,
+    source_url text,
+    image_url text,
+    source_name text,
+    "position" integer,
+    created_at timestamp without time zone,
+    file_path character varying(255),
+    progress integer DEFAULT 0,
+    counter integer DEFAULT 0,
+    result_type_text character varying(50) DEFAULT 'image'::character varying,
+    engine_text character varying(100),
+    study integer,
+    query integer,
+    source integer,
+    country integer,
+    job_server character varying(255)
+);
+
+
+--
+-- TOC entry 294 (class 1259 OID 80211)
+-- Name: result_image_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.result_image_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 3985 (class 0 OID 0)
+-- Dependencies: 294
+-- Name: result_image_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.result_image_id_seq OWNED BY public.result_image.id;
+
+
+--
+-- TOC entry 268 (class 1259 OID 69971)
 -- Name: result_llm_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -910,8 +1006,8 @@ CREATE SEQUENCE public.result_llm_id_seq
 
 
 --
--- TOC entry 3846 (class 0 OID 0)
--- Dependencies: 265
+-- TOC entry 3986 (class 0 OID 0)
+-- Dependencies: 268
 -- Name: result_llm_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -919,7 +1015,7 @@ ALTER SEQUENCE public.result_llm_id_seq OWNED BY public.result_chatbot.id;
 
 
 --
--- TOC entry 266 (class 1259 OID 18751)
+-- TOC entry 269 (class 1259 OID 69972)
 -- Name: result_source; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -936,7 +1032,7 @@ CREATE TABLE public.result_source (
 
 
 --
--- TOC entry 267 (class 1259 OID 18760)
+-- TOC entry 270 (class 1259 OID 69981)
 -- Name: result_source_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -949,8 +1045,8 @@ CREATE SEQUENCE public.result_source_id_seq
 
 
 --
--- TOC entry 3847 (class 0 OID 0)
--- Dependencies: 267
+-- TOC entry 3987 (class 0 OID 0)
+-- Dependencies: 270
 -- Name: result_source_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -958,7 +1054,7 @@ ALTER SEQUENCE public.result_source_id_seq OWNED BY public.result_source.id;
 
 
 --
--- TOC entry 268 (class 1259 OID 18761)
+-- TOC entry 271 (class 1259 OID 69982)
 -- Name: resulttype; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -972,7 +1068,7 @@ CREATE TABLE public.resulttype (
 
 
 --
--- TOC entry 269 (class 1259 OID 18769)
+-- TOC entry 272 (class 1259 OID 69990)
 -- Name: resulttype_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -986,8 +1082,8 @@ CREATE SEQUENCE public.resulttype_id_seq
 
 
 --
--- TOC entry 3848 (class 0 OID 0)
--- Dependencies: 269
+-- TOC entry 3988 (class 0 OID 0)
+-- Dependencies: 272
 -- Name: resulttype_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -995,7 +1091,7 @@ ALTER SEQUENCE public.resulttype_id_seq OWNED BY public.resulttype.id;
 
 
 --
--- TOC entry 270 (class 1259 OID 18770)
+-- TOC entry 273 (class 1259 OID 69991)
 -- Name: role; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1009,7 +1105,7 @@ CREATE TABLE public.role (
 
 
 --
--- TOC entry 271 (class 1259 OID 18776)
+-- TOC entry 274 (class 1259 OID 69997)
 -- Name: role_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1023,8 +1119,8 @@ CREATE SEQUENCE public.role_id_seq
 
 
 --
--- TOC entry 3849 (class 0 OID 0)
--- Dependencies: 271
+-- TOC entry 3989 (class 0 OID 0)
+-- Dependencies: 274
 -- Name: role_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1032,7 +1128,7 @@ ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
 
 
 --
--- TOC entry 272 (class 1259 OID 18777)
+-- TOC entry 275 (class 1259 OID 69998)
 -- Name: scraper; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1049,7 +1145,7 @@ CREATE TABLE public.scraper (
 
 
 --
--- TOC entry 273 (class 1259 OID 18781)
+-- TOC entry 276 (class 1259 OID 70002)
 -- Name: scraper_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1063,8 +1159,8 @@ CREATE SEQUENCE public.scraper_id_seq
 
 
 --
--- TOC entry 3850 (class 0 OID 0)
--- Dependencies: 273
+-- TOC entry 3990 (class 0 OID 0)
+-- Dependencies: 276
 -- Name: scraper_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1072,7 +1168,7 @@ ALTER SEQUENCE public.scraper_id_seq OWNED BY public.scraper.id;
 
 
 --
--- TOC entry 274 (class 1259 OID 18782)
+-- TOC entry 277 (class 1259 OID 70003)
 -- Name: searchengine; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1083,7 +1179,7 @@ CREATE TABLE public.searchengine (
 
 
 --
--- TOC entry 275 (class 1259 OID 18788)
+-- TOC entry 278 (class 1259 OID 70009)
 -- Name: searchengine_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1097,8 +1193,8 @@ CREATE SEQUENCE public.searchengine_id_seq
 
 
 --
--- TOC entry 3851 (class 0 OID 0)
--- Dependencies: 275
+-- TOC entry 3991 (class 0 OID 0)
+-- Dependencies: 278
 -- Name: searchengine_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1106,7 +1202,7 @@ ALTER SEQUENCE public.searchengine_id_seq OWNED BY public.searchengine.id;
 
 
 --
--- TOC entry 276 (class 1259 OID 18789)
+-- TOC entry 279 (class 1259 OID 70010)
 -- Name: searchengine_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1117,7 +1213,7 @@ CREATE TABLE public.searchengine_study (
 
 
 --
--- TOC entry 277 (class 1259 OID 18794)
+-- TOC entry 280 (class 1259 OID 70015)
 -- Name: serp; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1137,7 +1233,7 @@ CREATE TABLE public.serp (
 
 
 --
--- TOC entry 278 (class 1259 OID 18799)
+-- TOC entry 281 (class 1259 OID 70020)
 -- Name: serp_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1151,8 +1247,8 @@ CREATE SEQUENCE public.serp_id_seq
 
 
 --
--- TOC entry 3852 (class 0 OID 0)
--- Dependencies: 278
+-- TOC entry 3992 (class 0 OID 0)
+-- Dependencies: 281
 -- Name: serp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1160,7 +1256,7 @@ ALTER SEQUENCE public.serp_id_seq OWNED BY public.serp.id;
 
 
 --
--- TOC entry 279 (class 1259 OID 18800)
+-- TOC entry 282 (class 1259 OID 70021)
 -- Name: source; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1180,7 +1276,7 @@ CREATE TABLE public.source (
 
 
 --
--- TOC entry 280 (class 1259 OID 18806)
+-- TOC entry 283 (class 1259 OID 70027)
 -- Name: source_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1194,8 +1290,8 @@ CREATE SEQUENCE public.source_id_seq
 
 
 --
--- TOC entry 3853 (class 0 OID 0)
--- Dependencies: 280
+-- TOC entry 3993 (class 0 OID 0)
+-- Dependencies: 283
 -- Name: source_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1203,7 +1299,7 @@ ALTER SEQUENCE public.source_id_seq OWNED BY public.source.id;
 
 
 --
--- TOC entry 281 (class 1259 OID 18807)
+-- TOC entry 284 (class 1259 OID 70028)
 -- Name: study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1232,12 +1328,14 @@ CREATE TABLE public.study (
     show_description_after_join boolean DEFAULT false NOT NULL,
     participant_description text,
     pre_survey_json text,
-    post_survey_json text
+    post_survey_json text,
+    llm_classifiers_json text,
+    study_mode character varying(50)
 );
 
 
 --
--- TOC entry 282 (class 1259 OID 18825)
+-- TOC entry 285 (class 1259 OID 70046)
 -- Name: study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1251,8 +1349,8 @@ CREATE SEQUENCE public.study_id_seq
 
 
 --
--- TOC entry 3854 (class 0 OID 0)
--- Dependencies: 282
+-- TOC entry 3994 (class 0 OID 0)
+-- Dependencies: 285
 -- Name: study_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1260,7 +1358,7 @@ ALTER SEQUENCE public.study_id_seq OWNED BY public.study.id;
 
 
 --
--- TOC entry 283 (class 1259 OID 18826)
+-- TOC entry 286 (class 1259 OID 70047)
 -- Name: study_url_filter; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1274,7 +1372,7 @@ CREATE TABLE public.study_url_filter (
 
 
 --
--- TOC entry 284 (class 1259 OID 18834)
+-- TOC entry 287 (class 1259 OID 70055)
 -- Name: study_main_filter_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1288,8 +1386,8 @@ CREATE SEQUENCE public.study_main_filter_id_seq
 
 
 --
--- TOC entry 3855 (class 0 OID 0)
--- Dependencies: 284
+-- TOC entry 3995 (class 0 OID 0)
+-- Dependencies: 287
 -- Name: study_main_filter_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1297,7 +1395,7 @@ ALTER SEQUENCE public.study_main_filter_id_seq OWNED BY public.study_url_filter.
 
 
 --
--- TOC entry 285 (class 1259 OID 18835)
+-- TOC entry 288 (class 1259 OID 70056)
 -- Name: study_resulttype; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1309,7 +1407,7 @@ CREATE TABLE public.study_resulttype (
 
 
 --
--- TOC entry 286 (class 1259 OID 18839)
+-- TOC entry 289 (class 1259 OID 70060)
 -- Name: study_resulttype_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1323,8 +1421,8 @@ CREATE SEQUENCE public.study_resulttype_id_seq
 
 
 --
--- TOC entry 3856 (class 0 OID 0)
--- Dependencies: 286
+-- TOC entry 3996 (class 0 OID 0)
+-- Dependencies: 289
 -- Name: study_resulttype_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1332,7 +1430,7 @@ ALTER SEQUENCE public.study_resulttype_id_seq OWNED BY public.study_resulttype.i
 
 
 --
--- TOC entry 287 (class 1259 OID 18840)
+-- TOC entry 290 (class 1259 OID 70061)
 -- Name: study_user; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1343,7 +1441,7 @@ CREATE TABLE public.study_user (
 
 
 --
--- TOC entry 288 (class 1259 OID 18845)
+-- TOC entry 291 (class 1259 OID 70066)
 -- Name: user; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1371,12 +1469,12 @@ CREATE TABLE public."user" (
     us_phone_number character varying,
     newsletter_opt_in boolean DEFAULT false,
     super_admin boolean DEFAULT false,
-    force_password_change boolean DEFAULT false
+    force_password_change boolean DEFAULT false NOT NULL
 );
 
 
 --
--- TOC entry 289 (class 1259 OID 18854)
+-- TOC entry 292 (class 1259 OID 70076)
 -- Name: user_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1390,8 +1488,8 @@ CREATE SEQUENCE public.user_id_seq
 
 
 --
--- TOC entry 3857 (class 0 OID 0)
--- Dependencies: 289
+-- TOC entry 3997 (class 0 OID 0)
+-- Dependencies: 292
 -- Name: user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1399,7 +1497,7 @@ ALTER SEQUENCE public.user_id_seq OWNED BY public."user".id;
 
 
 --
--- TOC entry 290 (class 1259 OID 18855)
+-- TOC entry 293 (class 1259 OID 70077)
 -- Name: user_role; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1410,7 +1508,7 @@ CREATE TABLE public.user_role (
 
 
 --
--- TOC entry 3508 (class 2604 OID 18860)
+-- TOC entry 3525 (class 2604 OID 70082)
 -- Name: answer id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1418,7 +1516,7 @@ ALTER TABLE ONLY public.answer ALTER COLUMN id SET DEFAULT nextval('public.answe
 
 
 --
--- TOC entry 3509 (class 2604 OID 18861)
+-- TOC entry 3526 (class 2604 OID 70083)
 -- Name: classifier id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1426,7 +1524,7 @@ ALTER TABLE ONLY public.classifier ALTER COLUMN id SET DEFAULT nextval('public.c
 
 
 --
--- TOC entry 3511 (class 2604 OID 18862)
+-- TOC entry 3528 (class 2604 OID 70084)
 -- Name: classifier_indicator id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1434,7 +1532,7 @@ ALTER TABLE ONLY public.classifier_indicator ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 3513 (class 2604 OID 18863)
+-- TOC entry 3530 (class 2604 OID 70085)
 -- Name: classifier_result id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1442,7 +1540,7 @@ ALTER TABLE ONLY public.classifier_result ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3515 (class 2604 OID 18864)
+-- TOC entry 3532 (class 2604 OID 70086)
 -- Name: country id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1450,7 +1548,7 @@ ALTER TABLE ONLY public.country ALTER COLUMN id SET DEFAULT nextval('public.coun
 
 
 --
--- TOC entry 3516 (class 2604 OID 18865)
+-- TOC entry 3533 (class 2604 OID 70087)
 -- Name: option id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1458,7 +1556,7 @@ ALTER TABLE ONLY public.option ALTER COLUMN id SET DEFAULT nextval('public.optio
 
 
 --
--- TOC entry 3517 (class 2604 OID 18866)
+-- TOC entry 3534 (class 2604 OID 70088)
 -- Name: participant id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1466,7 +1564,7 @@ ALTER TABLE ONLY public.participant ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3518 (class 2604 OID 18867)
+-- TOC entry 3535 (class 2604 OID 70089)
 -- Name: qs_geotarget id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1474,7 +1572,7 @@ ALTER TABLE ONLY public.qs_geotarget ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3519 (class 2604 OID 18868)
+-- TOC entry 3536 (class 2604 OID 70090)
 -- Name: qs_keyword id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1482,7 +1580,7 @@ ALTER TABLE ONLY public.qs_keyword ALTER COLUMN id SET DEFAULT nextval('public.q
 
 
 --
--- TOC entry 3521 (class 2604 OID 18869)
+-- TOC entry 3538 (class 2604 OID 70091)
 -- Name: qs_keyword_idea id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1490,7 +1588,7 @@ ALTER TABLE ONLY public.qs_keyword_idea ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 3522 (class 2604 OID 18870)
+-- TOC entry 3539 (class 2604 OID 70092)
 -- Name: qs_language_code id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1498,7 +1596,7 @@ ALTER TABLE ONLY public.qs_language_code ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3523 (class 2604 OID 18871)
+-- TOC entry 3540 (class 2604 OID 70093)
 -- Name: qs_study id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1506,15 +1604,7 @@ ALTER TABLE ONLY public.qs_study ALTER COLUMN id SET DEFAULT nextval('public.qs_
 
 
 --
--- TOC entry 3526 (class 2604 OID 18872)
--- Name: qs_study_user id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.qs_study_user ALTER COLUMN id SET DEFAULT nextval('public.qs_study_user_id_seq'::regclass);
-
-
---
--- TOC entry 3527 (class 2604 OID 18873)
+-- TOC entry 3543 (class 2604 OID 70094)
 -- Name: query id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1522,7 +1612,7 @@ ALTER TABLE ONLY public.query ALTER COLUMN id SET DEFAULT nextval('public.query_
 
 
 --
--- TOC entry 3529 (class 2604 OID 18874)
+-- TOC entry 3545 (class 2604 OID 70095)
 -- Name: question id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1530,7 +1620,7 @@ ALTER TABLE ONLY public.question ALTER COLUMN id SET DEFAULT nextval('public.que
 
 
 --
--- TOC entry 3530 (class 2604 OID 18875)
+-- TOC entry 3546 (class 2604 OID 70096)
 -- Name: questiontype id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1538,7 +1628,7 @@ ALTER TABLE ONLY public.questiontype ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3531 (class 2604 OID 18876)
+-- TOC entry 3547 (class 2604 OID 70097)
 -- Name: range_study id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1546,7 +1636,7 @@ ALTER TABLE ONLY public.range_study ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3532 (class 2604 OID 18877)
+-- TOC entry 3548 (class 2604 OID 70098)
 -- Name: result id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1554,7 +1644,7 @@ ALTER TABLE ONLY public.result ALTER COLUMN id SET DEFAULT nextval('public.resul
 
 
 --
--- TOC entry 3534 (class 2604 OID 18878)
+-- TOC entry 3550 (class 2604 OID 70099)
 -- Name: result_ai id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1562,7 +1652,15 @@ ALTER TABLE ONLY public.result_ai ALTER COLUMN id SET DEFAULT nextval('public.re
 
 
 --
--- TOC entry 3536 (class 2604 OID 18879)
+-- TOC entry 3552 (class 2604 OID 70100)
+-- Name: result_ai_segment id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_segment ALTER COLUMN id SET DEFAULT nextval('public.result_ai_segment_id_seq'::regclass);
+
+
+--
+-- TOC entry 3553 (class 2604 OID 70101)
 -- Name: result_ai_source id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1570,7 +1668,7 @@ ALTER TABLE ONLY public.result_ai_source ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3539 (class 2604 OID 18880)
+-- TOC entry 3556 (class 2604 OID 70102)
 -- Name: result_chatbot id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1578,7 +1676,15 @@ ALTER TABLE ONLY public.result_chatbot ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 3542 (class 2604 OID 18881)
+-- TOC entry 3585 (class 2604 OID 80215)
+-- Name: result_image id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_image ALTER COLUMN id SET DEFAULT nextval('public.result_image_id_seq'::regclass);
+
+
+--
+-- TOC entry 3559 (class 2604 OID 70103)
 -- Name: result_source id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1586,7 +1692,7 @@ ALTER TABLE ONLY public.result_source ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3543 (class 2604 OID 18882)
+-- TOC entry 3560 (class 2604 OID 70104)
 -- Name: resulttype id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1594,7 +1700,7 @@ ALTER TABLE ONLY public.resulttype ALTER COLUMN id SET DEFAULT nextval('public.r
 
 
 --
--- TOC entry 3546 (class 2604 OID 18883)
+-- TOC entry 3563 (class 2604 OID 70105)
 -- Name: role id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1602,7 +1708,7 @@ ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval('public.role_id
 
 
 --
--- TOC entry 3547 (class 2604 OID 18884)
+-- TOC entry 3564 (class 2604 OID 70106)
 -- Name: scraper id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1610,7 +1716,7 @@ ALTER TABLE ONLY public.scraper ALTER COLUMN id SET DEFAULT nextval('public.scra
 
 
 --
--- TOC entry 3548 (class 2604 OID 18885)
+-- TOC entry 3565 (class 2604 OID 70107)
 -- Name: searchengine id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1618,7 +1724,7 @@ ALTER TABLE ONLY public.searchengine ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3549 (class 2604 OID 18886)
+-- TOC entry 3566 (class 2604 OID 70108)
 -- Name: serp id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1626,7 +1732,7 @@ ALTER TABLE ONLY public.serp ALTER COLUMN id SET DEFAULT nextval('public.serp_id
 
 
 --
--- TOC entry 3551 (class 2604 OID 18887)
+-- TOC entry 3568 (class 2604 OID 70109)
 -- Name: source id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1634,7 +1740,7 @@ ALTER TABLE ONLY public.source ALTER COLUMN id SET DEFAULT nextval('public.sourc
 
 
 --
--- TOC entry 3552 (class 2604 OID 18888)
+-- TOC entry 3569 (class 2604 OID 70110)
 -- Name: study id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1642,7 +1748,7 @@ ALTER TABLE ONLY public.study ALTER COLUMN id SET DEFAULT nextval('public.study_
 
 
 --
--- TOC entry 3563 (class 2604 OID 18889)
+-- TOC entry 3580 (class 2604 OID 70111)
 -- Name: study_resulttype id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1650,7 +1756,7 @@ ALTER TABLE ONLY public.study_resulttype ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3560 (class 2604 OID 18890)
+-- TOC entry 3577 (class 2604 OID 70112)
 -- Name: study_url_filter id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1658,7 +1764,7 @@ ALTER TABLE ONLY public.study_url_filter ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3564 (class 2604 OID 18891)
+-- TOC entry 3581 (class 2604 OID 70113)
 -- Name: user id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1666,62 +1772,93 @@ ALTER TABLE ONLY public."user" ALTER COLUMN id SET DEFAULT nextval('public.user_
 
 
 --
--- TOC entry 3749 (class 0 OID 18575)
+-- TOC entry 3883 (class 0 OID 69781)
 -- Dependencies: 219
+-- Data for Name: ai_segment_source; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ai_segment_source (segment_id, source_id) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3884 (class 0 OID 69786)
+-- Dependencies: 220
 -- Data for Name: alembic_version; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.alembic_version (version_num) FROM stdin;
-958a5d925987
 \.
 
 
 --
--- TOC entry 3750 (class 0 OID 18579)
--- Dependencies: 220
+-- TOC entry 3885 (class 0 OID 69790)
+-- Dependencies: 221
 -- Data for Name: answer; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.answer (id, value, participant, result, question, study, status, created_at, source_status_code, resulttype, result_ai, result_chatbot, result_serp, result_type_text) FROM stdin;
+COPY public.answer (id, value, participant, result, question, study, status, created_at, source_status_code, resulttype, result_ai, result_chatbot, result_serp, result_type_text, result_ai_source, result_image) FROM stdin;
 \.
 
 
 --
--- TOC entry 3752 (class 0 OID 18586)
--- Dependencies: 222
+-- TOC entry 3887 (class 0 OID 69797)
+-- Dependencies: 223
 -- Data for Name: classifier; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.classifier (id, name, display_name, display) FROM stdin;
-1	seo_rule_based	SEO (rule-based): Calculate the SEO probability of search results by using a rule-based approach	f
-2	readability_score	Readability Score: Calculation of the readability from 0 - 100 for a search result	t
-4	seo_score	SEO Score: Calculate a score from 0-100 of the probability of SEO of a search result	t
+COPY public.classifier (id, name, display_name, display, description, description_url) FROM stdin;
+1	seo_rule_based	SEO (rule-based): Calculate the SEO probability of search results by using a rule-based approach	f	\N	\N
+4	seo_score	SEO Score: Calculate a score from 0-100 of the probability of SEO of a search result	t	With the help of the SEO Score, you can easily determine on a scale from 0 to 100 how likely it is that a search result collected by RAT is optimized for search engines. RAT examines known criteria and factors used by search engines, such as Google, to rank results, thus playing a crucial role in search engine optimization. Additionally, RAT offers various other SEO-relevant insights about the search results, including keyword density and the labeling of individual HTML tags.	https://result-assessment-tool-rat.gitbook.io/result-assessment-tool-rat-docs/the-rat-extensions/seo-score
+2	readability_score	Readability Score: Calculation of the readability from 0 - 100 for a search result	t	The Readability Score is a useful tool that helps you determine how easy it is to read the content found in the search results collected by RAT. It uses various readability formulas and the average reading time to calculate a score between 0 and 100, which assesses the overall readability of the text.	https://result-assessment-tool-rat.gitbook.io/result-assessment-tool-rat-docs/the-rat-extensions/readability-score
+5	universal_llm	Universal LLM	f	\N	\N
+6	geo_score	GEO Score: Calculate a score from 0-100 of the probability of GEO of a result	t	With the help of the GEO Score, you can determine on a scale from 0 to 100 how likely it is that a search result and source used to generate AI answers in search engines collected by RAT is optimized for generative AI models like ChatGPT, Gemini, and Perplexity.	\N
 \.
 
 
 --
--- TOC entry 3754 (class 0 OID 18594)
--- Dependencies: 224
+-- TOC entry 3889 (class 0 OID 69805)
+-- Dependencies: 225
 -- Data for Name: classifier_indicator; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.classifier_indicator (id, created_at, indicator, value, result, classifier, job_server, study) FROM stdin;
+COPY public.classifier_indicator (id, created_at, indicator, value, result, classifier, job_server, study, result_ai, result_chatbot, result_ai_source, result_image) FROM stdin;
 \.
 
 
 --
--- TOC entry 3756 (class 0 OID 18602)
--- Dependencies: 226
+-- TOC entry 3891 (class 0 OID 69813)
+-- Dependencies: 227
 -- Data for Name: classifier_result; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.classifier_result (id, created_at, value, result, classifier, job_server, study) FROM stdin;
+COPY public.classifier_result (id, created_at, value, result, classifier, job_server, study, result_ai, result_chatbot, result_ai_source, result_image) FROM stdin;
 \.
 
 
 --
--- TOC entry 3758 (class 0 OID 18610)
--- Dependencies: 228
+-- TOC entry 3893 (class 0 OID 69821)
+-- Dependencies: 229
+-- Data for Name: classifier_resulttype; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.classifier_resulttype (classifier, resulttype) FROM stdin;
+4	1
+4	6
+1	1
+1	6
+2	1
+2	2
+2	4
+2	6
+6	1
+6	6
+\.
+
+
+--
+-- TOC entry 3894 (class 0 OID 69826)
+-- Dependencies: 230
 -- Data for Name: classifier_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -1730,8 +1867,8 @@ COPY public.classifier_study (classifier, study) FROM stdin;
 
 
 --
--- TOC entry 3760 (class 0 OID 18614)
--- Dependencies: 230
+-- TOC entry 3896 (class 0 OID 69830)
+-- Dependencies: 232
 -- Data for Name: country; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -1740,8 +1877,8 @@ COPY public.country (id, name, code) FROM stdin;
 
 
 --
--- TOC entry 3762 (class 0 OID 18621)
--- Dependencies: 232
+-- TOC entry 3898 (class 0 OID 69837)
+-- Dependencies: 234
 -- Data for Name: option; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -1750,8 +1887,8 @@ COPY public.option (id, value, label, "position", question) FROM stdin;
 
 
 --
--- TOC entry 3764 (class 0 OID 18628)
--- Dependencies: 234
+-- TOC entry 3900 (class 0 OID 69844)
+-- Dependencies: 236
 -- Data for Name: participant; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -1760,8 +1897,8 @@ COPY public.participant (id, name, created_at, updated_at, password, post_survey
 
 
 --
--- TOC entry 3766 (class 0 OID 18635)
--- Dependencies: 236
+-- TOC entry 3902 (class 0 OID 69851)
+-- Dependencies: 238
 -- Data for Name: participant_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -1770,8 +1907,8 @@ COPY public.participant_study (participant, study) FROM stdin;
 
 
 --
--- TOC entry 3767 (class 0 OID 18640)
--- Dependencies: 237
+-- TOC entry 3903 (class 0 OID 69856)
+-- Dependencies: 239
 -- Data for Name: qs_geotarget; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196736,8 +196873,8 @@ COPY public.qs_geotarget (id, name, canonical_name, country_code, target_type, c
 
 
 --
--- TOC entry 3769 (class 0 OID 18647)
--- Dependencies: 239
+-- TOC entry 3905 (class 0 OID 69863)
+-- Dependencies: 241
 -- Data for Name: qs_keyword; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196746,8 +196883,8 @@ COPY public.qs_keyword (id, qs_study_id, qs_geotarget_criterion_id, qs_language_
 
 
 --
--- TOC entry 3771 (class 0 OID 18655)
--- Dependencies: 241
+-- TOC entry 3907 (class 0 OID 69871)
+-- Dependencies: 243
 -- Data for Name: qs_keyword_idea; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196756,8 +196893,8 @@ COPY public.qs_keyword_idea (id, qs_study_id, qs_keyword_id, keyword_idea, avg_m
 
 
 --
--- TOC entry 3773 (class 0 OID 18662)
--- Dependencies: 243
+-- TOC entry 3909 (class 0 OID 69878)
+-- Dependencies: 245
 -- Data for Name: qs_language_code; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196817,8 +196954,8 @@ COPY public.qs_language_code (id, name, criterion_id) FROM stdin;
 
 
 --
--- TOC entry 3775 (class 0 OID 18669)
--- Dependencies: 245
+-- TOC entry 3911 (class 0 OID 69885)
+-- Dependencies: 247
 -- Data for Name: qs_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196827,18 +196964,18 @@ COPY public.qs_study (id, name, created_at, status, description, visible) FROM s
 
 
 --
--- TOC entry 3777 (class 0 OID 18679)
--- Dependencies: 247
+-- TOC entry 3913 (class 0 OID 69895)
+-- Dependencies: 249
 -- Data for Name: qs_study_user; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.qs_study_user (qs_study, "user", id) FROM stdin;
+COPY public.qs_study_user (qs_study, "user") FROM stdin;
 \.
 
 
 --
--- TOC entry 3779 (class 0 OID 18686)
--- Dependencies: 249
+-- TOC entry 3914 (class 0 OID 69900)
+-- Dependencies: 250
 -- Data for Name: query; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196847,8 +196984,8 @@ COPY public.query (id, query, created_at, study, description, "limit", source_ty
 
 
 --
--- TOC entry 3781 (class 0 OID 18694)
--- Dependencies: 251
+-- TOC entry 3916 (class 0 OID 69908)
+-- Dependencies: 252
 -- Data for Name: question; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196857,8 +196994,8 @@ COPY public.question (id, study, title, description, question_type, "position", 
 
 
 --
--- TOC entry 3783 (class 0 OID 18701)
--- Dependencies: 253
+-- TOC entry 3918 (class 0 OID 69915)
+-- Dependencies: 254
 -- Data for Name: question_result; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196867,8 +197004,8 @@ COPY public.question_result (question, result) FROM stdin;
 
 
 --
--- TOC entry 3784 (class 0 OID 18706)
--- Dependencies: 254
+-- TOC entry 3919 (class 0 OID 69920)
+-- Dependencies: 255
 -- Data for Name: questiontype; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196883,8 +197020,8 @@ COPY public.questiontype (id, name, display) FROM stdin;
 
 
 --
--- TOC entry 3786 (class 0 OID 18713)
--- Dependencies: 256
+-- TOC entry 3921 (class 0 OID 69927)
+-- Dependencies: 257
 -- Data for Name: range_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196893,8 +197030,8 @@ COPY public.range_study (id, study, range_start, range_end) FROM stdin;
 
 
 --
--- TOC entry 3788 (class 0 OID 18718)
--- Dependencies: 258
+-- TOC entry 3923 (class 0 OID 69932)
+-- Dependencies: 259
 -- Data for Name: result; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196903,8 +197040,8 @@ COPY public.result (id, title, description, url, "position", created_at, main, i
 
 
 --
--- TOC entry 3789 (class 0 OID 18725)
--- Dependencies: 259
+-- TOC entry 3924 (class 0 OID 69939)
+-- Dependencies: 260
 -- Data for Name: result_ai; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196913,18 +197050,28 @@ COPY public.result_ai (id, scraper, study, answer, created_at, answer_html, quer
 
 
 --
--- TOC entry 3791 (class 0 OID 18733)
--- Dependencies: 261
--- Data for Name: result_ai_source; Type: TABLE DATA; Schema: public; Owner: -
+-- TOC entry 3926 (class 0 OID 69947)
+-- Dependencies: 262
+-- Data for Name: result_ai_segment; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.result_ai_source (id, result_ai, url, source, created_at, error_code, job_server, title, description, "position", main, final_url, ip, normalized_url, progress, counter, study, scraper, query, country, result_type_text, engine_text) FROM stdin;
+COPY public.result_ai_segment (id, text, "position", result_ai) FROM stdin;
 \.
 
 
 --
--- TOC entry 3793 (class 0 OID 18742)
--- Dependencies: 263
+-- TOC entry 3928 (class 0 OID 69954)
+-- Dependencies: 264
+-- Data for Name: result_ai_source; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.result_ai_source (id, result_ai, url, source, created_at, error_code, job_server, title, description, "position", main, final_url, ip, normalized_url, progress, counter, study, scraper, query, country, result_type_text, engine_text, source_type) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3930 (class 0 OID 69963)
+-- Dependencies: 266
 -- Data for Name: result_chatbot; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196933,8 +197080,18 @@ COPY public.result_chatbot (id, scraper, study, answer, created_at, answer_html,
 
 
 --
--- TOC entry 3796 (class 0 OID 18751)
--- Dependencies: 266
+-- TOC entry 3959 (class 0 OID 80212)
+-- Dependencies: 295
+-- Data for Name: result_image; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.result_image (id, title, source_url, image_url, source_name, "position", created_at, file_path, progress, counter, result_type_text, engine_text, study, query, source, country, job_server) FROM stdin;
+\.
+
+
+--
+-- TOC entry 3933 (class 0 OID 69972)
+-- Dependencies: 269
 -- Data for Name: result_source; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196943,8 +197100,8 @@ COPY public.result_source (result, source, progress, counter, id, created_at, er
 
 
 --
--- TOC entry 3798 (class 0 OID 18761)
--- Dependencies: 268
+-- TOC entry 3935 (class 0 OID 69982)
+-- Dependencies: 271
 -- Data for Name: resulttype; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196954,12 +197111,14 @@ COPY public.resulttype (id, name, display, filter, selection) FROM stdin;
 4	Chatbot	Chatbot	t	t
 3	Snippets of Organic Results	Snippets of Organic Results	f	f
 5	SERP	SERP	t	t
+6	AI Sources	AI Sources	t	t
+7	image	Image Result	t	t
 \.
 
 
 --
--- TOC entry 3800 (class 0 OID 18770)
--- Dependencies: 270
+-- TOC entry 3937 (class 0 OID 69991)
+-- Dependencies: 273
 -- Data for Name: role; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196968,8 +197127,8 @@ COPY public.role (id, name, description, permissions, update_datetime) FROM stdi
 
 
 --
--- TOC entry 3802 (class 0 OID 18777)
--- Dependencies: 272
+-- TOC entry 3939 (class 0 OID 69998)
+-- Dependencies: 275
 -- Data for Name: scraper; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196978,8 +197137,8 @@ COPY public.scraper (id, progress, created_at, query, searchengine, study, type,
 
 
 --
--- TOC entry 3804 (class 0 OID 18782)
--- Dependencies: 274
+-- TOC entry 3941 (class 0 OID 70003)
+-- Dependencies: 277
 -- Data for Name: searchengine; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196988,8 +197147,8 @@ COPY public.searchengine (id, name) FROM stdin;
 
 
 --
--- TOC entry 3806 (class 0 OID 18789)
--- Dependencies: 276
+-- TOC entry 3943 (class 0 OID 70010)
+-- Dependencies: 279
 -- Data for Name: searchengine_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196998,8 +197157,8 @@ COPY public.searchengine_study (searchengine, study) FROM stdin;
 
 
 --
--- TOC entry 3807 (class 0 OID 18794)
--- Dependencies: 277
+-- TOC entry 3944 (class 0 OID 70015)
+-- Dependencies: 280
 -- Data for Name: serp; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197008,8 +197167,8 @@ COPY public.serp (id, scraper, page, created_at, query, assignment_count, file_p
 
 
 --
--- TOC entry 3809 (class 0 OID 18800)
--- Dependencies: 279
+-- TOC entry 3946 (class 0 OID 70021)
+-- Dependencies: 282
 -- Data for Name: source; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197018,18 +197177,18 @@ COPY public.source (id, url, progress, content_type, error_code, status_code, cr
 
 
 --
--- TOC entry 3811 (class 0 OID 18807)
--- Dependencies: 281
+-- TOC entry 3948 (class 0 OID 70028)
+-- Dependencies: 284
 -- Data for Name: study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.study (id, name, description, created_at, updated_at, result_count, status, show_urls, task, limit_per_participant, max_results_per_participant, show_ai_sources, completion_text, skippable, assess_failed, assessable_result_types_text, live_link_mode, visible, group_by_query, limit_by_query, max_queries_per_participant, show_description_after_join, participant_description, pre_survey_json, post_survey_json) FROM stdin;
+COPY public.study (id, name, description, created_at, updated_at, result_count, status, show_urls, task, limit_per_participant, max_results_per_participant, show_ai_sources, completion_text, skippable, assess_failed, assessable_result_types_text, live_link_mode, visible, group_by_query, limit_by_query, max_queries_per_participant, show_description_after_join, participant_description, pre_survey_json, post_survey_json, llm_classifiers_json, study_mode) FROM stdin;
 \.
 
 
 --
--- TOC entry 3815 (class 0 OID 18835)
--- Dependencies: 285
+-- TOC entry 3952 (class 0 OID 70056)
+-- Dependencies: 288
 -- Data for Name: study_resulttype; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197038,8 +197197,8 @@ COPY public.study_resulttype (id, study, resulttype) FROM stdin;
 
 
 --
--- TOC entry 3813 (class 0 OID 18826)
--- Dependencies: 283
+-- TOC entry 3950 (class 0 OID 70047)
+-- Dependencies: 286
 -- Data for Name: study_url_filter; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197048,8 +197207,8 @@ COPY public.study_url_filter (id, study, url, include, exclude) FROM stdin;
 
 
 --
--- TOC entry 3817 (class 0 OID 18840)
--- Dependencies: 287
+-- TOC entry 3954 (class 0 OID 70061)
+-- Dependencies: 290
 -- Data for Name: study_user; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197058,8 +197217,8 @@ COPY public.study_user (study, "user") FROM stdin;
 
 
 --
--- TOC entry 3818 (class 0 OID 18845)
--- Dependencies: 288
+-- TOC entry 3955 (class 0 OID 70066)
+-- Dependencies: 291
 -- Data for Name: user; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197068,8 +197227,8 @@ COPY public."user" (id, email, password, last_login_at, current_login_at, curren
 
 
 --
--- TOC entry 3820 (class 0 OID 18855)
--- Dependencies: 290
+-- TOC entry 3957 (class 0 OID 70077)
+-- Dependencies: 293
 -- Data for Name: user_role; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197078,17 +197237,17 @@ COPY public.user_role ("user", role) FROM stdin;
 
 
 --
--- TOC entry 3858 (class 0 OID 0)
--- Dependencies: 221
+-- TOC entry 3998 (class 0 OID 0)
+-- Dependencies: 222
 -- Name: answer_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.answer_id_seq', 103591, true);
+SELECT pg_catalog.setval('public.answer_id_seq', 103719, true);
 
 
 --
--- TOC entry 3859 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 3999 (class 0 OID 0)
+-- Dependencies: 224
 -- Name: classifier_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197096,26 +197255,26 @@ SELECT pg_catalog.setval('public.classifier_id_seq', 1, false);
 
 
 --
--- TOC entry 3860 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 4000 (class 0 OID 0)
+-- Dependencies: 226
 -- Name: classifier_indicator_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.classifier_indicator_id_seq', 12146334, true);
+SELECT pg_catalog.setval('public.classifier_indicator_id_seq', 12209588, true);
 
 
 --
--- TOC entry 3861 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 4001 (class 0 OID 0)
+-- Dependencies: 228
 -- Name: classifier_result_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.classifier_result_id_seq', 689754, true);
+SELECT pg_catalog.setval('public.classifier_result_id_seq', 700455, true);
 
 
 --
--- TOC entry 3862 (class 0 OID 0)
--- Dependencies: 229
+-- TOC entry 4002 (class 0 OID 0)
+-- Dependencies: 231
 -- Name: classifier_study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197123,8 +197282,8 @@ SELECT pg_catalog.setval('public.classifier_study_id_seq', 338, true);
 
 
 --
--- TOC entry 3863 (class 0 OID 0)
--- Dependencies: 231
+-- TOC entry 4003 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: country_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197132,26 +197291,26 @@ SELECT pg_catalog.setval('public.country_id_seq', 1, false);
 
 
 --
--- TOC entry 3864 (class 0 OID 0)
--- Dependencies: 233
+-- TOC entry 4004 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: option_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.option_id_seq', 1752, true);
+SELECT pg_catalog.setval('public.option_id_seq', 1757, true);
 
 
 --
--- TOC entry 3865 (class 0 OID 0)
--- Dependencies: 235
+-- TOC entry 4005 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: participant_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.participant_id_seq', 602, true);
+SELECT pg_catalog.setval('public.participant_id_seq', 601, true);
 
 
 --
--- TOC entry 3866 (class 0 OID 0)
--- Dependencies: 238
+-- TOC entry 4006 (class 0 OID 0)
+-- Dependencies: 240
 -- Name: qs_geotarget_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197159,8 +197318,8 @@ SELECT pg_catalog.setval('public.qs_geotarget_id_seq', 194956, true);
 
 
 --
--- TOC entry 3867 (class 0 OID 0)
--- Dependencies: 240
+-- TOC entry 4007 (class 0 OID 0)
+-- Dependencies: 242
 -- Name: qs_keyword_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197168,8 +197327,8 @@ SELECT pg_catalog.setval('public.qs_keyword_id_seq', 4295, true);
 
 
 --
--- TOC entry 3868 (class 0 OID 0)
--- Dependencies: 242
+-- TOC entry 4008 (class 0 OID 0)
+-- Dependencies: 244
 -- Name: qs_keyword_ideas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197177,8 +197336,8 @@ SELECT pg_catalog.setval('public.qs_keyword_ideas_id_seq', 295083, true);
 
 
 --
--- TOC entry 3869 (class 0 OID 0)
--- Dependencies: 244
+-- TOC entry 4009 (class 0 OID 0)
+-- Dependencies: 246
 -- Name: qs_language_code_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197186,8 +197345,8 @@ SELECT pg_catalog.setval('public.qs_language_code_id_seq', 51, true);
 
 
 --
--- TOC entry 3870 (class 0 OID 0)
--- Dependencies: 246
+-- TOC entry 4010 (class 0 OID 0)
+-- Dependencies: 248
 -- Name: qs_study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197195,26 +197354,17 @@ SELECT pg_catalog.setval('public.qs_study_id_seq', 151, true);
 
 
 --
--- TOC entry 3871 (class 0 OID 0)
--- Dependencies: 248
--- Name: qs_study_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.qs_study_user_id_seq', 1, false);
-
-
---
--- TOC entry 3872 (class 0 OID 0)
--- Dependencies: 250
+-- TOC entry 4011 (class 0 OID 0)
+-- Dependencies: 251
 -- Name: query_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.query_id_seq', 24146, true);
+SELECT pg_catalog.setval('public.query_id_seq', 27298, true);
 
 
 --
--- TOC entry 3873 (class 0 OID 0)
--- Dependencies: 252
+-- TOC entry 4012 (class 0 OID 0)
+-- Dependencies: 253
 -- Name: question_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197222,8 +197372,8 @@ SELECT pg_catalog.setval('public.question_id_seq', 635, true);
 
 
 --
--- TOC entry 3874 (class 0 OID 0)
--- Dependencies: 255
+-- TOC entry 4013 (class 0 OID 0)
+-- Dependencies: 256
 -- Name: questiontype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197231,8 +197381,8 @@ SELECT pg_catalog.setval('public.questiontype_id_seq', 6, true);
 
 
 --
--- TOC entry 3875 (class 0 OID 0)
--- Dependencies: 257
+-- TOC entry 4014 (class 0 OID 0)
+-- Dependencies: 258
 -- Name: range_study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197240,35 +197390,53 @@ SELECT pg_catalog.setval('public.range_study_id_seq', 1, false);
 
 
 --
--- TOC entry 3876 (class 0 OID 0)
--- Dependencies: 260
+-- TOC entry 4015 (class 0 OID 0)
+-- Dependencies: 261
 -- Name: result_ai_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_ai_id_seq', 20, true);
+SELECT pg_catalog.setval('public.result_ai_id_seq', 3207, true);
 
 
 --
--- TOC entry 3877 (class 0 OID 0)
--- Dependencies: 262
+-- TOC entry 4016 (class 0 OID 0)
+-- Dependencies: 263
+-- Name: result_ai_segment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.result_ai_segment_id_seq', 278, true);
+
+
+--
+-- TOC entry 4017 (class 0 OID 0)
+-- Dependencies: 265
 -- Name: result_ai_sources_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_ai_sources_id_seq', 289, true);
+SELECT pg_catalog.setval('public.result_ai_sources_id_seq', 1691, true);
 
 
 --
--- TOC entry 3878 (class 0 OID 0)
--- Dependencies: 264
+-- TOC entry 4018 (class 0 OID 0)
+-- Dependencies: 267
 -- Name: result_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_id_seq', 267, true);
+SELECT pg_catalog.setval('public.result_id_seq', 6210, true);
 
 
 --
--- TOC entry 3879 (class 0 OID 0)
--- Dependencies: 265
+-- TOC entry 4019 (class 0 OID 0)
+-- Dependencies: 294
+-- Name: result_image_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.result_image_id_seq', 100, true);
+
+
+--
+-- TOC entry 4020 (class 0 OID 0)
+-- Dependencies: 268
 -- Name: result_llm_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197276,26 +197444,26 @@ SELECT pg_catalog.setval('public.result_llm_id_seq', 1, false);
 
 
 --
--- TOC entry 3880 (class 0 OID 0)
--- Dependencies: 267
+-- TOC entry 4021 (class 0 OID 0)
+-- Dependencies: 270
 -- Name: result_source_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_source_id_seq', 267, true);
+SELECT pg_catalog.setval('public.result_source_id_seq', 6210, true);
 
 
 --
--- TOC entry 3881 (class 0 OID 0)
--- Dependencies: 269
+-- TOC entry 4022 (class 0 OID 0)
+-- Dependencies: 272
 -- Name: resulttype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.resulttype_id_seq', 1, false);
+SELECT pg_catalog.setval('public.resulttype_id_seq', 7, true);
 
 
 --
--- TOC entry 3882 (class 0 OID 0)
--- Dependencies: 271
+-- TOC entry 4023 (class 0 OID 0)
+-- Dependencies: 274
 -- Name: role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197303,8 +197471,8 @@ SELECT pg_catalog.setval('public.role_id_seq', 1, false);
 
 
 --
--- TOC entry 3883 (class 0 OID 0)
--- Dependencies: 273
+-- TOC entry 4024 (class 0 OID 0)
+-- Dependencies: 276
 -- Name: scraper_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197312,8 +197480,8 @@ SELECT pg_catalog.setval('public.scraper_id_seq', 1, false);
 
 
 --
--- TOC entry 3884 (class 0 OID 0)
--- Dependencies: 275
+-- TOC entry 4025 (class 0 OID 0)
+-- Dependencies: 278
 -- Name: searchengine_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197321,35 +197489,35 @@ SELECT pg_catalog.setval('public.searchengine_id_seq', 1, false);
 
 
 --
--- TOC entry 3885 (class 0 OID 0)
--- Dependencies: 278
+-- TOC entry 4026 (class 0 OID 0)
+-- Dependencies: 281
 -- Name: serp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.serp_id_seq', 32, true);
+SELECT pg_catalog.setval('public.serp_id_seq', 99, true);
 
 
 --
--- TOC entry 3886 (class 0 OID 0)
--- Dependencies: 280
+-- TOC entry 4027 (class 0 OID 0)
+-- Dependencies: 283
 -- Name: source_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.source_id_seq', 218, true);
+SELECT pg_catalog.setval('public.source_id_seq', 1254, true);
 
 
 --
--- TOC entry 3887 (class 0 OID 0)
--- Dependencies: 282
+-- TOC entry 4028 (class 0 OID 0)
+-- Dependencies: 285
 -- Name: study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.study_id_seq', 8, true);
+SELECT pg_catalog.setval('public.study_id_seq', 21, true);
 
 
 --
--- TOC entry 3888 (class 0 OID 0)
--- Dependencies: 284
+-- TOC entry 4029 (class 0 OID 0)
+-- Dependencies: 287
 -- Name: study_main_filter_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197357,8 +197525,8 @@ SELECT pg_catalog.setval('public.study_main_filter_id_seq', 1, false);
 
 
 --
--- TOC entry 3889 (class 0 OID 0)
--- Dependencies: 286
+-- TOC entry 4030 (class 0 OID 0)
+-- Dependencies: 289
 -- Name: study_resulttype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197366,8 +197534,8 @@ SELECT pg_catalog.setval('public.study_resulttype_id_seq', 1, false);
 
 
 --
--- TOC entry 3890 (class 0 OID 0)
--- Dependencies: 289
+-- TOC entry 4031 (class 0 OID 0)
+-- Dependencies: 292
 -- Name: user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197375,7 +197543,34 @@ SELECT pg_catalog.setval('public.user_id_seq', 1, true);
 
 
 --
--- TOC entry 3569 (class 2606 OID 18894)
+-- TOC entry 3596 (class 2606 OID 70118)
+-- Name: classifier classifier_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier
+    ADD CONSTRAINT classifier_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3605 (class 2606 OID 70120)
+-- Name: country country_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.country
+    ADD CONSTRAINT country_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3590 (class 2606 OID 70122)
+-- Name: ai_segment_source pk_ai_segment_source; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_segment_source
+    ADD CONSTRAINT pk_ai_segment_source PRIMARY KEY (segment_id, source_id);
+
+
+--
+-- TOC entry 3594 (class 2606 OID 70124)
 -- Name: answer pk_answer; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197384,16 +197579,7 @@ ALTER TABLE ONLY public.answer
 
 
 --
--- TOC entry 3571 (class 2606 OID 18896)
--- Name: classifier pk_classifier; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier
-    ADD CONSTRAINT pk_classifier PRIMARY KEY (id);
-
-
---
--- TOC entry 3573 (class 2606 OID 18898)
+-- TOC entry 3600 (class 2606 OID 70126)
 -- Name: classifier_indicator pk_classifier_indicator; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197402,7 +197588,16 @@ ALTER TABLE ONLY public.classifier_indicator
 
 
 --
--- TOC entry 3575 (class 2606 OID 18900)
+-- TOC entry 3603 (class 2606 OID 70128)
+-- Name: classifier_resulttype pk_classifier_resulttype; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_resulttype
+    ADD CONSTRAINT pk_classifier_resulttype PRIMARY KEY (classifier, resulttype);
+
+
+--
+-- TOC entry 3607 (class 2606 OID 70130)
 -- Name: participant pk_participant; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197411,7 +197606,7 @@ ALTER TABLE ONLY public.participant
 
 
 --
--- TOC entry 3577 (class 2606 OID 18902)
+-- TOC entry 3609 (class 2606 OID 70132)
 -- Name: qs_study pk_qs_study; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197420,7 +197615,7 @@ ALTER TABLE ONLY public.qs_study
 
 
 --
--- TOC entry 3581 (class 2606 OID 18904)
+-- TOC entry 3612 (class 2606 OID 70134)
 -- Name: query pk_query; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197429,7 +197624,7 @@ ALTER TABLE ONLY public.query
 
 
 --
--- TOC entry 3583 (class 2606 OID 18906)
+-- TOC entry 3615 (class 2606 OID 70136)
 -- Name: question pk_question; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197438,7 +197633,7 @@ ALTER TABLE ONLY public.question
 
 
 --
--- TOC entry 3585 (class 2606 OID 18908)
+-- TOC entry 3617 (class 2606 OID 70138)
 -- Name: questiontype pk_questiontype; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197447,7 +197642,7 @@ ALTER TABLE ONLY public.questiontype
 
 
 --
--- TOC entry 3587 (class 2606 OID 18910)
+-- TOC entry 3622 (class 2606 OID 70140)
 -- Name: result pk_result; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197456,7 +197651,7 @@ ALTER TABLE ONLY public.result
 
 
 --
--- TOC entry 3589 (class 2606 OID 18912)
+-- TOC entry 3625 (class 2606 OID 70142)
 -- Name: result_ai pk_result_ai; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197465,7 +197660,16 @@ ALTER TABLE ONLY public.result_ai
 
 
 --
--- TOC entry 3591 (class 2606 OID 18914)
+-- TOC entry 3627 (class 2606 OID 70144)
+-- Name: result_ai_segment pk_result_ai_segment; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_segment
+    ADD CONSTRAINT pk_result_ai_segment PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3630 (class 2606 OID 70146)
 -- Name: result_ai_source pk_result_ai_source; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197474,64 +197678,955 @@ ALTER TABLE ONLY public.result_ai_source
 
 
 --
--- TOC entry 3593 (class 2606 OID 18916)
--- Name: result_chatbot pk_result_chatbot; Type: CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3633 (class 2606 OID 71414)
+-- Name: result_chatbot result_chatbot_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.result_chatbot
-    ADD CONSTRAINT pk_result_chatbot PRIMARY KEY (id);
+    ADD CONSTRAINT result_chatbot_pkey PRIMARY KEY (id);
 
 
 --
--- TOC entry 3595 (class 2606 OID 18918)
--- Name: role pk_role; Type: CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3656 (class 2606 OID 80223)
+-- Name: result_image result_image_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_image
+    ADD CONSTRAINT result_image_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3635 (class 2606 OID 72045)
+-- Name: resulttype resulttype_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.resulttype
+    ADD CONSTRAINT resulttype_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3637 (class 2606 OID 72047)
+-- Name: role role_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.role
-    ADD CONSTRAINT pk_role PRIMARY KEY (id);
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
 
 
 --
--- TOC entry 3597 (class 2606 OID 18920)
--- Name: serp pk_serp; Type: CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3640 (class 2606 OID 71837)
+-- Name: scraper scraper_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scraper
+    ADD CONSTRAINT scraper_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3642 (class 2606 OID 72043)
+-- Name: searchengine searchengine_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.searchengine
+    ADD CONSTRAINT searchengine_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3646 (class 2606 OID 71400)
+-- Name: serp serp_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.serp
-    ADD CONSTRAINT pk_serp PRIMARY KEY (id);
+    ADD CONSTRAINT serp_pkey PRIMARY KEY (id);
 
 
 --
--- TOC entry 3599 (class 2606 OID 18922)
--- Name: study pk_study; Type: CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3648 (class 2606 OID 72041)
+-- Name: source source_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.source
+    ADD CONSTRAINT source_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3650 (class 2606 OID 71438)
+-- Name: study study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.study
-    ADD CONSTRAINT pk_study PRIMARY KEY (id);
+    ADD CONSTRAINT study_pkey PRIMARY KEY (id);
 
 
 --
--- TOC entry 3601 (class 2606 OID 18924)
--- Name: user pk_user; Type: CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3653 (class 2606 OID 71535)
+-- Name: user user_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public."user"
-    ADD CONSTRAINT pk_user PRIMARY KEY (id);
+    ADD CONSTRAINT user_pkey PRIMARY KEY (id);
 
 
 --
--- TOC entry 3579 (class 2606 OID 18926)
--- Name: qs_study_user qs_study_user_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3591 (class 1259 OID 73391)
+-- Name: idx_answer_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_answer_lookup ON public.answer USING btree (participant, study, status);
+
+
+--
+-- TOC entry 3654 (class 1259 OID 80244)
+-- Name: idx_result_image_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_image_study ON public.result_image USING btree (study);
+
+
+--
+-- TOC entry 3592 (class 1259 OID 73392)
+-- Name: ix_answer_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_answer_study ON public.answer USING btree (study);
+
+
+--
+-- TOC entry 3597 (class 1259 OID 73433)
+-- Name: ix_classifier_indicator_result; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_classifier_indicator_result ON public.classifier_indicator USING btree (result);
+
+
+--
+-- TOC entry 3598 (class 1259 OID 73434)
+-- Name: ix_classifier_indicator_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_classifier_indicator_study ON public.classifier_indicator USING btree (study);
+
+
+--
+-- TOC entry 3601 (class 1259 OID 73465)
+-- Name: ix_classifier_result_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_classifier_result_study ON public.classifier_result USING btree (study);
+
+
+--
+-- TOC entry 3610 (class 1259 OID 73541)
+-- Name: ix_query_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_query_study ON public.query USING btree (study);
+
+
+--
+-- TOC entry 3613 (class 1259 OID 73547)
+-- Name: ix_question_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_question_study ON public.question USING btree (study);
+
+
+--
+-- TOC entry 3618 (class 1259 OID 73568)
+-- Name: ix_range_study_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_range_study_study ON public.range_study USING btree (study);
+
+
+--
+-- TOC entry 3628 (class 1259 OID 73622)
+-- Name: ix_result_ai_source_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_result_ai_source_study ON public.result_ai_source USING btree (study);
+
+
+--
+-- TOC entry 3623 (class 1259 OID 73601)
+-- Name: ix_result_ai_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_result_ai_study ON public.result_ai USING btree (study);
+
+
+--
+-- TOC entry 3631 (class 1259 OID 73653)
+-- Name: ix_result_chatbot_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_result_chatbot_study ON public.result_chatbot USING btree (study);
+
+
+--
+-- TOC entry 3619 (class 1259 OID 73574)
+-- Name: ix_result_normalized_url; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_result_normalized_url ON public.result USING btree (normalized_url);
+
+
+--
+-- TOC entry 3620 (class 1259 OID 73575)
+-- Name: ix_result_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_result_study ON public.result USING btree (study);
+
+
+--
+-- TOC entry 3638 (class 1259 OID 73679)
+-- Name: ix_scraper_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_scraper_study ON public.scraper USING btree (study);
+
+
+--
+-- TOC entry 3643 (class 1259 OID 73705)
+-- Name: ix_serp_query; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_serp_query ON public.serp USING btree (query);
+
+
+--
+-- TOC entry 3644 (class 1259 OID 73706)
+-- Name: ix_serp_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_serp_study ON public.serp USING btree (study);
+
+
+--
+-- TOC entry 3651 (class 1259 OID 73732)
+-- Name: ix_study_url_filter_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_study_url_filter_study ON public.study_url_filter USING btree (study);
+
+
+--
+-- TOC entry 3659 (class 2606 OID 80245)
+-- Name: answer answer_result_image_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT answer_result_image_fkey FOREIGN KEY (result_image) REFERENCES public.result_image(id);
+
+
+--
+-- TOC entry 3668 (class 2606 OID 80255)
+-- Name: classifier_indicator classifier_indicator_result_image_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT classifier_indicator_result_image_fkey FOREIGN KEY (result_image) REFERENCES public.result_image(id);
+
+
+--
+-- TOC entry 3675 (class 2606 OID 80250)
+-- Name: classifier_result classifier_result_result_image_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT classifier_result_result_image_fkey FOREIGN KEY (result_image) REFERENCES public.result_image(id);
+
+
+--
+-- TOC entry 3657 (class 2606 OID 73386)
+-- Name: ai_segment_source fk_ai_segment_source_segment_id_result_ai_segment; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_segment_source
+    ADD CONSTRAINT fk_ai_segment_source_segment_id_result_ai_segment FOREIGN KEY (segment_id) REFERENCES public.result_ai_segment(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3658 (class 2606 OID 73381)
+-- Name: ai_segment_source fk_ai_segment_source_source_id_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_segment_source
+    ADD CONSTRAINT fk_ai_segment_source_source_id_result_ai_source FOREIGN KEY (source_id) REFERENCES public.result_ai_source(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3660 (class 2606 OID 73428)
+-- Name: answer fk_answer_participant_participant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_participant_participant FOREIGN KEY (participant) REFERENCES public.participant(id);
+
+
+--
+-- TOC entry 3661 (class 2606 OID 73418)
+-- Name: answer fk_answer_question_question; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_question_question FOREIGN KEY (question) REFERENCES public.question(id);
+
+
+--
+-- TOC entry 3662 (class 2606 OID 73408)
+-- Name: answer fk_answer_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
+
+
+--
+-- TOC entry 3663 (class 2606 OID 73413)
+-- Name: answer fk_answer_result_ai_source_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_result_ai_source_result_ai_source FOREIGN KEY (result_ai_source) REFERENCES public.result_ai_source(id);
+
+
+--
+-- TOC entry 3664 (class 2606 OID 73393)
+-- Name: answer fk_answer_result_chatbot_result_chatbot; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_result_chatbot_result_chatbot FOREIGN KEY (result_chatbot) REFERENCES public.result_chatbot(id);
+
+
+--
+-- TOC entry 3665 (class 2606 OID 73403)
+-- Name: answer fk_answer_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_result_result FOREIGN KEY (result) REFERENCES public.result(id);
+
+
+--
+-- TOC entry 3666 (class 2606 OID 73423)
+-- Name: answer fk_answer_result_serp_serp; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_result_serp_serp FOREIGN KEY (result_serp) REFERENCES public.serp(id);
+
+
+--
+-- TOC entry 3667 (class 2606 OID 73398)
+-- Name: answer fk_answer_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3669 (class 2606 OID 73460)
+-- Name: classifier_indicator fk_classifier_indicator_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_classifier_indicator_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
+
+
+--
+-- TOC entry 3670 (class 2606 OID 73455)
+-- Name: classifier_indicator fk_classifier_indicator_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_classifier_indicator_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
+
+
+--
+-- TOC entry 3671 (class 2606 OID 73445)
+-- Name: classifier_indicator fk_classifier_indicator_result_ai_source_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_classifier_indicator_result_ai_source_result_ai_source FOREIGN KEY (result_ai_source) REFERENCES public.result_ai_source(id);
+
+
+--
+-- TOC entry 3672 (class 2606 OID 73450)
+-- Name: classifier_indicator fk_classifier_indicator_result_chatbot_result_chatbot; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_classifier_indicator_result_chatbot_result_chatbot FOREIGN KEY (result_chatbot) REFERENCES public.result_chatbot(id);
+
+
+--
+-- TOC entry 3673 (class 2606 OID 73440)
+-- Name: classifier_indicator fk_classifier_indicator_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_classifier_indicator_result_result FOREIGN KEY (result) REFERENCES public.result(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3674 (class 2606 OID 73435)
+-- Name: classifier_indicator fk_classifier_indicator_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_classifier_indicator_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3676 (class 2606 OID 73491)
+-- Name: classifier_result fk_classifier_result_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
+
+
+--
+-- TOC entry 3677 (class 2606 OID 73466)
+-- Name: classifier_result fk_classifier_result_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
+
+
+--
+-- TOC entry 3678 (class 2606 OID 73486)
+-- Name: classifier_result fk_classifier_result_result_ai_source_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result_result_ai_source_result_ai_source FOREIGN KEY (result_ai_source) REFERENCES public.result_ai_source(id);
+
+
+--
+-- TOC entry 3679 (class 2606 OID 73481)
+-- Name: classifier_result fk_classifier_result_result_chatbot_result_chatbot; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result_result_chatbot_result_chatbot FOREIGN KEY (result_chatbot) REFERENCES public.result_chatbot(id);
+
+
+--
+-- TOC entry 3680 (class 2606 OID 73476)
+-- Name: classifier_result fk_classifier_result_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result_result_result FOREIGN KEY (result) REFERENCES public.result(id);
+
+
+--
+-- TOC entry 3681 (class 2606 OID 73471)
+-- Name: classifier_result fk_classifier_result_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3682 (class 2606 OID 73496)
+-- Name: classifier_resulttype fk_classifier_resulttype_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_resulttype
+    ADD CONSTRAINT fk_classifier_resulttype_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
+
+
+--
+-- TOC entry 3683 (class 2606 OID 73501)
+-- Name: classifier_resulttype fk_classifier_resulttype_resulttype_resulttype; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_resulttype
+    ADD CONSTRAINT fk_classifier_resulttype_resulttype_resulttype FOREIGN KEY (resulttype) REFERENCES public.resulttype(id);
+
+
+--
+-- TOC entry 3684 (class 2606 OID 73511)
+-- Name: classifier_study fk_classifier_study_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_study
+    ADD CONSTRAINT fk_classifier_study_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
+
+
+--
+-- TOC entry 3685 (class 2606 OID 73506)
+-- Name: classifier_study fk_classifier_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_study
+    ADD CONSTRAINT fk_classifier_study_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+
+
+--
+-- TOC entry 3686 (class 2606 OID 73516)
+-- Name: option fk_option_question_question; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.option
+    ADD CONSTRAINT fk_option_question_question FOREIGN KEY (question) REFERENCES public.question(id);
+
+
+--
+-- TOC entry 3687 (class 2606 OID 73521)
+-- Name: participant_study fk_participant_study_participant_participant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.participant_study
+    ADD CONSTRAINT fk_participant_study_participant_participant FOREIGN KEY (participant) REFERENCES public.participant(id);
+
+
+--
+-- TOC entry 3688 (class 2606 OID 73526)
+-- Name: participant_study fk_participant_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.participant_study
+    ADD CONSTRAINT fk_participant_study_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+
+
+--
+-- TOC entry 3689 (class 2606 OID 73531)
+-- Name: qs_study_user fk_qs_study_user_qs_study_qs_study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.qs_study_user
-    ADD CONSTRAINT qs_study_user_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT fk_qs_study_user_qs_study_qs_study FOREIGN KEY (qs_study) REFERENCES public.qs_study(id);
 
 
--- Completed on 2026-06-05 14:07:09
+--
+-- TOC entry 3690 (class 2606 OID 73536)
+-- Name: qs_study_user fk_qs_study_user_user_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_study_user
+    ADD CONSTRAINT fk_qs_study_user_user_user FOREIGN KEY ("user") REFERENCES public."user"(id);
+
+
+--
+-- TOC entry 3691 (class 2606 OID 73542)
+-- Name: query fk_query_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.query
+    ADD CONSTRAINT fk_query_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3692 (class 2606 OID 73553)
+-- Name: question fk_question_question_type_questiontype; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question
+    ADD CONSTRAINT fk_question_question_type_questiontype FOREIGN KEY (question_type) REFERENCES public.questiontype(id);
+
+
+--
+-- TOC entry 3694 (class 2606 OID 73563)
+-- Name: question_result fk_question_result_question_question; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_result
+    ADD CONSTRAINT fk_question_result_question_question FOREIGN KEY (question) REFERENCES public.question(id);
+
+
+--
+-- TOC entry 3695 (class 2606 OID 73558)
+-- Name: question_result fk_question_result_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_result
+    ADD CONSTRAINT fk_question_result_result_result FOREIGN KEY (result) REFERENCES public.result(id);
+
+
+--
+-- TOC entry 3693 (class 2606 OID 73548)
+-- Name: question fk_question_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question
+    ADD CONSTRAINT fk_question_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3696 (class 2606 OID 73569)
+-- Name: range_study fk_range_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.range_study
+    ADD CONSTRAINT fk_range_study_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3702 (class 2606 OID 73612)
+-- Name: result_ai fk_result_ai_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai
+    ADD CONSTRAINT fk_result_ai_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+
+
+--
+-- TOC entry 3703 (class 2606 OID 73602)
+-- Name: result_ai fk_result_ai_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai
+    ADD CONSTRAINT fk_result_ai_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+
+
+--
+-- TOC entry 3705 (class 2606 OID 73617)
+-- Name: result_ai_segment fk_result_ai_segment_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_segment
+    ADD CONSTRAINT fk_result_ai_segment_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3706 (class 2606 OID 73623)
+-- Name: result_ai_source fk_result_ai_source_country_country; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_source
+    ADD CONSTRAINT fk_result_ai_source_country_country FOREIGN KEY (country) REFERENCES public.country(id);
+
+
+--
+-- TOC entry 3707 (class 2606 OID 73633)
+-- Name: result_ai_source fk_result_ai_source_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_source
+    ADD CONSTRAINT fk_result_ai_source_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+
+
+--
+-- TOC entry 3708 (class 2606 OID 73628)
+-- Name: result_ai_source fk_result_ai_source_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_source
+    ADD CONSTRAINT fk_result_ai_source_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
+
+
+--
+-- TOC entry 3709 (class 2606 OID 73648)
+-- Name: result_ai_source fk_result_ai_source_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_source
+    ADD CONSTRAINT fk_result_ai_source_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+
+
+--
+-- TOC entry 3710 (class 2606 OID 73643)
+-- Name: result_ai_source fk_result_ai_source_source_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_source
+    ADD CONSTRAINT fk_result_ai_source_source_source FOREIGN KEY (source) REFERENCES public.source(id);
+
+
+--
+-- TOC entry 3711 (class 2606 OID 73638)
+-- Name: result_ai_source fk_result_ai_source_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_source
+    ADD CONSTRAINT fk_result_ai_source_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3704 (class 2606 OID 73607)
+-- Name: result_ai fk_result_ai_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai
+    ADD CONSTRAINT fk_result_ai_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3712 (class 2606 OID 73659)
+-- Name: result_chatbot fk_result_chatbot_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_chatbot
+    ADD CONSTRAINT fk_result_chatbot_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+
+
+--
+-- TOC entry 3713 (class 2606 OID 73664)
+-- Name: result_chatbot fk_result_chatbot_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_chatbot
+    ADD CONSTRAINT fk_result_chatbot_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+
+
+--
+-- TOC entry 3714 (class 2606 OID 73654)
+-- Name: result_chatbot fk_result_chatbot_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_chatbot
+    ADD CONSTRAINT fk_result_chatbot_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3697 (class 2606 OID 73581)
+-- Name: result fk_result_country_country; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT fk_result_country_country FOREIGN KEY (country) REFERENCES public.country(id);
+
+
+--
+-- TOC entry 3698 (class 2606 OID 73586)
+-- Name: result fk_result_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT fk_result_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+
+
+--
+-- TOC entry 3699 (class 2606 OID 73576)
+-- Name: result fk_result_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT fk_result_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+
+
+--
+-- TOC entry 3700 (class 2606 OID 73591)
+-- Name: result fk_result_serp_serp; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT fk_result_serp_serp FOREIGN KEY (serp) REFERENCES public.serp(id);
+
+
+--
+-- TOC entry 3715 (class 2606 OID 73669)
+-- Name: result_source fk_result_source_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_source
+    ADD CONSTRAINT fk_result_source_result_result FOREIGN KEY (result) REFERENCES public.result(id);
+
+
+--
+-- TOC entry 3716 (class 2606 OID 73674)
+-- Name: result_source fk_result_source_source_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_source
+    ADD CONSTRAINT fk_result_source_source_source FOREIGN KEY (source) REFERENCES public.source(id);
+
+
+--
+-- TOC entry 3701 (class 2606 OID 73596)
+-- Name: result fk_result_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT fk_result_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3717 (class 2606 OID 73680)
+-- Name: scraper fk_scraper_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scraper
+    ADD CONSTRAINT fk_scraper_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+
+
+--
+-- TOC entry 3718 (class 2606 OID 73690)
+-- Name: scraper fk_scraper_searchengine_searchengine; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scraper
+    ADD CONSTRAINT fk_scraper_searchengine_searchengine FOREIGN KEY (searchengine) REFERENCES public.searchengine(id);
+
+
+--
+-- TOC entry 3719 (class 2606 OID 73685)
+-- Name: scraper fk_scraper_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scraper
+    ADD CONSTRAINT fk_scraper_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3720 (class 2606 OID 73695)
+-- Name: searchengine_study fk_searchengine_study_searchengine_searchengine; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.searchengine_study
+    ADD CONSTRAINT fk_searchengine_study_searchengine_searchengine FOREIGN KEY (searchengine) REFERENCES public.searchengine(id);
+
+
+--
+-- TOC entry 3721 (class 2606 OID 73700)
+-- Name: searchengine_study fk_searchengine_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.searchengine_study
+    ADD CONSTRAINT fk_searchengine_study_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+
+
+--
+-- TOC entry 3722 (class 2606 OID 73707)
+-- Name: serp fk_serp_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.serp
+    ADD CONSTRAINT fk_serp_query_query FOREIGN KEY (query) REFERENCES public.query(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3723 (class 2606 OID 73717)
+-- Name: serp fk_serp_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.serp
+    ADD CONSTRAINT fk_serp_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+
+
+--
+-- TOC entry 3724 (class 2606 OID 73712)
+-- Name: serp fk_serp_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.serp
+    ADD CONSTRAINT fk_serp_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3726 (class 2606 OID 73722)
+-- Name: study_resulttype fk_study_resulttype_resulttype_resulttype; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_resulttype
+    ADD CONSTRAINT fk_study_resulttype_resulttype_resulttype FOREIGN KEY (resulttype) REFERENCES public.resulttype(id);
+
+
+--
+-- TOC entry 3727 (class 2606 OID 73727)
+-- Name: study_resulttype fk_study_resulttype_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_resulttype
+    ADD CONSTRAINT fk_study_resulttype_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+
+
+--
+-- TOC entry 3725 (class 2606 OID 73733)
+-- Name: study_url_filter fk_study_url_filter_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_url_filter
+    ADD CONSTRAINT fk_study_url_filter_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3728 (class 2606 OID 73738)
+-- Name: study_user fk_study_user_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_user
+    ADD CONSTRAINT fk_study_user_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+
+
+--
+-- TOC entry 3729 (class 2606 OID 73743)
+-- Name: study_user fk_study_user_user_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_user
+    ADD CONSTRAINT fk_study_user_user_user FOREIGN KEY ("user") REFERENCES public."user"(id);
+
+
+--
+-- TOC entry 3730 (class 2606 OID 73753)
+-- Name: user_role fk_user_role_role_role; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_role
+    ADD CONSTRAINT fk_user_role_role_role FOREIGN KEY (role) REFERENCES public.role(id);
+
+
+--
+-- TOC entry 3731 (class 2606 OID 73748)
+-- Name: user_role fk_user_role_user_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_role
+    ADD CONSTRAINT fk_user_role_user_user FOREIGN KEY ("user") REFERENCES public."user"(id);
+
+
+--
+-- TOC entry 3732 (class 2606 OID 80239)
+-- Name: result_image result_image_country_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_image
+    ADD CONSTRAINT result_image_country_fkey FOREIGN KEY (country) REFERENCES public.country(id);
+
+
+--
+-- TOC entry 3733 (class 2606 OID 80229)
+-- Name: result_image result_image_query_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_image
+    ADD CONSTRAINT result_image_query_fkey FOREIGN KEY (query) REFERENCES public.query(id);
+
+
+--
+-- TOC entry 3734 (class 2606 OID 80234)
+-- Name: result_image result_image_source_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_image
+    ADD CONSTRAINT result_image_source_fkey FOREIGN KEY (source) REFERENCES public.source(id);
+
+
+--
+-- TOC entry 3735 (class 2606 OID 80224)
+-- Name: result_image result_image_study_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_image
+    ADD CONSTRAINT result_image_study_fkey FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+-- Completed on 2026-08-13 11:15:40
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PyGKmeq8wMzRYGVZ9HYaZTylgrhDCeogW2fNRW5H2mg2iZA6Ovkn3I6vZK3YgWm
+\unrestrict GINCMHTcoTH5rtE75HGrb5cbVEuzCMskr8V029YLptRDeXidXZZbe7NCd3qgv4x
 

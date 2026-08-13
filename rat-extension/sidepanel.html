@@ -408,7 +408,7 @@
     </div>
       
     <div class="row">
-      <button id="createSessionBtn" class="btn-primary" style="flex: 2;">+ New Study Session <span class="tooltip" data-tip="Create a brand new query campaign with custom keywords and configurations.">?</span></button>
+      <button id="createSessionBtn" class="btn-primary" style="flex: 2;">+ New Study Session <span class="tooltip" data-tip="Create a brand new search session with custom keywords and configurations.">?</span></button>
       <button id="importDesignBtn" class="btn-secondary" style="flex: 1; padding: 8px 4px; font-size: 11px; background-color: #6c757d; color: white;">📥 Import <span class="tooltip" data-tip="Import a study design blueprint file (.zip) containing only keywords and settings.">?</span></button>
       <button id="manageEnginesBtn" class="btn-info" style="flex: 1; padding: 8px 4px; font-size: 11px;">⚙️ Scrapers <span class="tooltip" data-tip="Manage and test search engine scraping templates and CSS selectors.">?</span></button>
     </div>
@@ -444,7 +444,7 @@
     <label>Queries (one per line) <span class="tooltip" data-tip="Enter one search query per line. Each query will be combined with all selected search engines.">?</span></label>
     <textarea id="sessQueries" placeholder="query 1&#10;query 2&#10;(Or simply drag and drop your CSV/TXT file here)"></textarea>    
     
-    <label style="margin-top:15px">Search Engines<span class="tooltip" data-tip="Configure target quota and add your search engines here.">?</span></label>
+    <label style="margin-top:15px">Search Engines<span class="tooltip" data-tip="Add your search engines here.">?</span></label>
     <div class="config-box">
       
 	<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Choose whether to stop after extracting a specific number of organic results OR after extracting a specific number of search pages.">?</span></label>
@@ -475,15 +475,15 @@
       </div>
     </div>
     
-    <label style="margin-top:15px">SERPs & Storage <span class="tooltip" data-tip="Save visual and HTML data. Warning: Takes up significant storage space.">?</span></label>
+    <label style="margin-top:15px">SERPs & Storage <span class="tooltip" data-tip="Save screenshot and HTML data. Warning: Takes up significant storage space.">?</span></label>
     <div class="config-box" style="margin-bottom:15px;">
         <div class="row">
             <input type="checkbox" id="saveSerp" style="width:auto; margin-right:8px;">
             <span style="font-size:12px;">Save SERP (Screenshot & HTML Source)</span>
         </div>
         <div id="serpLimitContainer" style="display:none; margin-top:10px; background: #fff3cd; padding: 8px; border: 1px solid #ffeeba; border-radius: 4px;">
-            <label style="margin-top:0; color: #856404;">Limit for SERP saving (Max: 50)</label>
-            <input type="number" id="sessSerpLimit" value="50" min="1" max="50">
+            <label style="margin-top:0; color: #856404;">Limit for SERP saving (Max: 100)</label>
+            <input type="number" id="sessSerpLimit" value="100" min="1" max="100">
         </div>
     </div>
     
@@ -536,9 +536,9 @@
     </div>
     <div id="sessionManagement" style="margin-top:10px;">
         
-        <label style="margin-top:15px">Search Engines & Limits <span class="tooltip" data-tip="Change quotas or add new search engines to the running session.">?</span></label>
+        <label style="margin-top:15px">Search Engines & Limits <span class="tooltip" data-tip="Add new search engines to the running session.">?</span></label>
         <div class="config-box">
-		<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Change the quota type or target number for all remaining tasks in this session.">?</span></label>
+		<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Change the type or target number for all remaining tasks in this session.">?</span></label>
           <div class="row" style="margin-bottom:15px;">
             <select id="liveLimitType" style="flex:1; padding:6px;">
                 <option value="PAGES">Pages</option>
@@ -577,8 +577,8 @@
                 <span style="font-size:12px;">Save SERP (Screenshot & HTML Source)</span>
             </div>
             <div id="editSerpLimitContainer" style="display:none; margin-top:10px; margin-bottom:10px; background: #fff3cd; padding: 8px; border: 1px solid #ffeeba; border-radius: 4px;">
-                <label style="margin-top:0; color: #856404;">Limit for SERP saving (Max: 50)</label>
-                <input type="number" id="editSessSerpLimit" value="50" min="1" max="50">
+                <label style="margin-top:0; color: #856404;">Limit for SERP saving (Max: 100)</label>
+                <input type="number" id="editSessSerpLimit" value="100" min="1" max="100">
             </div>
             <button id="saveStorageSettingsBtn" class="btn-primary btn-sm" style="margin-top:5px;">Update Storage Rules</button>
         </div>
@@ -647,8 +647,21 @@
       <i class="fa fa-upload"></i> Export Study Design (Job File) <span class="tooltip" data-tip="Export only the keywords and configuration of this study as a lightweight package for the server.">?</span>
     </button>
 
-    <button id="downloadBtn" class="btn-info" style="margin-top:8px">Download Results (ZIP) <span class="tooltip" data-tip="Download the full scraped dataset including HTML source pages, screenshots, and structured CSV data.">?</span></button>
+<!-- Export Filter Options -->
+    <div class="config-box" style="margin-top:12px; padding:8px;">
+      <label style="margin-top:0; margin-bottom:6px;">Export Types (CSV)</label>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size:11px;">
+        <label style="font-weight:normal; margin:0; text-transform:none;"><input type="checkbox" id="exportOrganic" checked> Organic</label>
+        <label style="font-weight:normal; margin:0; text-transform:none;"><input type="checkbox" id="exportAds" checked> Ads</label>
+        <label style="font-weight:normal; margin:0; text-transform:none;"><input type="checkbox" id="exportImages" checked> Images</label>
+        <label style="font-weight:normal; margin:0; text-transform:none;"><input type="checkbox" id="exportVideos" checked> Videos</label>
+        <label style="font-weight:normal; margin:0; text-transform:none;"><input type="checkbox" id="exportAiOverview" checked> AI Overview</label>
+        <label style="font-weight:normal; margin:0; text-transform:none;"><input type="checkbox" id="exportAiSources" checked> AI Sources</label>
+        <label style="font-weight:normal; margin:0; text-transform:none;"><input type="checkbox" id="exportAiSegments" checked> AI Segments</label>
+      </div>
+    </div>
 
+    <button id="downloadBtn" class="btn-info" style="margin-top:8px">Download Results (ZIP) <span class="tooltip" data-tip="Download the full scraped dataset including HTML source pages, screenshots, and structured CSV data.">?</span></button>
     <label style="margin-top:12px">Activity Log</label>
     <div id="logContainer"></div>
     

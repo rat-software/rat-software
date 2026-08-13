@@ -1,5 +1,16 @@
+"""
+Assessment module for the RAT application.
+
+This module handles participant-facing tasks, including onboarding screens, 
+pre- and post-study surveys, progress tracking dashboards, and the core 
+evaluation loop that assigns and updates answers for standard organic text 
+results, SERP views, chatbot responses, AI summaries, and Image results.
+"""
+
+from app.views.question import questions
+
 from .. import app, db, csrf
-from ..models import Study, Participant, Answer, Question, Result, ResultAi, ResultChatbot, ResultSource, Serp, RangeStudy, Query, ResultType
+from ..models import Study, Participant, Answer, Question, Result, ResultAi, ResultChatbot, ResultSource, Serp, RangeStudy, Query, ResultType, ResultAiSource, ResultImage
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import logout_user
 from datetime import datetime
@@ -7,7 +18,6 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import func, or_, and_
 from flask_wtf import FlaskForm
 from ..helpers import clean_filter_string
-
 from flask import current_app
 
 import os
@@ -16,12 +26,21 @@ import io
 import json
 from flask import send_file
 import random
-
 from werkzeug.utils import secure_filename
 from itsdangerous import URLSafeSerializer, BadSignature
 import time 
 
 def get_signed_storage_url(file_path, file_type='screenshot'):
+    """
+    Generates a cryptographically signed and timed token URL to fetch storage server files.
+
+    Args:
+        file_path (str): Relative or absolute target file path inside the storage repository.
+        file_type (str): Category type designation (e.g., 'screenshot' or 'code'). Defaults to 'screenshot'.
+
+    Returns:
+        str: Fully qualified storage request destination combined with the security ticket parameter.
+    """
     api_key = current_app.config.get('API_UPLOAD_KEY')
     base_url = current_app.config.get('STORAGE_BASE_URL')
     
@@ -34,13 +53,19 @@ def get_signed_storage_url(file_path, file_type='screenshot'):
 
 @app.context_processor
 def inject_storage_urls():
+    """
+    Flask context processor to make storage URL signing available globally across all Jinja templates.
+    """
     return dict(get_storage_url=get_signed_storage_url)
 
 # ==========================================================
-# --- FORTSCHRITTS- UND ABSCHLUSS-SEITE ---
+# --- PROGRESS AND COMPLETION PAGES ---
 # ==========================================================
 @app.route('/study/<study_id>/assessments/<participant_id>', methods=["GET", "POST"])
 def assessments(study_id, participant_id):
+    """
+    Renders the central progress status panel and completion dashboard for a participant.
+    """
     logout_user()
     study = Study.query.get_or_404(study_id)
     participant = Participant.query.get_or_404(participant_id)
@@ -73,7 +98,7 @@ def assessments(study_id, participant_id):
                            pct=pct)
 
 # ==========================================================
-# --- HAUPT-AUFGABEN-SCHLEIFE (ROUTING) ---
+# --- MAIN TASK LOOP (ROUTING) ---
 # ==========================================================
 @app.route('/assessment/<participant_id>/<study_id>', methods=["GET", "POST"])
 def assessment(participant_id, study_id):
@@ -83,7 +108,7 @@ def assessment(participant_id, study_id):
     db.session.expire_all()
 
     # --- ONBOARDING & PRE-SURVEY INTERCEPTION ---
-    total_answers = Answer.query.filter_by(participant_id=participant.id, study_id=study.id, status=1).count()
+    total_answers = Answer.query.filter_by(participant_id=participant.id, study_id=study.id).count()
     
     pre_answers_dict = {}
     if participant.pre_survey_answers:
@@ -101,7 +126,12 @@ def assessment(participant_id, study_id):
         if not has_pre_answers:
             return redirect(url_for('dynamic_survey', study_id=study.id, survey_type='pre', participant_id=participant.id))
 
-    # --- RESULT QUERY LOGIC ---
+    # --- RESULT QUERY LOGIC (Filter für Anzeige falls sich Settings nach Start ändern) ---
+    ranges = RangeStudy.query.filter_by(study=study.id).all()
+    include_filters = [f.url for f in study.study_url_filters if f.include and f.url]
+    exclude_filters = [f.url for f in study.study_url_filters if f.exclude and f.url]
+
+    # 1. ORGANIC RESULTS
     open_res_q = db.session.query(Answer.result_id).filter(
         Answer.participant_id == participant.id,
         Answer.study_id == study.id,
@@ -114,45 +144,83 @@ def assessment(participant_id, study_id):
     else:
         open_res_q = open_res_q.filter(ResultSource.progress == 1)
         
-    open_result_tasks_query = open_res_q.filter(
-        Result.normalized_url.isnot(None),
-        Result.normalized_url != ""
-    )
+    if study.result_count:
+        open_res_q = open_res_q.filter(Result.position <= study.result_count)
+        
+    open_result_tasks_query = open_res_q.filter(Result.normalized_url.isnot(None), Result.normalized_url != "")
 
-    ranges = RangeStudy.query.filter_by(study=study.id).all()
     if ranges:
         range_filters = [and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]
         open_result_tasks_query = open_result_tasks_query.filter(or_(*range_filters))
 
     open_result_tasks_query = open_result_tasks_query.distinct()
 
-    include_filters = [f.url for f in study.study_url_filters if f.include and f.url]
     if include_filters:
         open_result_tasks_query = open_result_tasks_query.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
-    exclude_filters = [f.url for f in study.study_url_filters if f.exclude and f.url]
     if exclude_filters:
         open_result_tasks_query = open_result_tasks_query.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
 
     valid_result_ids = [item[0] for item in open_result_tasks_query.all()]
 
+    # 2. AI OVERVIEW
     open_ai_tasks_query = db.session.query(Answer.result_ai_id).filter(
-        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0,
-        Answer.result_ai_id.isnot(None)
+        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_ai_id.isnot(None)
     ).distinct()
     valid_ai_ids = [item[0] for item in open_ai_tasks_query.all()]
+    
+    # 3. AI SOURCES (Citations)
+    open_ai_source_tasks_query = db.session.query(Answer.result_ai_source_id).filter(
+        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_ai_source_id.isnot(None)
+    ).join(ResultAiSource, Answer.result_ai_source_id == ResultAiSource.id)
 
+    if study.assess_failed:
+        open_ai_source_tasks_query = open_ai_source_tasks_query.filter(or_(ResultAiSource.progress == 1, ResultAiSource.progress == -1))
+    else:
+        open_ai_source_tasks_query = open_ai_source_tasks_query.filter(ResultAiSource.progress == 1)
+
+    if study.result_count:
+        open_ai_source_tasks_query = open_ai_source_tasks_query.filter(ResultAiSource.position <= study.result_count)
+
+    if ranges:
+        ai_src_range_filters = [and_(ResultAiSource.position >= r.range_start, ResultAiSource.position <= r.range_end) for r in ranges]
+        open_ai_source_tasks_query = open_ai_source_tasks_query.filter(or_(*ai_src_range_filters))
+
+    open_ai_source_tasks_query = open_ai_source_tasks_query.distinct()
+    valid_ai_source_ids = [item[0] for item in open_ai_source_tasks_query.all()]
+
+    # 4. CHATBOTS
     open_chatbot_tasks_query = db.session.query(Answer.result_chatbot_id).filter(
-        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0,
-        Answer.result_chatbot_id.isnot(None)
+        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_chatbot_id.isnot(None)
     ).distinct()
     valid_chatbot_ids = [item[0] for item in open_chatbot_tasks_query.all()]
     
+    # 5. SERPs
     open_serp_tasks_query = db.session.query(Answer.result_serp_id).filter(
-        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0,
-        Answer.result_serp_id.isnot(None)
+        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_serp_id.isnot(None)
     ).distinct()
     valid_serp_ids = [item[0] for item in open_serp_tasks_query.all()]
+
+    # 6. IMAGE TASKS
+    open_image_tasks_query = db.session.query(Answer.result_image_id).filter(
+        Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_image_id.isnot(None)
+    ).join(ResultImage, Answer.result_image_id == ResultImage.id)
     
+    if study.assess_failed:
+        open_image_tasks_query = open_image_tasks_query.filter(or_(ResultImage.progress == 1, ResultImage.progress == -1))
+    else:
+        open_image_tasks_query = open_image_tasks_query.filter(ResultImage.progress == 1)
+
+    if study.result_count:
+        open_image_tasks_query = open_image_tasks_query.filter(ResultImage.position <= study.result_count)
+
+    if ranges:
+        img_range_filters = [and_(ResultImage.position >= r.range_start, ResultImage.position <= r.range_end) for r in ranges]
+        open_image_tasks_query = open_image_tasks_query.filter(or_(*img_range_filters))
+
+    open_image_tasks_query = open_image_tasks_query.distinct()
+    valid_image_ids = [item[0] for item in open_image_tasks_query.all()]
+    
+    # --- GET NEXT ANSWER ---
     next_answer = db.session.query(Answer).filter(
         Answer.participant_id == participant.id,
         Answer.study_id == study.id,
@@ -161,12 +229,14 @@ def assessment(participant_id, study_id):
             Answer.result_id.in_(valid_result_ids),
             Answer.result_ai_id.in_(valid_ai_ids),
             Answer.result_chatbot_id.in_(valid_chatbot_ids),
-            Answer.result_serp_id.in_(valid_serp_ids)
+            Answer.result_serp_id.in_(valid_serp_ids),
+            Answer.result_ai_source_id.in_(valid_ai_source_ids),
+            Answer.result_image_id.in_(valid_image_ids)
         )
     ).order_by(Answer.id).first()
 
     if not next_answer:
-        # 1. Wir ermitteln, was der Nutzer bereits gesehen hat
+        # 1. Determine exactly what individual elements the user has previously processed
         completed_answers = db.session.query(Answer).filter(
             Answer.participant_id == participant.id,
             Answer.study_id == study.id,
@@ -184,6 +254,8 @@ def assessment(participant_id, study_id):
             elif ans.result_ai_id and ans.result_ai.query_id: seen_queries.add(ans.result_ai.query_id)
             elif ans.result_chatbot_id and ans.result_chatbot.query_id: seen_queries.add(ans.result_chatbot.query_id)
             elif ans.result_serp_id and ans.result_serp.query_id: seen_queries.add(ans.result_serp.query_id)
+            elif ans.result_ai_source_id and ans.result_ai_source.query_id: seen_queries.add(ans.result_ai_source.query_id)
+            elif ans.result_image_id and ans.result_image.query_id: seen_queries.add(ans.result_image.query_id)
             
         limit_reached = False
         if study.group_by_query and study.limit_by_query and study.max_queries_per_participant != -1:
@@ -204,24 +276,55 @@ def assessment(participant_id, study_id):
                     Query.study_id == study.id,
                     ~Query.id.in_(seen_queries if seen_queries else [-1])
                 ).all()
+                
                 if available_queries:
+                    # Sort queries to balance assignments
                     available_queries.sort(key=lambda q: (
                         db.session.query(Answer).filter(
                             Answer.study_id == study.id,
                             or_(Answer.result_id.in_(db.session.query(Result.id).filter_by(query_id=q.id)),
                                 Answer.result_ai_id.in_(db.session.query(ResultAi.id).filter_by(query_id=q.id)),
                                 Answer.result_chatbot_id.in_(db.session.query(ResultChatbot.id).filter_by(query_id=q.id)),
-                                Answer.result_serp_id.in_(db.session.query(Serp.id).filter_by(query_id=q.id)))
+                                Answer.result_serp_id.in_(db.session.query(Serp.id).filter_by(query_id=q.id)),
+                                Answer.result_ai_source_id.in_(db.session.query(ResultAiSource.id).filter_by(query_id=q.id)),
+                                Answer.result_image_id.in_(db.session.query(ResultImage.id).filter_by(query_id=q.id)))
                         ).count(), random.random()
                     ))
+                    
                     for candidate_query in available_queries:
                         locked_query = db.session.query(Query).filter_by(id=candidate_query.id).with_for_update(skip_locked=True).first()
                         if locked_query:
                             items_to_assign = []
-                            if 'organic' in allowed_types: items_to_assign.extend(db.session.query(Result).filter_by(query_id=locked_query.id).all())
-                            if 'ai overview' in allowed_types or 'ai_overview' in allowed_types: items_to_assign.extend(db.session.query(ResultAi).filter_by(query_id=locked_query.id).all())
-                            if 'chatbot' in allowed_types: items_to_assign.extend(db.session.query(ResultChatbot).filter_by(query_id=locked_query.id).all())
-                            if 'serp' in allowed_types: items_to_assign.extend(db.session.query(Serp).filter_by(query_id=locked_query.id).all())
+                            
+                            if 'organic' in allowed_types: 
+                                q = db.session.query(Result).filter_by(query_id=locked_query.id)
+                                if study.result_count: q = q.filter(Result.position <= study.result_count)
+                                if ranges: q = q.filter(or_(*[and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]))
+                                if include_filters: q = q.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
+                                if exclude_filters: q = q.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
+                                items_to_assign.extend(q.all())
+                                
+                            if 'ai overview' in allowed_types or 'ai_overview' in allowed_types: 
+                                items_to_assign.extend(db.session.query(ResultAi).filter_by(query_id=locked_query.id).all())
+                                
+                            if 'chatbot' in allowed_types: 
+                                items_to_assign.extend(db.session.query(ResultChatbot).filter_by(query_id=locked_query.id).all())
+                                
+                            if 'serp' in allowed_types: 
+                                items_to_assign.extend(db.session.query(Serp).filter_by(query_id=locked_query.id).all())
+                                
+                            if 'ai_source' in allowed_types: 
+                                q = db.session.query(ResultAiSource).filter_by(query_id=locked_query.id)
+                                if study.result_count: q = q.filter(ResultAiSource.position <= study.result_count)
+                                if ranges: q = q.filter(or_(*[and_(ResultAiSource.position >= r.range_start, ResultAiSource.position <= r.range_end) for r in ranges]))
+                                items_to_assign.extend(q.all())
+                                
+                            if 'image result' in allowed_types or 'image' in allowed_types: 
+                                q = db.session.query(ResultImage).filter_by(query_id=locked_query.id)
+                                if study.result_count: q = q.filter(ResultImage.position <= study.result_count)
+                                if ranges: q = q.filter(or_(*[and_(ResultImage.position >= r.range_start, ResultImage.position <= r.range_end) for r in ranges]))
+                                items_to_assign.extend(q.all())
+                            
                             if items_to_assign:
                                 random.shuffle(items_to_assign)
                                 for task in items_to_assign:
@@ -229,6 +332,9 @@ def assessment(participant_id, study_id):
                                     if isinstance(task, ResultAi): task_type_text = "ai overview"
                                     elif isinstance(task, ResultChatbot): task_type_text = "chatbot"
                                     elif isinstance(task, Serp): task_type_text = "serp"
+                                    elif isinstance(task, ResultAiSource): task_type_text = "ai_source"
+                                    elif isinstance(task, ResultImage): task_type_text = "image"
+                                    
                                     resolved_type_id = res_types_map.get(task_type_text, 1)
                                     for question in study.questions:
                                         ans = Answer(study_id=study.id, question_id=question.id, participant_id=participant.id, status=0, created_at=datetime.now(), resulttype=resolved_type_id, result_type_text=task_type_text)
@@ -236,11 +342,14 @@ def assessment(participant_id, study_id):
                                         elif isinstance(task, ResultAi): ans.result_ai = task
                                         elif isinstance(task, ResultChatbot): ans.result_chatbot = task
                                         elif isinstance(task, Serp): ans.result_serp = task
+                                        elif isinstance(task, ResultAiSource): ans.result_ai_source = task
+                                        elif isinstance(task, ResultImage): ans.result_image = task
                                         db.session.add(ans)
                                 db.session.commit()
                                 assigned_successfully = True
                                 break
-                            else: db.session.commit()
+                            else: 
+                                db.session.commit()
             
             else:
                 pools = {}
@@ -248,15 +357,43 @@ def assessment(participant_id, study_id):
                 seen_ai_ids = [r[0] for r in db.session.query(Answer.result_ai_id).filter(Answer.participant_id == participant.id, Answer.result_ai_id.isnot(None)).all()]
                 seen_chat_ids = [r[0] for r in db.session.query(Answer.result_chatbot_id).filter(Answer.participant_id == participant.id, Answer.result_chatbot_id.isnot(None)).all()]
                 seen_serp_ids = [r[0] for r in db.session.query(Answer.result_serp_id).filter(Answer.participant_id == participant.id, Answer.result_serp_id.isnot(None)).all()]
-                if 'organic' in allowed_types: pools['organic'] = db.session.query(Result).filter(Result.study_id == study.id, ~Result.id.in_(seen_res_ids if seen_res_ids else [-1])).all()
-                if 'ai overview' in allowed_types or 'ai_overview' in allowed_types: pools['ai'] = db.session.query(ResultAi).filter(ResultAi.study_id == study.id, ~ResultAi.id.in_(seen_ai_ids if seen_ai_ids else [-1])).all()
-                if 'chatbot' in allowed_types: pools['chatbot'] = db.session.query(ResultChatbot).filter(ResultChatbot.study_id == study.id, ~ResultChatbot.id.in_(seen_chat_ids if seen_chat_ids else [-1])).all()
-                if 'serp' in allowed_types: pools['serp'] = db.session.query(Serp).filter(Serp.study_id == study.id, ~Serp.id.in_(seen_serp_ids if seen_serp_ids else [-1])).all()
+                seen_ai_source_ids = [r[0] for r in db.session.query(Answer.result_ai_source_id).filter(Answer.participant_id == participant.id, Answer.result_ai_source_id.isnot(None)).all()]
+                seen_image_ids = [r[0] for r in db.session.query(Answer.result_image_id).filter(Answer.participant_id == participant.id, Answer.result_image_id.isnot(None)).all()]
+                
+                if 'organic' in allowed_types: 
+                    q = db.session.query(Result).filter(Result.study_id == study.id, ~Result.id.in_(seen_res_ids if seen_res_ids else [-1]))
+                    if study.result_count: q = q.filter(Result.position <= study.result_count)
+                    if ranges: q = q.filter(or_(*[and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]))
+                    if include_filters: q = q.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
+                    if exclude_filters: q = q.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
+                    pools['organic'] = q.all()
+                    
+                if 'ai overview' in allowed_types or 'ai_overview' in allowed_types: 
+                    pools['ai'] = db.session.query(ResultAi).filter(ResultAi.study_id == study.id, ~ResultAi.id.in_(seen_ai_ids if seen_ai_ids else [-1])).all()
+                    
+                if 'chatbot' in allowed_types: 
+                    pools['chatbot'] = db.session.query(ResultChatbot).filter(ResultChatbot.study_id == study.id, ~ResultChatbot.id.in_(seen_chat_ids if seen_chat_ids else [-1])).all()
+                    
+                if 'serp' in allowed_types: 
+                    pools['serp'] = db.session.query(Serp).filter(Serp.study_id == study.id, ~Serp.id.in_(seen_serp_ids if seen_serp_ids else [-1])).all()
+                    
+                if 'ai_source' in allowed_types: 
+                    q = db.session.query(ResultAiSource).filter(ResultAiSource.study_id == study.id, ~ResultAiSource.id.in_(seen_ai_source_ids if seen_ai_source_ids else [-1]))
+                    if study.result_count: q = q.filter(ResultAiSource.position <= study.result_count)
+                    if ranges: q = q.filter(or_(*[and_(ResultAiSource.position >= r.range_start, ResultAiSource.position <= r.range_end) for r in ranges]))
+                    pools['ai_source'] = q.all()
+                    
+                if 'image result' in allowed_types or 'image' in allowed_types: 
+                    q = db.session.query(ResultImage).filter(ResultImage.study_id == study.id, ~ResultImage.id.in_(seen_image_ids if seen_image_ids else [-1]))
+                    if study.result_count: q = q.filter(ResultImage.position <= study.result_count)
+                    if ranges: q = q.filter(or_(*[and_(ResultImage.position >= r.range_start, ResultImage.position <= r.range_end) for r in ranges]))
+                    pools['image'] = q.all()
+                
                 all_pool_items = []
                 for p_name, items in pools.items(): all_pool_items.extend(items)
                 if all_pool_items:
                     counts = db.session.query(
-                        func.coalesce(Answer.result_id, Answer.result_ai_id, Answer.result_chatbot_id, Answer.result_serp_id).label('item_id'), 
+                        func.coalesce(Answer.result_id, Answer.result_ai_id, Answer.result_chatbot_id, Answer.result_serp_id, Answer.result_ai_source_id, Answer.result_image_id).label('item_id'), 
                         func.count(Answer.id)
                     ).filter(Answer.study_id == study.id).group_by('item_id').all()
                     
@@ -270,6 +407,9 @@ def assessment(participant_id, study_id):
                             if isinstance(locked_task, ResultAi): task_type_text = "ai overview"
                             elif isinstance(locked_task, ResultChatbot): task_type_text = "chatbot"
                             elif isinstance(locked_task, Serp): task_type_text = "serp"
+                            elif isinstance(locked_task, ResultAiSource): task_type_text = "ai_source"
+                            elif isinstance(locked_task, ResultImage): task_type_text = "image"
+                            
                             resolved_type_id = res_types_map.get(task_type_text, 1)
                             for question in study.questions:
                                 ans = Answer(study_id=study.id, question_id=question.id, participant_id=participant.id, status=0, created_at=datetime.now(), resulttype=resolved_type_id, result_type_text=task_type_text)
@@ -277,6 +417,8 @@ def assessment(participant_id, study_id):
                                 elif isinstance(locked_task, ResultAi): ans.result_ai = locked_task
                                 elif isinstance(locked_task, ResultChatbot): ans.result_chatbot = locked_task
                                 elif isinstance(locked_task, Serp): ans.result_serp = locked_task
+                                elif isinstance(locked_task, ResultAiSource): ans.result_ai_source = locked_task
+                                elif isinstance(locked_task, ResultImage): ans.result_image = locked_task
                                 db.session.add(ans)
                             db.session.commit()
                             assigned_successfully = True
@@ -329,8 +471,20 @@ def assessment(participant_id, study_id):
         task_item = db.session.get(Serp, next_answer.result_serp_id)
         if task_item:
             answers_for_item = db.session.query(Answer).filter(Answer.result_serp_id == task_item.id, Answer.participant_id == participant.id).join(Question).options(joinedload(Answer.question)).order_by(Question.position).all()
+            answers_to_update = answers_for_item        
+    elif next_answer.result_ai_source_id:
+        task_type = 'result_ai_source'
+        task_item = db.session.get(ResultAiSource, next_answer.result_ai_source_id)
+        if task_item:
+            answers_for_item = db.session.query(Answer).filter(Answer.result_ai_source_id == task_item.id, Answer.participant_id == participant.id).join(Question).options(joinedload(Answer.question)).order_by(Question.position).all()
+            answers_to_update = answers_for_item            
+    elif next_answer.result_image_id:
+        task_type = 'result_image'
+        task_item = db.session.query(ResultImage).options(joinedload(ResultImage.source)).get(next_answer.result_image_id)
+        if task_item:
+            answers_for_item = db.session.query(Answer).filter(Answer.result_image_id == task_item.id, Answer.participant_id == participant.id).join(Question).options(joinedload(Answer.question)).order_by(Question.position).all()
             answers_to_update = answers_for_item
-    
+            
     if not task_item:
         next_answer.status = 2; db.session.commit()
         return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
@@ -354,7 +508,7 @@ def assessment(participant_id, study_id):
                 if answer.question.questiontype.display not in ['short_text', 'long_text', 'scale_number'] and not submitted_values.get(answer.question_id):
                     validation_ok = False; errors[answer.question_id] = "Required."
             if validation_ok:
-                rt_map = {'result': 1, 'result_ai': 2, 'result_chatbot': 4, 'serp': 5}
+                rt_map = {'result': 1, 'result_ai': 2, 'result_chatbot': 4, 'serp': 5, 'result_ai_source': 6, 'result_image': 7}
                 for answer in answers_to_update:
                     answer.value = submitted_values.get(answer.question_id, ''); answer.status = 1; answer.created_at = datetime.now(); answer.resulttype = rt_map.get(task_type, 1)
                 db.session.commit()
@@ -377,7 +531,10 @@ def dynamic_survey(study_id, survey_type, participant_id):
     json_data = study.pre_survey_json if survey_type == 'pre' else study.post_survey_json
     questions = json.loads(json_data) if json_data else []
     if request.method == 'POST':
-        submitted = {q['id']: request.form.getlist(q['id']) if q['type'] == 'multiple_choice' else request.form.get(q['id'], '') for q in questions}
+        submitted = {
+            q['id']: request.form.getlist(q['id']) if q['type'] == 'multiple_choice' else request.form.get(q['id'], '') 
+            for q in questions if q.get('type') != 'heading'
+        }        
         ans_dict = json.loads(participant.pre_survey_answers if survey_type == 'pre' else participant.post_survey_answers) if (participant.pre_survey_answers if survey_type == 'pre' else participant.post_survey_answers) else {}
         ans_dict[str(study.id)] = submitted
         if survey_type == 'pre': participant.pre_survey_answers = json.dumps(ans_dict)
@@ -385,3 +542,80 @@ def dynamic_survey(study_id, survey_type, participant_id):
         db.session.commit()
         return redirect(url_for('assessment', participant_id=participant.id, study_id=study.id))
     return render_template('surveys/survey.html', title=f"{survey_type.capitalize()}-Survey", questions=questions, study=study)
+
+@app.route('/study/<study_id>/preview/survey/<survey_type>')
+def preview_survey(study_id, survey_type):
+    study = Study.query.get_or_404(study_id)
+    json_data = study.pre_survey_json if survey_type == 'pre' else study.post_survey_json
+    questions = json.loads(json_data) if json_data else []
+    
+    return render_template('surveys/survey.html', 
+                           title=f"[PRETEST VORSCHAU] {survey_type.capitalize()}-Survey", 
+                           questions=questions, 
+                           study=study, 
+                           is_preview=True)
+
+@app.route('/study/<study_id>/preview/assessment')
+def preview_assessment(study_id):
+    study = Study.query.get_or_404(study_id)
+    
+    task_item = Result.query.filter_by(study_id=study.id).first()
+    task_type = 'result'
+    if not task_item:
+        task_item = ResultAi.query.filter_by(study_id=study.id).first()
+        task_type = 'result_ai'
+    if not task_item:
+        task_item = ResultChatbot.query.filter_by(study_id=study.id).first()
+        task_type = 'result_chatbot'
+    if not task_item:
+        task_item = Serp.query.filter_by(study_id=study.id).first()
+        task_type = 'serp'
+    if not task_item:
+        task_item = ResultAiSource.query.filter_by(study_id=study.id).first()
+        task_type = 'result_ai_source'
+    if not task_item:
+        task_item = ResultImage.query.filter_by(study_id=study.id).first()
+        task_type = 'result_image'
+        
+    if not task_item:
+        flash("Für die Vorschau des Assessments müssen zuerst Daten hochgeladen werden.", "warning")
+        return redirect(request.referrer or '/')
+
+    dummy_answers = []
+    for q in study.questions:
+        dummy_ans = Answer(question=q, question_id=q.id)
+        dummy_answers.append(dummy_ans)
+        
+    form = FlaskForm()
+    
+    return render_template('assessments/assessment.html', 
+                           form=form, answers=dummy_answers, 
+                           task_item=task_item, task_type=task_type, 
+                           all=1, closed=0, pct=0, 
+                           show_urls=study.show_urls, study=study, 
+                           errors={}, submitted_data={},
+                           is_preview=True)
+
+@app.route('/study/<study_id>/preview/welcome')
+def preview_welcome(study_id):
+    study = Study.query.get_or_404(study_id)
+    
+    # Render the welcome page without a real participant and prevent redirecting
+    return render_template('surveys/welcome.html', 
+                           study=study, 
+                           participant=None, 
+                           next_url="#", 
+                           is_preview=True)
+
+@app.route('/study/<study_id>/preview/completed')
+def preview_completed(study_id):
+    study = Study.query.get_or_404(study_id)
+    
+    # Simulate a 100% finished study to trigger the completion text
+    return render_template('assessments/assessments.html', 
+                           study=study, 
+                           participant=None,
+                           answers_all=1, 
+                           answers_closed=1, 
+                           pct=100,
+                           is_preview=True)
