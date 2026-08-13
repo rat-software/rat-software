@@ -1,7 +1,7 @@
-# Database
+# Database Connection (Production target database)
 SQLALCHEMY_DATABASE_URI=postgresql://user:password@localhost:5432/db
 
-# Security
+# Core Security
 SECRET_KEY=generate-a-random-string-here
 SECURITY_PASSWORD_SALT=another-random-string
 
@@ -12,20 +12,20 @@ SERVER_NAME=your_server.com
 RECAPTCHA_PUBLIC_KEY=RECAPTCHA_PUBLIC_KEY
 RECAPTCHA_PRIVATE_KEY=RECAPTCHA_PRIVATE_KEY=
 
-# Mail Settings
+# Mail Operations Engine
 MAIL_SERVER=smtp.resend.com
 MAIL_PORT=465
-MAIL_PASSWORD=your-resend-api-key
 MAIL_USERNAME=resend
+MAIL_PASSWORD=your-resend-api-key
 RESEND_API_KEY=your-resend-api-key
 SECURITY_EMAIL_SENDER=admin@yourdomain.com
 
-# Storage
+# Storage Endpoint Links
 STORAGE_BASE_URL=https://storage.yourdomain.com
-API_UPLOAD_KEY=your_api_key
+API_UPLOAD_KEY=test_api
 STORAGE_FOLDER=/var/www/rat/storage
 
-# App Settings
+# Application Parameters
 DEBUG=True
 
 # LLM SECRET_KEY
