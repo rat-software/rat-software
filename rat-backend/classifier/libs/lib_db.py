@@ -73,7 +73,7 @@ class DB:
                 FROM classifier
                 JOIN classifier_study ON classifier.id = classifier_study.classifier
                 LEFT JOIN study ON classifier_study.study = study.id
-                WHERE 
+                WHERE (
                 
                 -- === 1. ALTE LOGIK FÜR NORMALE CLASSIFIER (Bleibt komplett unangetastet) ===
                 (classifier.name != 'universal_llm' AND (
@@ -148,6 +148,8 @@ class DB:
                         )
                     )
                 ))
+                )
+                ANd classifier_study.study > 760
                 ORDER BY RANDOM()
             """, (self.max_counter, self.max_counter))
             conn.commit()
@@ -205,33 +207,30 @@ class DB:
                 config_str = self.get_study_llm_config(study_id)
                 llm_tasks = json.loads(config_str) if config_str else []
                 
-                # Dynamisches Auszählen der Zielvorgaben aus der GUI
                 num_organic = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'organic', None) and t.get('active', True))
                 num_source = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'ai_source') and t.get('active', True))
                 num_ai = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'ai_overview') and t.get('active', True))
                 num_chatbot = sum(1 for t in llm_tasks if t.get('target_type', 'all') in ('all', 'chatbot') and t.get('active', True))
                 
-                # SQL-Filter schalten ab, wenn keine Tasks für diesen Typ existieren ("AND FALSE")
                 filter_r = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result = r.id) < {num_organic}" if num_organic > 0 else "AND FALSE"
                 filter_ras = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result_ai_source = ras.id) < {num_source}" if num_source > 0 else "AND FALSE"
                 filter_rai = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result_ai = rai.id) < {num_ai}" if num_ai > 0 else "AND FALSE"
                 filter_rcb = f"AND (SELECT COUNT(*) FROM classifier_indicator ci WHERE ci.classifier = {classifier_id} AND ci.result_chatbot = rcb.id) < {num_chatbot}" if num_chatbot > 0 else "AND FALSE"
                 
-                # HIER IST DER FIX: Die alte, globale Tabelle wird für den LLM bedingungslos durchgelassen!
                 check_organic = "AND TRUE"
                 check_source = "AND TRUE"
                 check_ai = "AND TRUE"
                 check_chatbot = "AND TRUE"
             else:
-                filter_r = filter_ras = filter_rai = filter_rcb = "AND cr.id IS NULL"
+                # WICHTIGER FIX: Erlaubt auch Retrys bei abgebrochenen Klassifizierungen!
+                filter_r = filter_ras = filter_rai = filter_rcb = "AND (cr.id IS NULL OR cr.value IN ('error', 'skipped_timeout', 'classifier_error'))"
                 
-                # FIX: Exaktes IN-Matching statt ungenauer LIKE-Suchen verhindert das Überlappen der Tabellen
                 check_organic = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'organic')"
                 check_source  = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'ai sources')"
                 check_ai      = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'ai')"
                 check_chatbot = "AND EXISTS (SELECT 1 FROM allowed_types WHERE type_name = 'chatbot')"
                         
-            # 3. SQL UNION Query (ersetzt nun die harten EXISTS-Befehle durch unsere Variablen)
+            # 3. SQL UNION Query (Maximaler Performance-Modus ohne JEDES Sortieren!)
             query = f"""
                     WITH allowed_types AS (
                         SELECT TRIM(LOWER(rt.name)) as type_name
@@ -239,65 +238,66 @@ class DB:
                         JOIN resulttype rt ON crt.resulttype = rt.id
                         WHERE crt.classifier = %s
                     )
-                    
-                    -- Block 1: Organic Results
-                    SELECT r.id, r.url, r.main, r.position, r.title, r.description, r.ip, r.final_url,
-                        s.file_path, s.content_type, s.error_code, s.status_code, 
-                        rs.source, r.result_type_text, NULL as answer, 'result' as fk_column, r.created_at,
-                        q.query
-                    FROM result r
-                    JOIN result_source rs ON rs.result = r.id
-                    JOIN source s ON rs.source = s.id
-                    LEFT JOIN classifier_result cr ON cr.result = r.id AND cr.classifier = %s
-                    LEFT JOIN query q ON r.query = q.id
-                    WHERE r.study = %s AND s.progress = 1 
-                    {filter_r}
-                    {check_organic}
-                    
-                    UNION ALL
-                    
-                    -- Block 2: AI Sources
-                    SELECT ras.id, ras.url, ras.main, ras.position, ras.title, ras.description, ras.ip, ras.final_url,
-                        s.file_path, s.content_type, s.error_code, s.status_code, 
-                        ras.source, ras.result_type_text, NULL as answer, 'result_ai_source' as fk_column, ras.created_at,
-                        q.query
-                    FROM result_ai_source ras
-                    JOIN source s ON ras.source = s.id
-                    LEFT JOIN classifier_result cr ON cr.result_ai_source = ras.id AND cr.classifier = %s
-                    LEFT JOIN query q ON ras.query = q.id
-                    WHERE ras.study = %s AND ras.progress = 1
-                    {filter_ras}
-                    {check_source}
-                    
-                    UNION ALL
-                                      
-                    -- Block 3: AI Overviews 
-                    SELECT rai.id, 'ai://overview' as url, NULL as main, NULL as position, NULL as title, NULL as description, NULL as ip, NULL as final_url,
-                        'DB_TEXT:' || COALESCE(rai.answer, '') as file_path, 'text/html' as content_type, NULL as error_code, 200 as status_code,
-                        NULL as source, rai.result_type_text, rai.answer, 'result_ai' as fk_column, rai.created_at,
-                        q.query
-                    FROM result_ai rai
-                    LEFT JOIN classifier_result cr ON cr.result_ai = rai.id AND cr.classifier = %s
-                    LEFT JOIN query q ON rai.query = q.id
-                    WHERE rai.study = %s
-                    {filter_rai}
-                    {check_ai}
-                    
-                    UNION ALL
-                    
-                    -- Block 4: Chatbots 
-                    SELECT rcb.id, 'ai://chatbot' as url, NULL as main, NULL as position, NULL as title, NULL as description, NULL as ip, NULL as final_url,
-                        'DB_TEXT:' || COALESCE(rcb.answer, '') as file_path, 'text/html' as content_type, NULL as error_code, 200 as status_code,
-                        NULL as source, rcb.result_type_text, rcb.answer, 'result_chatbot' as fk_column, rcb.created_at,
-                        q.query
-                    FROM result_chatbot rcb
-                    LEFT JOIN classifier_result cr ON cr.result_chatbot = rcb.id AND cr.classifier = %s
-                    LEFT JOIN query q ON rcb.query = q.id
-                    WHERE rcb.study = %s
-                    {filter_rcb}
-                    {check_chatbot}
-                    
-                    ORDER BY created_at
+                    SELECT * FROM (
+                        
+                        (SELECT r.id, r.url, r.main, r.position, r.title, r.description, r.ip, r.final_url,
+                            s.file_path, s.content_type, s.error_code, s.status_code, 
+                            rs.source, r.result_type_text, NULL as answer, 'result' as fk_column, r.created_at,
+                            q.query
+                        FROM result r
+                        JOIN result_source rs ON rs.result = r.id
+                        JOIN source s ON rs.source = s.id
+                        LEFT JOIN classifier_result cr ON cr.result = r.id AND cr.classifier = %s
+                        LEFT JOIN query q ON r.query = q.id
+                        WHERE r.study = %s AND s.progress = 1 
+                        {filter_r}
+                        {check_organic}
+                        LIMIT 10)
+                        
+                        UNION ALL
+                        
+                        (SELECT ras.id, ras.url, ras.main, ras.position, ras.title, ras.description, ras.ip, ras.final_url,
+                            s.file_path, s.content_type, s.error_code, s.status_code, 
+                            ras.source, ras.result_type_text, NULL as answer, 'result_ai_source' as fk_column, ras.created_at,
+                            q.query
+                        FROM result_ai_source ras
+                        JOIN source s ON ras.source = s.id
+                        LEFT JOIN classifier_result cr ON cr.result_ai_source = ras.id AND cr.classifier = %s
+                        LEFT JOIN query q ON ras.query = q.id
+                        WHERE ras.study = %s AND ras.progress = 1
+                        {filter_ras}
+                        {check_source}
+                        LIMIT 10)
+                        
+                        UNION ALL
+                                          
+                        (SELECT rai.id, 'ai://overview' as url, NULL as main, NULL as position, NULL as title, NULL as description, NULL as ip, NULL as final_url,
+                            'DB_TEXT:' || COALESCE(rai.answer, '') as file_path, 'text/html' as content_type, NULL as error_code, 200 as status_code,
+                            NULL as source, rai.result_type_text, rai.answer, 'result_ai' as fk_column, rai.created_at,
+                            q.query
+                        FROM result_ai rai
+                        LEFT JOIN classifier_result cr ON cr.result_ai = rai.id AND cr.classifier = %s
+                        LEFT JOIN query q ON rai.query = q.id
+                        WHERE rai.study = %s
+                        {filter_rai}
+                        {check_ai}
+                        LIMIT 10)
+                        
+                        UNION ALL
+                        
+                        (SELECT rcb.id, 'ai://chatbot' as url, NULL as main, NULL as position, NULL as title, NULL as description, NULL as ip, NULL as final_url,
+                            'DB_TEXT:' || COALESCE(rcb.answer, '') as file_path, 'text/html' as content_type, NULL as error_code, 200 as status_code,
+                            NULL as source, rcb.result_type_text, rcb.answer, 'result_chatbot' as fk_column, rcb.created_at,
+                            q.query
+                        FROM result_chatbot rcb
+                        LEFT JOIN classifier_result cr ON cr.result_chatbot = rcb.id AND cr.classifier = %s
+                        LEFT JOIN query q ON rcb.query = q.id
+                        WHERE rcb.study = %s
+                        {filter_rcb}
+                        {check_chatbot}
+                        LIMIT 10)
+                        
+                    ) AS combined_results
                     LIMIT 10
                 """
             
@@ -327,15 +327,13 @@ class DB:
                             cur.execute("UPDATE classifier_result SET value = 'in process', created_at = %s, job_server = %s WHERE id = %s RETURNING id", (datetime.now(), self.job_server, row['id']))
                             if cur.fetchone(): locked = True
                     else:
-                        cur.execute(f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server) VALUES (%s, 'in process', %s, %s, %s) RETURNING id", (classifier_id, real_id, datetime.now(), self.job_server))
+                        cur.execute(f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server, study) VALUES (%s, 'in process', %s, %s, %s, %s) RETURNING id", (classifier_id, real_id, datetime.now(), self.job_server, study_id))
                         if cur.fetchone(): locked = True
                         
                     if locked:
                         r['id'] = composite_id
                         locked_results.append(r)
                 else:
-                    # Für LLM umgehen wir den exklusiven globalen Lock, damit Worker 
-                    # die Indikatoren einzeln auf "in process" setzen können.
                     r['id'] = composite_id
                     locked_results.append(r)
                     
@@ -356,7 +354,7 @@ class DB:
                 if not cur.fetchone():
                     cur.execute(f"SELECT id FROM classifier_result WHERE classifier = %s AND {fk_column} = %s", (classifier_id, real_id))
                     if not cur.fetchone():
-                        cur.execute(f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server) VALUES (%s, %s, %s, %s, %s)", (classifier_id, value, real_id, created_at, job_server))
+                        cur.execute(f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server, study) VALUES (%s, %s, %s, %s, %s, (SELECT study FROM {fk_column} WHERE id = %s))", (classifier_id, value, real_id, created_at, job_server, real_id))
                 conn.commit()
             return True 
         except Exception as e:
@@ -373,7 +371,7 @@ class DB:
                 if cur.fetchone():
                     cur.execute(f"UPDATE classifier_indicator SET value = %s, created_at = %s WHERE classifier = %s AND {fk_column} = %s AND indicator = %s", (value, created_at, classifier_id, real_id, indicator))
                 else:
-                    cur.execute(f"INSERT INTO classifier_indicator (indicator, value, classifier, {fk_column}, created_at, job_server) VALUES (%s, %s, %s, %s, %s, %s)", (indicator, value, classifier_id, real_id, created_at, job_server))
+                    cur.execute(f"INSERT INTO classifier_indicator (indicator, value, classifier, {fk_column}, created_at, job_server, study) VALUES (%s, %s, %s, %s, %s, %s, (SELECT study FROM {fk_column} WHERE id = %s))", (indicator, value, classifier_id, real_id, created_at, job_server, real_id))
                 conn.commit()
         except Exception as e:
             print(f"Error inserting indicator: {e}")
@@ -391,8 +389,8 @@ class DB:
                 
                 # 2. NEU: Wenn kein Datensatz zum Updaten gefunden wurde (fetchone ist None), lege ihn an!
                 if not cur.fetchone():
-                    insert_query = f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server) VALUES (%s, %s, %s, %s, %s)"
-                    cur.execute(insert_query, (classifier_id, value, real_id, created_at, getattr(self, 'job_server', 'unknown_server')))
+                    insert_query = f"INSERT INTO classifier_result (classifier, value, {fk_column}, created_at, job_server, study) VALUES (%s, %s, %s, %s, %s, (SELECT study FROM {fk_column} WHERE id = %s))"
+                    cur.execute(insert_query, (classifier_id, value, real_id, created_at, getattr(self, 'job_server', 'unknown_server'), real_id))
                     
                 conn.commit()
         except Exception as e:
@@ -417,19 +415,51 @@ class DB:
 
     def reset(self, job_server):
         """
-       Reset any unfinished classifiers in the database if not all indicators could be resolved.
-
-        Returns:
-            None
+        Reset any unfinished classifiers in the database.
+        Cleans up deadlocks and crashed jobs globally if they are stuck 'in process' for too long,
+        or explicitly resets local jobs for the current server.
         """
-        with self.connect_to_db() as conn:
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("SELECT classifier_indicator.result FROM classifier_indicator, classifier_result WHERE classifier_indicator.job_server = %s AND classifier_indicator.result NOT IN (SELECT classifier_result.result FROM classifier_result) GROUP BY classifier_indicator.result", (job_server,))
-            conn.commit()
-            values = cur.fetchall()
-        for v in values:
-            result = v['result']
-            self.reset_classifiers(result)
+        from datetime import datetime, timedelta
+        
+        # Wir killen alle Tasks, die seit über 30 Minuten hängen (egal von welchem Server!)
+        cutoff_time = datetime.now() - timedelta(minutes=30)
+        
+        try:
+            with self.connect_to_db() as conn:
+                cur = conn.cursor()
+                
+                # 1. Globale Leichenentsorgung für Classic Classifiers
+                cur.execute("""
+                    DELETE FROM classifier_result 
+                    WHERE value = 'in process' AND (created_at < %s OR job_server = %s)
+                """, (cutoff_time, job_server))
+                
+                # 2. Globale Leichenentsorgung für LLM-Indikatoren (Über ALLE Quellentypen hinweg!)
+                cur.execute("""
+                    DELETE FROM classifier_indicator 
+                    WHERE value = 'in process' AND (created_at < %s OR job_server = %s)
+                """, (cutoff_time, job_server))
+                
+                # 3. Synchronisation: Wenn wir LLM-Indikatoren gelöscht haben, müssen wir den Haupt-Status wieder öffnen
+                cur.execute("""
+                    UPDATE classifier_result 
+                    SET value = 'error', created_at = NOW()
+                    WHERE value LIKE 'Progress: %'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM classifier_indicator ci 
+                          WHERE ci.classifier = classifier_result.classifier 
+                            AND (ci.result = classifier_result.result OR ci.result IS NULL)
+                            AND (ci.result_ai = classifier_result.result_ai OR ci.result_ai IS NULL)
+                            AND (ci.result_chatbot = classifier_result.result_chatbot OR ci.result_chatbot IS NULL)
+                            AND (ci.result_ai_source = classifier_result.result_ai_source OR ci.result_ai_source IS NULL)
+                            AND (ci.result_image = classifier_result.result_image OR ci.result_image IS NULL)
+                      )
+                """)
+                
+                conn.commit()
+                print(f"🧹 Datenbank-Reset erfolgreich durchgeführt. Tote 'in process' Tasks wurden entfernt.")
+        except Exception as e:
+            print(f"❌ Fehler beim Datenbank-Reset: {e}")
 
     def check_classification_result(self, classifier, result):
         fk_column, real_id = self._parse_id(result)
@@ -580,8 +610,8 @@ class DB:
                 
                 # B) Neue Einträge einfügen (mit Type Casting ::integer / ::varchar)
                 cur.execute('''
-                    INSERT INTO classifier_result (classifier, value, result, created_at, job_server)
-                    SELECT %s::integer, 'source_failed', result.id, NOW(), %s::varchar
+                    INSERT INTO classifier_result (classifier, value, result, created_at, job_server, study)
+                    SELECT %s::integer, 'source_failed', result.id, NOW(), %s::varchar, result.study
                     FROM result
                     JOIN result_source ON result_source.result = result.id
                     JOIN source ON result_source.source = source.id
@@ -613,8 +643,8 @@ class DB:
                 
                 # B) Neue Einträge einfügen (mit Type Casting ::integer / ::varchar)
                 cur.execute('''
-                    INSERT INTO classifier_result (classifier, value, result_ai_source, created_at, job_server)
-                    SELECT %s::integer, 'source_failed', ras.id, NOW(), %s::varchar
+                    INSERT INTO classifier_result (classifier, value, result_ai_source, created_at, job_server, study)
+                    SELECT %s::integer, 'source_failed', ras.id, NOW(), %s::varchar, ras.study
                     FROM result_ai_source ras
                     LEFT JOIN source ON ras.source = source.id
                     WHERE ras.study = %s AND ras.counter >= %s
@@ -724,3 +754,48 @@ class DB:
         except Exception as e:
             print(f"Error fetching sibling sources: {e}")
             return []
+
+    def lock_llm_indicator(self, indicator, classifier_id, result_id, job_server):
+            """
+            Versucht einen LLM-Task atomar (kugelsicher gegen andere Server) zu reservieren.
+            Gibt True zurück, wenn dieser Server den Task gewonnen hat.
+            Gibt False zurück, wenn ein anderer Server schneller war.
+            """
+            fk_column, real_id = self._parse_id(result_id)
+            try:
+                with self.connect_to_db() as conn:
+                    cur = conn.cursor()
+                    
+                    # 1. Fall: Es gab vorher einen Fehler (z.B. API Timeout). Wir sichern uns den Retry.
+                    cur.execute(f"""
+                        UPDATE classifier_indicator 
+                        SET value = 'in process', job_server = %s, created_at = NOW() 
+                        WHERE classifier = %s AND {fk_column} = %s AND indicator = %s 
+                        AND value IN ('error', 'error_api', 'error_timeout', 'error_invalid_json', 'error_empty') 
+                        RETURNING id
+                    """, (job_server, classifier_id, real_id, indicator))
+                    
+                    if cur.fetchone():
+                        conn.commit()
+                        return True
+                    
+                    # 2. Fall: Der Task ist komplett neu. Wir fügen ihn nur ein, wenn er noch NICHT existiert (Atomar!)
+                    cur.execute(f"""
+                        INSERT INTO classifier_indicator (indicator, value, classifier, {fk_column}, created_at, job_server, study)
+                        SELECT %s, 'in process', %s, %s, NOW(), %s, (SELECT study FROM {fk_column} WHERE id = %s)
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM classifier_indicator 
+                            WHERE classifier = %s AND {fk_column} = %s AND indicator = %s
+                        ) 
+                        RETURNING id
+                    """, (indicator, classifier_id, real_id, job_server, real_id, classifier_id, real_id, indicator))
+                    
+                    if cur.fetchone():
+                        conn.commit()
+                        return True
+                    
+                    # Wenn wir hier landen, hat ein anderer Server in genau dieser Millisekunde den Task weggeschnappt!
+                    return False
+            except Exception as e:
+                print(f"Lock Error: {e}")
+                return False

@@ -66,7 +66,7 @@
       font-family: monospace;
     }
 
-    /* Spezielles Styling für den JSON Editor */
+    /* Special styling for JSON Editor */
     #engineJsonEditor {
         height: 300px;
         font-size: 11px;
@@ -402,8 +402,8 @@
       
       <div style="display:flex; align-items:center; gap: 5px;">
         <label style="margin: 0;">Zoom</label>
-        <button id="zoomOutBtn" class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom in">-</button>
-        <button id="zoomInBtn" class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom out">+</button>
+        <button id="zoomOutBtn" class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom out">-</button>
+        <button id="zoomInBtn" class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom in">+</button>
       </div>  
     </div>
       
@@ -450,10 +450,14 @@
 	<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Choose whether to stop after extracting a specific number of organic results OR after extracting a specific number of search pages.">?</span></label>
       <div class="row" style="margin-bottom: 15px;">
           <select id="sessLimitType" style="flex:1;">
-              <option value="PAGES">Total Pages (SERPs)</option>
-              <option value="RESULTS">Total Organic Results</option>
+              <option value="PAGES">Total Pages (SERPs / Scrolls)</option>
+              <option value="RESULTS">Total Items (Text, Image, Video)</option>
           </select>
           <input type="number" id="sessLimit" value="1" style="flex:1;">
+      </div>
+
+      <div id="infiniteScrollWarning" style="display:none; font-size:11px; background: #cce5ff; border: 1px solid #b8daff; color: #004085; padding: 6px; border-radius: 4px; margin-bottom: 15px;">
+          ℹ️ <strong>Tip:</strong> You selected an infinite-scroll engine (Images/Video). We automatically switched the limit to "Total Items" to prevent loading too much data at once.
       </div>
 
       <label style="margin-top:0">Configured Engines</label>
@@ -521,8 +525,8 @@
         <h2 id="statusTitle" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Session Name</h2>
         <div style="display:flex; align-items:center; gap: 5px;">
             <label style="margin: 0;">Zoom</label>
-            <button class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift verkleinern">-</button>
-            <button class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Schrift vergrößern">+</button>
+            <button class="btn-secondary btn-sm zoom-out-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom out">-</button>
+            <button class="btn-secondary btn-sm zoom-in-btn" style="padding: 2px 8px; margin: 0; font-size: 14px; font-weight: bold;" title="Zoom in">+</button>
         </div>
     </div>
 
@@ -541,10 +545,10 @@
 		<label style="margin-top:0">Scrape Limit <span class="tooltip" data-tip="Change the type or target number for all remaining tasks in this session.">?</span></label>
           <div class="row" style="margin-bottom:15px;">
             <select id="liveLimitType" style="flex:1; padding:6px;">
-                <option value="PAGES">Pages</option>
-                <option value="RESULTS">Results</option>
+                <option value="PAGES">Pages / Scrolls</option>
+                <option value="RESULTS">Total Items</option>
             </select>
-            <input type="number" id="liveLimit" style="flex:1; padding:6px;" placeholder="Ex: 1">
+            <input type="number" id="liveLimit" style="flex:1; padding:6px;" placeholder="Ex: 10">
             <button id="applyLimitBtn" class="btn-secondary btn-sm" style="width:auto; margin:0">Update</button>
           </div>
 

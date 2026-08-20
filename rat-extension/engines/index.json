@@ -4,6 +4,6 @@
   "duckduckgo.json",
   "google_not_personalized.json",
   "google_images.json",
-  "bing_images.json",
-  "google_images_not_personalized.json"
+  "google_images_not_personalized.json",
+  "youtube.json"
 ]

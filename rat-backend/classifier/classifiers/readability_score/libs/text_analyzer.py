@@ -38,7 +38,7 @@ class Text_Analyzer:
 
         # Check for a minimum word count to ensure meaningful analysis
         if len(main_text.split()) < 100:
-            return "error"
+            return "text_too_short_or_unspaced"
         
         try:
             lang = detect(main_text)

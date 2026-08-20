@@ -2,7 +2,7 @@
  * @file background.js - Version 2.0 (Plugin Engine Ready with Video Support)
  * Core Service Worker for the Result Assessment Tool (RAT).
  * Handles persistence (IndexedDB), proxy rotation, and the main scraping queue.
- * Now dynamically loads JSON scrapers (Engines) instead of hardcoding logic.
+ * Dynamically loads JSON scrapers (Engines) instead of hardcoding logic.
  */
 
 // --- 1. POWER ---
@@ -424,7 +424,7 @@ async function broadcastSessionTasks(sessionId) {
     const simplifiedTasks = session.tasks.map((t, index) => ({
         index: index,
         term: t.term,
-        engine: t.config.engineName || "Google",
+        engine: t.config.engineName || "Unknown",
         country: t.config.countryCode,
         lang: t.config.langCode,
         status: t.status,
@@ -701,7 +701,7 @@ async function processQueue(sessionId) {
 
             if (await isPaused(sessionId)) break;
 
-            const serpLimit = session.settings && session.settings.serpLimit ? session.settings.serpLimit : 50;
+            const serpLimit = session.settings && session.settings.serpLimit ? session.settings.serpLimit : 100;
             const shouldSaveSerp = session.settings && 
                                 (session.settings.saveSerp || session.settings.saveScreenshots || session.settings.saveHtml) && 
                                 (currentTask.pages.length < serpLimit);
@@ -749,7 +749,6 @@ async function processQueue(sessionId) {
                 data.images = finalImagesForPage;
                 data.videos = finalVideosForPage;
 
-                // --- NEW DETAILED LOGGING ---
                 const aiFound = (data.ai_overview && data.ai_overview.found) ? "YES" : "NO";
                 const aiSegs = (data.ai_overview && data.ai_overview.segments) ? data.ai_overview.segments.length : 0;
                 const adsCount = data.ads ? data.ads.length : 0;

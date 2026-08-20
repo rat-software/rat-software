@@ -10,6 +10,6 @@ with app.app_context():
         user.password = hash_password("TemporaryPassword123!")
         user.force_password_change = True
         db.session.commit()
-        print("🎉 Success! Sebastian's password reset. Force-change flag engaged.")
+        print("🎉 Success! User's password reset. Force-change flag engaged.")
     else:
         print("❌ User not found.")

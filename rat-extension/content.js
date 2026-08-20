@@ -1,5 +1,5 @@
 /**
- * @file content.js - Version 2.0 (Video Box Support Added)
+ * @file content.js - Version 2.4 (Infinite Scroll State Fix)
  * Content script for the Result Assessment Tool (RAT).
  */
 
@@ -72,10 +72,24 @@ if (!window.ratListenerAdded) {
     async function performHumanActions(config) {
         console.log(`🤖 RAT: Starting Enhanced Human Sequence for ${config.engine.name}...`);
 
+        // 1. Aggressive Cookie Banner Dismissal
         if (config.behavior.cookieConsentSelectors) {
             for (let sel of config.behavior.cookieConsentSelectors) {
-                let btn = document.querySelector(sel);
-                if (btn) { btn.click(); await wait(800); break; }
+                let btns = document.querySelectorAll(sel);
+                for (let btn of btns) {
+                    if (btn && btn.offsetParent !== null) { 
+                        try { btn.click(); await wait(800); } catch(e) {} 
+                    }
+                }
+            }
+            if (window.location.href.includes("youtube.com")) {
+                let allBtns = document.querySelectorAll('button, yt-button-shape');
+                for (let b of allBtns) {
+                    let txt = (b.innerText || "").toLowerCase();
+                    if ((txt.includes("alle akzeptieren") || txt.includes("accept all")) && b.offsetParent !== null) {
+                        try { b.click(); await wait(800); } catch(e) {}
+                    }
+                }
             }
         }
         
@@ -101,19 +115,34 @@ if (!window.ratListenerAdded) {
             }
         }
 
-        const totalHeight = () => document.body.scrollHeight;
-        let currentY = 0;
+        // 2. Multi-Container Scroll Simulation (Fixed state for Infinite Scroll)
+        const getDocHeight = () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
         
-        while (currentY < totalHeight()) {
-            currentY += Math.floor(Math.random() * 250) + 100;
+        // Starte Scroll dort, wo wir zuletzt waren (wichtig für nachladende Ergebnisse!)
+        let currentY = window.scrollY || 0;
+        let maxScrollSteps = 10; 
+        
+        while (currentY < getDocHeight() && maxScrollSteps > 0) {
+            currentY += Math.floor(Math.random() * 500) + 300;
             window.scrollTo({ top: currentY, behavior: 'smooth' }); 
-            await wait(Math.floor(Math.random() * 300) + 100);
-            if ((window.innerHeight + window.scrollY) >= totalHeight() - 50) break;
+            
+            document.querySelectorAll('#page-manager, ytd-app, #content, ytd-search').forEach(el => {
+                if (el.scrollHeight > el.clientHeight) {
+                    try { el.scrollBy({top: 400, behavior: 'smooth'}); } catch(e) {}
+                }
+            });
+
+            await wait(Math.floor(Math.random() * 300) + 200);
+            maxScrollSteps--; 
         }
 
         await wait(1200);
-        window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        await wait(1500);
+        
+        // Zurück zum Anfang scrollen nur, wenn es KEIN Infinite Scroll ist!
+        if (!config.selectors.pagination || config.selectors.pagination.type !== "infinite_scroll") {
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            await wait(1500);
+        }
 
         if (config.behavior.aiExpandSelectors) {
             for (let sel of config.behavior.aiExpandSelectors) {
@@ -143,9 +172,7 @@ if (!window.ratListenerAdded) {
                         
                         btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
                         await wait(1500);
-                    } catch (err) {
-                        console.warn(`🤖 RAT: Ignored error while clicking AI button.`, err);
-                    }
+                    } catch (err) {}
                 }
             }
         }
@@ -193,14 +220,13 @@ if (!window.ratListenerAdded) {
     function isValidSourceUrl(url, config) {
         if (!url || typeof url !== 'string') return false;
         url = url.trim();
-        if (!url.startsWith('http')) return false;
+        if (!url.startsWith('http') && !url.startsWith('/')) return false;
         if (url.includes('favicon')) return false;
         if (url.includes('gstatic.com')) return false;
-        if (url.includes('youtube.com/channel')) return false;
         if (url.includes('google.com/search')) return false;
         
         try {
-            let u = new URL(url);
+            let u = new URL(url, window.location.origin);
             let hostname = u.hostname.replace(/^www\./, '');
             
             let engineHostname = "google.com";
@@ -218,7 +244,7 @@ if (!window.ratListenerAdded) {
 
     function getCleanDomainAndPath(urlString) {
         try {
-            let u = new URL(urlString);
+            let u = new URL(urlString, window.location.origin);
             let clean = u.hostname.replace(/^www\./, '') + u.pathname;
             
             if (clean.includes('youtube.com/watch') && u.searchParams.has('v')) {
@@ -363,7 +389,6 @@ if (!window.ratListenerAdded) {
         const decodeMethod = config.request.features.urlDecodingMethod;
         const selConfig = config.selectors;
 
-        // 0. UUID MAPPER
         let uuidToUrls = new Map();
         
         function decodeHTMLEntities(text) {
@@ -401,7 +426,6 @@ if (!window.ratListenerAdded) {
 
         const treeWalker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_COMMENT, null, false);
         let currentNode = treeWalker.nextNode();
-        
         const commentRegex = /TgQPHd[\s\S]*?\|(\[.*\])/; 
         
         while(currentNode) {
@@ -417,7 +441,7 @@ if (!window.ratListenerAdded) {
             currentNode = treeWalker.nextNode();
         }
 
-        // 1. Process AI Overview & Assist
+        // 1. Process AI Overview
         if (selConfig.ai_overview && selConfig.ai_overview.container) {
             const aiContainer = document.querySelector(selConfig.ai_overview.container);
             if (aiContainer) {
@@ -430,9 +454,7 @@ if (!window.ratListenerAdded) {
                         
                         sourceElements.forEach(el => {
                             let organicContainerSelector = selConfig.organic?.container || null;
-                            if (organicContainerSelector && el.closest(organicContainerSelector)) {
-                                return; 
-                            }
+                            if (organicContainerSelector && el.closest(organicContainerSelector)) return; 
                             
                             let linkEl = null, url = "";
                             
@@ -471,7 +493,7 @@ if (!window.ratListenerAdded) {
                             for (let candidate of labelCandidates) {
                                 let tempLabel = candidate.getAttribute('aria-label');
                                 if (tempLabel) {
-                                    let isUiButton = tempLabel.toLowerCase().includes("informationen") || tempLabel.toLowerCase().includes("about this");
+                                    let isUiButton = tempLabel.toLowerCase().includes("informationen") || tempLabel.toLowerCase().includes("information") || tempLabel.toLowerCase().includes("about this");
                                     if (!isUiButton && tempLabel.length > bestLabel.length) bestLabel = tempLabel;
                                 }
                             }
@@ -487,14 +509,14 @@ if (!window.ratListenerAdded) {
                             }
 
                             let domainFallback = "";
-                            try { domainFallback = new URL(url).hostname.replace(/^www\./, ''); } catch(e) { domainFallback = "Quelle"; }
+                            try { domainFallback = new URL(url, window.location.origin).hostname.replace(/^www\./, ''); } catch(e) { domainFallback = "Source"; }
                             if (!title || title.length < 3) title = domainFallback;
 
                             let cleanKey = getCleanDomainAndPath(url);
                             let existing = tempSources.get(cleanKey);
                             
-                            let currentIsDomain = (title.toLowerCase() === domainFallback.toLowerCase()) || title === "Quelle";
-                            let existingIsDomain = existing ? ((existing.title.toLowerCase() === domainFallback.toLowerCase()) || existing.title === "Quelle") : false;
+                            let currentIsDomain = (title.toLowerCase() === domainFallback.toLowerCase()) || title === "Source";
+                            let existingIsDomain = existing ? ((existing.title.toLowerCase() === domainFallback.toLowerCase()) || existing.title === "Source") : false;
 
                             let shouldUpdate = false;
                             if (!existing) shouldUpdate = true;
@@ -565,7 +587,7 @@ if (!window.ratListenerAdded) {
 
                             sortedUrls.forEach(u => {
                                 try {
-                                    let urlObj = new URL(u);
+                                    let urlObj = new URL(u, window.location.origin);
                                     let domain = urlObj.hostname.replace(/^www\./, '');
                                     let path = urlObj.pathname;
                                     if (path && path !== '/') {
@@ -605,7 +627,7 @@ if (!window.ratListenerAdded) {
                                     }
 
                                     if (newTitle === "Inline Source" || newTitle === "Embedded Video") {
-                                        try { newTitle = new URL(targetUrl).hostname.replace(/^www\./, ''); } catch(e){}
+                                        try { newTitle = new URL(targetUrl, window.location.origin).hostname.replace(/^www\./, ''); } catch(e){}
                                     }
 
                                     result.ai_overview.sources.push({ 
@@ -636,7 +658,9 @@ if (!window.ratListenerAdded) {
                 const allItems = mainArea.querySelectorAll(querySelectors.join(', '));
                 
                 for (let item of allItems) {
-                    if (item.offsetHeight === 0) continue;
+                    
+                    const rect = item.getBoundingClientRect();
+                    if (rect.height === 0 && rect.width === 0 && (!item.innerText || item.innerText.trim() === "")) continue;
 
                     let rule = null;
                     let type = "";
@@ -659,17 +683,36 @@ if (!window.ratListenerAdded) {
                     
                     if (!rule) continue;
                     
-                    const titleEl = rule.title ? item.querySelector(rule.title) : null;
-                    let linkEl = null;
-                    if (titleEl) {
-                        if (titleEl.tagName === 'A') linkEl = titleEl;
-                        else linkEl = titleEl.querySelector('a');
-                    }
-                    if (!linkEl && rule.url) linkEl = item.querySelector(rule.url);
-                    if (!linkEl) linkEl = item.querySelector('a');
-                    if (!linkEl) continue;
+					const titleEl = rule.title ? item.querySelector(rule.title) : null;
+					let linkEl = null;
+
+					// 1. Link aus Titel extrahieren (mit fallback auf das umschließende <a> Element)
+					if (titleEl) {
+						if (titleEl.tagName === 'A') linkEl = titleEl;
+						else linkEl = titleEl.querySelector('a') || titleEl.closest('a');
+					}
+
+					// 2. Link aus URL-Selektor extrahieren (falls Titel kein Link war)
+					if (!linkEl && rule.url) {
+						let temp = item.querySelector(rule.url);
+						if (temp) {
+							if (temp.tagName === 'A') linkEl = temp;
+							else linkEl = temp.querySelector('a') || temp.closest('a');
+						}
+					}
+
+					// 3. Letzter Fallback: Das erste <a> Element im Container nehmen
+					if (!linkEl) linkEl = item.querySelector('a');
+					if (!linkEl) continue;
+
+					// 4. Sicherheits-Check: Hat das gefundene Element WIRKLICH ein href-Attribut?
+					if (!linkEl.href && !linkEl.getAttribute('href')) {
+						let fallback = item.querySelector('a[href]');
+						if (fallback) linkEl = fallback;
+						else continue; // Wenn wirklich kein Link existiert, überspringen
+}
                     
-                    const url = decodeUrl(linkEl.href, decodeMethod);
+                    const url = decodeUrl(linkEl.href || linkEl.getAttribute('href'), decodeMethod);
                     let title = titleEl ? titleEl.innerText.trim() : (linkEl.innerText.trim() || (type === "video" ? "Video Result" : (type === "image" ? "Image Result" : "Result")));
                     
                     let snippet = "";
@@ -686,8 +729,32 @@ if (!window.ratListenerAdded) {
                         }
                     }
 
-                    let imageUrl = "";
+					let imageUrl = "";
                     let finalUrl = url; 
+
+                    try { finalUrl = new URL(finalUrl, window.location.origin).toString(); } catch(e) {}
+                    
+                    // --- NEUER AD-FILTER (Doppelter Boden) ---
+                    // Wenn der originale Link ein Google Ad-Link ist, zwingen wir den Typ auf "ad".
+                    // So landet er nie in "organic", selbst wenn YouTube neue Container-Namen erfindet.
+                    if (finalUrl.includes('googleadservices.com') || finalUrl.includes('doubleclick.net')) {
+                        type = "ad";
+                    }
+                    // -----------------------------------------
+
+					if (finalUrl.includes('googleadservices.com') || finalUrl.includes('doubleclick.net')) {
+						try {
+							const u = new URL(finalUrl);
+							// Wenn es ein YouTube-Video ist:
+							if (u.searchParams.has('video_id')) {
+								finalUrl = 'https://www.youtube.com/watch?v=' + u.searchParams.get('video_id');
+							} 
+							// Für generelle Google Ads (greift auch bei der google.json):
+							else if (u.searchParams.has('adurl')) {
+								finalUrl = u.searchParams.get('adurl');
+							}
+						} catch(e) {}
+					}
 
                     const bingLink = item.querySelector('a[m]') || (item.hasAttribute('m') ? item : null);
                     if (bingLink) {
@@ -720,10 +787,23 @@ if (!window.ratListenerAdded) {
                         if (imgEl) imageUrl = imgEl.src || imgEl.getAttribute('data-src') || imgEl.getAttribute('src') || "";
                     }
 
-                    if (!finalUrl || finalUrl === "N/A") continue;
+					if (!finalUrl || finalUrl === "N/A") continue;
+                    
+                    // --- VERBESSERTER FILTER ---
+                    // Schließt Shorts nur aus, wenn die URL auch wirklich zu YouTube gehört
+                    // (Verhindert false positives bei Suchmaschinen, z.B. bei der Suche nach Kleidung)
+                    if (finalUrl.includes('/shorts/') && finalUrl.includes('youtube.')) {
+                        continue;
+                    }
+                    // ---------------------------
+
                     const engineHost = config.request.baseUrl.split('/')[2];
                     
-                    if (finalUrl.includes(engineHost) && !finalUrl.includes('/ck/a') && !finalUrl.includes('imgres')) continue;
+                    // Exclude internal routing links except image results
+                    if (finalUrl.includes(engineHost) && !finalUrl.includes('/ck/a') && !finalUrl.includes('imgres') && !finalUrl.includes('watch?v=')) {
+                        // We allow watch?v= because YouTube scraper needs it
+                        if(engineHost !== "www.youtube.com") continue;
+                    }
 
                     if (type === "ad") {
                         result.ads.push({ rank: result.ads.length + 1, title: title, url: finalUrl, snippet: snippet, imageUrl: imageUrl });
@@ -761,17 +841,30 @@ if (!window.ratListenerAdded) {
     // --- NAVIGATION ---
     async function navigateToNext(config) {
         if (config.selectors.pagination && config.selectors.pagination.type === "infinite_scroll") {
-            window.scrollTo(0, document.body.scrollHeight);
+            const getDocHeight = () => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+            window.scrollTo(0, getDocHeight());
+            
+            document.querySelectorAll('#page-manager, ytd-app, #content, ytd-search').forEach(el => {
+                if (el.scrollHeight > el.clientHeight) {
+                    try { el.scrollTo(0, el.scrollHeight); } catch(e) {}
+                }
+            });
+
             await wait(2500); 
             
             if (config.selectors.pagination.nextButton) {
                 let btn = document.querySelector(config.selectors.pagination.nextButton);
-                if (btn && btn.offsetParent !== null) {
-                    btn.scrollIntoView({ block: "center", behavior: "smooth" });
-                    await wait(500);
-                    btn.click();
+                // offsetParent check entfernt, da Web Components wie ytd-continuation-item oft null zurückgeben
+                if (btn) {
+                    try {
+                        btn.scrollIntoView({ block: "end", behavior: "smooth" });
+                        await wait(800);
+                        btn.click();
+                    } catch(e){}
                 }
             }
+            
+            await wait(2000); 
             return { success: true };
         }
 

@@ -17,7 +17,7 @@ MAIL_SERVER=smtp.resend.com
 MAIL_PORT=465
 MAIL_PASSWORD=your-resend-api-key
 MAIL_USERNAME=resend
-RESEND_API_KEY=your-resend-api-key
+RESEND_API_KEY=re_B6Ru7a5t_CbkSKpU9EMwbV4QF9eDBA4Yk
 SECURITY_EMAIL_SENDER=admin@yourdomain.com
 
 # Storage

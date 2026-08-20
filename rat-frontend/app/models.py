@@ -28,7 +28,7 @@ question_result = db.Table('question_result',
                            db.Column('question', db.ForeignKey(
                                'question.id'), primary_key=True),
                            db.Column('result', db.ForeignKey(
-                               'result.id'), primary_key=True), extend_existing=True,
+                               'result.id', ondelete='CASCADE'), primary_key=True), extend_existing=True,
                            )
 
 # Links search engines (Google, Bing, etc.) to specific studies
@@ -162,7 +162,7 @@ class Answer(db.Model):
     question_id = db.Column('question', db.Integer, db.ForeignKey('question.id'))
     question = db.relationship('Question', back_populates='answers', lazy='select')
 
-    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'), nullable=True)
+    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id', ondelete='CASCADE'), nullable=True)
     result = db.relationship('Result', back_populates='answers', lazy='select')
 
     result_ai_id = db.Column('result_ai', db.Integer, db.ForeignKey('result_ai.id'), nullable=True)
@@ -212,7 +212,7 @@ class ClassifierResult(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     classifier_id = db.Column("classifier", db.Integer, db.ForeignKey('classifier.id'))
-    result_id = db.Column("result", db.Integer, db.ForeignKey('result.id'))
+    result_id = db.Column("result", db.Integer, db.ForeignKey('result.id', ondelete='CASCADE'))
     value = db.Column('value', db.String)
     job_server = db.Column('job_server', db.String)
     created_at = db.Column(db.DateTime)
@@ -410,7 +410,7 @@ class ResultSource(db.Model):
     __tablename__ = 'result_source'
     __table_args__ = {'extend_existing': True}
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id'), primary_key=False)
+    result_id = db.Column('result', db.Integer, db.ForeignKey('result.id', ondelete='CASCADE'), primary_key=False)
     source_id = db.Column('source', db.Integer, db.ForeignKey('source.id'), nullable=True)
     created_at = db.Column(db.DateTime)
     error_code = db.Column(db.String)
@@ -546,6 +546,9 @@ class Study(db.Model):
     assessable_result_types_text = db.Column(db.String, nullable=True)
     visible = db.Column(db.Boolean, default=True, nullable=False)
     group_by_query = db.Column(db.Boolean, default=True)
+
+    global_duplicate_filtering = db.Column(db.Boolean, default=False, nullable=False)
+
     
     
     limit_by_query = db.Column(db.Boolean, default=True) 
