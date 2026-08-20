@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict GINCMHTcoTH5rtE75HGrb5cbVEuzCMskr8V029YLptRDeXidXZZbe7NCd3qgv4x
+\restrict TFWlqedybeYf3lAKce8Rh8FCB9RQmhD7yJzNrexnqdt0OJBH0oKWj8njyBnX2X7
 
 -- Dumped from database version 18.4 (Ubuntu 18.4-0ubuntu0.26.04.1)
 -- Dumped by pg_dump version 18.3
 
--- Started on 2026-08-13 11:15:40
+-- Started on 2026-08-20 15:35:34
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -21,12 +21,20 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- TOC entry 5 (class 2615 OID 2200)
+-- Name: public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+-- *not* creating schema, since initdb creates it
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- TOC entry 219 (class 1259 OID 69781)
+-- TOC entry 219 (class 1259 OID 99479)
 -- Name: ai_segment_source; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -37,7 +45,7 @@ CREATE TABLE public.ai_segment_source (
 
 
 --
--- TOC entry 220 (class 1259 OID 69786)
+-- TOC entry 220 (class 1259 OID 99484)
 -- Name: alembic_version; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -47,13 +55,13 @@ CREATE TABLE public.alembic_version (
 
 
 --
--- TOC entry 221 (class 1259 OID 69790)
+-- TOC entry 221 (class 1259 OID 99488)
 -- Name: answer; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.answer (
     id integer NOT NULL,
-    value character varying,
+    value text,
     participant integer,
     result integer,
     question integer,
@@ -72,7 +80,7 @@ CREATE TABLE public.answer (
 
 
 --
--- TOC entry 222 (class 1259 OID 69796)
+-- TOC entry 222 (class 1259 OID 99494)
 -- Name: answer_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -86,7 +94,7 @@ CREATE SEQUENCE public.answer_id_seq
 
 
 --
--- TOC entry 3965 (class 0 OID 0)
+-- TOC entry 4221 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: answer_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -95,22 +103,22 @@ ALTER SEQUENCE public.answer_id_seq OWNED BY public.answer.id;
 
 
 --
--- TOC entry 223 (class 1259 OID 69797)
+-- TOC entry 223 (class 1259 OID 99495)
 -- Name: classifier; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.classifier (
     id integer NOT NULL,
-    name character varying,
+    name text NOT NULL,
     display_name character varying(255),
-    display boolean DEFAULT true,
+    display boolean DEFAULT true NOT NULL,
     description character varying,
     description_url character varying
 );
 
 
 --
--- TOC entry 224 (class 1259 OID 69804)
+-- TOC entry 224 (class 1259 OID 99504)
 -- Name: classifier_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -124,7 +132,7 @@ CREATE SEQUENCE public.classifier_id_seq
 
 
 --
--- TOC entry 3966 (class 0 OID 0)
+-- TOC entry 4222 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: classifier_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -133,18 +141,18 @@ ALTER SEQUENCE public.classifier_id_seq OWNED BY public.classifier.id;
 
 
 --
--- TOC entry 225 (class 1259 OID 69805)
+-- TOC entry 225 (class 1259 OID 99505)
 -- Name: classifier_indicator; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.classifier_indicator (
     id integer NOT NULL,
     created_at timestamp without time zone DEFAULT now(),
-    indicator character varying,
-    value character varying,
+    indicator text,
+    value text,
     result integer,
     classifier integer,
-    job_server character varying,
+    job_server text,
     study integer,
     result_ai integer,
     result_chatbot integer,
@@ -154,7 +162,7 @@ CREATE TABLE public.classifier_indicator (
 
 
 --
--- TOC entry 226 (class 1259 OID 69812)
+-- TOC entry 226 (class 1259 OID 99512)
 -- Name: classifier_indicator_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -168,7 +176,7 @@ CREATE SEQUENCE public.classifier_indicator_id_seq
 
 
 --
--- TOC entry 3967 (class 0 OID 0)
+-- TOC entry 4223 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: classifier_indicator_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -177,17 +185,17 @@ ALTER SEQUENCE public.classifier_indicator_id_seq OWNED BY public.classifier_ind
 
 
 --
--- TOC entry 227 (class 1259 OID 69813)
+-- TOC entry 227 (class 1259 OID 99513)
 -- Name: classifier_result; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.classifier_result (
     id integer NOT NULL,
-    created_at timestamp without time zone DEFAULT now(),
-    value character varying,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    value text,
     result integer,
     classifier integer,
-    job_server character varying,
+    job_server text,
     study integer,
     result_ai integer,
     result_chatbot integer,
@@ -197,7 +205,7 @@ CREATE TABLE public.classifier_result (
 
 
 --
--- TOC entry 228 (class 1259 OID 69820)
+-- TOC entry 228 (class 1259 OID 99521)
 -- Name: classifier_result_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -211,7 +219,7 @@ CREATE SEQUENCE public.classifier_result_id_seq
 
 
 --
--- TOC entry 3968 (class 0 OID 0)
+-- TOC entry 4224 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: classifier_result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -220,7 +228,7 @@ ALTER SEQUENCE public.classifier_result_id_seq OWNED BY public.classifier_result
 
 
 --
--- TOC entry 229 (class 1259 OID 69821)
+-- TOC entry 229 (class 1259 OID 99522)
 -- Name: classifier_resulttype; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -231,18 +239,7 @@ CREATE TABLE public.classifier_resulttype (
 
 
 --
--- TOC entry 230 (class 1259 OID 69826)
--- Name: classifier_study; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.classifier_study (
-    classifier integer,
-    study integer
-);
-
-
---
--- TOC entry 231 (class 1259 OID 69829)
+-- TOC entry 230 (class 1259 OID 99527)
 -- Name: classifier_study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -256,19 +253,67 @@ CREATE SEQUENCE public.classifier_study_id_seq
 
 
 --
--- TOC entry 232 (class 1259 OID 69830)
+-- TOC entry 231 (class 1259 OID 99528)
+-- Name: classifier_study; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.classifier_study (
+    id integer DEFAULT nextval('public.classifier_study_id_seq'::regclass) NOT NULL,
+    classifier integer,
+    study integer
+);
+
+
+--
+-- TOC entry 232 (class 1259 OID 99533)
+-- Name: content; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.content (
+    id integer NOT NULL,
+    result integer,
+    value text
+);
+
+
+--
+-- TOC entry 233 (class 1259 OID 99539)
+-- Name: content_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.content_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4225 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: content_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.content_id_seq OWNED BY public.content.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 99540)
 -- Name: country; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.country (
     id integer NOT NULL,
-    name character varying,
-    code character varying
+    name text,
+    code text,
+    language integer
 );
 
 
 --
--- TOC entry 233 (class 1259 OID 69836)
+-- TOC entry 235 (class 1259 OID 99546)
 -- Name: country_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -282,8 +327,8 @@ CREATE SEQUENCE public.country_id_seq
 
 
 --
--- TOC entry 3969 (class 0 OID 0)
--- Dependencies: 233
+-- TOC entry 4226 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: country_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -291,21 +336,260 @@ ALTER SEQUENCE public.country_id_seq OWNED BY public.country.id;
 
 
 --
--- TOC entry 234 (class 1259 OID 69837)
+-- TOC entry 236 (class 1259 OID 99547)
+-- Name: country_monitoring; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.country_monitoring (
+    country integer,
+    monitoring integer
+);
+
+
+--
+-- TOC entry 237 (class 1259 OID 99550)
+-- Name: dummy_table; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dummy_table (
+    id integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    name text,
+    description text
+);
+
+
+--
+-- TOC entry 238 (class 1259 OID 99558)
+-- Name: dummy_table_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.dummy_table_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4227 (class 0 OID 0)
+-- Dependencies: 238
+-- Name: dummy_table_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.dummy_table_id_seq OWNED BY public.dummy_table.id;
+
+
+--
+-- TOC entry 239 (class 1259 OID 99559)
+-- Name: evaluation; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.evaluation (
+    id integer NOT NULL,
+    source integer,
+    comment text,
+    status integer
+);
+
+
+--
+-- TOC entry 240 (class 1259 OID 99565)
+-- Name: evaluation_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.evaluation_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4228 (class 0 OID 0)
+-- Dependencies: 240
+-- Name: evaluation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.evaluation_id_seq OWNED BY public.evaluation.id;
+
+
+--
+-- TOC entry 241 (class 1259 OID 99566)
+-- Name: experiment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.experiment (
+    id integer NOT NULL,
+    study integer
+);
+
+
+--
+-- TOC entry 242 (class 1259 OID 99570)
+-- Name: experiment_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.experiment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4229 (class 0 OID 0)
+-- Dependencies: 242
+-- Name: experiment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.experiment_id_seq OWNED BY public.experiment.id;
+
+
+--
+-- TOC entry 243 (class 1259 OID 99571)
+-- Name: group; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."group" (
+    id integer NOT NULL,
+    name text,
+    description text
+);
+
+
+--
+-- TOC entry 244 (class 1259 OID 99577)
+-- Name: group_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.group_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4230 (class 0 OID 0)
+-- Dependencies: 244
+-- Name: group_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.group_id_seq OWNED BY public."group".id;
+
+
+--
+-- TOC entry 245 (class 1259 OID 99578)
+-- Name: language; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.language (
+    id integer NOT NULL,
+    name text,
+    code text,
+    translate boolean DEFAULT false
+);
+
+
+--
+-- TOC entry 246 (class 1259 OID 99585)
+-- Name: language_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.language_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4231 (class 0 OID 0)
+-- Dependencies: 246
+-- Name: language_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.language_id_seq OWNED BY public.language.id;
+
+
+--
+-- TOC entry 247 (class 1259 OID 99586)
+-- Name: language_study; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.language_study (
+    language integer NOT NULL,
+    study integer NOT NULL
+);
+
+
+--
+-- TOC entry 248 (class 1259 OID 99591)
+-- Name: monitoring; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.monitoring (
+    id integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    name text,
+    description text,
+    interval_mode integer,
+    interval_frequency integer,
+    result_count integer,
+    resulttype integer
+);
+
+
+--
+-- TOC entry 249 (class 1259 OID 99599)
+-- Name: monitoring_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.monitoring_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4232 (class 0 OID 0)
+-- Dependencies: 249
+-- Name: monitoring_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.monitoring_id_seq OWNED BY public.monitoring.id;
+
+
+--
+-- TOC entry 250 (class 1259 OID 99600)
 -- Name: option; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.option (
     id integer NOT NULL,
-    value character varying,
-    label character varying,
+    value text,
+    label text,
     "position" integer,
     question integer
 );
 
 
 --
--- TOC entry 235 (class 1259 OID 69843)
+-- TOC entry 251 (class 1259 OID 99606)
 -- Name: option_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -319,8 +603,8 @@ CREATE SEQUENCE public.option_id_seq
 
 
 --
--- TOC entry 3970 (class 0 OID 0)
--- Dependencies: 235
+-- TOC entry 4233 (class 0 OID 0)
+-- Dependencies: 251
 -- Name: option_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -328,13 +612,14 @@ ALTER SEQUENCE public.option_id_seq OWNED BY public.option.id;
 
 
 --
--- TOC entry 236 (class 1259 OID 69844)
+-- TOC entry 252 (class 1259 OID 99607)
 -- Name: participant; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.participant (
     id integer NOT NULL,
-    name character varying,
+    "group" integer,
+    name text,
     created_at timestamp(6) without time zone,
     updated_at timestamp(6) without time zone,
     password integer,
@@ -344,7 +629,7 @@ CREATE TABLE public.participant (
 
 
 --
--- TOC entry 237 (class 1259 OID 69850)
+-- TOC entry 253 (class 1259 OID 99613)
 -- Name: participant_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -358,8 +643,8 @@ CREATE SEQUENCE public.participant_id_seq
 
 
 --
--- TOC entry 3971 (class 0 OID 0)
--- Dependencies: 237
+-- TOC entry 4234 (class 0 OID 0)
+-- Dependencies: 253
 -- Name: participant_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -367,7 +652,7 @@ ALTER SEQUENCE public.participant_id_seq OWNED BY public.participant.id;
 
 
 --
--- TOC entry 238 (class 1259 OID 69851)
+-- TOC entry 254 (class 1259 OID 99614)
 -- Name: participant_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -378,22 +663,56 @@ CREATE TABLE public.participant_study (
 
 
 --
--- TOC entry 239 (class 1259 OID 69856)
+-- TOC entry 255 (class 1259 OID 99619)
+-- Name: provider; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.provider (
+    id integer NOT NULL,
+    name text
+);
+
+
+--
+-- TOC entry 256 (class 1259 OID 99625)
+-- Name: provider_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.provider_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4235 (class 0 OID 0)
+-- Dependencies: 256
+-- Name: provider_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.provider_id_seq OWNED BY public.provider.id;
+
+
+--
+-- TOC entry 257 (class 1259 OID 99626)
 -- Name: qs_geotarget; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.qs_geotarget (
     id integer NOT NULL,
-    name character varying,
-    canonical_name character varying,
-    country_code character varying,
-    target_type character varying,
-    criterion_id integer
+    name text NOT NULL,
+    canonical_name text NOT NULL,
+    country_code text NOT NULL,
+    target_type text NOT NULL,
+    criterion_id integer NOT NULL
 );
 
 
 --
--- TOC entry 240 (class 1259 OID 69862)
+-- TOC entry 258 (class 1259 OID 99637)
 -- Name: qs_geotarget_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -407,8 +726,8 @@ CREATE SEQUENCE public.qs_geotarget_id_seq
 
 
 --
--- TOC entry 3972 (class 0 OID 0)
--- Dependencies: 240
+-- TOC entry 4236 (class 0 OID 0)
+-- Dependencies: 258
 -- Name: qs_geotarget_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -416,23 +735,23 @@ ALTER SEQUENCE public.qs_geotarget_id_seq OWNED BY public.qs_geotarget.id;
 
 
 --
--- TOC entry 241 (class 1259 OID 69863)
+-- TOC entry 259 (class 1259 OID 99638)
 -- Name: qs_keyword; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.qs_keyword (
     id integer NOT NULL,
-    qs_study_id integer,
-    qs_geotarget_criterion_id integer,
-    qs_language_code_criterion_id integer,
-    keyword character varying,
+    qs_study_id integer NOT NULL,
+    qs_geotarget_criterion_id integer NOT NULL,
+    qs_language_code_criterion_id integer NOT NULL,
+    keyword text NOT NULL,
     created_at timestamp without time zone,
     status integer DEFAULT 0
 );
 
 
 --
--- TOC entry 242 (class 1259 OID 69870)
+-- TOC entry 260 (class 1259 OID 99649)
 -- Name: qs_keyword_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -446,8 +765,8 @@ CREATE SEQUENCE public.qs_keyword_id_seq
 
 
 --
--- TOC entry 3973 (class 0 OID 0)
--- Dependencies: 242
+-- TOC entry 4237 (class 0 OID 0)
+-- Dependencies: 260
 -- Name: qs_keyword_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -455,23 +774,23 @@ ALTER SEQUENCE public.qs_keyword_id_seq OWNED BY public.qs_keyword.id;
 
 
 --
--- TOC entry 243 (class 1259 OID 69871)
+-- TOC entry 261 (class 1259 OID 99650)
 -- Name: qs_keyword_idea; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.qs_keyword_idea (
     id integer NOT NULL,
-    qs_study_id integer,
-    qs_keyword_id integer,
-    keyword_idea character varying,
-    avg_monthly_searches integer,
-    competition character varying,
+    qs_study_id integer NOT NULL,
+    qs_keyword_id integer NOT NULL,
+    keyword_idea text NOT NULL,
+    avg_monthly_searches integer NOT NULL,
+    competition text NOT NULL,
     created_at timestamp without time zone
 );
 
 
 --
--- TOC entry 244 (class 1259 OID 69877)
+-- TOC entry 262 (class 1259 OID 99661)
 -- Name: qs_keyword_ideas_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -485,8 +804,8 @@ CREATE SEQUENCE public.qs_keyword_ideas_id_seq
 
 
 --
--- TOC entry 3974 (class 0 OID 0)
--- Dependencies: 244
+-- TOC entry 4238 (class 0 OID 0)
+-- Dependencies: 262
 -- Name: qs_keyword_ideas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -494,19 +813,20 @@ ALTER SEQUENCE public.qs_keyword_ideas_id_seq OWNED BY public.qs_keyword_idea.id
 
 
 --
--- TOC entry 245 (class 1259 OID 69878)
+-- TOC entry 263 (class 1259 OID 99662)
 -- Name: qs_language_code; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.qs_language_code (
     id integer NOT NULL,
-    name character varying,
-    criterion_id integer
+    name text NOT NULL,
+    code text NOT NULL,
+    criterion_id integer NOT NULL
 );
 
 
 --
--- TOC entry 246 (class 1259 OID 69884)
+-- TOC entry 264 (class 1259 OID 99671)
 -- Name: qs_language_code_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -520,8 +840,8 @@ CREATE SEQUENCE public.qs_language_code_id_seq
 
 
 --
--- TOC entry 3975 (class 0 OID 0)
--- Dependencies: 246
+-- TOC entry 4239 (class 0 OID 0)
+-- Dependencies: 264
 -- Name: qs_language_code_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -529,22 +849,22 @@ ALTER SEQUENCE public.qs_language_code_id_seq OWNED BY public.qs_language_code.i
 
 
 --
--- TOC entry 247 (class 1259 OID 69885)
+-- TOC entry 265 (class 1259 OID 99672)
 -- Name: qs_study; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.qs_study (
     id integer NOT NULL,
-    name character varying,
+    name character varying NOT NULL,
     created_at timestamp without time zone,
     status integer DEFAULT 0,
-    description character varying,
+    description text,
     visible boolean DEFAULT true NOT NULL
 );
 
 
 --
--- TOC entry 248 (class 1259 OID 69894)
+-- TOC entry 266 (class 1259 OID 99682)
 -- Name: qs_study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -558,8 +878,8 @@ CREATE SEQUENCE public.qs_study_id_seq
 
 
 --
--- TOC entry 3976 (class 0 OID 0)
--- Dependencies: 248
+-- TOC entry 4240 (class 0 OID 0)
+-- Dependencies: 266
 -- Name: qs_study_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -567,35 +887,62 @@ ALTER SEQUENCE public.qs_study_id_seq OWNED BY public.qs_study.id;
 
 
 --
--- TOC entry 249 (class 1259 OID 69895)
+-- TOC entry 267 (class 1259 OID 99683)
 -- Name: qs_study_user; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.qs_study_user (
+    id integer NOT NULL,
     qs_study integer NOT NULL,
     "user" integer NOT NULL
 );
 
 
 --
--- TOC entry 250 (class 1259 OID 69900)
+-- TOC entry 268 (class 1259 OID 99689)
+-- Name: qs_study_user_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.qs_study_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4241 (class 0 OID 0)
+-- Dependencies: 268
+-- Name: qs_study_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.qs_study_user_id_seq OWNED BY public.qs_study_user.id;
+
+
+--
+-- TOC entry 269 (class 1259 OID 99690)
 -- Name: query; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.query (
     id integer NOT NULL,
-    query character varying,
+    query text,
     created_at timestamp without time zone,
     study integer,
-    description character varying,
+    description text,
     "limit" integer,
+    monitoring integer,
+    task integer,
     source_type character varying(50) DEFAULT 'manual'::character varying,
-    assignment_count integer
+    study_id integer,
+    assignment_count integer DEFAULT 0
 );
 
 
 --
--- TOC entry 251 (class 1259 OID 69907)
+-- TOC entry 270 (class 1259 OID 99698)
 -- Name: query_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -609,8 +956,8 @@ CREATE SEQUENCE public.query_id_seq
 
 
 --
--- TOC entry 3977 (class 0 OID 0)
--- Dependencies: 251
+-- TOC entry 4242 (class 0 OID 0)
+-- Dependencies: 270
 -- Name: query_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -618,23 +965,24 @@ ALTER SEQUENCE public.query_id_seq OWNED BY public.query.id;
 
 
 --
--- TOC entry 252 (class 1259 OID 69908)
+-- TOC entry 271 (class 1259 OID 99699)
 -- Name: question; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.question (
     id integer NOT NULL,
     study integer,
-    title character varying,
-    description character varying,
+    title text,
+    description text,
     question_type integer,
+    question_template integer,
     "position" integer,
     "interval" integer
 );
 
 
 --
--- TOC entry 253 (class 1259 OID 69914)
+-- TOC entry 272 (class 1259 OID 99705)
 -- Name: question_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -648,8 +996,8 @@ CREATE SEQUENCE public.question_id_seq
 
 
 --
--- TOC entry 3978 (class 0 OID 0)
--- Dependencies: 253
+-- TOC entry 4243 (class 0 OID 0)
+-- Dependencies: 272
 -- Name: question_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -657,7 +1005,7 @@ ALTER SEQUENCE public.question_id_seq OWNED BY public.question.id;
 
 
 --
--- TOC entry 254 (class 1259 OID 69915)
+-- TOC entry 273 (class 1259 OID 99706)
 -- Name: question_result; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -668,19 +1016,54 @@ CREATE TABLE public.question_result (
 
 
 --
--- TOC entry 255 (class 1259 OID 69920)
+-- TOC entry 274 (class 1259 OID 99711)
+-- Name: questiontemplate; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.questiontemplate (
+    id integer NOT NULL,
+    name text,
+    description text
+);
+
+
+--
+-- TOC entry 275 (class 1259 OID 99717)
+-- Name: questiontemplate_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.questiontemplate_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4244 (class 0 OID 0)
+-- Dependencies: 275
+-- Name: questiontemplate_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.questiontemplate_id_seq OWNED BY public.questiontemplate.id;
+
+
+--
+-- TOC entry 276 (class 1259 OID 99718)
 -- Name: questiontype; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.questiontype (
     id integer NOT NULL,
-    name character varying,
-    display character varying
+    name text,
+    display text
 );
 
 
 --
--- TOC entry 256 (class 1259 OID 69926)
+-- TOC entry 277 (class 1259 OID 99724)
 -- Name: questiontype_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -694,8 +1077,8 @@ CREATE SEQUENCE public.questiontype_id_seq
 
 
 --
--- TOC entry 3979 (class 0 OID 0)
--- Dependencies: 256
+-- TOC entry 4245 (class 0 OID 0)
+-- Dependencies: 277
 -- Name: questiontype_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -703,7 +1086,7 @@ ALTER SEQUENCE public.questiontype_id_seq OWNED BY public.questiontype.id;
 
 
 --
--- TOC entry 257 (class 1259 OID 69927)
+-- TOC entry 278 (class 1259 OID 99725)
 -- Name: range_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -716,7 +1099,7 @@ CREATE TABLE public.range_study (
 
 
 --
--- TOC entry 258 (class 1259 OID 69931)
+-- TOC entry 279 (class 1259 OID 99729)
 -- Name: range_study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -730,8 +1113,8 @@ CREATE SEQUENCE public.range_study_id_seq
 
 
 --
--- TOC entry 3980 (class 0 OID 0)
--- Dependencies: 258
+-- TOC entry 4246 (class 0 OID 0)
+-- Dependencies: 279
 -- Name: range_study_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -739,28 +1122,71 @@ ALTER SEQUENCE public.range_study_id_seq OWNED BY public.range_study.id;
 
 
 --
--- TOC entry 259 (class 1259 OID 69932)
+-- TOC entry 280 (class 1259 OID 99730)
+-- Name: reporting; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.reporting (
+    id integer NOT NULL,
+    scraper integer,
+    created_at timestamp without time zone,
+    result_count integer,
+    missing_count integer,
+    duplicate_count integer,
+    exit_condition text,
+    duration integer,
+    old_id integer
+);
+
+
+--
+-- TOC entry 281 (class 1259 OID 99736)
+-- Name: reporting_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.reporting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4247 (class 0 OID 0)
+-- Dependencies: 281
+-- Name: reporting_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.reporting_id_seq OWNED BY public.reporting.id;
+
+
+--
+-- TOC entry 282 (class 1259 OID 99737)
 -- Name: result; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.result (
     id integer NOT NULL,
-    title character varying,
-    description character varying,
-    url character varying,
+    title text,
+    description text,
+    url text,
     "position" integer,
     created_at timestamp without time zone,
-    main character varying,
-    ip character varying,
-    origin character varying,
+    main text,
+    ip text,
+    origin text,
     imported boolean,
     study integer,
     scraper integer,
+    resulttype integer,
+    monitoring integer,
     serp integer,
     query integer,
-    final_url character varying,
+    final_url text,
     country integer,
-    normalized_url character varying,
+    normalized_url text,
     assignment_count integer DEFAULT 0,
     engine_text character varying(100),
     result_type_text character varying(50)
@@ -768,26 +1194,44 @@ CREATE TABLE public.result (
 
 
 --
--- TOC entry 260 (class 1259 OID 69939)
+-- TOC entry 283 (class 1259 OID 99744)
 -- Name: result_ai; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.result_ai (
     id integer NOT NULL,
     scraper integer,
+    study integer NOT NULL,
+    answer text,
+    created_at timestamp without time zone NOT NULL,
+    answer_html text,
+    query integer NOT NULL,
+    assignment_count integer DEFAULT 0,
+    result_type_text character varying(50),
+    engine_text character varying(100),
+    study_id integer
+);
+
+
+--
+-- TOC entry 284 (class 1259 OID 99754)
+-- Name: result_ai_backup_2209; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.result_ai_backup_2209 (
+    id integer,
+    scraper integer,
     study integer,
     answer text,
     created_at timestamp without time zone,
     answer_html text,
     query integer,
-    assignment_count integer DEFAULT 0,
-    result_type_text character varying(50),
-    engine_text character varying(100)
+    assignment_count integer
 );
 
 
 --
--- TOC entry 261 (class 1259 OID 69946)
+-- TOC entry 285 (class 1259 OID 99759)
 -- Name: result_ai_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -801,8 +1245,8 @@ CREATE SEQUENCE public.result_ai_id_seq
 
 
 --
--- TOC entry 3981 (class 0 OID 0)
--- Dependencies: 261
+-- TOC entry 4248 (class 0 OID 0)
+-- Dependencies: 285
 -- Name: result_ai_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -810,7 +1254,7 @@ ALTER SEQUENCE public.result_ai_id_seq OWNED BY public.result_ai.id;
 
 
 --
--- TOC entry 262 (class 1259 OID 69947)
+-- TOC entry 286 (class 1259 OID 99760)
 -- Name: result_ai_segment; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -823,7 +1267,7 @@ CREATE TABLE public.result_ai_segment (
 
 
 --
--- TOC entry 263 (class 1259 OID 69953)
+-- TOC entry 287 (class 1259 OID 99766)
 -- Name: result_ai_segment_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -837,8 +1281,8 @@ CREATE SEQUENCE public.result_ai_segment_id_seq
 
 
 --
--- TOC entry 3982 (class 0 OID 0)
--- Dependencies: 263
+-- TOC entry 4249 (class 0 OID 0)
+-- Dependencies: 287
 -- Name: result_ai_segment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -846,24 +1290,24 @@ ALTER SEQUENCE public.result_ai_segment_id_seq OWNED BY public.result_ai_segment
 
 
 --
--- TOC entry 264 (class 1259 OID 69954)
+-- TOC entry 288 (class 1259 OID 99767)
 -- Name: result_ai_source; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.result_ai_source (
     id integer NOT NULL,
-    result_ai integer,
-    url text,
+    result_ai integer NOT NULL,
+    url text NOT NULL,
     source integer,
     created_at timestamp without time zone,
-    error_code character varying,
-    job_server character varying,
+    error_code text,
+    job_server text,
     title text,
     description text,
     "position" integer,
     main text,
     final_url text,
-    ip character varying,
+    ip text,
     normalized_url text,
     progress integer DEFAULT 0,
     counter integer DEFAULT 0,
@@ -873,12 +1317,42 @@ CREATE TABLE public.result_ai_source (
     country integer,
     result_type_text character varying(50),
     engine_text character varying(100),
+    study_id integer,
     source_type character varying(50)
 );
 
 
 --
--- TOC entry 265 (class 1259 OID 69962)
+-- TOC entry 289 (class 1259 OID 99777)
+-- Name: result_ai_source_backup_2209; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.result_ai_source_backup_2209 (
+    id integer,
+    result_ai integer,
+    url text,
+    source integer,
+    created_at timestamp without time zone,
+    error_code text,
+    job_server text,
+    title text,
+    description text,
+    "position" integer,
+    main text,
+    final_url text,
+    ip text,
+    normalized_url text,
+    progress integer,
+    counter integer,
+    study integer,
+    scraper integer,
+    query integer,
+    country integer
+);
+
+
+--
+-- TOC entry 290 (class 1259 OID 99782)
 -- Name: result_ai_sources_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -892,8 +1366,8 @@ CREATE SEQUENCE public.result_ai_sources_id_seq
 
 
 --
--- TOC entry 3983 (class 0 OID 0)
--- Dependencies: 265
+-- TOC entry 4250 (class 0 OID 0)
+-- Dependencies: 290
 -- Name: result_ai_sources_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -901,26 +1375,27 @@ ALTER SEQUENCE public.result_ai_sources_id_seq OWNED BY public.result_ai_source.
 
 
 --
--- TOC entry 266 (class 1259 OID 69963)
+-- TOC entry 291 (class 1259 OID 99783)
 -- Name: result_chatbot; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.result_chatbot (
     id integer NOT NULL,
     scraper integer,
-    study integer,
+    study integer NOT NULL,
     answer text,
-    created_at timestamp without time zone,
-    answer_html text,
-    query integer,
+    created_at timestamp without time zone NOT NULL,
+    answer_html text NOT NULL,
+    query integer NOT NULL,
     assignment_count integer DEFAULT 0,
     result_type_text character varying(50),
-    engine_text character varying(100)
+    engine_text character varying(100),
+    study_id integer
 );
 
 
 --
--- TOC entry 267 (class 1259 OID 69970)
+-- TOC entry 292 (class 1259 OID 99794)
 -- Name: result_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -934,8 +1409,8 @@ CREATE SEQUENCE public.result_id_seq
 
 
 --
--- TOC entry 3984 (class 0 OID 0)
--- Dependencies: 267
+-- TOC entry 4251 (class 0 OID 0)
+-- Dependencies: 292
 -- Name: result_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -943,7 +1418,7 @@ ALTER SEQUENCE public.result_id_seq OWNED BY public.result.id;
 
 
 --
--- TOC entry 295 (class 1259 OID 80212)
+-- TOC entry 293 (class 1259 OID 99795)
 -- Name: result_image; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -969,7 +1444,7 @@ CREATE TABLE public.result_image (
 
 
 --
--- TOC entry 294 (class 1259 OID 80211)
+-- TOC entry 294 (class 1259 OID 99804)
 -- Name: result_image_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -983,7 +1458,7 @@ CREATE SEQUENCE public.result_image_id_seq
 
 
 --
--- TOC entry 3985 (class 0 OID 0)
+-- TOC entry 4252 (class 0 OID 0)
 -- Dependencies: 294
 -- Name: result_image_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -992,7 +1467,7 @@ ALTER SEQUENCE public.result_image_id_seq OWNED BY public.result_image.id;
 
 
 --
--- TOC entry 268 (class 1259 OID 69971)
+-- TOC entry 295 (class 1259 OID 99805)
 -- Name: result_llm_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1006,8 +1481,8 @@ CREATE SEQUENCE public.result_llm_id_seq
 
 
 --
--- TOC entry 3986 (class 0 OID 0)
--- Dependencies: 268
+-- TOC entry 4253 (class 0 OID 0)
+-- Dependencies: 295
 -- Name: result_llm_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1015,28 +1490,29 @@ ALTER SEQUENCE public.result_llm_id_seq OWNED BY public.result_chatbot.id;
 
 
 --
--- TOC entry 269 (class 1259 OID 69972)
+-- TOC entry 296 (class 1259 OID 99806)
 -- Name: result_source; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.result_source (
     result integer,
     source integer,
-    progress integer NOT NULL,
-    counter integer DEFAULT 0 NOT NULL,
+    progress integer,
     id integer NOT NULL,
+    counter integer DEFAULT 0 NOT NULL,
     created_at timestamp without time zone,
-    error_code character varying,
-    job_server character varying
+    error_code text,
+    job_server text
 );
 
 
 --
--- TOC entry 270 (class 1259 OID 69981)
+-- TOC entry 297 (class 1259 OID 99814)
 -- Name: result_source_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.result_source_id_seq
+    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1045,8 +1521,8 @@ CREATE SEQUENCE public.result_source_id_seq
 
 
 --
--- TOC entry 3987 (class 0 OID 0)
--- Dependencies: 270
+-- TOC entry 4254 (class 0 OID 0)
+-- Dependencies: 297
 -- Name: result_source_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1054,21 +1530,21 @@ ALTER SEQUENCE public.result_source_id_seq OWNED BY public.result_source.id;
 
 
 --
--- TOC entry 271 (class 1259 OID 69982)
+-- TOC entry 298 (class 1259 OID 99815)
 -- Name: resulttype; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.resulttype (
     id integer NOT NULL,
-    name character varying,
-    display character varying,
-    filter boolean DEFAULT false,
-    selection boolean DEFAULT false
+    name text,
+    display text,
+    filter boolean DEFAULT false NOT NULL,
+    selection boolean DEFAULT false NOT NULL
 );
 
 
 --
--- TOC entry 272 (class 1259 OID 69990)
+-- TOC entry 299 (class 1259 OID 99825)
 -- Name: resulttype_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1082,8 +1558,8 @@ CREATE SEQUENCE public.resulttype_id_seq
 
 
 --
--- TOC entry 3988 (class 0 OID 0)
--- Dependencies: 272
+-- TOC entry 4255 (class 0 OID 0)
+-- Dependencies: 299
 -- Name: resulttype_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1091,21 +1567,21 @@ ALTER SEQUENCE public.resulttype_id_seq OWNED BY public.resulttype.id;
 
 
 --
--- TOC entry 273 (class 1259 OID 69991)
+-- TOC entry 300 (class 1259 OID 99826)
 -- Name: role; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.role (
     id integer NOT NULL,
-    name character varying,
-    description character varying,
-    permissions character varying,
+    name text,
+    description text,
+    permissions text,
     update_datetime timestamp(6) without time zone
 );
 
 
 --
--- TOC entry 274 (class 1259 OID 69997)
+-- TOC entry 301 (class 1259 OID 99832)
 -- Name: role_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1119,8 +1595,8 @@ CREATE SEQUENCE public.role_id_seq
 
 
 --
--- TOC entry 3989 (class 0 OID 0)
--- Dependencies: 274
+-- TOC entry 4256 (class 0 OID 0)
+-- Dependencies: 301
 -- Name: role_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1128,24 +1604,28 @@ ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
 
 
 --
--- TOC entry 275 (class 1259 OID 69998)
+-- TOC entry 302 (class 1259 OID 99833)
 -- Name: scraper; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.scraper (
     id integer NOT NULL,
     progress integer,
+    "limit" integer,
+    counter integer,
+    error_code integer,
     created_at timestamp without time zone,
     query integer,
     searchengine integer,
     study integer,
     type integer,
-    counter integer
+    job_server text,
+    resulttype integer
 );
 
 
 --
--- TOC entry 276 (class 1259 OID 70002)
+-- TOC entry 303 (class 1259 OID 99839)
 -- Name: scraper_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1159,8 +1639,8 @@ CREATE SEQUENCE public.scraper_id_seq
 
 
 --
--- TOC entry 3990 (class 0 OID 0)
--- Dependencies: 276
+-- TOC entry 4257 (class 0 OID 0)
+-- Dependencies: 303
 -- Name: scraper_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1168,18 +1648,41 @@ ALTER SEQUENCE public.scraper_id_seq OWNED BY public.scraper.id;
 
 
 --
--- TOC entry 277 (class 1259 OID 70003)
+-- TOC entry 304 (class 1259 OID 99840)
 -- Name: searchengine; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.searchengine (
     id integer NOT NULL,
-    name character varying
+    name text,
+    module text,
+    test integer,
+    error_code text,
+    resulttype integer,
+    country text,
+    provider text,
+    display integer DEFAULT 1,
+    is_dynamic boolean DEFAULT false,
+    engine_type character varying(20) DEFAULT 'html'::character varying,
+    search_url text,
+    sel_container character varying(255),
+    sel_title character varying(255),
+    sel_url character varying(255),
+    sel_snippet character varying(255),
+    sel_ai_text character varying(255),
+    sel_ai_source_container character varying(255),
+    sel_ai_source_url character varying(255),
+    is_public boolean DEFAULT false,
+    author integer,
+    is_active boolean DEFAULT true,
+    sel_next_button character varying(255),
+    custom_js text,
+    url_param_decoder character varying(255)
 );
 
 
 --
--- TOC entry 278 (class 1259 OID 70009)
+-- TOC entry 305 (class 1259 OID 99851)
 -- Name: searchengine_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1193,8 +1696,8 @@ CREATE SEQUENCE public.searchengine_id_seq
 
 
 --
--- TOC entry 3991 (class 0 OID 0)
--- Dependencies: 278
+-- TOC entry 4258 (class 0 OID 0)
+-- Dependencies: 305
 -- Name: searchengine_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1202,7 +1705,7 @@ ALTER SEQUENCE public.searchengine_id_seq OWNED BY public.searchengine.id;
 
 
 --
--- TOC entry 279 (class 1259 OID 70010)
+-- TOC entry 306 (class 1259 OID 99852)
 -- Name: searchengine_study; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1213,7 +1716,7 @@ CREATE TABLE public.searchengine_study (
 
 
 --
--- TOC entry 280 (class 1259 OID 70015)
+-- TOC entry 307 (class 1259 OID 99857)
 -- Name: serp; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1221,19 +1724,23 @@ CREATE TABLE public.serp (
     id integer NOT NULL,
     scraper integer,
     page integer,
-    created_at timestamp without time zone,
-    query integer,
-    assignment_count integer DEFAULT 0,
-    file_path character varying(255),
-    study integer,
+    code bytea,
+    img bytea,
     progress integer,
+    created_at timestamp without time zone,
+    old_id integer,
+    monitoring integer,
+    query integer,
+    study integer,
+    assignment_count integer DEFAULT 0,
+    file_path text,
     result_type_text character varying(50),
     engine_text character varying(100)
 );
 
 
 --
--- TOC entry 281 (class 1259 OID 70020)
+-- TOC entry 308 (class 1259 OID 99864)
 -- Name: serp_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1247,8 +1754,8 @@ CREATE SEQUENCE public.serp_id_seq
 
 
 --
--- TOC entry 3992 (class 0 OID 0)
--- Dependencies: 281
+-- TOC entry 4259 (class 0 OID 0)
+-- Dependencies: 308
 -- Name: serp_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1256,27 +1763,68 @@ ALTER SEQUENCE public.serp_id_seq OWNED BY public.serp.id;
 
 
 --
--- TOC entry 282 (class 1259 OID 70021)
+-- TOC entry 309 (class 1259 OID 99865)
+-- Name: serp_job; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.serp_job (
+    id integer NOT NULL,
+    query integer,
+    engine integer,
+    status character varying(20) DEFAULT 'pending'::character varying,
+    error_message text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    completed_at timestamp without time zone
+);
+
+
+--
+-- TOC entry 310 (class 1259 OID 99873)
+-- Name: serp_job_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.serp_job_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4260 (class 0 OID 0)
+-- Dependencies: 310
+-- Name: serp_job_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.serp_job_id_seq OWNED BY public.serp_job.id;
+
+
+--
+-- TOC entry 311 (class 1259 OID 99874)
 -- Name: source; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.source (
     id integer NOT NULL,
-    url character varying,
+    code bytea,
+    bin bytea,
+    url text,
     progress integer,
-    content_type character varying,
-    error_code character varying,
+    content_type text,
+    error_code text,
     status_code integer,
     created_at timestamp without time zone,
-    file_path character varying(255),
-    country character varying,
-    job_server character varying,
-    content_dict character varying
+    job_server text,
+    content_dict text,
+    country text,
+    file_path text
 );
 
 
 --
--- TOC entry 283 (class 1259 OID 70027)
+-- TOC entry 312 (class 1259 OID 99880)
 -- Name: source_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1290,8 +1838,8 @@ CREATE SEQUENCE public.source_id_seq
 
 
 --
--- TOC entry 3993 (class 0 OID 0)
--- Dependencies: 283
+-- TOC entry 4261 (class 0 OID 0)
+-- Dependencies: 312
 -- Name: source_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1299,43 +1847,85 @@ ALTER SEQUENCE public.source_id_seq OWNED BY public.source.id;
 
 
 --
--- TOC entry 284 (class 1259 OID 70028)
+-- TOC entry 313 (class 1259 OID 99881)
+-- Name: statistic; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.statistic (
+    id integer NOT NULL,
+    study integer,
+    name text,
+    value text
+);
+
+
+--
+-- TOC entry 314 (class 1259 OID 99887)
+-- Name: statistic_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.statistic_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4262 (class 0 OID 0)
+-- Dependencies: 314
+-- Name: statistic_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.statistic_id_seq OWNED BY public.statistic.id;
+
+
+--
+-- TOC entry 315 (class 1259 OID 99888)
 -- Name: study; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.study (
     id integer NOT NULL,
-    name character varying,
-    description character varying,
+    name text,
+    description text,
+    imported boolean,
+    studytype integer,
+    old_id integer,
     created_at timestamp(6) without time zone,
     updated_at timestamp(6) without time zone,
+    resulttype integer,
     result_count integer,
     status integer,
     show_urls boolean,
-    task character varying,
+    task text,
     limit_per_participant boolean DEFAULT false NOT NULL,
     max_results_per_participant integer,
+    result_types text,
     show_ai_sources boolean,
     completion_text text,
-    skippable boolean DEFAULT true NOT NULL,
+    skippable boolean DEFAULT true,
     assess_failed boolean DEFAULT false,
     assessable_result_types_text character varying,
     live_link_mode boolean DEFAULT true NOT NULL,
     visible boolean DEFAULT true NOT NULL,
     group_by_query boolean DEFAULT true,
-    limit_by_query boolean,
-    max_queries_per_participant integer,
+    limit_by_query boolean DEFAULT true,
+    max_queries_per_participant integer DEFAULT 2,
+    post_survey_json text,
+    pre_survey_json text,
     show_description_after_join boolean DEFAULT false NOT NULL,
     participant_description text,
-    pre_survey_json text,
-    post_survey_json text,
     llm_classifiers_json text,
-    study_mode character varying(50)
+    study_mode character varying(50),
+    global_duplicate_filtering boolean DEFAULT false NOT NULL
 );
 
 
 --
--- TOC entry 285 (class 1259 OID 70046)
+-- TOC entry 316 (class 1259 OID 99909)
 -- Name: study_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1349,8 +1939,8 @@ CREATE SEQUENCE public.study_id_seq
 
 
 --
--- TOC entry 3994 (class 0 OID 0)
--- Dependencies: 285
+-- TOC entry 4263 (class 0 OID 0)
+-- Dependencies: 316
 -- Name: study_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1358,21 +1948,21 @@ ALTER SEQUENCE public.study_id_seq OWNED BY public.study.id;
 
 
 --
--- TOC entry 286 (class 1259 OID 70047)
+-- TOC entry 317 (class 1259 OID 99910)
 -- Name: study_url_filter; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.study_url_filter (
     id integer NOT NULL,
-    study integer,
-    url character varying,
-    include boolean DEFAULT false,
-    exclude boolean DEFAULT false
+    study integer NOT NULL,
+    url text NOT NULL,
+    include boolean DEFAULT false NOT NULL,
+    exclude boolean DEFAULT false NOT NULL
 );
 
 
 --
--- TOC entry 287 (class 1259 OID 70055)
+-- TOC entry 318 (class 1259 OID 99922)
 -- Name: study_main_filter_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1386,8 +1976,8 @@ CREATE SEQUENCE public.study_main_filter_id_seq
 
 
 --
--- TOC entry 3995 (class 0 OID 0)
--- Dependencies: 287
+-- TOC entry 4264 (class 0 OID 0)
+-- Dependencies: 318
 -- Name: study_main_filter_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1395,7 +1985,7 @@ ALTER SEQUENCE public.study_main_filter_id_seq OWNED BY public.study_url_filter.
 
 
 --
--- TOC entry 288 (class 1259 OID 70056)
+-- TOC entry 319 (class 1259 OID 99923)
 -- Name: study_resulttype; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1407,7 +1997,7 @@ CREATE TABLE public.study_resulttype (
 
 
 --
--- TOC entry 289 (class 1259 OID 70060)
+-- TOC entry 320 (class 1259 OID 99927)
 -- Name: study_resulttype_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1421,8 +2011,8 @@ CREATE SEQUENCE public.study_resulttype_id_seq
 
 
 --
--- TOC entry 3996 (class 0 OID 0)
--- Dependencies: 289
+-- TOC entry 4265 (class 0 OID 0)
+-- Dependencies: 320
 -- Name: study_resulttype_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1430,7 +2020,42 @@ ALTER SEQUENCE public.study_resulttype_id_seq OWNED BY public.study_resulttype.i
 
 
 --
--- TOC entry 290 (class 1259 OID 70061)
+-- TOC entry 321 (class 1259 OID 99928)
+-- Name: study_task; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.study_task (
+    id integer NOT NULL,
+    study integer NOT NULL,
+    task text
+);
+
+
+--
+-- TOC entry 322 (class 1259 OID 99935)
+-- Name: study_task_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.study_task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4266 (class 0 OID 0)
+-- Dependencies: 322
+-- Name: study_task_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.study_task_id_seq OWNED BY public.study_task.id;
+
+
+--
+-- TOC entry 323 (class 1259 OID 99936)
 -- Name: study_user; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1441,32 +2066,101 @@ CREATE TABLE public.study_user (
 
 
 --
--- TOC entry 291 (class 1259 OID 70066)
+-- TOC entry 324 (class 1259 OID 99941)
+-- Name: studytype; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.studytype (
+    id integer NOT NULL,
+    name text,
+    description text
+);
+
+
+--
+-- TOC entry 325 (class 1259 OID 99947)
+-- Name: studytype_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.studytype_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4267 (class 0 OID 0)
+-- Dependencies: 325
+-- Name: studytype_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.studytype_id_seq OWNED BY public.studytype.id;
+
+
+--
+-- TOC entry 326 (class 1259 OID 99948)
+-- Name: task; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.task (
+    id integer NOT NULL
+);
+
+
+--
+-- TOC entry 327 (class 1259 OID 99952)
+-- Name: task_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4268 (class 0 OID 0)
+-- Dependencies: 327
+-- Name: task_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+
+--
+-- TOC entry 328 (class 1259 OID 99953)
 -- Name: user; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."user" (
     id integer NOT NULL,
-    email character varying,
-    password character varying,
+    email text,
+    password text,
     last_login_at timestamp without time zone,
     current_login_at timestamp without time zone,
-    current_login_ip character varying,
+    current_login_ip text,
     login_count integer,
     active boolean,
     confirmed_at timestamp without time zone,
-    last_login_ip character varying,
-    fs_uniquifier character varying,
-    tf_primary_method character varying,
-    tf_totp_secret character varying,
-    tf_phone_number character varying,
+    last_login_ip text,
+    fs_uniquifier text,
+    tf_primary_method text,
+    tf_totp_secret text,
+    tf_phone_number text,
     create_datetime timestamp(6) without time zone,
     update_datetime timestamp(6) without time zone,
-    username character varying,
-    us_totp_secrets character varying,
-    fs_webauthn_user_handle character varying,
-    mf_recovery_codes character varying,
-    us_phone_number character varying,
+    username text,
+    us_totp_secrets text,
+    fs_webauthn_user_handle text,
+    mf_recovery_codes text,
+    us_phone_number text,
+    affiliation text,
     newsletter_opt_in boolean DEFAULT false,
     super_admin boolean DEFAULT false,
     force_password_change boolean DEFAULT false NOT NULL
@@ -1474,7 +2168,7 @@ CREATE TABLE public."user" (
 
 
 --
--- TOC entry 292 (class 1259 OID 70076)
+-- TOC entry 329 (class 1259 OID 99963)
 -- Name: user_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1488,8 +2182,8 @@ CREATE SEQUENCE public.user_id_seq
 
 
 --
--- TOC entry 3997 (class 0 OID 0)
--- Dependencies: 292
+-- TOC entry 4269 (class 0 OID 0)
+-- Dependencies: 329
 -- Name: user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
@@ -1497,18 +2191,18 @@ ALTER SEQUENCE public.user_id_seq OWNED BY public."user".id;
 
 
 --
--- TOC entry 293 (class 1259 OID 70077)
+-- TOC entry 330 (class 1259 OID 99964)
 -- Name: user_role; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.user_role (
-    "user" integer NOT NULL,
-    role integer NOT NULL
+    "user" integer,
+    role integer
 );
 
 
 --
--- TOC entry 3525 (class 2604 OID 70082)
+-- TOC entry 3617 (class 2604 OID 99967)
 -- Name: answer id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1516,7 +2210,7 @@ ALTER TABLE ONLY public.answer ALTER COLUMN id SET DEFAULT nextval('public.answe
 
 
 --
--- TOC entry 3526 (class 2604 OID 70083)
+-- TOC entry 3618 (class 2604 OID 99968)
 -- Name: classifier id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1524,7 +2218,7 @@ ALTER TABLE ONLY public.classifier ALTER COLUMN id SET DEFAULT nextval('public.c
 
 
 --
--- TOC entry 3528 (class 2604 OID 70084)
+-- TOC entry 3620 (class 2604 OID 99969)
 -- Name: classifier_indicator id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1532,7 +2226,7 @@ ALTER TABLE ONLY public.classifier_indicator ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 3530 (class 2604 OID 70085)
+-- TOC entry 3622 (class 2604 OID 99970)
 -- Name: classifier_result id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1540,7 +2234,15 @@ ALTER TABLE ONLY public.classifier_result ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3532 (class 2604 OID 70086)
+-- TOC entry 3625 (class 2604 OID 99971)
+-- Name: content id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.content ALTER COLUMN id SET DEFAULT nextval('public.content_id_seq'::regclass);
+
+
+--
+-- TOC entry 3626 (class 2604 OID 99972)
 -- Name: country id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1548,7 +2250,55 @@ ALTER TABLE ONLY public.country ALTER COLUMN id SET DEFAULT nextval('public.coun
 
 
 --
--- TOC entry 3533 (class 2604 OID 70087)
+-- TOC entry 3627 (class 2604 OID 99973)
+-- Name: dummy_table id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dummy_table ALTER COLUMN id SET DEFAULT nextval('public.dummy_table_id_seq'::regclass);
+
+
+--
+-- TOC entry 3629 (class 2604 OID 99974)
+-- Name: evaluation id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.evaluation ALTER COLUMN id SET DEFAULT nextval('public.evaluation_id_seq'::regclass);
+
+
+--
+-- TOC entry 3630 (class 2604 OID 99975)
+-- Name: experiment id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.experiment ALTER COLUMN id SET DEFAULT nextval('public.experiment_id_seq'::regclass);
+
+
+--
+-- TOC entry 3631 (class 2604 OID 99976)
+-- Name: group id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."group" ALTER COLUMN id SET DEFAULT nextval('public.group_id_seq'::regclass);
+
+
+--
+-- TOC entry 3632 (class 2604 OID 99977)
+-- Name: language id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.language ALTER COLUMN id SET DEFAULT nextval('public.language_id_seq'::regclass);
+
+
+--
+-- TOC entry 3634 (class 2604 OID 99978)
+-- Name: monitoring id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.monitoring ALTER COLUMN id SET DEFAULT nextval('public.monitoring_id_seq'::regclass);
+
+
+--
+-- TOC entry 3636 (class 2604 OID 99979)
 -- Name: option id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1556,7 +2306,7 @@ ALTER TABLE ONLY public.option ALTER COLUMN id SET DEFAULT nextval('public.optio
 
 
 --
--- TOC entry 3534 (class 2604 OID 70088)
+-- TOC entry 3637 (class 2604 OID 99980)
 -- Name: participant id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1564,7 +2314,15 @@ ALTER TABLE ONLY public.participant ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3535 (class 2604 OID 70089)
+-- TOC entry 3638 (class 2604 OID 99981)
+-- Name: provider id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.provider ALTER COLUMN id SET DEFAULT nextval('public.provider_id_seq'::regclass);
+
+
+--
+-- TOC entry 3639 (class 2604 OID 99982)
 -- Name: qs_geotarget id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1572,7 +2330,7 @@ ALTER TABLE ONLY public.qs_geotarget ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3536 (class 2604 OID 70090)
+-- TOC entry 3640 (class 2604 OID 99983)
 -- Name: qs_keyword id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1580,7 +2338,7 @@ ALTER TABLE ONLY public.qs_keyword ALTER COLUMN id SET DEFAULT nextval('public.q
 
 
 --
--- TOC entry 3538 (class 2604 OID 70091)
+-- TOC entry 3642 (class 2604 OID 99984)
 -- Name: qs_keyword_idea id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1588,7 +2346,7 @@ ALTER TABLE ONLY public.qs_keyword_idea ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 3539 (class 2604 OID 70092)
+-- TOC entry 3643 (class 2604 OID 99985)
 -- Name: qs_language_code id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1596,7 +2354,7 @@ ALTER TABLE ONLY public.qs_language_code ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3540 (class 2604 OID 70093)
+-- TOC entry 3644 (class 2604 OID 99986)
 -- Name: qs_study id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1604,7 +2362,15 @@ ALTER TABLE ONLY public.qs_study ALTER COLUMN id SET DEFAULT nextval('public.qs_
 
 
 --
--- TOC entry 3543 (class 2604 OID 70094)
+-- TOC entry 3647 (class 2604 OID 99987)
+-- Name: qs_study_user id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_study_user ALTER COLUMN id SET DEFAULT nextval('public.qs_study_user_id_seq'::regclass);
+
+
+--
+-- TOC entry 3648 (class 2604 OID 99988)
 -- Name: query id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1612,7 +2378,7 @@ ALTER TABLE ONLY public.query ALTER COLUMN id SET DEFAULT nextval('public.query_
 
 
 --
--- TOC entry 3545 (class 2604 OID 70095)
+-- TOC entry 3651 (class 2604 OID 99989)
 -- Name: question id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1620,7 +2386,15 @@ ALTER TABLE ONLY public.question ALTER COLUMN id SET DEFAULT nextval('public.que
 
 
 --
--- TOC entry 3546 (class 2604 OID 70096)
+-- TOC entry 3652 (class 2604 OID 99990)
+-- Name: questiontemplate id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.questiontemplate ALTER COLUMN id SET DEFAULT nextval('public.questiontemplate_id_seq'::regclass);
+
+
+--
+-- TOC entry 3653 (class 2604 OID 99991)
 -- Name: questiontype id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1628,7 +2402,7 @@ ALTER TABLE ONLY public.questiontype ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3547 (class 2604 OID 70097)
+-- TOC entry 3654 (class 2604 OID 99992)
 -- Name: range_study id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1636,7 +2410,15 @@ ALTER TABLE ONLY public.range_study ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
--- TOC entry 3548 (class 2604 OID 70098)
+-- TOC entry 3655 (class 2604 OID 99993)
+-- Name: reporting id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reporting ALTER COLUMN id SET DEFAULT nextval('public.reporting_id_seq'::regclass);
+
+
+--
+-- TOC entry 3656 (class 2604 OID 99994)
 -- Name: result id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1644,7 +2426,7 @@ ALTER TABLE ONLY public.result ALTER COLUMN id SET DEFAULT nextval('public.resul
 
 
 --
--- TOC entry 3550 (class 2604 OID 70099)
+-- TOC entry 3658 (class 2604 OID 99995)
 -- Name: result_ai id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1652,7 +2434,7 @@ ALTER TABLE ONLY public.result_ai ALTER COLUMN id SET DEFAULT nextval('public.re
 
 
 --
--- TOC entry 3552 (class 2604 OID 70100)
+-- TOC entry 3660 (class 2604 OID 99996)
 -- Name: result_ai_segment id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1660,7 +2442,7 @@ ALTER TABLE ONLY public.result_ai_segment ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 3553 (class 2604 OID 70101)
+-- TOC entry 3661 (class 2604 OID 99997)
 -- Name: result_ai_source id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1668,7 +2450,7 @@ ALTER TABLE ONLY public.result_ai_source ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3556 (class 2604 OID 70102)
+-- TOC entry 3664 (class 2604 OID 99998)
 -- Name: result_chatbot id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1676,7 +2458,7 @@ ALTER TABLE ONLY public.result_chatbot ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 3585 (class 2604 OID 80215)
+-- TOC entry 3666 (class 2604 OID 99999)
 -- Name: result_image id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1684,7 +2466,7 @@ ALTER TABLE ONLY public.result_image ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3559 (class 2604 OID 70103)
+-- TOC entry 3670 (class 2604 OID 100000)
 -- Name: result_source id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1692,7 +2474,7 @@ ALTER TABLE ONLY public.result_source ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3560 (class 2604 OID 70104)
+-- TOC entry 3672 (class 2604 OID 100001)
 -- Name: resulttype id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1700,7 +2482,7 @@ ALTER TABLE ONLY public.resulttype ALTER COLUMN id SET DEFAULT nextval('public.r
 
 
 --
--- TOC entry 3563 (class 2604 OID 70105)
+-- TOC entry 3675 (class 2604 OID 100002)
 -- Name: role id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1708,7 +2490,7 @@ ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval('public.role_id
 
 
 --
--- TOC entry 3564 (class 2604 OID 70106)
+-- TOC entry 3676 (class 2604 OID 100003)
 -- Name: scraper id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1716,7 +2498,7 @@ ALTER TABLE ONLY public.scraper ALTER COLUMN id SET DEFAULT nextval('public.scra
 
 
 --
--- TOC entry 3565 (class 2604 OID 70107)
+-- TOC entry 3677 (class 2604 OID 100004)
 -- Name: searchengine id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1724,7 +2506,7 @@ ALTER TABLE ONLY public.searchengine ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 3566 (class 2604 OID 70108)
+-- TOC entry 3683 (class 2604 OID 100005)
 -- Name: serp id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1732,7 +2514,15 @@ ALTER TABLE ONLY public.serp ALTER COLUMN id SET DEFAULT nextval('public.serp_id
 
 
 --
--- TOC entry 3568 (class 2604 OID 70109)
+-- TOC entry 3685 (class 2604 OID 100006)
+-- Name: serp_job id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.serp_job ALTER COLUMN id SET DEFAULT nextval('public.serp_job_id_seq'::regclass);
+
+
+--
+-- TOC entry 3688 (class 2604 OID 100007)
 -- Name: source id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1740,7 +2530,15 @@ ALTER TABLE ONLY public.source ALTER COLUMN id SET DEFAULT nextval('public.sourc
 
 
 --
--- TOC entry 3569 (class 2604 OID 70110)
+-- TOC entry 3689 (class 2604 OID 100008)
+-- Name: statistic id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.statistic ALTER COLUMN id SET DEFAULT nextval('public.statistic_id_seq'::regclass);
+
+
+--
+-- TOC entry 3690 (class 2604 OID 100009)
 -- Name: study id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1748,7 +2546,7 @@ ALTER TABLE ONLY public.study ALTER COLUMN id SET DEFAULT nextval('public.study_
 
 
 --
--- TOC entry 3580 (class 2604 OID 70111)
+-- TOC entry 3704 (class 2604 OID 100010)
 -- Name: study_resulttype id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1756,7 +2554,15 @@ ALTER TABLE ONLY public.study_resulttype ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3577 (class 2604 OID 70112)
+-- TOC entry 3705 (class 2604 OID 100011)
+-- Name: study_task id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_task ALTER COLUMN id SET DEFAULT nextval('public.study_task_id_seq'::regclass);
+
+
+--
+-- TOC entry 3701 (class 2604 OID 100012)
 -- Name: study_url_filter id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1764,7 +2570,23 @@ ALTER TABLE ONLY public.study_url_filter ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- TOC entry 3581 (class 2604 OID 70113)
+-- TOC entry 3706 (class 2604 OID 100013)
+-- Name: studytype id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studytype ALTER COLUMN id SET DEFAULT nextval('public.studytype_id_seq'::regclass);
+
+
+--
+-- TOC entry 3707 (class 2604 OID 100014)
+-- Name: task id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval('public.task_id_seq'::regclass);
+
+
+--
+-- TOC entry 3708 (class 2604 OID 100015)
 -- Name: user id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1772,7 +2594,7 @@ ALTER TABLE ONLY public."user" ALTER COLUMN id SET DEFAULT nextval('public.user_
 
 
 --
--- TOC entry 3883 (class 0 OID 69781)
+-- TOC entry 4101 (class 0 OID 99479)
 -- Dependencies: 219
 -- Data for Name: ai_segment_source; Type: TABLE DATA; Schema: public; Owner: -
 --
@@ -1782,7 +2604,7 @@ COPY public.ai_segment_source (segment_id, source_id) FROM stdin;
 
 
 --
--- TOC entry 3884 (class 0 OID 69786)
+-- TOC entry 4102 (class 0 OID 99484)
 -- Dependencies: 220
 -- Data for Name: alembic_version; Type: TABLE DATA; Schema: public; Owner: -
 --
@@ -1792,7 +2614,7 @@ COPY public.alembic_version (version_num) FROM stdin;
 
 
 --
--- TOC entry 3885 (class 0 OID 69790)
+-- TOC entry 4103 (class 0 OID 99488)
 -- Dependencies: 221
 -- Data for Name: answer; Type: TABLE DATA; Schema: public; Owner: -
 --
@@ -1802,22 +2624,22 @@ COPY public.answer (id, value, participant, result, question, study, status, cre
 
 
 --
--- TOC entry 3887 (class 0 OID 69797)
+-- TOC entry 4105 (class 0 OID 99495)
 -- Dependencies: 223
 -- Data for Name: classifier; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.classifier (id, name, display_name, display, description, description_url) FROM stdin;
 1	seo_rule_based	SEO (rule-based): Calculate the SEO probability of search results by using a rule-based approach	f	\N	\N
-4	seo_score	SEO Score: Calculate a score from 0-100 of the probability of SEO of a search result	t	With the help of the SEO Score, you can easily determine on a scale from 0 to 100 how likely it is that a search result collected by RAT is optimized for search engines. RAT examines known criteria and factors used by search engines, such as Google, to rank results, thus playing a crucial role in search engine optimization. Additionally, RAT offers various other SEO-relevant insights about the search results, including keyword density and the labeling of individual HTML tags.	https://result-assessment-tool-rat.gitbook.io/result-assessment-tool-rat-docs/the-rat-extensions/seo-score
 2	readability_score	Readability Score: Calculation of the readability from 0 - 100 for a search result	t	The Readability Score is a useful tool that helps you determine how easy it is to read the content found in the search results collected by RAT. It uses various readability formulas and the average reading time to calculate a score between 0 and 100, which assesses the overall readability of the text.	https://result-assessment-tool-rat.gitbook.io/result-assessment-tool-rat-docs/the-rat-extensions/readability-score
+4	seo_score	SEO Score: Calculate a score from 0-100 of the probability of SEO of a search result	t	With the help of the SEO Score, you can easily determine on a scale from 0 to 100 how likely it is that a search result collected by RAT is optimized for search engines. RAT examines known criteria and factors used by search engines, such as Google, to rank results, thus playing a crucial role in search engine optimization. Additionally, RAT offers various other SEO-relevant insights about the search results, including keyword density and the labeling of individual HTML tags.	https://result-assessment-tool-rat.gitbook.io/result-assessment-tool-rat-docs/the-rat-extensions/seo-score
 5	universal_llm	Universal LLM	f	\N	\N
 6	geo_score	GEO Score: Calculate a score from 0-100 of the probability of GEO of a result	t	With the help of the GEO Score, you can determine on a scale from 0 to 100 how likely it is that a search result and source used to generate AI answers in search engines collected by RAT is optimized for generative AI models like ChatGPT, Gemini, and Perplexity.	\N
 \.
 
 
 --
--- TOC entry 3889 (class 0 OID 69805)
+-- TOC entry 4107 (class 0 OID 99505)
 -- Dependencies: 225
 -- Data for Name: classifier_indicator; Type: TABLE DATA; Schema: public; Owner: -
 --
@@ -1827,7 +2649,7 @@ COPY public.classifier_indicator (id, created_at, indicator, value, result, clas
 
 
 --
--- TOC entry 3891 (class 0 OID 69813)
+-- TOC entry 4109 (class 0 OID 99513)
 -- Dependencies: 227
 -- Data for Name: classifier_result; Type: TABLE DATA; Schema: public; Owner: -
 --
@@ -1837,7 +2659,7 @@ COPY public.classifier_result (id, created_at, value, result, classifier, job_se
 
 
 --
--- TOC entry 3893 (class 0 OID 69821)
+-- TOC entry 4111 (class 0 OID 99522)
 -- Dependencies: 229
 -- Data for Name: classifier_resulttype; Type: TABLE DATA; Schema: public; Owner: -
 --
@@ -1857,28 +2679,126 @@ COPY public.classifier_resulttype (classifier, resulttype) FROM stdin;
 
 
 --
--- TOC entry 3894 (class 0 OID 69826)
--- Dependencies: 230
+-- TOC entry 4113 (class 0 OID 99528)
+-- Dependencies: 231
 -- Data for Name: classifier_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.classifier_study (classifier, study) FROM stdin;
+COPY public.classifier_study (id, classifier, study) FROM stdin;
 \.
 
 
 --
--- TOC entry 3896 (class 0 OID 69830)
+-- TOC entry 4114 (class 0 OID 99533)
 -- Dependencies: 232
+-- Data for Name: content; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.content (id, result, value) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4116 (class 0 OID 99540)
+-- Dependencies: 234
 -- Data for Name: country; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.country (id, name, code) FROM stdin;
+COPY public.country (id, name, code, language) FROM stdin;
+1	Germany	DE	\N
+2	USA	US	\N
+3	Sweden	SE	\N
+4	Ireland	IE	\N
+5	Mexico	MX	\N
+6	United Kingdom	GB	\N
+7	France	FR	\N
+8	The Netherlands	NL	\N
 \.
 
 
 --
--- TOC entry 3898 (class 0 OID 69837)
--- Dependencies: 234
+-- TOC entry 4118 (class 0 OID 99547)
+-- Dependencies: 236
+-- Data for Name: country_monitoring; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.country_monitoring (country, monitoring) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4119 (class 0 OID 99550)
+-- Dependencies: 237
+-- Data for Name: dummy_table; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.dummy_table (id, created_at, name, description) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4121 (class 0 OID 99559)
+-- Dependencies: 239
+-- Data for Name: evaluation; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.evaluation (id, source, comment, status) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4123 (class 0 OID 99566)
+-- Dependencies: 241
+-- Data for Name: experiment; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.experiment (id, study) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4125 (class 0 OID 99571)
+-- Dependencies: 243
+-- Data for Name: group; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public."group" (id, name, description) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4127 (class 0 OID 99578)
+-- Dependencies: 245
+-- Data for Name: language; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.language (id, name, code, translate) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4129 (class 0 OID 99586)
+-- Dependencies: 247
+-- Data for Name: language_study; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.language_study (language, study) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4130 (class 0 OID 99591)
+-- Dependencies: 248
+-- Data for Name: monitoring; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.monitoring (id, created_at, name, description, interval_mode, interval_frequency, result_count, resulttype) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4132 (class 0 OID 99600)
+-- Dependencies: 250
 -- Data for Name: option; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -1887,18 +2807,1122 @@ COPY public.option (id, value, label, "position", question) FROM stdin;
 
 
 --
--- TOC entry 3900 (class 0 OID 69844)
--- Dependencies: 236
+-- TOC entry 4134 (class 0 OID 99607)
+-- Dependencies: 252
 -- Data for Name: participant; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.participant (id, name, created_at, updated_at, password, post_survey_answers, pre_survey_answers) FROM stdin;
+COPY public.participant (id, "group", name, created_at, updated_at, password, post_survey_answers, pre_survey_answers) FROM stdin;
+1	\N	user1	2023-06-27 12:26:05.923594	\N	1191	\N	\N
+2	\N	user2	2023-06-27 12:26:34.063032	\N	9394	\N	\N
+3	\N	user3	2023-06-29 14:51:21.407828	\N	8274	\N	\N
+4	\N	user4	2023-06-29 14:55:06.74934	\N	9926	\N	\N
+5	\N	user5	2023-07-03 12:36:26.392456	\N	3045	\N	\N
+6	\N	user6	2023-07-03 13:36:42.868443	\N	2102	\N	\N
+7	\N	user7	2023-07-03 13:50:47.528911	\N	2149	\N	\N
+8	\N	user8	2023-07-03 14:34:00.543066	\N	5749	\N	\N
+9	\N	user9	2023-07-03 15:09:44.182958	\N	4916	\N	\N
+10	\N	user10	2023-07-03 16:27:53.683552	\N	1206	\N	\N
+11	\N	user11	2023-07-04 08:24:39.863484	\N	8769	\N	\N
+12	\N	user12	2023-07-04 09:42:00.844412	\N	9756	\N	\N
+13	\N	user13	2023-07-04 10:40:55.591514	\N	7013	\N	\N
+14	\N	user14	2023-07-04 11:44:56.437167	\N	5560	\N	\N
+15	\N	user15	2023-07-04 12:27:49.713738	\N	1835	\N	\N
+16	\N	user16	2023-07-04 12:55:55.924444	\N	9578	\N	\N
+17	\N	user17	2023-07-04 14:36:40.918198	\N	3538	\N	\N
+18	\N	user18	2023-07-05 09:01:05.199599	\N	8892	\N	\N
+19	\N	user19	2023-07-05 11:17:37.291421	\N	4855	\N	\N
+20	\N	user20	2023-07-05 11:19:01.002381	\N	4225	\N	\N
+21	\N	user21	2023-07-05 11:21:24.623537	\N	4441	\N	\N
+22	\N	user22	2023-07-05 11:21:44.482407	\N	6872	\N	\N
+23	\N	user23	2023-07-05 11:23:03.380442	\N	5211	\N	\N
+24	\N	user24	2023-07-05 11:59:39.42486	\N	7201	\N	\N
+25	\N	user25	2023-07-05 12:00:51.260855	\N	4755	\N	\N
+26	\N	user26	2023-07-05 13:55:46.134659	\N	9375	\N	\N
+27	\N	user27	2023-07-05 14:09:35.83689	\N	1829	\N	\N
+28	\N	user28	2023-07-05 14:17:08.44621	\N	5582	\N	\N
+29	\N	user29	2023-07-05 17:08:40.508259	\N	4021	\N	\N
+30	\N	user30	2023-07-10 16:00:15.204886	\N	4013	\N	\N
+31	\N	user31	2023-07-10 16:00:25.043642	\N	2868	\N	\N
+32	\N	user32	2023-07-10 16:08:03.38832	\N	9308	\N	\N
+33	\N	user33	2023-07-10 16:12:48.846267	\N	4138	\N	\N
+34	\N	user34	2023-07-10 16:22:48.86363	\N	1497	\N	\N
+35	\N	user35	2023-07-10 16:39:30.340619	\N	1978	\N	\N
+36	\N	user36	2023-07-10 17:04:05.74133	\N	8604	\N	\N
+37	\N	user37	2023-07-10 17:21:16.732543	\N	7086	\N	\N
+38	\N	user38	2023-07-11 14:30:25.475467	\N	3906	\N	\N
+39	\N	user39	2023-07-11 16:30:30.217808	\N	2314	\N	\N
+40	\N	user40	2023-07-11 16:45:43.491045	\N	8584	\N	\N
+41	\N	user41	2023-07-11 16:55:34.170682	\N	6079	\N	\N
+42	\N	user42	2023-07-12 18:40:29.92122	\N	5929	\N	\N
+43	\N	user43	2023-07-13 12:54:12.001177	\N	9278	\N	\N
+44	\N	user44	2023-07-14 12:40:36.715483	\N	9724	\N	\N
+45	\N	user45	2023-07-15 14:43:28.206576	\N	8848	\N	\N
+46	\N	user46	2023-07-19 14:24:38.926896	\N	3743	\N	\N
+47	\N	user47	2023-07-20 09:36:16.639947	\N	6185	\N	\N
+48	\N	user48	2023-07-20 09:36:16.774142	\N	3312	\N	\N
+49	\N	user49	2023-07-20 10:02:54.080519	\N	6570	\N	\N
+50	\N	user50	2023-07-20 10:03:39.775009	\N	2719	\N	\N
+51	\N	user51	2023-07-20 10:25:13.817697	\N	2897	\N	\N
+52	\N	user52	2023-07-27 14:46:59.499989	\N	7780	\N	\N
+53	\N	user53	2023-07-31 10:47:06.165868	\N	5014	\N	\N
+54	\N	user54	2023-07-31 10:48:24.697735	\N	8546	\N	\N
+55	\N	user55	2023-08-01 14:26:56.854242	\N	4859	\N	\N
+56	\N	user56	2023-08-02 09:50:29.719759	\N	4238	\N	\N
+57	\N	user57	2023-08-02 13:10:37.073086	\N	6584	\N	\N
+58	\N	user58	2023-08-02 13:33:31.739551	\N	8710	\N	\N
+59	\N	user59	2023-08-02 17:08:32.269388	\N	4165	\N	\N
+60	\N	user60	2023-08-02 23:46:15.133431	\N	5956	\N	\N
+61	\N	user61	2023-08-02 23:47:17.120808	\N	6433	\N	\N
+62	\N	user62	2023-08-03 12:07:41.040436	\N	5883	\N	\N
+63	\N	user63	2023-08-03 12:20:39.796262	\N	3019	\N	\N
+64	\N	user64	2023-08-03 12:22:42.148133	\N	3101	\N	\N
+65	\N	user65	2023-08-03 12:33:35.410193	\N	4859	\N	\N
+66	\N	user66	2023-08-03 16:27:21.112003	\N	4153	\N	\N
+67	\N	user67	2023-08-03 16:29:43.787392	\N	8595	\N	\N
+68	\N	user68	2023-08-03 16:34:39.267976	\N	7603	\N	\N
+69	\N	user69	2023-08-03 17:01:56.009254	\N	2715	\N	\N
+70	\N	user70	2023-08-03 17:11:50.893908	\N	3101	\N	\N
+71	\N	user71	2023-08-03 18:01:40.320962	\N	4325	\N	\N
+72	\N	user72	2023-08-04 08:54:34.875838	\N	4807	\N	\N
+73	\N	user73	2023-08-04 08:56:08.665533	\N	6938	\N	\N
+74	\N	user74	2023-08-04 08:56:27.868263	\N	9566	\N	\N
+75	\N	user75	2023-08-04 08:57:25.360311	\N	1027	\N	\N
+76	\N	user76	2023-08-04 08:58:09.429253	\N	6959	\N	\N
+77	\N	user77	2023-08-04 09:01:41.126214	\N	6276	\N	\N
+78	\N	user78	2023-08-04 09:28:13.805108	\N	5860	\N	\N
+79	\N	user79	2023-08-04 09:39:34.206911	\N	4715	\N	\N
+80	\N	user80	2023-08-04 09:42:18.211741	\N	9307	\N	\N
+81	\N	user81	2023-08-04 09:43:29.161169	\N	4501	\N	\N
+82	\N	user82	2023-08-04 09:44:57.73053	\N	2682	\N	\N
+83	\N	user83	2023-08-04 09:46:31.276455	\N	6256	\N	\N
+84	\N	user84	2023-08-04 10:15:33.207424	\N	7169	\N	\N
+85	\N	user85	2023-08-04 10:16:52.176082	\N	7272	\N	\N
+86	\N	user86	2023-08-04 10:19:27.218055	\N	8063	\N	\N
+87	\N	user87	2023-08-04 10:27:29.320043	\N	3185	\N	\N
+88	\N	user88	2023-08-04 10:41:10.451919	\N	8358	\N	\N
+89	\N	user89	2023-08-04 10:58:59.782948	\N	4337	\N	\N
+90	\N	user90	2023-08-04 11:02:18.960526	\N	6543	\N	\N
+91	\N	user91	2023-08-04 11:06:08.736037	\N	8603	\N	\N
+92	\N	user92	2023-08-04 11:07:39.218174	\N	2387	\N	\N
+93	\N	user93	2023-08-04 11:08:47.365986	\N	4532	\N	\N
+94	\N	user94	2023-08-04 11:18:55.000857	\N	8526	\N	\N
+95	\N	user95	2023-08-04 11:29:54.121658	\N	5450	\N	\N
+96	\N	user96	2023-08-04 11:31:09.063922	\N	3707	\N	\N
+97	\N	user97	2023-08-04 11:32:39.597543	\N	7099	\N	\N
+98	\N	user98	2023-08-04 11:32:41.67124	\N	2568	\N	\N
+99	\N	user99	2023-08-04 11:34:08.84922	\N	9655	\N	\N
+100	\N	user100	2023-08-04 11:35:56.190968	\N	1452	\N	\N
+101	\N	user101	2023-08-04 11:42:56.124598	\N	3392	\N	\N
+102	\N	user102	2023-08-04 11:45:26.440757	\N	7049	\N	\N
+103	\N	user103	2023-08-04 11:46:26.703833	\N	9482	\N	\N
+104	\N	user104	2023-08-04 11:47:01.577527	\N	6521	\N	\N
+105	\N	user105	2023-08-04 11:47:37.487994	\N	5196	\N	\N
+106	\N	user106	2023-08-04 11:49:27.562326	\N	7807	\N	\N
+107	\N	user107	2023-08-04 11:50:11.252979	\N	3397	\N	\N
+108	\N	user108	2023-08-04 11:50:38.901639	\N	6327	\N	\N
+109	\N	user109	2023-08-04 11:51:41.297576	\N	1316	\N	\N
+110	\N	user110	2023-08-04 11:52:50.716079	\N	3437	\N	\N
+111	\N	user111	2023-08-04 11:53:08.126556	\N	8683	\N	\N
+112	\N	user112	2023-08-04 11:54:35.664021	\N	7802	\N	\N
+113	\N	user113	2023-08-04 11:54:50.358319	\N	9462	\N	\N
+114	\N	user114	2023-08-04 11:55:13.815275	\N	8514	\N	\N
+115	\N	user115	2023-08-04 11:55:32.656333	\N	2275	\N	\N
+116	\N	user116	2023-08-04 11:55:56.450468	\N	3995	\N	\N
+117	\N	user117	2023-08-04 12:09:16.085536	\N	3955	\N	\N
+118	\N	user118	2023-08-04 12:11:01.582996	\N	4196	\N	\N
+119	\N	user119	2023-08-04 12:12:04.555555	\N	4508	\N	\N
+120	\N	user120	2023-08-04 12:13:27.719913	\N	1891	\N	\N
+121	\N	user121	2023-08-04 12:14:08.753714	\N	8972	\N	\N
+122	\N	user122	2023-08-04 12:14:53.299819	\N	1039	\N	\N
+123	\N	user123	2023-08-04 12:19:16.522106	\N	9175	\N	\N
+124	\N	user124	2023-08-04 12:23:55.793414	\N	9233	\N	\N
+125	\N	user125	2023-08-04 12:25:29.572512	\N	6763	\N	\N
+126	\N	user126	2023-08-04 12:26:52.098986	\N	5734	\N	\N
+127	\N	user127	2023-08-04 12:31:34.266887	\N	9085	\N	\N
+128	\N	user128	2023-08-04 12:34:45.122596	\N	1939	\N	\N
+129	\N	user129	2023-08-04 12:35:48.597128	\N	7466	\N	\N
+130	\N	user130	2023-08-04 12:37:01.76604	\N	7024	\N	\N
+131	\N	user131	2023-08-04 12:38:43.911698	\N	3762	\N	\N
+132	\N	user132	2023-08-04 16:37:28.250635	\N	9737	\N	\N
+133	\N	user133	2023-08-04 16:41:12.234866	\N	1588	\N	\N
+134	\N	user134	2023-08-04 16:41:31.635405	\N	3168	\N	\N
+135	\N	user135	2023-08-04 16:47:06.231861	\N	7424	\N	\N
+136	\N	user136	2023-08-04 16:51:14.419111	\N	4941	\N	\N
+137	\N	user137	2023-08-04 16:51:52.580511	\N	7749	\N	\N
+138	\N	user138	2023-08-04 16:53:07.702504	\N	8164	\N	\N
+139	\N	user139	2023-08-04 16:53:22.174379	\N	9156	\N	\N
+140	\N	user140	2023-08-04 17:06:04.41258	\N	5419	\N	\N
+141	\N	user141	2023-08-04 18:46:11.160098	\N	6689	\N	\N
+142	\N	user142	2023-08-04 18:46:16.533719	\N	3626	\N	\N
+143	\N	user143	2023-08-04 18:46:58.511928	\N	1701	\N	\N
+144	\N	user144	2023-08-04 18:46:59.40057	\N	1495	\N	\N
+145	\N	user145	2023-08-04 18:47:15.822289	\N	1477	\N	\N
+146	\N	user146	2023-08-04 18:47:15.882859	\N	4658	\N	\N
+147	\N	user147	2023-08-04 18:48:52.323528	\N	7325	\N	\N
+148	\N	user148	2023-08-04 18:48:52.58372	\N	6596	\N	\N
+149	\N	user149	2023-08-07 09:56:00.921122	\N	4187	\N	\N
+150	\N	user150	2023-08-07 09:56:34.713551	\N	4387	\N	\N
+151	\N	user151	2023-08-07 09:57:01.647045	\N	5871	\N	\N
+152	\N	user152	2023-08-07 09:57:59.479648	\N	3105	\N	\N
+153	\N	user153	2023-08-07 10:17:13.116469	\N	4328	\N	\N
+154	\N	user154	2023-08-07 10:18:36.452315	\N	9906	\N	\N
+155	\N	user155	2023-08-07 10:19:08.287173	\N	4243	\N	\N
+156	\N	user156	2023-08-07 10:21:15.951421	\N	1353	\N	\N
+157	\N	user157	2023-08-07 10:22:24.604083	\N	7202	\N	\N
+158	\N	user158	2023-08-07 10:25:27.230052	\N	8617	\N	\N
+159	\N	user159	2023-08-07 10:26:12.031626	\N	8076	\N	\N
+160	\N	user160	2023-08-07 10:26:16.836866	\N	6422	\N	\N
+161	\N	user161	2023-08-07 10:27:48.09601	\N	4256	\N	\N
+162	\N	user162	2023-08-07 10:28:57.36917	\N	3982	\N	\N
+163	\N	user163	2023-08-07 10:28:57.863299	\N	3979	\N	\N
+164	\N	user164	2023-08-07 10:29:19.406163	\N	8427	\N	\N
+165	\N	user165	2023-08-07 10:30:25.248803	\N	6342	\N	\N
+166	\N	user166	2023-08-07 10:31:20.48504	\N	3957	\N	\N
+167	\N	user167	2023-08-07 10:31:26.761887	\N	7149	\N	\N
+168	\N	user168	2023-08-07 10:31:56.472668	\N	8691	\N	\N
+169	\N	user169	2023-08-07 10:32:05.093498	\N	4364	\N	\N
+170	\N	user170	2023-08-07 10:32:38.557489	\N	5945	\N	\N
+171	\N	user171	2023-08-07 10:33:00.462915	\N	7558	\N	\N
+172	\N	user172	2023-08-07 10:34:38.210627	\N	6973	\N	\N
+173	\N	user173	2023-08-07 10:34:51.789669	\N	8225	\N	\N
+174	\N	user174	2023-08-07 10:34:53.980859	\N	5863	\N	\N
+175	\N	user175	2023-08-07 10:35:21.713682	\N	2045	\N	\N
+176	\N	user176	2023-08-07 10:37:36.719385	\N	5876	\N	\N
+177	\N	user177	2023-08-07 10:37:58.048739	\N	6899	\N	\N
+178	\N	user178	2023-08-07 10:39:54.809439	\N	3990	\N	\N
+179	\N	user179	2023-08-07 10:40:21.019744	\N	7609	\N	\N
+180	\N	user180	2023-08-07 10:43:45.405244	\N	7570	\N	\N
+181	\N	user181	2023-08-07 10:43:51.374698	\N	9675	\N	\N
+182	\N	user182	2023-08-07 10:44:16.827451	\N	4010	\N	\N
+183	\N	user183	2023-08-07 10:45:35.013112	\N	3748	\N	\N
+184	\N	user184	2023-08-07 10:50:28.433468	\N	3707	\N	\N
+185	\N	user185	2023-08-07 10:51:16.923444	\N	9173	\N	\N
+186	\N	user186	2023-08-07 10:52:20.313395	\N	7011	\N	\N
+187	\N	user187	2023-08-07 10:53:33.167454	\N	7158	\N	\N
+188	\N	user188	2023-08-07 10:54:12.305297	\N	7436	\N	\N
+189	\N	user189	2023-08-07 10:55:22.620827	\N	2168	\N	\N
+190	\N	user190	2023-08-07 10:58:10.31304	\N	9064	\N	\N
+191	\N	user191	2023-08-07 11:03:55.70603	\N	3807	\N	\N
+192	\N	user192	2023-08-07 11:03:59.219734	\N	3244	\N	\N
+193	\N	user193	2023-08-07 11:06:19.555745	\N	1061	\N	\N
+194	\N	user194	2023-08-07 11:09:09.314401	\N	7326	\N	\N
+195	\N	user195	2023-08-07 11:10:12.982273	\N	7261	\N	\N
+196	\N	user196	2023-08-07 11:12:27.102749	\N	4902	\N	\N
+197	\N	user197	2023-08-17 12:00:53.564028	\N	2937	\N	\N
+198	\N	user198	2023-08-29 08:44:13.393678	\N	4502	\N	\N
+199	\N	user199	2023-08-29 09:35:18.578694	\N	9344	\N	\N
+200	\N	user200	2023-08-29 10:58:58.651428	\N	3143	\N	\N
+201	\N	user201	2023-08-31 13:55:24.620426	\N	2782	\N	\N
+202	\N	user202	2023-08-31 15:27:04.886275	\N	1935	\N	\N
+203	\N	user203	2023-08-31 15:27:57.400631	\N	7277	\N	\N
+204	\N	user204	2023-08-31 15:29:38.0213	\N	8310	\N	\N
+205	\N	user205	2023-08-31 15:42:13.265055	\N	5097	\N	\N
+206	\N	user206	2023-09-06 07:53:32.55284	\N	4399	\N	\N
+207	\N	user207	2023-09-06 07:53:59.636773	\N	9922	\N	\N
+208	\N	user208	2023-09-06 07:54:26.073069	\N	5312	\N	\N
+209	\N	user209	2023-09-06 08:11:39.779054	\N	8969	\N	\N
+210	\N	user210	2023-09-06 12:06:54.609378	\N	8057	\N	\N
+211	\N	user211	2023-09-06 12:44:52.475231	\N	3660	\N	\N
+212	\N	user212	2023-09-06 13:24:22.040016	\N	6870	\N	\N
+213	\N	user213	2023-09-06 15:04:44.63114	\N	9380	\N	\N
+214	\N	user214	2023-09-06 15:05:12.514036	\N	6429	\N	\N
+215	\N	user215	2023-09-06 15:06:42.195732	\N	1256	\N	\N
+216	\N	user216	2023-09-07 18:22:45.228084	\N	9810	\N	\N
+217	\N	user217	2023-09-08 12:41:53.170166	\N	7197	\N	\N
+218	\N	user218	2023-09-08 12:42:20.646602	\N	6565	\N	\N
+219	\N	user219	2023-09-08 12:42:24.954715	\N	5080	\N	\N
+220	\N	user220	2023-09-08 12:42:33.569128	\N	3860	\N	\N
+221	\N	user221	2023-09-08 12:44:19.532962	\N	4743	\N	\N
+222	\N	user222	2023-09-08 12:45:53.696667	\N	7565	\N	\N
+223	\N	user223	2023-09-08 12:47:59.86576	\N	4934	\N	\N
+224	\N	user224	2023-09-10 19:04:16.735666	\N	5208	\N	\N
+225	\N	user225	2023-10-12 16:59:49.775953	\N	8100	\N	\N
+226	\N	user226	2023-10-12 17:04:31.740414	\N	4530	\N	\N
+227	\N	user227	2023-10-13 10:20:08.474597	\N	8197	\N	\N
+228	\N	user228	2023-10-24 12:59:09.510145	\N	1715	\N	\N
+229	\N	user229	2023-10-24 13:00:22.188448	\N	7532	\N	\N
+230	\N	user230	2023-10-24 13:03:26.502809	\N	8404	\N	\N
+231	\N	user231	2023-10-24 13:08:49.887579	\N	5350	\N	\N
+232	\N	user232	2023-12-06 12:23:22.842131	\N	7957	\N	\N
+233	\N	user233	2023-12-19 10:25:36.549645	\N	9714	\N	\N
+234	\N	user234	2023-12-21 09:59:22.13436	\N	3624	\N	\N
+235	\N	user235	2024-02-01 13:17:57.447494	\N	6330	\N	\N
+236	\N	user236	2024-02-01 13:22:46.108464	\N	3235	\N	\N
+237	\N	user237	2024-03-20 17:00:18.538754	\N	2975	\N	\N
+238	\N	user238	2024-03-20 17:04:00.418309	\N	3854	\N	\N
+239	\N	user239	2024-04-25 10:55:08.282946	\N	8103	\N	\N
+240	\N	user240	2024-04-25 10:55:39.479818	\N	6502	\N	\N
+241	\N	user241	2024-04-25 11:10:34.119499	\N	2378	\N	\N
+242	\N	user242	2024-04-25 15:59:40.731355	\N	1593	\N	\N
+243	\N	user243	2024-04-25 17:16:42.600498	\N	5128	\N	\N
+244	\N	user244	2024-04-25 17:17:26.911782	\N	5307	\N	\N
+245	\N	user245	2024-04-25 17:20:00.956761	\N	5664	\N	\N
+246	\N	user246	2024-04-25 18:51:19.787062	\N	8147	\N	\N
+247	\N	user247	2024-04-30 10:57:14.650566	\N	6516	\N	\N
+248	\N	user248	2024-04-30 13:37:11.669752	\N	2637	\N	\N
+249	\N	user249	2024-05-17 09:47:56.613776	\N	7730	\N	\N
+250	\N	user250	2024-05-17 11:55:21.73066	\N	2693	\N	\N
+251	\N	user251	2024-05-17 11:55:30.127677	\N	8081	\N	\N
+252	\N	user252	2024-05-20 16:56:10.823342	\N	7241	\N	\N
+253	\N	user253	2024-05-20 16:58:00.181958	\N	3658	\N	\N
+254	\N	user254	2024-05-25 13:27:31.065496	\N	8469	\N	\N
+255	\N	user255	2024-05-25 13:37:56.00097	\N	8218	\N	\N
+256	\N	user256	2024-05-25 13:47:56.67534	\N	7492	\N	\N
+257	\N	user257	2024-05-25 13:50:35.369844	\N	6004	\N	\N
+258	\N	user258	2024-05-27 16:16:34.144834	\N	2672	\N	\N
+259	\N	user259	2024-05-27 16:21:45.098431	\N	9843	\N	\N
+260	\N	user260	2024-05-27 16:34:47.50982	\N	5302	\N	\N
+261	\N	user261	2024-05-27 16:35:31.207767	\N	8180	\N	\N
+262	\N	user262	2024-05-27 16:36:02.427069	\N	4349	\N	\N
+263	\N	user263	2024-05-27 16:36:27.109993	\N	8817	\N	\N
+264	\N	user264	2024-05-27 16:37:55.171452	\N	8512	\N	\N
+265	\N	user265	2024-05-27 16:38:44.770739	\N	7044	\N	\N
+266	\N	user266	2024-05-27 16:39:07.973475	\N	2485	\N	\N
+267	\N	user267	2024-05-27 16:39:47.443489	\N	8007	\N	\N
+268	\N	user268	2024-05-27 16:40:18.361065	\N	7367	\N	\N
+269	\N	user269	2024-05-27 16:41:58.925039	\N	3324	\N	\N
+270	\N	user270	2024-05-27 16:42:25.039466	\N	6170	\N	\N
+271	\N	user271	2024-05-27 16:42:44.423039	\N	3189	\N	\N
+272	\N	user272	2024-05-27 16:43:20.514011	\N	4190	\N	\N
+273	\N	user273	2024-05-27 16:43:59.307702	\N	9386	\N	\N
+274	\N	user274	2024-05-27 16:45:15.295137	\N	1951	\N	\N
+275	\N	user275	2024-05-27 16:46:36.049214	\N	8079	\N	\N
+278	\N	user278	2024-05-27 16:48:01.836513	\N	3710	\N	\N
+281	\N	user281	2024-05-27 23:18:49.895979	\N	6684	\N	\N
+276	\N	user276	2024-05-27 16:46:57.082867	\N	5280	\N	\N
+277	\N	user277	2024-05-27 16:47:31.883736	\N	6118	\N	\N
+280	\N	user280	2024-05-27 16:51:49.694196	\N	6351	\N	\N
+279	\N	user279	2024-05-27 16:49:48.333968	\N	2946	\N	\N
+282	\N	user282	2024-05-28 14:02:37.051499	\N	2010	\N	\N
+283	\N	user283	2024-05-28 17:19:59.284112	\N	7089	\N	\N
+284	\N	user284	2024-05-28 22:17:18.540301	\N	6837	\N	\N
+285	\N	user285	2024-05-30 16:57:41.364565	\N	3080	\N	\N
+286	\N	user286	2024-05-30 16:58:48.966653	\N	2114	\N	\N
+287	\N	user287	2024-05-30 16:59:31.819259	\N	2240	\N	\N
+288	\N	user288	2024-05-30 16:59:37.496397	\N	4916	\N	\N
+289	\N	user289	2024-05-30 17:00:30.774627	\N	8713	\N	\N
+290	\N	user290	2024-06-04 19:57:30.296109	\N	5994	\N	\N
+291	\N	user291	2024-06-04 19:58:16.602023	\N	4128	\N	\N
+292	\N	user292	2024-06-04 20:01:52.425417	\N	4398	\N	\N
+293	\N	user293	2024-06-05 14:28:03.21952	\N	9288	\N	\N
+294	\N	user294	2024-06-05 14:43:15.195097	\N	5463	\N	\N
+295	\N	user295	2024-06-06 15:14:13.495748	\N	9160	\N	\N
+296	\N	user296	2024-06-09 12:33:54.892248	\N	7312	\N	\N
+297	\N	user297	2024-06-13 17:04:36.527347	\N	6541	\N	\N
+298	\N	user298	2024-06-23 14:17:07.131731	\N	5876	\N	\N
+299	\N	user299	2024-07-05 10:54:36.470487	\N	5012	\N	\N
+300	\N	user300	2024-07-11 01:20:12.869698	\N	9644	\N	\N
+301	\N	user301	2024-07-22 09:54:23.187004	\N	3416	\N	\N
+302	\N	user302	2024-09-23 15:27:54.609088	\N	6266	\N	\N
+303	\N	user303	2024-09-23 15:28:34.678509	\N	8736	\N	\N
+304	\N	user304	2024-09-23 15:28:34.902856	\N	4393	\N	\N
+305	\N	user305	2024-09-25 13:52:46.601239	\N	6619	\N	\N
+306	\N	user306	2024-09-25 14:36:53.141193	\N	8535	\N	\N
+307	\N	user307	2024-09-26 13:55:05.195103	\N	4687	\N	\N
+308	\N	user308	2024-09-26 13:56:01.078867	\N	2327	\N	\N
+309	\N	user309	2024-09-26 15:13:41.335235	\N	1163	\N	\N
+310	\N	user310	2024-09-26 16:55:54.146463	\N	1848	\N	\N
+311	\N	user311	2024-09-27 08:31:38.352358	\N	1737	\N	\N
+312	\N	user312	2024-09-27 09:03:04.793911	\N	6863	\N	\N
+313	\N	user313	2024-09-27 12:39:40.842318	\N	7766	\N	\N
+314	\N	user314	2024-10-09 19:39:47.651063	\N	4182	\N	\N
+315	\N	user315	2024-12-10 09:53:15.071874	\N	6049	\N	\N
+316	\N	user316	2024-12-11 10:18:08.172008	\N	4788	\N	\N
+317	\N	user317	2024-12-11 10:22:10.812087	\N	7771	\N	\N
+318	\N	user318	2024-12-11 16:12:28.930995	\N	3437	\N	\N
+319	\N	user319	2024-12-12 09:16:56.690162	\N	8629	\N	\N
+320	\N	user320	2024-12-12 11:05:57.294655	\N	9807	\N	\N
+321	\N	user321	2024-12-13 10:07:28.398269	\N	6051	\N	\N
+322	\N	user322	2024-12-13 10:15:56.356626	\N	2390	\N	\N
+323	\N	user323	2024-12-13 10:22:06.188493	\N	6343	\N	\N
+324	\N	user324	2024-12-13 11:12:22.206164	\N	4327	\N	\N
+325	\N	user325	2024-12-13 11:33:56.630509	\N	1963	\N	\N
+326	\N	user326	2024-12-13 11:36:01.421113	\N	6021	\N	\N
+327	\N	user327	2024-12-13 11:36:54.792021	\N	2335	\N	\N
+328	\N	user328	2024-12-13 11:36:58.24095	\N	2052	\N	\N
+329	\N	user329	2024-12-13 11:37:09.072085	\N	6521	\N	\N
+330	\N	user330	2024-12-13 11:37:18.304263	\N	6479	\N	\N
+331	\N	user331	2024-12-13 11:37:35.487957	\N	8303	\N	\N
+332	\N	user332	2024-12-13 11:38:35.393892	\N	9230	\N	\N
+333	\N	user333	2024-12-13 11:46:52.004723	\N	2242	\N	\N
+334	\N	user334	2024-12-13 11:53:35.961713	\N	1133	\N	\N
+335	\N	user335	2024-12-13 12:03:42.790123	\N	7562	\N	\N
+336	\N	user336	2024-12-19 12:44:00.018744	\N	7238	\N	\N
+337	\N	user337	2025-01-14 13:57:13.782641	\N	9970	\N	\N
+338	\N	user338	2025-01-19 11:10:15.707538	\N	9390	\N	\N
+339	\N	user339	2025-02-16 13:14:49.628268	\N	1640	\N	\N
+340	\N	user340	2025-02-28 10:16:51.099853	\N	4877	\N	\N
+341	\N	user341	2025-03-03 12:08:07.1207	\N	1853	\N	\N
+342	\N	user342	2025-03-03 12:09:00.282054	\N	3934	\N	\N
+343	\N	user343	2025-04-07 10:23:00.811942	\N	9853	\N	\N
+344	\N	user344	2025-04-07 10:23:47.88932	\N	4701	\N	\N
+345	\N	user345	2025-04-07 10:24:30.724778	\N	5282	\N	\N
+346	\N	user346	2025-04-23 17:16:47.119102	\N	9360	\N	\N
+347	\N	user347	2025-05-05 13:47:42.726767	\N	6912	\N	\N
+348	\N	user348	2025-05-05 14:04:53.714547	\N	4008	\N	\N
+349	\N	user349	2025-05-05 15:05:07.526902	\N	1013	\N	\N
+350	\N	user350	2025-05-05 15:11:39.195878	\N	9109	\N	\N
+351	\N	user351	2025-05-05 17:12:51.74444	\N	7260	\N	\N
+352	\N	user352	2025-05-21 12:57:50.353739	\N	5646	\N	\N
+353	\N	user353	2025-05-21 13:00:37.2184	\N	8060	\N	\N
+354	\N	user354	2025-06-04 11:56:54.952229	\N	5561	\N	\N
+355	\N	user355	2025-06-16 16:31:29.7358	\N	1581	\N	\N
+356	\N	user356	2025-06-27 12:00:11.88333	\N	5072	\N	\N
+357	\N	user357	2025-06-27 12:20:21.791915	\N	8057	\N	\N
+358	\N	user358	2025-07-01 11:54:32.49885	\N	7700	\N	\N
+359	\N	user359	2025-07-01 12:07:36.205732	\N	9764	\N	\N
+360	\N	user360	2025-07-03 13:03:31.866104	\N	8406	\N	\N
+361	\N	user361	2025-07-03 15:27:17.685904	\N	9574	\N	\N
+362	\N	user362	2025-07-08 12:46:43.828001	\N	8467	\N	\N
+363	\N	user363	2025-07-08 13:43:53.916655	\N	8432	\N	\N
+364	\N	user364	2025-07-08 13:55:45.097793	\N	3464	\N	\N
+365	\N	user365	2025-07-08 14:08:10.404029	\N	3846	\N	\N
+366	\N	user366	2025-07-08 14:19:13.382787	\N	5505	\N	\N
+367	\N	user367	2025-07-08 14:35:38.978806	\N	5245	\N	\N
+368	\N	user368	2025-07-08 14:50:09.699384	\N	6876	\N	\N
+369	\N	user369	2025-07-08 15:04:07.165368	\N	9828	\N	\N
+370	\N	user370	2025-07-08 15:16:53.048904	\N	7976	\N	\N
+371	\N	user371	2025-07-08 15:24:53.41579	\N	5013	\N	\N
+372	\N	user372	2025-07-08 15:32:39.441604	\N	8426	\N	\N
+373	\N	user373	2025-07-08 15:42:33.78002	\N	8373	\N	\N
+374	\N	user374	2025-07-08 15:47:28.079223	\N	8402	\N	\N
+375	\N	user375	2025-07-08 16:11:34.012843	\N	3724	\N	\N
+376	\N	user376	2025-07-09 14:12:01.274444	\N	1010	\N	\N
+377	\N	user377	2025-07-09 14:25:04.273263	\N	4205	\N	\N
+378	\N	user378	2025-07-14 11:52:11.462281	\N	4120	\N	\N
+379	\N	user379	2025-07-23 15:06:44.602742	\N	4958	\N	\N
+380	\N	user380	2025-07-23 15:20:49.016259	\N	1799	\N	\N
+381	\N	user381	2025-07-23 15:53:26.070343	\N	9480	\N	\N
+382	\N	user382	2025-07-23 16:05:58.605212	\N	4586	\N	\N
+383	\N	user383	2025-07-24 11:29:37.23385	\N	2925	\N	\N
+384	\N	user384	2025-07-31 18:39:26.429111	\N	6698	\N	\N
+385	\N	user385	2025-08-05 16:15:28.392713	\N	8698	\N	\N
+386	\N	user386	2025-08-05 16:16:31.071459	\N	9692	\N	\N
+387	\N	user387	2025-08-08 10:07:49.961014	\N	3669	\N	\N
+388	\N	user388	2025-08-08 10:09:48.232702	\N	4339	\N	\N
+389	\N	user389	2025-08-08 15:29:53.755107	\N	8895	\N	\N
+390	\N	user390	2025-09-12 12:42:07.772532	\N	7018	\N	\N
+391	\N	user391	2025-09-12 12:46:09.971872	\N	7414	\N	\N
+392	\N	user392	2025-09-12 13:06:53.937459	\N	3863	\N	\N
+393	\N	user393	2025-09-12 13:10:24.438889	\N	3923	\N	\N
+394	\N	user394	2025-09-12 13:12:57.897827	\N	6869	\N	\N
+395	\N	user395	2025-09-12 13:13:38.945528	\N	5328	\N	\N
+396	\N	user396	2025-09-12 13:21:37.051589	\N	4343	\N	\N
+397	\N	user397	2025-09-18 14:14:55.239667	\N	7241	\N	\N
+398	\N	user398	2025-09-19 12:13:37.417259	\N	9920	\N	\N
+399	\N	user399	2025-09-19 12:28:26.605699	\N	7430	\N	\N
+400	\N	user400	2025-09-19 12:37:22.875	\N	4535	\N	\N
+401	\N	user401	2025-09-19 12:37:53.223248	\N	5549	\N	\N
+402	\N	user402	2025-09-19 12:40:01.874639	\N	9276	\N	\N
+403	\N	user403	2025-09-19 12:40:30.101131	\N	3626	\N	\N
+404	\N	user404	2025-09-19 12:42:43.478301	\N	9806	\N	\N
+405	\N	user405	2025-09-19 12:49:47.326368	\N	8784	\N	\N
+406	\N	user406	2025-09-20 13:28:06.869871	\N	3016	\N	\N
+407	\N	user407	2025-09-22 14:44:33.530048	\N	6982	\N	\N
+410	\N	user410	2025-09-24 12:03:08.439669	\N	2088	\N	\N
+411	\N	user410	2025-09-24 12:03:08.750011	\N	7203	\N	\N
+412	\N	user412	2025-09-24 12:27:08.2775	\N	1013	\N	\N
+413	\N	user413	2025-09-24 12:50:08.221919	\N	8786	\N	\N
+414	\N	user414	2025-09-24 13:02:12.180984	\N	6495	\N	\N
+415	\N	user415	2025-09-24 13:02:38.306063	\N	5387	\N	\N
+416	\N	user416	2025-09-24 13:55:04.024875	\N	6157	\N	\N
+417	\N	user417	2025-09-24 14:03:13.151767	\N	9908	\N	\N
+418	\N	user418	2025-09-24 15:11:11.93518	\N	5579	\N	\N
+419	\N	user419	2025-09-25 12:14:12.931907	\N	9987	\N	\N
+420	\N	user420	2025-09-25 15:39:43.852605	\N	9044	\N	\N
+421	\N	user421	2025-09-26 12:08:30.274891	\N	3651	\N	\N
+422	\N	user422	2025-09-26 15:41:45.858431	\N	5216	\N	\N
+423	\N	user423	2025-10-16 16:07:44.578615	\N	2511	\N	\N
+424	\N	user424	2025-10-16 16:13:06.866937	\N	2644	\N	\N
+425	\N	user424	2025-10-16 16:13:06.862549	\N	8208	\N	\N
+426	\N	user426	2025-10-16 16:14:31.348624	\N	6843	\N	\N
+427	\N	user427	2025-10-16 16:34:57.448673	\N	2937	\N	\N
+428	\N	user428	2025-10-16 17:09:11.918849	\N	2986	\N	\N
+429	\N	user429	2025-10-16 17:20:15.594948	\N	8680	\N	\N
+430	\N	user430	2025-10-16 17:34:09.647321	\N	4210	\N	\N
+431	\N	user431	2025-11-27 23:15:32.234792	\N	8908	\N	\N
+432	\N	user432	2025-12-03 14:28:32.042531	\N	4454	\N	\N
+433	\N	user433	2025-12-03 14:40:30.140318	\N	6836	\N	\N
+434	\N	user434	2025-12-03 14:53:33.135069	\N	7847	\N	\N
+435	\N	user435	2025-12-03 14:54:59.06501	\N	3790	\N	\N
+436	\N	user436	2025-12-03 14:58:15.704765	\N	5812	\N	\N
+437	\N	user437	2025-12-03 15:02:00.820773	\N	7797	\N	\N
+438	\N	user437	2025-12-03 15:02:01.060964	\N	2460	\N	\N
+439	\N	user439	2025-12-04 16:30:27.131744	\N	3734	\N	\N
+440	\N	user440	2025-12-04 16:39:44.665628	\N	8732	\N	\N
+441	\N	user441	2025-12-05 11:26:31.356831	\N	9071	\N	\N
+442	\N	user442	2025-12-05 14:15:11.2331	\N	1927	\N	\N
+443	\N	user443	2025-12-05 14:28:35.300371	\N	9812	\N	\N
+445	\N	user445	2025-12-06 19:09:24.388056	\N	6289	\N	\N
+446	\N	user446	2025-12-06 22:42:00.201356	\N	6618	\N	\N
+448	\N	user448	2025-12-07 17:40:53.816265	\N	6857	\N	\N
+449	\N	user449	2025-12-07 18:14:43.496395	\N	5618	\N	\N
+450	\N	user450	2025-12-07 21:03:19.353774	\N	2707	\N	\N
+451	\N	user451	2025-12-08 12:59:44.29738	\N	9475	\N	\N
+452	\N	user452	2025-12-08 14:15:01.092368	\N	8529	\N	\N
+453	\N	user453	2025-12-08 14:25:41.710401	\N	5241	\N	\N
+455	\N	user455	2025-12-08 15:15:25.95459	\N	3839	\N	\N
+456	\N	user456	2025-12-08 15:21:10.014405	\N	4456	\N	\N
+457	\N	user457	2025-12-08 15:24:28.639502	\N	9838	\N	\N
+458	\N	user458	2025-12-08 15:25:08.45753	\N	8504	\N	\N
+459	\N	user459	2025-12-08 15:32:40.037345	\N	6450	\N	\N
+460	\N	user460	2025-12-08 16:14:18.121161	\N	8849	\N	\N
+461	\N	user461	2025-12-08 17:01:49.108061	\N	3783	\N	\N
+462	\N	user462	2025-12-10 18:25:09.335955	\N	3267	\N	\N
+463	\N	user463	2025-12-10 18:34:04.70686	\N	2412	\N	\N
+464	\N	user464	2025-12-11 13:25:49.007754	\N	6793	\N	\N
+465	\N	user465	2025-12-11 19:02:28.514729	\N	2127	\N	\N
+466	\N	user466	2025-12-12 14:30:47.686126	\N	2782	\N	\N
+467	\N	user467	2025-12-15 14:28:50.96494	\N	4915	\N	\N
+468	\N	user468	2025-12-15 14:32:46.957303	\N	8204	\N	\N
+469	\N	user469	2025-12-15 14:33:06.873754	\N	1497	\N	\N
+470	\N	user470	2025-12-15 14:37:00.005711	\N	1182	\N	\N
+471	\N	user471	2025-12-15 14:55:30.266144	\N	4677	\N	\N
+472	\N	user472	2025-12-15 15:17:31.481321	\N	4308	\N	\N
+473	\N	user473	2025-12-15 15:23:41.225719	\N	1224	\N	\N
+474	\N	user474	2025-12-15 16:52:53.335498	\N	4701	\N	\N
+475	\N	user475	2025-12-16 16:35:22.791129	\N	9786	\N	\N
+476	\N	user476	2025-12-16 17:17:45.22056	\N	1162	\N	\N
+477	\N	user477	2025-12-19 11:06:14.65769	\N	9775	\N	\N
+478	\N	user478	2025-12-19 16:22:39.800267	\N	9313	\N	\N
+479	\N	user479	2025-12-21 18:33:09.808982	\N	9850	\N	\N
+480	\N	user480	2025-12-21 19:59:18.458732	\N	5484	\N	\N
+481	\N	user481	2025-12-26 00:15:49.009705	\N	3438	\N	\N
+482	\N	user482	2025-12-26 00:26:56.138982	\N	1058	\N	\N
+483	\N	user483	2026-01-01 10:46:56.925567	\N	5940	\N	\N
+484	\N	user484	2026-01-01 18:29:24.13905	\N	8832	\N	\N
+485	\N	user485	2026-01-03 01:20:57.838082	\N	9178	\N	\N
+486	\N	user486	2026-01-04 20:48:52.643722	\N	4766	\N	\N
+487	\N	user487	2026-01-04 21:02:49.255921	\N	4580	\N	\N
+488	\N	user488	2026-01-05 12:16:59.006646	\N	9104	\N	\N
+489	\N	user489	2026-01-05 12:47:25.046277	\N	7129	\N	\N
+490	\N	user490	2026-01-06 14:11:28.974575	\N	2165	\N	\N
+491	\N	user491	2026-01-07 13:48:30.978174	\N	1391	\N	\N
+492	\N	user492	2026-01-10 16:00:17.587543	\N	5279	\N	\N
+493	\N	user493	2026-01-10 16:00:31.909978	\N	1476	\N	\N
+494	\N	user494	2026-01-10 16:02:10.925014	\N	1639	\N	\N
+495	\N	user495	2026-01-10 16:03:36.460546	\N	8853	\N	\N
+496	\N	user496	2026-01-10 16:04:39.688613	\N	1243	\N	\N
+497	\N	user497	2026-01-10 16:04:50.833489	\N	1562	\N	\N
+498	\N	user498	2026-01-10 16:06:24.0386	\N	1156	\N	\N
+499	\N	user499	2026-01-10 16:06:59.539341	\N	7632	\N	\N
+500	\N	user500	2026-01-10 16:11:18.307752	\N	9962	\N	\N
+501	\N	user501	2026-01-11 14:44:48.646879	\N	8700	\N	\N
+502	\N	user502	2026-01-11 14:57:25.466595	\N	1528	\N	\N
+503	\N	user503	2026-01-11 14:59:37.376209	\N	7784	\N	\N
+504	\N	user504	2026-01-11 14:59:55.696615	\N	1326	\N	\N
+505	\N	user505	2026-01-11 15:01:54.30734	\N	3139	\N	\N
+506	\N	user506	2026-02-20 14:37:55.601947	\N	5473	\N	\N
+507	\N	user507	2026-02-20 18:15:06.731839	\N	1687	\N	\N
+511	\N	user508	2026-02-20 18:23:59.510987	\N	6263	\N	\N
+512	\N	user512	2026-02-20 18:36:43.642328	\N	7413	\N	\N
+513	\N	user513	2026-02-21 15:13:29.919913	\N	3424	\N	\N
+514	\N	user514	2026-02-21 15:14:50.92236	\N	7204	\N	\N
+515	\N	user515	2026-02-21 19:10:15.519097	\N	5098	\N	\N
+516	\N	user516	2026-02-21 19:11:40.152232	\N	8004	\N	\N
+517	\N	user517	2026-02-21 19:12:08.615317	\N	7155	\N	\N
+518	\N	user518	2026-02-22 00:52:17.698396	\N	4963	\N	\N
+519	\N	user519	2026-02-25 19:49:42.821125	\N	3512	\N	\N
+520	\N	user520	2026-02-25 20:45:24.899649	\N	9792	\N	\N
+521	\N	user521	2026-02-26 12:09:16.574359	\N	1893	\N	\N
+522	\N	user522	2026-02-26 12:17:21.285153	\N	6365	\N	\N
+523	\N	user523	2026-02-26 12:18:14.833956	\N	1463	\N	\N
+524	\N	user524	2026-02-26 12:20:23.556829	\N	8945	\N	\N
+525	\N	user525	2026-03-03 16:31:07.826519	\N	9137	\N	\N
+526	\N	user526	2026-03-03 16:54:09.810994	\N	7145	\N	\N
+527	\N	user527	2026-03-03 16:57:26.147365	\N	6076	\N	\N
+528	\N	user528	2026-03-03 16:57:42.751251	\N	7845	\N	\N
+529	\N	user529	2026-03-03 16:59:30.849012	\N	2392	\N	\N
+530	\N	user530	2026-03-05 17:21:10.337825	\N	2555	\N	\N
+531	\N	user531	2026-03-06 10:15:39.155055	\N	2755	\N	\N
+532	\N	user532	2026-03-09 17:02:03.292848	\N	6959	\N	\N
+533	\N	user533	2026-03-10 12:35:43.191516	\N	1058	\N	\N
+534	\N	user534	2026-03-10 13:07:04.492299	\N	1389	\N	\N
+535	\N	user535	2026-03-10 13:15:38.569501	\N	3215	\N	\N
+536	\N	user536	2026-03-10 13:21:08.70636	\N	3073	\N	\N
+537	\N	user537	2026-03-10 16:30:29.84827	\N	8818	\N	\N
+538	\N	user538	2026-03-10 16:30:48.238778	\N	6182	\N	\N
+539	\N	user539	2026-03-10 23:03:02.001815	\N	8923	\N	\N
+540	\N	user540	2026-03-11 09:47:07.025421	\N	8398	\N	\N
+541	\N	user541	2026-03-11 09:52:02.028172	\N	2396	\N	\N
+542	\N	user542	2026-03-11 16:04:18.829142	\N	9351	\N	\N
+543	\N	user543	2026-03-12 23:36:54.500801	\N	9734	\N	\N
+544	\N	user544	2026-03-12 23:41:51.327231	\N	9006	\N	\N
+545	\N	user545	2026-03-13 11:28:47.216509	\N	7977	\N	\N
+546	\N	user546	2026-03-17 16:57:09.436631	\N	2669	\N	\N
+547	\N	user547	2026-03-17 16:57:19.051891	\N	5789	\N	\N
+548	\N	user548	2026-03-18 13:41:41.23984	\N	4707	\N	\N
+549	\N	user549	2026-03-18 15:18:01.986359	\N	6417	\N	\N
+550	\N	user550	2026-03-18 15:22:23.851706	\N	6806	\N	\N
+551	\N	user551	2026-03-18 15:30:18.139915	\N	6241	\N	\N
+552	\N	user552	2026-03-18 15:31:15.449593	\N	2979	\N	\N
+553	\N	user553	2026-03-18 15:47:29.254387	\N	8121	\N	\N
+554	\N	user554	2026-03-18 16:39:04.454696	\N	7329	\N	\N
+555	\N	user555	2026-03-19 14:02:28.172543	\N	6542	\N	\N
+556	\N	user556	2026-03-19 16:18:20.935978	\N	7437	\N	\N
+557	\N	user557	2026-03-19 17:58:24.330884	\N	6767	\N	\N
+558	\N	user558	2026-03-23 09:47:09.808091	\N	4628	\N	\N
+559	\N	user559	2026-03-23 09:52:42.514762	\N	1394	\N	\N
+560	\N	user560	2026-03-24 10:55:05.462331	\N	2646	\N	\N
+566	\N	user566	2026-03-25 17:47:08.958332	\N	9261	\N	\N
+568	\N	user568	2026-04-07 11:31:55.509258	\N	1004	\N	\N
+561	\N	user561	2026-03-24 17:39:27.845491	\N	5458	\N	\N
+564	\N	user564	2026-03-24 23:20:37.730659	\N	7787	\N	\N
+565	\N	user565	2026-03-25 17:42:11.076313	\N	3335	\N	\N
+567	\N	user567	2026-03-25 17:57:06.107783	\N	3991	\N	\N
+562	\N	user562	2026-03-24 17:57:19.241431	\N	9365	\N	\N
+563	\N	user563	2026-03-24 18:12:02.191254	\N	4035	\N	\N
+569	\N	user569	2026-04-07 11:39:10.109616	\N	2381	\N	\N
+570	\N	user570	2026-04-14 16:48:55.089594	\N	2999	\N	\N
+571	\N	user571	2026-04-15 10:32:32.342378	\N	2165	\N	\N
+572	\N	user572	2026-04-16 11:11:38.168745	\N	8411	\N	\N
+573	\N	user573	2026-04-16 14:47:53.435951	\N	8569	\N	\N
+574	\N	user574	2026-04-22 11:35:24.905316	\N	4449	\N	\N
+575	\N	user575	2026-04-23 12:09:17.454879	\N	3821	\N	\N
+576	\N	user576	2026-04-24 10:42:53.384842	\N	7485	\N	\N
+577	\N	user577	2026-04-24 10:45:07.158779	\N	4460	\N	\N
+578	\N	user578	2026-04-27 11:06:39.286099	\N	8436	\N	\N
+579	\N	user579	2026-04-29 10:32:21.022167	\N	7949	\N	\N
+580	\N	user580	2026-04-29 15:15:23.342621	\N	5529	\N	\N
+581	\N	user581	2026-04-29 15:19:16.128693	\N	5182	\N	\N
+582	\N	user582	2026-04-29 15:21:34.904281	\N	4923	\N	\N
+583	\N	user583	2026-05-05 13:36:07.628861	\N	9592	\N	\N
+584	\N	user584	2026-05-05 13:39:30.029364	\N	4987	\N	\N
+585	\N	user585	2026-05-05 13:40:50.099243	\N	8327	\N	\N
+586	\N	user586	2026-05-05 13:57:12.315285	\N	3666	\N	\N
+587	\N	user587	2026-05-05 13:57:40.673411	\N	7499	\N	\N
+588	\N	user588	2026-05-05 15:25:44.499882	\N	4864	\N	\N
+589	\N	user589	2026-05-08 16:18:22.176215	\N	1039	\N	\N
+590	\N	user590	2026-05-08 16:18:59.1769	\N	4228	\N	\N
+591	\N	user591	2026-05-13 16:33:09.457506	\N	1968	\N	\N
+592	\N	user592	2026-05-20 16:48:30.948994	\N	4675	\N	\N
+593	\N	user593	2026-05-28 12:38:42.278315	\N	8641	\N	\N
+594	\N	user594	2026-05-28 15:08:18.188621	\N	3618	\N	\N
+595	\N	user595	2026-06-01 13:57:11.240968	\N	7168	\N	\N
+596	\N	user596	2026-06-01 17:12:54.081628	\N	2864	\N	\N
+597	\N	user597	2026-06-01 23:30:13.111334	\N	8980	\N	\N
+598	\N	user598	2026-06-01 23:31:07.790243	\N	1582	\N	\N
+599	\N	user599	2026-06-01 23:32:36.057193	\N	9785	\N	\N
+600	\N	user600	2026-06-02 11:18:41.29157	\N	5027	\N	\N
+601	\N	user601	2026-06-02 11:19:59.120599	\N	4181	\N	\N
+602	\N	user602	2026-06-02 11:20:06.473325	\N	4283	\N	\N
+603	\N	user603	2026-06-02 11:23:49.710793	\N	2943	\N	\N
+604	\N	user604	2026-06-02 11:39:12.904785	\N	3207	\N	\N
+605	\N	user605	2026-06-02 11:40:35.66067	\N	3115	\N	\N
+606	\N	user606	2026-06-02 11:41:29.707658	\N	6675	\N	\N
+607	\N	user607	2026-06-02 11:47:13.137702	\N	5609	\N	\N
+608	\N	user608	2026-06-02 11:47:55.200552	\N	5142	\N	\N
+609	\N	user609	2026-06-02 11:49:47.222902	\N	2024	\N	\N
+610	\N	user610	2026-06-02 12:11:05.361322	\N	2787	\N	\N
+611	\N	user611	2026-06-02 12:11:50.291721	\N	3290	\N	\N
+612	\N	user612	2026-06-02 13:43:27.432026	\N	8590	\N	\N
+613	\N	user613	2026-06-02 13:48:20.195543	\N	3081	\N	\N
+614	\N	user614	2026-06-02 13:50:06.075465	\N	2564	\N	\N
+615	\N	user615	2026-06-02 13:58:03.617502	\N	3046	\N	\N
+616	\N	user616	2026-06-02 14:00:15.246918	\N	3421	\N	\N
+617	\N	user617	2026-06-02 14:01:41.789805	\N	1547	\N	\N
+618	\N	user618	2026-06-02 14:05:23.436766	\N	1577	\N	\N
+619	\N	user619	2026-06-02 14:14:45.147509	\N	5264	\N	\N
+620	\N	user620	2026-06-02 14:15:01.48693	\N	3658	\N	\N
+621	\N	user621	2026-06-02 14:15:12.413133	\N	2016	\N	\N
+622	\N	user622	2026-06-02 14:15:13.884409	\N	8527	\N	\N
+623	\N	user623	2026-06-02 14:15:23.797292	\N	1466	\N	\N
+624	\N	user624	2026-06-02 14:15:31.508754	\N	8963	\N	\N
+625	\N	user625	2026-06-02 14:15:44.631041	\N	6061	\N	\N
+626	\N	user626	2026-06-02 14:15:51.916587	\N	9794	\N	\N
+627	\N	user627	2026-06-02 14:15:55.870988	\N	7217	\N	\N
+628	\N	user628	2026-06-02 14:16:07.987517	\N	8622	\N	\N
+629	\N	user629	2026-06-02 14:16:19.297625	\N	4416	\N	\N
+630	\N	user630	2026-06-02 14:16:24.073775	\N	8142	\N	\N
+631	\N	user631	2026-06-02 14:16:33.187903	\N	2094	\N	\N
+632	\N	user632	2026-06-02 14:17:08.974997	\N	2556	\N	\N
+633	\N	user633	2026-06-02 14:17:10.57625	\N	1174	\N	\N
+634	\N	user634	2026-06-02 14:17:35.61519	\N	8904	\N	\N
+635	\N	user635	2026-06-02 14:17:41.568755	\N	7438	\N	\N
+636	\N	user636	2026-06-02 14:18:33.177016	\N	1090	\N	\N
+637	\N	user637	2026-06-02 14:19:06.130416	\N	6074	\N	\N
+638	\N	user638	2026-06-02 14:48:00.690844	\N	8834	\N	\N
+639	\N	user639	2026-06-04 09:16:02.663944	\N	3475	\N	\N
+640	\N	user640	2026-06-04 09:16:19.7315	\N	1942	\N	\N
+641	\N	user641	2026-06-04 19:01:40.575492	\N	7046	\N	\N
+642	\N	user642	2026-06-05 13:42:51.819744	\N	6353	\N	{"714": {"q_pre_0": "RAT study", "q_pre_1": "weekly"}}
+643	\N	user643	2026-06-05 17:11:19.653611	\N	7798	{"715": {"q_post_0": "9"}}	{"715": {"q_pre_0": "12325425", "q_pre_1": "1", "q_pre_2": ""}}
+667	\N	user667	2026-06-08 22:42:50.961891	\N	8078	\N	{"726": {"q_pre_0": ".", "q_pre_1": ".", "q_pre_2": "0", "q_pre_3": ["1"], "q_pre_4": "2", "q_pre_5": "1"}}
+644	\N	user644	2026-06-05 17:13:35.923773	\N	2486	{"715": {"q_post_0": "6"}}	{"715": {"q_pre_0": "235235", "q_pre_1": "1", "q_pre_2": "2"}}
+645	\N	user645	2026-06-05 17:17:45.950173	\N	1061	{"715": {"q_post_0": "6"}}	{"715": {"q_pre_0": "ghilghkl", "q_pre_1": "1", "q_pre_2": "2"}}
+646	\N	user646	2026-06-05 21:38:13.081067	\N	3936	\N	{"724": {"q_pre_0": "2"}}
+647	\N	user647	2026-06-06 05:46:15.634521	\N	8156	\N	\N
+668	\N	user668	2026-06-08 22:43:53.552639	\N	9754	\N	{"726": {"q_pre_0": "...", "q_pre_1": "...", "q_pre_2": "0", "q_pre_3": ["1"], "q_pre_4": "2", "q_pre_5": "3"}}
+648	\N	user648	2026-06-06 05:48:11.971324	\N	6091	{"725": {"q_post_0": "4"}}	{"725": {"q_pre_0": "2"}}
+649	\N	user649	2026-06-06 11:51:59.187563	\N	6783	\N	\N
+650	\N	user650	2026-06-06 11:53:40.350822	\N	6297	\N	\N
+651	\N	user651	2026-06-06 11:55:09.111297	\N	7953	\N	\N
+652	\N	user652	2026-06-06 11:59:59.552139	\N	7350	\N	\N
+653	\N	user653	2026-06-06 12:00:21.853831	\N	2974	\N	\N
+654	\N	user654	2026-06-06 12:00:35.298915	\N	3498	\N	\N
+655	\N	user655	2026-06-06 12:03:57.082566	\N	5910	\N	\N
+656	\N	user656	2026-06-06 12:10:22.04988	\N	5647	\N	\N
+657	\N	user657	2026-06-06 12:11:15.99783	\N	7202	\N	\N
+658	\N	user658	2026-06-06 12:45:03.284569	\N	9143	\N	\N
+659	\N	user659	2026-06-06 13:12:58.53554	\N	6721	\N	\N
+660	\N	user660	2026-06-07 17:59:00.013172	\N	5505	\N	\N
+661	\N	user661	2026-06-07 18:04:09.425582	\N	5234	\N	\N
+662	\N	user662	2026-06-07 18:05:22.332957	\N	4698	\N	\N
+663	\N	user663	2026-06-07 18:11:20.412579	\N	6431	\N	\N
+664	\N	user664	2026-06-07 18:19:39.694064	\N	7101	\N	\N
+665	\N	user665	2026-06-07 18:26:57.640325	\N	2047	\N	{"726": {"q_pre_0": "short", "q_pre_1": "long", "q_pre_2": "0", "q_pre_3": ["1"], "q_pre_4": "2", "q_pre_5": "4"}}
+666	\N	user666	2026-06-07 19:18:50.476274	\N	2289	\N	\N
+669	\N	user669	2026-06-08 23:24:44.944238	\N	4593	\N	{"726": {"q_pre_0": "Test", "q_pre_1": "Test", "q_pre_2": "1", "q_pre_3": ["1"], "q_pre_4": "2", "q_pre_5": "3"}}
+670	\N	user670	2026-06-08 23:37:10.843152	\N	9056	\N	{"726": {"q_pre_0": "TEst", "q_pre_1": "TEST", "q_pre_2": "1", "q_pre_3": ["1"], "q_pre_4": "2", "q_pre_5": "3"}}
+671	\N	user671	2026-06-08 23:46:15.080793	\N	8593	\N	{"726": {"q_pre_0": "Test", "q_pre_1": "Test", "q_pre_2": "1", "q_pre_3": ["1"], "q_pre_4": "2", "q_pre_5": "3"}}
+672	\N	user672	2026-06-09 02:05:27.164075	\N	4998	\N	{"726": {"q_pre_0": "test", "q_pre_1": "test", "q_pre_2": "1", "q_pre_3": ["1"], "q_pre_4": "2", "q_pre_5": "3"}}
+673	\N	user673	2026-06-09 02:09:01.69498	\N	3813	\N	\N
+674	\N	user674	2026-06-09 02:13:03.380028	\N	7151	\N	\N
+675	\N	user675	2026-06-09 13:11:36.653685	\N	7545	\N	\N
+676	\N	user676	2026-06-09 13:14:48.623121	\N	3208	\N	\N
+677	\N	user677	2026-06-09 13:23:59.222595	\N	5232	\N	\N
+678	\N	user678	2026-06-09 14:17:55.463044	\N	3446	\N	\N
+679	\N	user679	2026-06-09 14:59:05.293715	\N	7072	\N	\N
+680	\N	user680	2026-06-09 15:10:09.055722	\N	3792	\N	\N
+681	\N	user681	2026-06-09 15:14:19.954639	\N	3399	\N	\N
+682	\N	user682	2026-06-09 15:28:08.921473	\N	4893	\N	{"726": {"q_pre_0": "76136723672", "q_pre_1": [], "q_pre_2": "9", "q_pre_3": "9", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "3"}}
+684	\N	user684	2026-06-09 16:24:03.709697	\N	2701	\N	{"726": {"q_pre_0": "4563456", "q_pre_1": [], "q_pre_2": "3", "q_pre_3": "3", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "2"}}
+683	\N	user683	2026-06-09 16:08:46.922866	\N	2568	\N	{"726": {"q_pre_0": "4334q", "q_pre_1": [], "q_pre_2": "7", "q_pre_3": "7", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "3"}}
+685	\N	user685	2026-06-09 16:28:00.898694	\N	7587	\N	{"726": {"q_pre_0": "45325423", "q_pre_1": [], "q_pre_2": "7", "q_pre_3": "7", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "3"}}
+686	\N	user686	2026-06-09 16:48:07.807758	\N	8525	\N	{"726": {"q_pre_0": "123", "q_pre_1": [], "q_pre_2": "7", "q_pre_3": "7", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "3"}}
+687	\N	user687	2026-06-10 02:24:33.743915	\N	3878	\N	\N
+688	\N	user688	2026-06-10 11:40:02.547191	\N	6919	\N	\N
+723	\N	user723	2026-06-16 12:56:05.587547	\N	3552	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}}	{"730": {"q_pre_0": "Johanna", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+689	\N	user689	2026-06-10 22:15:29.888532	\N	4858	{"726": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "3", "q_post_5": "3", "q_post_6": "1"}}	{"726": {"q_pre_0": "45345", "q_pre_1": [], "q_pre_2": "3", "q_pre_3": "3", "q_pre_4": [], "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "2", "q_pre_8": "2"}}
+690	\N	user690	2026-06-12 04:19:39.559478	\N	1852	\N	\N
+691	\N	user691	2026-06-12 11:00:12.222837	\N	8290	\N	{"739": {"q_pre_0": "t678", "q_pre_1": [], "q_pre_2": "1", "q_pre_3": "1", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "3"}}
+692	\N	user692	2026-06-12 11:14:19.769588	\N	1211	\N	{"739": {"q_pre_0": "56789087", "q_pre_1": [], "q_pre_2": "7", "q_pre_3": "7", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "3"}}
+695	\N	user695	2026-06-12 17:58:08.034715	\N	1828	\N	{"647": {"q_pre_0": "1"}}
+694	\N	user694	2026-06-12 17:57:02.450907	\N	5822	\N	{"739": {"q_pre_0": "45678987654ew", "q_pre_1": [], "q_pre_2": "7", "q_pre_3": "7", "q_pre_4": [], "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3", "q_pre_8": "3"}}
+698	\N	user698	2026-06-13 11:54:59.045682	\N	5899	{"739": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "3", "q_post_5": "3", "q_post_6": "1"}}	{"739": {"q_pre_0": "t676767", "q_pre_1": "7", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+700	\N	user700	2026-06-14 00:58:41.552832	\N	3332	\N	{"739": {"q_pre_0": "7689", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+701	\N	user701	2026-06-14 18:02:40.189913	\N	3656	\N	\N
+707	\N	user707	2026-06-14 20:52:03.787083	\N	1758	\N	\N
+708	\N	user708	2026-06-14 23:02:26.266253	\N	4682	\N	\N
+709	\N	user709	2026-06-14 23:08:26.908677	\N	6600	\N	\N
+710	\N	user710	2026-06-14 23:11:54.058002	\N	7458	\N	\N
+711	\N	user711	2026-06-15 17:18:34.513264	\N	1453	\N	\N
+712	\N	user712	2026-06-15 18:46:51.844949	\N	9139	\N	{"739": {"q_pre_0": "56789", "q_pre_1": "4", "q_pre_2": "4", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+726	\N	user726	2026-06-16 12:56:16.209645	\N	2135	{"730": {"q_post_0": "2", "q_post_1": [], "q_post_2": "2", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "Hannah", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+713	\N	user713	2026-06-15 19:01:56.652189	\N	4843	{"730": {"q_post_0": "4", "q_post_1": [], "q_post_2": "3", "q_post_3": "1", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "Sebastian Schulthei\\u00df", "q_pre_1": "7", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+714	\N	user714	2026-06-15 21:14:27.72797	\N	3287	\N	\N
+715	\N	user715	2026-06-16 11:31:40.089571	\N	7985	\N	{"740": {"q_pre_0": "daily", "q_pre_1": ["Google", "Bing"]}}
+716	\N	user716	2026-06-16 11:35:45.732698	\N	9468	\N	{"740": {"q_pre_0": "daily", "q_pre_1": ["Google", "Bing"]}}
+722	\N	user722	2026-06-16 12:55:50.027925	\N	1319	\N	\N
+693	\N	user693	2026-06-12 11:34:19.184429	\N	2717	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+721	\N	user721	2026-06-16 12:55:45.966899	\N	6745	{"730": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "Alisha Heigus", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+729	\N	user729	2026-06-16 12:56:21.152404	\N	1493	{"730": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "Selim Yilmaz ", "q_pre_1": "7", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "2", "q_pre_7": "3"}}
+719	\N	user719	2026-06-16 12:54:03.09419	\N	9801	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "2", "q_post_4": "1", "q_post_5": "3", "q_post_6": "1"}}	{"730": {"q_pre_0": "Johann", "q_pre_1": "5", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+724	\N	user724	2026-06-16 12:56:08.881133	\N	5319	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "1", "q_post_5": "3", "q_post_6": "1"}}	{"730": {"q_pre_0": "12345678", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+727	\N	user727	2026-06-16 12:56:17.995357	\N	2863	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "2", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "Simon", "q_pre_1": "2", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+732	\N	user732	2026-06-16 12:57:11.057918	\N	3144	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "2", "q_post_4": "2", "q_post_5": "5", "q_post_6": "0"}}	{"730": {"q_pre_0": "Mika Sarge", "q_pre_1": "2", "q_pre_2": "4", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+696	\N	user696	2026-06-12 22:24:59.638716	\N	2109	\N	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+697	\N	user697	2026-06-12 22:40:29.934752	\N	9207	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+703	\N	user703	2026-06-14 18:39:46.647471	\N	1798	\N	{"739": {"q_pre_0": "dfgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+731	\N	user731	2026-06-16 12:56:41.509546	\N	4837	{"730": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "Luca Beeken", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+717	\N	user717	2026-06-16 12:49:52.31496	\N	3377	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}}	{"730": {"q_pre_0": "Khan", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+735	\N	user735	2026-06-16 13:02:03.732636	\N	3798	{"730": {"q_post_0": "4", "q_post_1": [], "q_post_2": "2", "q_post_3": "3", "q_post_4": "2", "q_post_5": "5", "q_post_6": "1"}}	{"730": {"q_pre_0": "Alex Kuhn", "q_pre_1": "5", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+733	\N	user733	2026-06-16 13:00:45.289926	\N	1867	{"730": {"q_post_0": "2", "q_post_1": [], "q_post_2": "2", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "0"}}	{"730": {"q_pre_0": "Yolo", "q_pre_1": "4", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+730	\N	user730	2026-06-16 12:56:22.308668	\N	9168	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "2", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}}	{"730": {"q_pre_0": "Jennifer Wachs", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+725	\N	user725	2026-06-16 12:56:14.281944	\N	6215	{"730": {"q_post_0": "5", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"730": {"q_pre_0": "Daniel", "q_pre_1": "1", "q_pre_2": "6", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+734	\N	user734	2026-06-16 13:01:30.741848	\N	6777	{"730": {"q_post_0": "4", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "1", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "(Prolific ID)", "q_pre_1": "5", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+718	\N	user718	2026-06-16 12:53:49.29714	\N	9045	{"730": {"q_post_0": "4", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "3", "q_post_5": "5", "q_post_6": "1"}}	{"730": {"q_pre_0": "JL", "q_pre_1": "4", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+720	\N	user720	2026-06-16 12:54:39.919689	\N	9845	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "2", "q_post_3": "2", "q_post_4": "1", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "test", "q_pre_1": "4", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "2", "q_pre_7": "1"}}
+728	\N	user728	2026-06-16 12:56:19.911218	\N	6502	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "2", "q_post_4": "1", "q_post_5": "5", "q_post_6": "1"}}	{"730": {"q_pre_0": "Toasty", "q_pre_1": "4", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+736	\N	user736	2026-06-16 13:05:22.411801	\N	5962	{"730": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"730": {"q_pre_0": "Julia", "q_pre_1": "4", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+737	\N	user737	2026-06-16 14:10:01.016378	\N	6884	\N	{"730": {"q_pre_0": "test", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "1"}}
+738	\N	user738	2026-06-19 09:37:09.157249	\N	3216	\N	\N
+739	\N	user739	2026-06-19 09:37:36.483327	\N	2758	\N	{"740": {"q_pre_0": "daily", "q_pre_1": ["Google"]}}
+740	\N	user740	2026-06-19 09:38:28.116002	\N	2353	\N	\N
+741	\N	user741	2026-06-19 09:38:34.396214	\N	8428	\N	\N
+742	\N	user742	2026-06-19 09:38:41.560337	\N	9208	\N	\N
+743	\N	user743	2026-06-21 02:30:35.698703	\N	5146	\N	{"739": {"q_pre_0": "11", "q_pre_1": "7", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+744	\N	user744	2026-06-21 02:30:36.808791	\N	1098	\N	{"739": {"q_pre_0": "qq", "q_pre_1": "7", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+745	\N	user745	2026-06-21 02:37:17.366571	\N	2456	\N	\N
+746	\N	user746	2026-06-21 02:37:31.849908	\N	2908	\N	\N
+747	\N	user747	2026-06-21 02:43:07.036278	\N	2856	\N	{"730": {"q_pre_0": "test", "q_pre_1": "7", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+748	\N	user748	2026-06-21 03:41:56.652063	\N	9297	\N	{"739": {"q_pre_0": "test", "q_pre_1": "7", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+749	\N	user749	2026-06-21 03:42:56.821367	\N	8831	\N	{"739": {"q_pre_0": "78", "q_pre_1": "7", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+750	\N	user750	2026-07-02 09:48:46.641549	\N	9425	\N	{"739": {"q_pre_0": "750", "q_pre_1": "1", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+754	\N	user754	2026-07-02 09:52:34.462188	\N	3208	\N	{"739": {"q_pre_0": "223", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+752	\N	user752	2026-07-02 09:49:07.475264	\N	6116	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+755	\N	user755	2026-07-02 10:10:51.384141	\N	6681	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "1"}}	{"739": {"q_pre_0": "dd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+756	\N	user756	2026-07-02 10:11:41.836372	\N	9096	\N	{"739": {"q_pre_0": "dd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+751	\N	user751	2026-07-02 09:49:02.657415	\N	5044	\N	{"739": {"q_pre_0": "dfgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+757	\N	user757	2026-07-02 10:17:55.57147	\N	3048	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "0"}}	{"739": {"q_pre_0": "dfdgdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+699	\N	user699	2026-06-14 00:56:06.48008	\N	8178	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "3", "q_pre_7": "3"}}
+758	\N	user758	2026-07-02 10:19:37.717028	\N	4557	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "1"}}	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+702	\N	user702	2026-06-14 18:39:34.964222	\N	3852	\N	{"739": {"q_pre_0": "dgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+759	\N	user759	2026-07-02 10:21:13.877652	\N	2996	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "1"}}	{"739": {"q_pre_0": "dfgfdgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+704	\N	user704	2026-06-14 18:40:27.668156	\N	9691	\N	{"739": {"q_pre_0": "dgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+760	\N	user760	2026-07-02 10:23:41.661127	\N	9087	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "1"}}	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "1"}}
+753	\N	user753	2026-07-02 09:49:41.641285	\N	8305	\N	{"739": {"q_pre_0": "gfdgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+705	\N	user705	2026-06-14 19:29:21.642299	\N	3594	\N	{"739": {"q_pre_0": "dfgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+706	\N	user706	2026-06-14 20:11:16.626515	\N	7780	\N	{"739": {"q_pre_0": "dgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+761	\N	user761	2026-07-02 10:58:58.674349	\N	4098	\N	{"739": {"q_pre_0": "asdsa", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+762	\N	user762	2026-07-02 11:01:34.607497	\N	1203	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+763	\N	user763	2026-07-02 11:04:38.687704	\N	9648	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "3"}}
+764	\N	user764	2026-07-02 11:06:34.885263	\N	8118	\N	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "1"}}
+765	\N	user765	2026-07-02 11:21:29.843563	\N	5936	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+766	\N	user766	2026-07-02 11:28:05.985699	\N	2122	\N	{"739": {"q_pre_0": "1", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+767	\N	user767	2026-07-02 11:28:59.487044	\N	9468	\N	{"739": {"q_pre_0": "2", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+770	\N	user770	2026-07-02 11:38:24.411581	\N	5799	\N	{"739": {"q_pre_0": "1", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+768	\N	user768	2026-07-02 11:30:23.586727	\N	2448	\N	{"739": {"q_pre_0": "3", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+769	\N	user769	2026-07-02 11:31:25.176503	\N	1468	\N	{"739": {"q_pre_0": "4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+771	\N	user771	2026-07-02 11:39:06.520305	\N	1567	\N	{"739": {"q_pre_0": "2", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+772	\N	user772	2026-07-02 11:39:38.62776	\N	2345	\N	{"739": {"q_pre_0": "3", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+773	\N	user773	2026-07-02 11:40:46.008021	\N	2689	\N	{"739": {"q_pre_0": "4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+774	\N	user774	2026-07-02 11:43:29.581136	\N	2734	\N	{"739": {"q_pre_0": "77", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+775	\N	user775	2026-07-02 11:47:32.215897	\N	7120	\N	{"739": {"q_pre_0": "7", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+776	\N	user776	2026-07-02 11:49:35.642637	\N	2036	\N	{"739": {"q_pre_0": "56765", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+777	\N	user777	2026-07-02 11:49:40.773082	\N	5114	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "1"}}	{"739": {"q_pre_0": "56756", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+778	\N	user778	2026-07-02 11:51:23.236422	\N	3745	\N	{"739": {"q_pre_0": "rtztrz", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "1"}}
+779	\N	user779	2026-07-02 11:51:28.061385	\N	3370	\N	{"739": {"q_pre_0": "rztrz", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+780	\N	user780	2026-07-02 11:54:00.820703	\N	2553	\N	{"739": {"q_pre_0": "qq", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+781	\N	user781	2026-07-02 11:54:37.27393	\N	2743	\N	{"739": {"q_pre_0": "dsfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+782	\N	user782	2026-07-02 11:55:08.567869	\N	3538	\N	{"739": {"q_pre_0": "werewr", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+783	\N	user783	2026-07-02 11:56:57.063332	\N	7880	\N	{"739": {"q_pre_0": "eee", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+784	\N	user784	2026-07-02 11:57:00.637627	\N	3723	\N	{"739": {"q_pre_0": "eee", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+785	\N	user785	2026-07-02 11:57:02.990043	\N	2223	\N	{"739": {"q_pre_0": "fdgfdgd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+786	\N	user786	2026-07-02 11:59:50.786423	\N	8890	\N	{"739": {"q_pre_0": "dfgdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+787	\N	user787	2026-07-02 12:01:32.839929	\N	9270	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+788	\N	user788	2026-07-02 12:01:34.232265	\N	1498	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+789	\N	user789	2026-07-02 12:01:37.082835	\N	6019	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+790	\N	user790	2026-07-02 12:06:15.760796	\N	1284	\N	{"739": {"q_pre_0": "ghfhgf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+791	\N	user791	2026-07-02 12:10:10.356353	\N	6740	\N	{"739": {"q_pre_0": "dsxfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+792	\N	user792	2026-07-02 12:11:38.076274	\N	8800	\N	{"739": {"q_pre_0": "erwrewrw", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+793	\N	user793	2026-07-02 12:11:42.290357	\N	3800	\N	{"739": {"q_pre_0": "werew", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+794	\N	user794	2026-07-02 12:12:48.62618	\N	5079	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+795	\N	user795	2026-07-02 12:12:50.956144	\N	4248	\N	{"739": {"q_pre_0": "sdfsds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+796	\N	user796	2026-07-02 12:14:09.348928	\N	8116	\N	{"739": {"q_pre_0": "dfgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "3", "q_pre_6": "1", "q_pre_7": "1"}}
+797	\N	user797	2026-07-02 12:14:10.921726	\N	3464	\N	{"739": {"q_pre_0": "dfgdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "1", "q_pre_7": "1"}}
+798	\N	user798	2026-07-02 12:18:55.856489	\N	5496	\N	{"739": {"q_pre_0": "sdfsdd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "2", "q_pre_7": "1"}}
+799	\N	user799	2026-07-02 12:19:23.869303	\N	3216	\N	{"739": {"q_pre_0": "sdfdsfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+800	\N	user800	2026-07-02 12:19:56.89268	\N	1953	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "3", "q_pre_7": "1"}}
+801	\N	user801	2026-07-02 12:20:28.905708	\N	3689	\N	{"739": {"q_pre_0": "sdfsd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "3"}}
+802	\N	user802	2026-07-02 12:22:07.875845	\N	7198	\N	{"739": {"q_pre_0": "sdfdsds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "3", "q_pre_7": "1"}}
+803	\N	user803	2026-07-02 12:23:51.288492	\N	6139	\N	{"739": {"q_pre_0": "dfs", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "3", "q_pre_6": "1", "q_pre_7": "1"}}
+811	\N	user811	2026-07-02 13:54:27.425231	\N	7139	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "6658d0969b9cd1a0f1a25c5d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+806	\N	user806	2026-07-02 13:54:06.905359	\N	2477	{"738": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "69fafe84a693e8a4744c9213", "q_pre_1": "4", "q_pre_2": "4", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+808	\N	user808	2026-07-02 13:54:18.792011	\N	7748	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "697e55e20958b78b4f0d7b15", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+812	\N	user812	2026-07-02 13:55:43.271936	\N	8974	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "677dc8b2a9160d395ca7e008", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+805	\N	user805	2026-07-02 13:54:04.448174	\N	7043	{"738": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "3", "q_post_6": "1"}}	{"738": {"q_pre_0": "6105855d248911287fec997f", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+804	\N	user804	2026-07-02 13:54:03.668339	\N	7502	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "2", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}}	{"738": {"q_pre_0": "692d6696017be73804dccd62", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+821	\N	user821	2026-07-02 14:25:02.527475	\N	5307	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "664b85e7ff6eae55f19c060d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+816	\N	user816	2026-07-02 14:08:41.912049	\N	5251	\N	\N
+814	\N	user814	2026-07-02 14:01:40.548165	\N	3954	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "2", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "5f1f52f09c3159141e330cbe", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+807	\N	user807	2026-07-02 13:54:11.458545	\N	6239	{"738": {"q_post_0": "3", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "2", "q_post_5": "4", "q_post_6": "1"}}	{"738": {"q_pre_0": "60d0bc810fe5352cb95e760a", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+809	\N	user809	2026-07-02 13:54:21.010784	\N	5617	{"738": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "667d6671700a0254fd678f36", "q_pre_1": "4", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+819	\N	user819	2026-07-02 14:21:26.733119	\N	1707	\N	{"738": {"q_pre_0": "664b85e7ff6eae55f19c060d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+810	\N	user810	2026-07-02 13:54:24.350959	\N	2931	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "65fb1a12337cd3edfa4dd6fc", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+818	\N	user818	2026-07-02 14:11:26.089932	\N	7905	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "66ec53e096df305784c5aa6f", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+827	\N	user827	2026-07-02 14:29:51.657211	\N	6920	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"738": {"q_pre_0": "698362459d432f09070892ed", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+813	\N	user813	2026-07-02 14:01:31.821748	\N	6048	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "6688cfb8d94a100faf640186", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+815	\N	user815	2026-07-02 14:07:02.622215	\N	6128	{"738": {"q_post_0": "4", "q_post_1": [], "q_post_2": "5", "q_post_3": "1", "q_post_4": "1", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "698e260e1c956e03673d79ab", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+817	\N	user817	2026-07-02 14:08:54.82078	\N	3667	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "65feaaac53eb219f09ad5ea0", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+828	\N	user828	2026-07-02 14:29:58.577305	\N	2993	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "3", "q_post_3": "2", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"738": {"q_pre_0": "666d97ca3efe7fbd33436995", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+829	\N	user829	2026-07-02 14:42:42.091965	\N	7762	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "678a6e1b541f18aef952a7c6", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+830	\N	user830	2026-07-02 14:43:58.625088	\N	6306	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "67c3552b821be870e6f02737", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+824	\N	user824	2026-07-02 14:26:46.011078	\N	1275	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "698ac627d47d26545c04d95c", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+840	\N	user840	2026-07-02 15:15:02.692557	\N	6301	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6989c6281b94b7d89c9123a6", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+826	\N	user826	2026-07-02 14:29:04.612214	\N	2311	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "3", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "667fceb84cf8fb19b00e324b", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+822	\N	user822	2026-07-02 14:25:47.054828	\N	2465	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "668d35eb0f62647ae823f969", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+825	\N	user825	2026-07-02 14:28:17.292372	\N	8332	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "2", "q_post_3": "3", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}}	{"738": {"q_pre_0": "69162d60bbb2b3e0981e6521", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+820	\N	user820	2026-07-02 14:23:09.395238	\N	4354	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "67ce9ba75f88f295ae72d4c2", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+834	\N	user834	2026-07-02 15:01:09.660936	\N	9212	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6679778a0a48b5a9f89aacf5", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+823	\N	user823	2026-07-02 14:26:17.281057	\N	2429	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6697c8b6d9d7baa7edd8c4d3", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+835	\N	user835	2026-07-02 15:05:18.968272	\N	5832	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "3", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "69f8f3101505e3f57a832438", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+843	\N	user843	2026-07-02 15:32:28.822486	\N	4867	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6830717bc2e3a65804316f64", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+839	\N	user839	2026-07-02 15:14:04.384984	\N	6865	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "6678641343dea20a0ac43a02", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+838	\N	user838	2026-07-02 15:11:21.163762	\N	6364	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "69a0a4a864cdf78ac183960e", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+855	\N	user855	2026-07-02 16:05:34.34652	\N	6297	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "67e2a624e55987ea03570bc1", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+854	\N	user854	2026-07-02 16:04:35.439189	\N	9801	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"738": {"q_pre_0": "6109656bb28bc0fadcad52ca", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+832	\N	user832	2026-07-02 14:49:46.039664	\N	5631	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "698138565bd9d4728a0a2e04", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+836	\N	user836	2026-07-02 15:06:33.74897	\N	4439	{"738": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}}	{"738": {"q_pre_0": "69812165be6b51dd245f8965", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "2", "q_pre_7": "1"}}
+842	\N	user842	2026-07-02 15:22:23.567297	\N	5298	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6998d5f083cfca420f122e35", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+845	\N	user845	2026-07-02 15:33:36.826469	\N	6823	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "660eafee7515c432e850362d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "2"}}
+846	\N	user846	2026-07-02 15:38:01.251915	\N	9886	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "66b71aa297e2e7c1856464bd", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+851	\N	user851	2026-07-02 15:50:30.098367	\N	6455	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "667a18b6a5ac2521df738cdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+831	\N	user831	2026-07-02 14:49:30.766416	\N	7471	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "683805bccc2a936a8263257a", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+841	\N	user841	2026-07-02 15:17:02.299605	\N	2519	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "5cd0909f6e2d5800163ed5de", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+850	\N	user850	2026-07-02 15:48:39.597457	\N	7140	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"738": {"q_pre_0": "698086a47f240c8c8c7a6d6d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+849	\N	user849	2026-07-02 15:46:32.20982	\N	9285	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "67caa7fe00179edfb74d3e1a", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+833	\N	user833	2026-07-02 14:59:13.128165	\N	2703	{"738": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "2", "q_post_5": "5", "q_post_6": "1"}}	{"738": {"q_pre_0": "5fdbbf98516177026985ad36", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+848	\N	user848	2026-07-02 15:46:03.471431	\N	6197	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "69807c1bd32263ea499f148a", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+853	\N	user853	2026-07-02 15:59:16.489818	\N	1717	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "67dae998d8f2cfb8a8e3bf03", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+844	\N	user844	2026-07-02 15:32:44.580184	\N	7799	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"738": {"q_pre_0": "67eaf47d4e5ef1afadd6c8c4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+852	\N	user852	2026-07-02 15:52:28.149388	\N	7560	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "6994b3af3f274efaeed62932", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+847	\N	user847	2026-07-02 15:42:38.482193	\N	7269	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "673f94e3d073ea0abf9838fa", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+837	\N	user837	2026-07-02 15:11:14.2133	\N	8671	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "5", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "69826ab698c09fd5823a573f", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+878	\N	user878	2026-07-02 17:19:15.783531	\N	9195	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "673231ca547cd8ac8dfbffd6", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+874	\N	user874	2026-07-02 17:00:31.689842	\N	7177	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6980b6145faa3baa97633b13", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+869	\N	user869	2026-07-02 16:46:10.14486	\N	6220	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "678cc86b7a22ead21c11ea4d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+861	\N	user861	2026-07-02 16:29:57.466562	\N	1518	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "69f584289a50a16b64f2b643", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+862	\N	user862	2026-07-02 16:33:36.336563	\N	9953	\N	\N
+863	\N	user863	2026-07-02 16:33:39.153623	\N	5069	\N	\N
+857	\N	user857	2026-07-02 16:17:24.376165	\N	4809	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "616093ab4117242c856402c6", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+858	\N	user858	2026-07-02 16:21:37.245775	\N	8715	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "67e074f58a5ea7d9897f3223", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+871	\N	user871	2026-07-02 16:51:01.993037	\N	8059	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"738": {"q_pre_0": "663b638be7226d4e3fcc255f", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+872	\N	user872	2026-07-02 16:51:10.035194	\N	3749	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "6741e53a30a46f37d607c9d5", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+868	\N	user868	2026-07-02 16:37:46.303106	\N	5891	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "67215aa0a8e88c6751efc410", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+877	\N	user877	2026-07-02 17:08:37.511559	\N	7978	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "677fd706fd04f26f367ace58", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+856	\N	user856	2026-07-02 16:13:59.804663	\N	6995	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"738": {"q_pre_0": "69ea322e34298fecb9f33dff", "q_pre_1": "4", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+860	\N	user860	2026-07-02 16:26:07.688944	\N	1866	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "667d2807e59995857a56db99", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+859	\N	user859	2026-07-02 16:22:32.956146	\N	5534	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "67c89dbfbad1409dffbc6ecb", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+866	\N	user866	2026-07-02 16:35:45.566294	\N	1192	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "605ce029102320a2825111ef", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+873	\N	user873	2026-07-02 16:59:29.872173	\N	8448	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6986cba3e8ebc723b0882887", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+876	\N	user876	2026-07-02 17:08:29.536107	\N	3199	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "67a9da49f62daef62d4f4d5c", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+864	\N	user864	2026-07-02 16:33:49.476056	\N	7846	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"738": {"q_pre_0": "68c91cf657e369ac5e1a5663", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+867	\N	user867	2026-07-02 16:37:32.717222	\N	2668	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "67232cb4fdfbe649d078af30", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+865	\N	user865	2026-07-02 16:35:25.137739	\N	9854	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6724648ad9dbd3901942d58f", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+918	\N	user918	2026-07-02 21:15:09.894103	\N	8421	\N	{"739": {"q_pre_0": "dfgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+870	\N	user870	2026-07-02 16:47:59.316619	\N	7931	{"738": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"738": {"q_pre_0": "61477f7f2972b148428d82ba", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+919	\N	user919	2026-07-02 21:15:48.656808	\N	5425	\N	{"739": {"q_pre_0": "fgdgfdgd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+879	\N	user879	2026-07-02 18:02:16.568214	\N	5514	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "5", "q_post_5": "4", "q_post_6": "1"}}	{"738": {"q_pre_0": "664b85e7ff6eae55f19c060d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+880	\N	user880	2026-07-02 20:22:10.096491	\N	1998	\N	\N
+881	\N	user881	2026-07-02 20:26:59.368727	\N	8883	\N	{"739": {"q_pre_0": "dfgdfg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "3", "q_pre_7": "1"}}
+882	\N	user882	2026-07-02 20:31:06.562638	\N	1594	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "3", "q_pre_6": "1", "q_pre_7": "1"}}
+883	\N	user883	2026-07-02 20:40:29.361248	\N	7385	\N	{"739": {"q_pre_0": "xcvcx", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "3", "q_pre_7": "1"}}
+884	\N	user884	2026-07-02 20:48:28.135503	\N	6485	\N	{"739": {"q_pre_0": "sdfsd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+885	\N	user885	2026-07-02 20:48:58.712389	\N	3753	\N	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+886	\N	user886	2026-07-02 20:51:11.556227	\N	5050	\N	\N
+887	\N	user887	2026-07-02 20:51:12.834612	\N	3355	\N	\N
+888	\N	user888	2026-07-02 20:51:14.218982	\N	7917	\N	\N
+889	\N	user889	2026-07-02 20:53:41.187731	\N	3455	\N	{"739": {"q_pre_0": "sdsdfg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "1"}}
+890	\N	user890	2026-07-02 20:53:43.170047	\N	8523	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+891	\N	user891	2026-07-02 20:53:44.519024	\N	3852	\N	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+892	\N	user892	2026-07-02 20:57:50.104157	\N	7561	\N	{"739": {"q_pre_0": "fgdfg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+893	\N	user893	2026-07-02 20:57:52.16916	\N	1329	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+894	\N	user894	2026-07-02 20:57:53.925598	\N	1428	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "2"}}
+895	\N	user895	2026-07-02 20:59:42.267331	\N	2728	\N	{"739": {"q_pre_0": "dffds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+896	\N	user896	2026-07-02 20:59:54.48078	\N	2644	\N	{"739": {"q_pre_0": "sdfsdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+897	\N	user897	2026-07-02 21:00:05.972233	\N	9331	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+898	\N	user898	2026-07-02 21:01:57.705877	\N	1407	\N	{"739": {"q_pre_0": "sdfsd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+899	\N	user899	2026-07-02 21:01:59.292161	\N	6016	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+900	\N	user900	2026-07-02 21:02:00.681382	\N	6796	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+901	\N	user901	2026-07-02 21:04:03.750658	\N	1786	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "2"}}
+902	\N	user902	2026-07-02 21:04:16.09979	\N	8197	\N	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "3", "q_pre_7": "1"}}
+903	\N	user903	2026-07-02 21:04:25.974507	\N	2666	\N	{"739": {"q_pre_0": "sdfdss", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "1"}}
+904	\N	user904	2026-07-02 21:06:13.88622	\N	2659	\N	{"739": {"q_pre_0": "gfdgd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+905	\N	user905	2026-07-02 21:06:18.533204	\N	9299	\N	{"739": {"q_pre_0": "dfgdfgd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+906	\N	user906	2026-07-02 21:06:21.475941	\N	7805	\N	{"739": {"q_pre_0": "dfgdff", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+907	\N	user907	2026-07-02 21:07:41.817706	\N	4853	\N	{"739": {"q_pre_0": "sdfsdfdsfsd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+908	\N	user908	2026-07-02 21:07:48.321329	\N	3769	\N	{"739": {"q_pre_0": "sdfsdf", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+909	\N	user909	2026-07-02 21:07:51.138883	\N	6107	\N	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+910	\N	user910	2026-07-02 21:09:44.300839	\N	6944	\N	{"739": {"q_pre_0": "sdffds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+911	\N	user911	2026-07-02 21:09:47.273717	\N	4622	\N	{"739": {"q_pre_0": "sdfdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+912	\N	user912	2026-07-02 21:09:48.913319	\N	9338	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+913	\N	user913	2026-07-02 21:11:37.020645	\N	6896	\N	{"739": {"q_pre_0": "gdfgf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+914	\N	user914	2026-07-02 21:12:47.249871	\N	6784	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "1", "q_pre_7": "2"}}
+915	\N	user915	2026-07-02 21:13:18.915491	\N	7479	\N	{"739": {"q_pre_0": "dfggfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "3", "q_pre_7": "2"}}
+916	\N	user916	2026-07-02 21:14:02.396528	\N	4520	\N	{"739": {"q_pre_0": "sdfds", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+917	\N	user917	2026-07-02 21:14:28.857801	\N	5751	\N	{"739": {"q_pre_0": "dfggf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+920	\N	user920	2026-07-02 21:16:19.619247	\N	1396	\N	{"739": {"q_pre_0": "gdfgfdgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+942	\N	user942	2026-07-02 22:06:28.733727	\N	8528	\N	{"739": {"q_pre_0": "yxcxyc", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+921	\N	user921	2026-07-02 21:28:08.421468	\N	6833	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "0"}}	{"739": {"q_pre_0": "ss", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+943	\N	user943	2026-07-02 22:06:30.145958	\N	8418	\N	{"739": {"q_pre_0": "yxcxy", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+922	\N	user922	2026-07-02 21:28:29.234296	\N	8031	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "0"}}	{"739": {"q_pre_0": "sdfs", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+941	\N	user941	2026-07-02 22:06:26.218035	\N	2985	\N	{"739": {"q_pre_0": "yxcxcy", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+923	\N	user923	2026-07-02 21:32:10.704873	\N	8337	{"739": {"q_post_0": "2", "q_post_1": [], "q_post_2": "2", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"739": {"q_pre_0": "dfgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "3"}}
+924	\N	user924	2026-07-02 21:36:18.225427	\N	2016	\N	{"739": {"q_pre_0": "dsffsdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+925	\N	user925	2026-07-02 21:39:26.667255	\N	8069	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "1", "q_post_6": "1"}}	{"739": {"q_pre_0": "fsdfsd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+926	\N	user926	2026-07-02 21:41:35.843837	\N	5444	{"739": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"739": {"q_pre_0": "fdgfgd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+927	\N	user927	2026-07-02 21:43:52.651812	\N	1609	\N	{"739": {"q_pre_0": "dffgd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+928	\N	user928	2026-07-02 21:45:01.747327	\N	4895	\N	{"739": {"q_pre_0": "fdsdsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+929	\N	user929	2026-07-02 21:45:44.488011	\N	5459	\N	{"739": {"q_pre_0": "gjghj", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "1"}}
+930	\N	user930	2026-07-02 21:45:45.663182	\N	7161	\N	{"739": {"q_pre_0": "hkjhkh", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "2"}}
+931	\N	user931	2026-07-02 21:45:46.988023	\N	5995	\N	{"739": {"q_pre_0": "hjkhjkhj", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+932	\N	user932	2026-07-02 21:47:29.689849	\N	9561	\N	{"739": {"q_pre_0": "dfgdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "3"}}
+933	\N	user933	2026-07-02 21:47:31.201113	\N	5898	\N	{"739": {"q_pre_0": "dfgfdg", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+934	\N	user934	2026-07-02 21:47:32.338605	\N	9121	\N	{"739": {"q_pre_0": "dgf", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+936	\N	user936	2026-07-02 21:49:06.31059	\N	8845	\N	{"739": {"q_pre_0": "\\u00e4\\u00e4\\u00e4\\u00e4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+937	\N	user937	2026-07-02 21:49:07.188064	\N	1460	\N	{"739": {"q_pre_0": "4444", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "2"}}
+935	\N	user935	2026-07-02 21:49:05.154828	\N	6512	\N	{"739": {"q_pre_0": "45545454", "q_pre_1": "2", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+938	\N	user938	2026-07-02 21:51:20.33193	\N	7591	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+939	\N	user939	2026-07-02 21:51:27.908575	\N	8080	\N	{"739": {"q_pre_0": "dfgdfgd", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+940	\N	user940	2026-07-02 21:51:30.253029	\N	9575	\N	{"739": {"q_pre_0": "dfgfd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+944	\N	user944	2026-07-03 07:54:49.340905	\N	5362	\N	{"739": {"q_pre_0": "asdasadsad", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "2"}}
+945	\N	user945	2026-07-03 07:54:51.077646	\N	5976	\N	{"739": {"q_pre_0": "asdsada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "2", "q_pre_6": "3", "q_pre_7": "2"}}
+948	\N	user948	2026-07-03 08:01:45.039066	\N	4727	\N	{"739": {"q_pre_0": "adasdad", "q_pre_1": "2", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+946	\N	user946	2026-07-03 07:54:53.275816	\N	2524	{"739": {"q_post_0": "1", "q_post_1": [], "q_post_2": "2", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"739": {"q_pre_0": "asdasada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+947	\N	user947	2026-07-03 08:01:42.786202	\N	3234	\N	{"739": {"q_pre_0": "adasdad", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "3"}}
+949	\N	user949	2026-07-03 08:01:48.403847	\N	7102	\N	{"739": {"q_pre_0": "asdasdads", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+950	\N	user950	2026-07-03 08:10:06.169635	\N	9658	\N	{"739": {"q_pre_0": "sA", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+951	\N	user951	2026-07-03 08:10:07.772395	\N	8785	\N	{"739": {"q_pre_0": "DTDGF", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+952	\N	user952	2026-07-03 08:10:09.915814	\N	6006	\N	{"739": {"q_pre_0": "DGDF", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+955	\N	user955	2026-07-03 08:10:14.322608	\N	9664	\N	{"739": {"q_pre_0": "DGFDG", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+953	\N	user953	2026-07-03 08:10:11.151886	\N	1022	\N	{"739": {"q_pre_0": "DGFDG", "q_pre_1": "2", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+954	\N	user954	2026-07-03 08:10:12.612391	\N	8296	\N	{"739": {"q_pre_0": "DGDFGDGD", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+961	\N	user961	2026-07-03 08:24:46.031274	\N	2633	\N	{"739": {"q_pre_0": "adsada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+966	\N	user966	2026-07-03 08:24:53.31925	\N	6026	\N	{"739": {"q_pre_0": "adsada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+969	\N	user969	2026-07-03 08:24:57.964425	\N	5712	\N	{"739": {"q_pre_0": "asdsad", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+970	\N	user970	2026-07-03 08:24:59.681348	\N	6330	\N	{"739": {"q_pre_0": "adsada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+972	\N	user972	2026-07-03 08:25:03.263921	\N	8472	\N	{"739": {"q_pre_0": "adsad", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+973	\N	user973	2026-07-03 08:55:30.79733	\N	7390	\N	{"739": {"q_pre_0": "fsdsdf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+974	\N	user974	2026-07-03 08:59:56.480581	\N	6246	\N	{"739": {"q_pre_0": "asdasd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+980	\N	user980	2026-07-03 09:00:05.084101	\N	2708	\N	{"739": {"q_pre_0": "adsad", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+984	\N	user984	2026-07-03 09:00:10.866614	\N	7262	\N	{"739": {"q_pre_0": "asdsada", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+985	\N	user985	2026-07-03 09:00:12.560254	\N	8031	\N	{"739": {"q_pre_0": "adasd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+956	\N	user956	2026-07-03 08:10:16.191265	\N	5845	\N	{"739": {"q_pre_0": "DGDFGDG", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+958	\N	user958	2026-07-03 08:10:20.009481	\N	9939	\N	{"739": {"q_pre_0": "sfsdfsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+963	\N	user963	2026-07-03 08:24:49.204128	\N	9794	\N	{"739": {"q_pre_0": "asdsad", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+965	\N	user965	2026-07-03 08:24:52.000836	\N	4911	\N	{"739": {"q_pre_0": "asdsada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+968	\N	user968	2026-07-03 08:24:56.255401	\N	9647	\N	{"739": {"q_pre_0": "asdsada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+971	\N	user971	2026-07-03 08:25:01.485333	\N	3166	\N	{"739": {"q_pre_0": "adasd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+975	\N	user975	2026-07-03 08:59:58.456153	\N	7574	\N	{"739": {"q_pre_0": "adasda", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+977	\N	user977	2026-07-03 09:00:00.971425	\N	1378	\N	{"739": {"q_pre_0": "sdaaa", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+978	\N	user978	2026-07-03 09:00:03.310458	\N	2579	\N	{"739": {"q_pre_0": "adsadaadsa", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+979	\N	user979	2026-07-03 09:00:03.764013	\N	8601	\N	{"739": {"q_pre_0": "adasda", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+983	\N	user983	2026-07-03 09:00:09.227886	\N	9089	\N	{"739": {"q_pre_0": "adasda", "q_pre_1": "2", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+957	\N	user957	2026-07-03 08:10:18.087327	\N	4509	\N	{"739": {"q_pre_0": "sdfsdfsf", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+959	\N	user959	2026-07-03 08:24:41.616724	\N	8306	\N	{"739": {"q_pre_0": "dasdasdasd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+960	\N	user960	2026-07-03 08:24:43.383208	\N	3472	\N	{"739": {"q_pre_0": "asdsasdas", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "3", "q_pre_6": "2", "q_pre_7": "2"}}
+962	\N	user962	2026-07-03 08:24:47.398668	\N	9027	\N	{"739": {"q_pre_0": "asdsa", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+964	\N	user964	2026-07-03 08:24:50.710599	\N	5705	\N	{"739": {"q_pre_0": "asdsada", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+967	\N	user967	2026-07-03 08:24:54.814514	\N	6642	\N	{"739": {"q_pre_0": "adsad", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+976	\N	user976	2026-07-03 08:59:59.919254	\N	7332	\N	{"739": {"q_pre_0": "adsadd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+981	\N	user981	2026-07-03 09:00:06.393589	\N	9553	\N	{"739": {"q_pre_0": "asdasd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+982	\N	user982	2026-07-03 09:00:07.692291	\N	4356	\N	{"739": {"q_pre_0": "adasd", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+994	\N	user994	2026-07-03 09:49:49.042766	\N	2281	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "664f0ab76827b3cf1eb5b7e3", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+999	\N	user999	2026-07-03 10:10:28.121976	\N	6212	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "683805bccc2a936a8263257a", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+991	\N	user991	2026-07-03 09:43:43.283968	\N	7650	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "677231b90b61e2b0c736abc4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+990	\N	user990	2026-07-03 09:43:26.807762	\N	9805	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "3", "q_post_5": "3", "q_post_6": "1"}}	{"737": {"q_pre_0": "6696773b71afe15e1f73abbe", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+988	\N	user988	2026-07-03 09:42:22.864717	\N	1540	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "3", "q_post_6": "1"}}	{"737": {"q_pre_0": "69af34e771ce9d065c0d9d80", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+986	\N	user986	2026-07-03 09:41:56.417881	\N	7650	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "6740d090e161ea16b57a04fd", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+987	\N	user987	2026-07-03 09:42:16.428919	\N	1448	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "60ed6ef739959cc28d143526", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+989	\N	user989	2026-07-03 09:42:52.073255	\N	4175	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "6980b25eb7edf36e641ef897", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+992	\N	user992	2026-07-03 09:44:36.276648	\N	6555	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "65e0c2e2e32784e64bf561d2", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+875	\N	user875	2026-07-02 17:06:40.919779	\N	6155	{"738": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "3", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}, "737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"738": {"q_pre_0": "6603e6459e1a1c2dd59452b4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}, "737": {"q_pre_0": "6603e6459e1a1c2dd59452b4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+993	\N	user993	2026-07-03 09:45:33.840358	\N	4454	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "3", "q_post_3": "1", "q_post_4": "2", "q_post_5": "3", "q_post_6": "1"}}	{"737": {"q_pre_0": "5ff41506eed16daa2c6c6ebc", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+996	\N	user996	2026-07-03 10:07:08.584941	\N	1359	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "67e074f58a5ea7d9897f3223", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+997	\N	user997	2026-07-03 10:08:52.587026	\N	5819	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "6998a16a9147ebdebf871a82", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1003	\N	user1003	2026-07-03 10:34:12.18066	\N	9070	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "660eafee7515c432e850362d", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "2"}}
+998	\N	user998	2026-07-03 10:09:22.913325	\N	4794	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "67d1ec1596e005ff60294b23", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1000	\N	user1000	2026-07-03 10:18:03.55028	\N	4969	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "67403801046425743a959fcb", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1023	\N	user1023	2026-07-03 11:25:47.275741	\N	9395	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "69b52f9256ef2162a97fbebc", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1022	\N	user1022	2026-07-03 11:23:11.31536	\N	5268	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "67c45c4452afc08501c34434", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1006	\N	user1006	2026-07-03 10:43:19.536891	\N	2213	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "5f07267fa81c732d460fc24e", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+1007	\N	user1007	2026-07-03 10:43:38.785029	\N	7628	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "0"}}	{"737": {"q_pre_0": "67ed3ab3d0a58759388846a3", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1008	\N	user1008	2026-07-03 10:44:56.937121	\N	4606	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "69a17a81afc57f76f8cb7eb1", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1031	\N	user1031	2026-07-03 11:44:34.867986	\N	7170	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "6981f6752562af688b1ace65", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1009	\N	user1009	2026-07-03 10:45:53.775731	\N	1358	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "5", "q_post_5": "4", "q_post_6": "0"}}	{"737": {"q_pre_0": "69cfa63b8c421237fca6a2ef", "q_pre_1": "2", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1004	\N	user1004	2026-07-03 10:37:45.048369	\N	9008	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "3", "q_post_6": "1"}}	{"737": {"q_pre_0": "5bf01b3e2a9d2c00013ddc2a", "q_pre_1": "4", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1014	\N	user1014	2026-07-03 11:08:10.622717	\N	8636	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "0"}}	{"737": {"q_pre_0": "5bf2f728bd9f150001f6cc42", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+1016	\N	user1016	2026-07-03 11:10:45.358018	\N	8805	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "68e8431a96b1fe2682c6650c", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "2"}}
+1015	\N	user1015	2026-07-03 11:10:32.428771	\N	8245	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "698725ce979bc4d4ea7c7373", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1021	\N	user1021	2026-07-03 11:20:14.526306	\N	1967	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "66dd939d148a84fb5b448ae8", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1017	\N	user1017	2026-07-03 11:12:11.466303	\N	6364	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "2", "q_post_5": "4", "q_post_6": "1"}}	{"737": {"q_pre_0": "6720d6477f0dcbcebca3d6b9", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1025	\N	user1025	2026-07-03 11:27:45.791231	\N	1605	{"737": {"q_post_0": "4", "q_post_1": [], "q_post_2": "5", "q_post_3": "2", "q_post_4": "1", "q_post_5": "2", "q_post_6": "0"}}	{"737": {"q_pre_0": "609510855d0c8e5bd0bdaf98", "q_pre_1": "3", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "1"}}
+1001	\N	user1001	2026-07-03 10:24:11.382211	\N	9776	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "697cd44987c6f317e991881a", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+995	\N	user995	2026-07-03 10:05:17.457305	\N	3284	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "66cf143e060992b3d817c20f", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1011	\N	user1011	2026-07-03 10:57:59.639791	\N	8494	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "5", "q_post_5": "2", "q_post_6": "0"}}	{"737": {"q_pre_0": "676076301bc5c16006c24739", "q_pre_1": "4", "q_pre_2": "4", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "2", "q_pre_7": "2"}}
+1005	\N	user1005	2026-07-03 10:42:03.472779	\N	4834	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "6777ab64b5cb247b8b796ef0", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1012	\N	user1012	2026-07-03 10:58:01.163506	\N	4648	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "69a9a810c05c0c70aa3fa0de", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1027	\N	user1027	2026-07-03 11:34:52.72767	\N	5978	\N	\N
+1020	\N	user1020	2026-07-03 11:18:13.628111	\N	4044	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "68c263deeb8d41f076fe7249", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1018	\N	user1018	2026-07-03 11:12:26.309783	\N	8378	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "664d01a8e8a3420b747c6c26", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1030	\N	user1030	2026-07-03 11:39:22.380329	\N	8292	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "69f34d280eba892fcb7efdc2", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1036	\N	user1036	2026-07-03 11:55:21.200877	\N	4526	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "6a00a746e8970aba8d35c71b", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1034	\N	user1034	2026-07-03 11:52:55.588195	\N	6546	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "1", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "6a21d177cd9477524420fdc3", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "2", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1035	\N	user1035	2026-07-03 11:55:05.71242	\N	9085	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "697f2af1d16cc5b0de9f511e", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1032	\N	user1032	2026-07-03 11:44:48.711279	\N	1841	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "66a79cfa0ec42d9ed5c28640", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1002	\N	user1002	2026-07-03 10:30:56.937157	\N	6847	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "3", "q_post_4": "3", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "67c6a125050ec8a680881b9a", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1010	\N	user1010	2026-07-03 10:47:15.674707	\N	9866	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "669ae4d7167bc8c1e18ae547", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "2", "q_pre_7": "1"}}
+1050	\N	user1050	2026-07-03 12:32:22.202965	\N	3370	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "5", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "6a04b666837ab536fbc6e46b", "q_pre_1": "1", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1019	\N	user1019	2026-07-03 11:13:08.902536	\N	8753	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "0"}}	{"737": {"q_pre_0": "69835401816ad44686c7a745", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1013	\N	user1013	2026-07-03 11:06:48.468385	\N	3795	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "611666722763d407c769eb9b", "q_pre_1": "1", "q_pre_2": "4", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1028	\N	user1028	2026-07-03 11:36:48.520934	\N	7796	\N	{"737": {"q_pre_0": "65e5d51b9a403c3bd5fe0b07", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1024	\N	user1024	2026-07-03 11:26:47.998663	\N	9335	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "69809b4956d7129d4b119b43", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1033	\N	user1033	2026-07-03 11:48:03.208701	\N	8767	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "65e5d51b9a403c3bd5fe0b07", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1038	\N	user1038	2026-07-03 12:03:43.529947	\N	6324	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "3", "q_post_6": "1"}}	{"737": {"q_pre_0": "655d2ee952904c7e4620ba5c", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1029	\N	user1029	2026-07-03 11:37:40.004904	\N	6038	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "6021b4592cecf2216baabfed", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1042	\N	user1042	2026-07-03 12:07:38.424367	\N	9419	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "1", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "68315e5a9a6549bae1cf72c9", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1026	\N	user1026	2026-07-03 11:34:43.543356	\N	8823	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "69824df3026e0eff3dec0d0b", "q_pre_1": "2", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1054	\N	user1054	2026-07-03 12:41:11.355313	\N	3114	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "3", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "65c67ce11e8a27b7ffa1ef8c", "q_pre_1": "2", "q_pre_2": "2", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1047	\N	user1047	2026-07-03 12:16:31.978904	\N	1510	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "66031000461c44484ac359a8", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1043	\N	user1043	2026-07-03 12:08:00.455913	\N	2522	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "6a29385457b72b27f1c09694", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1044	\N	user1044	2026-07-03 12:10:48.200276	\N	6415	\N	\N
+1037	\N	user1037	2026-07-03 11:58:54.853214	\N	6267	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "69fe260d62ffdde7f6f68727", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1045	\N	user1045	2026-07-03 12:12:23.593507	\N	7244	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "2", "q_post_4": "3", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "5ea923ee3297e83992b87065", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1052	\N	user1052	2026-07-03 12:33:29.12916	\N	2277	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "2", "q_post_4": "2", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "697a79efb4f34a8176d66d2b", "q_pre_1": "2", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "2", "q_pre_7": "1"}}
+1040	\N	user1040	2026-07-03 12:05:24.318269	\N	7629	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "69de87ae8191fbec9979f1c4", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1041	\N	user1041	2026-07-03 12:07:30.90174	\N	3964	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "2", "q_post_6": "0"}}	{"737": {"q_pre_0": "60afb8095014f6051165e54d", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1053	\N	user1053	2026-07-03 12:33:43.863393	\N	5171	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "3", "q_post_4": "3", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "608916862b329614910ceb10", "q_pre_1": "3", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1046	\N	user1046	2026-07-03 12:13:56.768603	\N	2621	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "5", "q_post_3": "4", "q_post_4": "5", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "6266b4ea9408fc167507d923", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1049	\N	user1049	2026-07-03 12:26:23.514777	\N	3713	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "1", "q_post_3": "1", "q_post_4": "3", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "67cc56c1d7b977cb0fa67add", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1056	\N	user1056	2026-07-03 12:46:41.296722	\N	1997	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "1", "q_post_6": "0"}}	{"737": {"q_pre_0": "65e1ec9a1fce0d5fd8b31a08", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1057	\N	user1057	2026-07-03 12:50:04.942471	\N	8017	{"737": {"q_post_0": "1", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "5", "q_post_5": "1", "q_post_6": "1"}}	{"737": {"q_pre_0": "698d71dac9d4b9101e8f6ca7", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1048	\N	user1048	2026-07-03 12:25:04.886427	\N	9690	{"737": {"q_post_0": "3", "q_post_1": [], "q_post_2": "5", "q_post_3": "3", "q_post_4": "2", "q_post_5": "4", "q_post_6": "1"}}	{"737": {"q_pre_0": "6983ae9f70a0909db2f607b8", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1051	\N	user1051	2026-07-03 12:33:10.045269	\N	2278	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "1", "q_post_4": "1", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "610d5a240e1f096a3fda21c5 ", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1039	\N	user1039	2026-07-03 12:05:22.753967	\N	4223	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "63471036ea4370051841008b", "q_pre_1": "1", "q_pre_2": "3", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "2", "q_pre_6": "1", "q_pre_7": "1"}}
+1055	\N	user1055	2026-07-03 12:46:19.30407	\N	1313	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "3", "q_post_5": "2", "q_post_6": "0"}}	{"737": {"q_pre_0": "6695f5188a8b52905e0a37fe", "q_pre_1": "1", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1058	\N	user1058	2026-07-03 12:53:05.352111	\N	9046	{"737": {"q_post_0": "2", "q_post_1": [], "q_post_2": "4", "q_post_3": "4", "q_post_4": "4", "q_post_5": "2", "q_post_6": "1"}}	{"737": {"q_pre_0": "6a207e61e90d0a2b303324d7", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "1", "q_pre_5": "1", "q_pre_6": "1", "q_pre_7": "1"}}
+1059	\N	user1059	2026-07-06 22:56:57.864141	\N	7878	{"739": {"q_post_0": "5", "q_post_1": [], "q_post_2": "5", "q_post_3": "5", "q_post_4": "5", "q_post_5": "5", "q_post_6": "1"}}	{"739": {"q_pre_0": "344", "q_pre_1": "3", "q_pre_2": "1", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+1060	\N	user1060	2026-07-06 23:23:57.760221	\N	5574	\N	\N
+1061	\N	user1061	2026-07-07 22:31:59.257024	\N	9296	\N	\N
+1062	\N	user1062	2026-07-07 22:36:59.739898	\N	3880	\N	\N
+1063	\N	user1063	2026-07-13 21:59:24.160596	\N	5347	{"737": {"q_post_0": "5", "q_post_1": [], "q_post_2": "3", "q_post_3": "3", "q_post_4": "3", "q_post_5": "3", "q_post_6": "0"}}	{"737": {"q_pre_0": "0", "q_pre_1": "7", "q_pre_2": "7", "q_pre_3": [], "q_pre_4": "3", "q_pre_5": "3", "q_pre_6": "3", "q_pre_7": "3"}}
+1064	\N	user1064	2026-07-16 20:33:20.153454	\N	4176	\N	\N
+1065	\N	user1065	2026-07-21 15:25:21.879721	\N	7110	\N	\N
+1066	\N	user1066	2026-07-21 15:29:34.786544	\N	9716	\N	\N
+1067	\N	user1067	2026-07-21 15:31:27.82081	\N	5034	\N	\N
+1068	\N	user1068	2026-07-21 15:34:40.611301	\N	3667	\N	\N
+1069	\N	user1069	2026-07-21 15:36:31.809563	\N	2808	\N	\N
+1070	\N	user1070	2026-07-21 15:40:10.591174	\N	5252	\N	\N
+1071	\N	user1071	2026-07-21 16:33:03.220405	\N	2968	\N	\N
+1072	\N	user1072	2026-07-21 17:01:49.547275	\N	4860	\N	\N
+1073	\N	user1073	2026-07-21 17:17:54.612406	\N	2538	\N	\N
+1074	\N	user1074	2026-07-21 17:41:20.319835	\N	2586	\N	\N
+1075	\N	user1075	2026-07-22 13:08:38.730608	\N	1558	\N	\N
+1076	\N	user1076	2026-08-17 12:44:32.554195	\N	2747	\N	\N
+1077	\N	user1077	2026-08-17 13:39:22.819776	\N	9736	\N	\N
+1078	\N	user1078	2026-08-17 13:41:51.677853	\N	9993	\N	{"722": {"q_pre_0": "monthly", "q_pre_1": "dfs"}}
+1079	\N	user1079	2026-08-17 13:50:35.519642	\N	5355	\N	\N
+1080	\N	user1080	2026-08-17 14:04:45.254905	\N	2563	\N	\N
+1081	\N	user1081	2026-08-17 14:21:25.503063	\N	3875	\N	\N
+1082	\N	user1082	2026-08-17 14:31:39.081813	\N	1990	\N	\N
+1083	\N	user1083	2026-08-17 14:51:16.657453	\N	5557	\N	\N
+1084	\N	user1084	2026-08-17 16:33:46.090571	\N	7412	\N	\N
+1085	\N	user1085	2026-08-19 13:59:01.185233	\N	1572	\N	\N
+1086	\N	user1086	2026-08-19 14:17:45.667204	\N	5398	\N	\N
+1087	\N	user1087	2026-08-19 14:18:44.324561	\N	8725	\N	\N
+1088	\N	user1088	2026-08-19 14:21:49.491763	\N	1037	\N	\N
+1089	\N	user1089	2026-08-19 14:33:46.690228	\N	9348	\N	\N
+1090	\N	user1090	2026-08-19 14:35:41.85315	\N	1338	\N	\N
+1091	\N	user1091	2026-08-19 14:47:38.796435	\N	8715	\N	\N
+1092	\N	user1092	2026-08-19 15:03:07.544217	\N	7350	\N	\N
+1093	\N	user1093	2026-08-19 15:12:20.937162	\N	4197	\N	\N
+1094	\N	user1094	2026-08-19 15:12:40.40853	\N	9906	\N	\N
+1095	\N	user1095	2026-08-19 15:13:14.376486	\N	4702	\N	\N
+1096	\N	user1096	2026-08-19 15:24:16.175547	\N	5232	\N	\N
+1097	\N	user1097	2026-08-19 15:27:32.504086	\N	4057	\N	\N
+1098	\N	user1098	2026-08-19 15:42:56.535437	\N	4392	\N	\N
+1099	\N	user1099	2026-08-19 15:48:07.153052	\N	8753	\N	\N
+1100	\N	user1100	2026-08-19 15:48:39.909907	\N	2442	\N	\N
+1101	\N	user1101	2026-08-19 15:52:34.41969	\N	6637	\N	\N
+1102	\N	user1102	2026-08-19 15:53:14.793895	\N	3693	\N	\N
+1103	\N	user1103	2026-08-19 16:07:20.66141	\N	1343	\N	\N
+1104	\N	user1104	2026-08-19 16:07:52.214797	\N	3118	\N	\N
+1105	\N	user1105	2026-08-19 16:13:50.136298	\N	1569	\N	\N
+1106	\N	user1106	2026-08-19 16:17:54.463148	\N	1739	\N	\N
+1107	\N	user1107	2026-08-19 16:18:52.724621	\N	8677	\N	\N
+1108	\N	user1108	2026-08-19 16:26:48.448368	\N	5238	\N	\N
+1109	\N	user1109	2026-08-19 16:29:57.721865	\N	1649	\N	\N
+1110	\N	user1110	2026-08-19 16:48:37.051327	\N	3469	\N	\N
+1111	\N	user1111	2026-08-19 16:49:54.798988	\N	4596	\N	\N
+1112	\N	user1112	2026-08-19 17:00:02.02105	\N	4526	\N	\N
 \.
 
 
 --
--- TOC entry 3902 (class 0 OID 69851)
--- Dependencies: 238
+-- TOC entry 4136 (class 0 OID 99614)
+-- Dependencies: 254
 -- Data for Name: participant_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -1907,8 +3931,24 @@ COPY public.participant_study (participant, study) FROM stdin;
 
 
 --
--- TOC entry 3903 (class 0 OID 69856)
--- Dependencies: 239
+-- TOC entry 4137 (class 0 OID 99619)
+-- Dependencies: 255
+-- Data for Name: provider; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.provider (id, name) FROM stdin;
+1	Google
+2	Microsoft
+3	Ecosia
+4	Stabi Hamburg
+5	Brave
+6	OpenAI
+\.
+
+
+--
+-- TOC entry 4139 (class 0 OID 99626)
+-- Dependencies: 257
 -- Data for Name: qs_geotarget; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196873,8 +198913,8 @@ COPY public.qs_geotarget (id, name, canonical_name, country_code, target_type, c
 
 
 --
--- TOC entry 3905 (class 0 OID 69863)
--- Dependencies: 241
+-- TOC entry 4141 (class 0 OID 99638)
+-- Dependencies: 259
 -- Data for Name: qs_keyword; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196883,8 +198923,8 @@ COPY public.qs_keyword (id, qs_study_id, qs_geotarget_criterion_id, qs_language_
 
 
 --
--- TOC entry 3907 (class 0 OID 69871)
--- Dependencies: 243
+-- TOC entry 4143 (class 0 OID 99650)
+-- Dependencies: 261
 -- Data for Name: qs_keyword_idea; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196893,69 +198933,69 @@ COPY public.qs_keyword_idea (id, qs_study_id, qs_keyword_id, keyword_idea, avg_m
 
 
 --
--- TOC entry 3909 (class 0 OID 69878)
--- Dependencies: 245
+-- TOC entry 4145 (class 0 OID 99662)
+-- Dependencies: 263
 -- Data for Name: qs_language_code; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.qs_language_code (id, name, criterion_id) FROM stdin;
-1	Arabic	1019
-2	Bengali	1056
-3	Bulgarian	1020
-4	Catalan	1038
-5	Chinese (simplified)	1017
-6	Chinese (traditional)	1018
-7	Croatian	1039
-8	Czech	1021
-9	Danish	1009
-10	Dutch	1010
-11	English	1000
-12	Estonian	1043
-13	Filipino	1042
-14	Finnish	1011
-15	French	1002
-16	German	1001
-17	Greek	1022
-18	Gujarati	1072
-19	Hebrew	1027
-20	Hindi	1023
-21	Hungarian	1024
-22	Icelandic	1026
-23	Indonesian	1025
-24	Italian	1004
-25	Japanese	1005
-26	Kannada	1086
-27	Korean	1012
-28	Latvian	1028
-29	Lithuanian	1029
-30	Malay	1102
-31	Malayalam	1098
-32	Marathi	1101
-33	Norwegian	1013
-34	Persian	1064
-35	Polish	1030
-36	Portuguese	1014
-37	Punjabi	1110
-38	Romanian	1032
-39	Russian	1031
-40	Serbian	1035
-41	Slovak	1033
-42	Slovenian	1034
-43	Spanish	1003
-44	Swedish	1015
-45	Tamil	1130
-46	Telugu	1131
-47	Thai	1044
-48	Turkish	1037
-49	Ukrainian	1036
-50	Urdu	1041
-51	Vietnamese	1040
+COPY public.qs_language_code (id, name, code, criterion_id) FROM stdin;
+1	Arabic	ar	1019
+2	Bengali	bn	1056
+3	Bulgarian	bg	1020
+4	Catalan	ca	1038
+5	Chinese (simplified)	zh_CN	1017
+6	Chinese (traditional)	zh_TW	1018
+7	Croatian	hr	1039
+8	Czech	cs	1021
+9	Danish	da	1009
+10	Dutch	nl	1010
+11	English	en	1000
+12	Estonian	et	1043
+13	Filipino	tl	1042
+14	Finnish	fi	1011
+15	French	fr	1002
+16	German	de	1001
+17	Greek	el	1022
+18	Gujarati	gu	1072
+19	Hebrew	iw	1027
+20	Hindi	hi	1023
+21	Hungarian	hu	1024
+22	Icelandic	is	1026
+23	Indonesian	id	1025
+24	Italian	it	1004
+25	Japanese	ja	1005
+26	Kannada	kn	1086
+27	Korean	ko	1012
+28	Latvian	lv	1028
+29	Lithuanian	lt	1029
+30	Malay	ms	1102
+31	Malayalam	ml	1098
+32	Marathi	mr	1101
+33	Norwegian	no	1013
+34	Persian	fa	1064
+35	Polish	pl	1030
+36	Portuguese	pt	1014
+37	Punjabi	pa	1110
+38	Romanian	ro	1032
+39	Russian	ru	1031
+40	Serbian	sr	1035
+41	Slovak	sk	1033
+42	Slovenian	sl	1034
+43	Spanish	es	1003
+44	Swedish	sv	1015
+45	Tamil	ta	1130
+46	Telugu	te	1131
+47	Thai	th	1044
+48	Turkish	tr	1037
+49	Ukrainian	uk	1036
+50	Urdu	ur	1041
+51	Vietnamese	vi	1040
 \.
 
 
 --
--- TOC entry 3911 (class 0 OID 69885)
--- Dependencies: 247
+-- TOC entry 4147 (class 0 OID 99672)
+-- Dependencies: 265
 -- Data for Name: qs_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -196964,38 +199004,38 @@ COPY public.qs_study (id, name, created_at, status, description, visible) FROM s
 
 
 --
--- TOC entry 3913 (class 0 OID 69895)
--- Dependencies: 249
+-- TOC entry 4149 (class 0 OID 99683)
+-- Dependencies: 267
 -- Data for Name: qs_study_user; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.qs_study_user (qs_study, "user") FROM stdin;
+COPY public.qs_study_user (id, qs_study, "user") FROM stdin;
 \.
 
 
 --
--- TOC entry 3914 (class 0 OID 69900)
--- Dependencies: 250
+-- TOC entry 4151 (class 0 OID 99690)
+-- Dependencies: 269
 -- Data for Name: query; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.query (id, query, created_at, study, description, "limit", source_type, assignment_count) FROM stdin;
+COPY public.query (id, query, created_at, study, description, "limit", monitoring, task, source_type, study_id, assignment_count) FROM stdin;
 \.
 
 
 --
--- TOC entry 3916 (class 0 OID 69908)
--- Dependencies: 252
+-- TOC entry 4153 (class 0 OID 99699)
+-- Dependencies: 271
 -- Data for Name: question; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.question (id, study, title, description, question_type, "position", "interval") FROM stdin;
+COPY public.question (id, study, title, description, question_type, question_template, "position", "interval") FROM stdin;
 \.
 
 
 --
--- TOC entry 3918 (class 0 OID 69915)
--- Dependencies: 254
+-- TOC entry 4155 (class 0 OID 99706)
+-- Dependencies: 273
 -- Data for Name: question_result; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197004,8 +199044,18 @@ COPY public.question_result (question, result) FROM stdin;
 
 
 --
--- TOC entry 3919 (class 0 OID 69920)
--- Dependencies: 255
+-- TOC entry 4156 (class 0 OID 99711)
+-- Dependencies: 274
+-- Data for Name: questiontemplate; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.questiontemplate (id, name, description) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4158 (class 0 OID 99718)
+-- Dependencies: 276
 -- Data for Name: questiontype; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197020,38 +199070,66 @@ COPY public.questiontype (id, name, display) FROM stdin;
 
 
 --
--- TOC entry 3921 (class 0 OID 69927)
--- Dependencies: 257
+-- TOC entry 4160 (class 0 OID 99725)
+-- Dependencies: 278
 -- Data for Name: range_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.range_study (id, study, range_start, range_end) FROM stdin;
+4	250	1	10
+5	250	11	20
+6	252	5	5
+7	259	1	10
+8	259	11	20
+9	265	1	5
+10	265	7	10
+11	266	1	3
 \.
 
 
 --
--- TOC entry 3923 (class 0 OID 69932)
--- Dependencies: 259
+-- TOC entry 4162 (class 0 OID 99730)
+-- Dependencies: 280
+-- Data for Name: reporting; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.reporting (id, scraper, created_at, result_count, missing_count, duplicate_count, exit_condition, duration, old_id) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4164 (class 0 OID 99737)
+-- Dependencies: 282
 -- Data for Name: result; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.result (id, title, description, url, "position", created_at, main, ip, origin, imported, study, scraper, serp, query, final_url, country, normalized_url, assignment_count, engine_text, result_type_text) FROM stdin;
+COPY public.result (id, title, description, url, "position", created_at, main, ip, origin, imported, study, scraper, resulttype, monitoring, serp, query, final_url, country, normalized_url, assignment_count, engine_text, result_type_text) FROM stdin;
 \.
 
 
 --
--- TOC entry 3924 (class 0 OID 69939)
--- Dependencies: 260
+-- TOC entry 4165 (class 0 OID 99744)
+-- Dependencies: 283
 -- Data for Name: result_ai; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.result_ai (id, scraper, study, answer, created_at, answer_html, query, assignment_count, result_type_text, engine_text) FROM stdin;
+COPY public.result_ai (id, scraper, study, answer, created_at, answer_html, query, assignment_count, result_type_text, engine_text, study_id) FROM stdin;
 \.
 
 
 --
--- TOC entry 3926 (class 0 OID 69947)
--- Dependencies: 262
+-- TOC entry 4166 (class 0 OID 99754)
+-- Dependencies: 284
+-- Data for Name: result_ai_backup_2209; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.result_ai_backup_2209 (id, scraper, study, answer, created_at, answer_html, query, assignment_count) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4168 (class 0 OID 99760)
+-- Dependencies: 286
 -- Data for Name: result_ai_segment; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197060,28 +199138,38 @@ COPY public.result_ai_segment (id, text, "position", result_ai) FROM stdin;
 
 
 --
--- TOC entry 3928 (class 0 OID 69954)
--- Dependencies: 264
+-- TOC entry 4170 (class 0 OID 99767)
+-- Dependencies: 288
 -- Data for Name: result_ai_source; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.result_ai_source (id, result_ai, url, source, created_at, error_code, job_server, title, description, "position", main, final_url, ip, normalized_url, progress, counter, study, scraper, query, country, result_type_text, engine_text, source_type) FROM stdin;
+COPY public.result_ai_source (id, result_ai, url, source, created_at, error_code, job_server, title, description, "position", main, final_url, ip, normalized_url, progress, counter, study, scraper, query, country, result_type_text, engine_text, study_id, source_type) FROM stdin;
 \.
 
 
 --
--- TOC entry 3930 (class 0 OID 69963)
--- Dependencies: 266
+-- TOC entry 4171 (class 0 OID 99777)
+-- Dependencies: 289
+-- Data for Name: result_ai_source_backup_2209; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.result_ai_source_backup_2209 (id, result_ai, url, source, created_at, error_code, job_server, title, description, "position", main, final_url, ip, normalized_url, progress, counter, study, scraper, query, country) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4173 (class 0 OID 99783)
+-- Dependencies: 291
 -- Data for Name: result_chatbot; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.result_chatbot (id, scraper, study, answer, created_at, answer_html, query, assignment_count, result_type_text, engine_text) FROM stdin;
+COPY public.result_chatbot (id, scraper, study, answer, created_at, answer_html, query, assignment_count, result_type_text, engine_text, study_id) FROM stdin;
 \.
 
 
 --
--- TOC entry 3959 (class 0 OID 80212)
--- Dependencies: 295
+-- TOC entry 4175 (class 0 OID 99795)
+-- Dependencies: 293
 -- Data for Name: result_image; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197090,18 +199178,18 @@ COPY public.result_image (id, title, source_url, image_url, source_name, "positi
 
 
 --
--- TOC entry 3933 (class 0 OID 69972)
--- Dependencies: 269
+-- TOC entry 4178 (class 0 OID 99806)
+-- Dependencies: 296
 -- Data for Name: result_source; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.result_source (result, source, progress, counter, id, created_at, error_code, job_server) FROM stdin;
+COPY public.result_source (result, source, progress, id, counter, created_at, error_code, job_server) FROM stdin;
 \.
 
 
 --
--- TOC entry 3935 (class 0 OID 69982)
--- Dependencies: 271
+-- TOC entry 4180 (class 0 OID 99815)
+-- Dependencies: 298
 -- Data for Name: resulttype; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197112,13 +199200,12 @@ COPY public.resulttype (id, name, display, filter, selection) FROM stdin;
 3	Snippets of Organic Results	Snippets of Organic Results	f	f
 5	SERP	SERP	t	t
 6	AI Sources	AI Sources	t	t
-7	image	Image Result	t	t
 \.
 
 
 --
--- TOC entry 3937 (class 0 OID 69991)
--- Dependencies: 273
+-- TOC entry 4182 (class 0 OID 99826)
+-- Dependencies: 300
 -- Data for Name: role; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197127,28 +199214,28 @@ COPY public.role (id, name, description, permissions, update_datetime) FROM stdi
 
 
 --
--- TOC entry 3939 (class 0 OID 69998)
--- Dependencies: 275
+-- TOC entry 4184 (class 0 OID 99833)
+-- Dependencies: 302
 -- Data for Name: scraper; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.scraper (id, progress, created_at, query, searchengine, study, type, counter) FROM stdin;
+COPY public.scraper (id, progress, "limit", counter, error_code, created_at, query, searchengine, study, type, job_server, resulttype) FROM stdin;
 \.
 
 
 --
--- TOC entry 3941 (class 0 OID 70003)
--- Dependencies: 277
+-- TOC entry 4186 (class 0 OID 99840)
+-- Dependencies: 304
 -- Data for Name: searchengine; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.searchengine (id, name) FROM stdin;
+COPY public.searchengine (id, name, module, test, error_code, resulttype, country, provider, display, is_dynamic, engine_type, search_url, sel_container, sel_title, sel_url, sel_snippet, sel_ai_text, sel_ai_source_container, sel_ai_source_url, is_public, author, is_active, sel_next_button, custom_js, url_param_decoder) FROM stdin;
 \.
 
 
 --
--- TOC entry 3943 (class 0 OID 70010)
--- Dependencies: 279
+-- TOC entry 4188 (class 0 OID 99852)
+-- Dependencies: 306
 -- Data for Name: searchengine_study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197157,38 +199244,58 @@ COPY public.searchengine_study (searchengine, study) FROM stdin;
 
 
 --
--- TOC entry 3944 (class 0 OID 70015)
--- Dependencies: 280
+-- TOC entry 4189 (class 0 OID 99857)
+-- Dependencies: 307
 -- Data for Name: serp; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.serp (id, scraper, page, created_at, query, assignment_count, file_path, study, progress, result_type_text, engine_text) FROM stdin;
+COPY public.serp (id, scraper, page, code, img, progress, created_at, old_id, monitoring, query, study, assignment_count, file_path, result_type_text, engine_text) FROM stdin;
 \.
 
 
 --
--- TOC entry 3946 (class 0 OID 70021)
--- Dependencies: 282
+-- TOC entry 4191 (class 0 OID 99865)
+-- Dependencies: 309
+-- Data for Name: serp_job; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.serp_job (id, query, engine, status, error_message, created_at, completed_at) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4193 (class 0 OID 99874)
+-- Dependencies: 311
 -- Data for Name: source; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.source (id, url, progress, content_type, error_code, status_code, created_at, file_path, country, job_server, content_dict) FROM stdin;
+COPY public.source (id, code, bin, url, progress, content_type, error_code, status_code, created_at, job_server, content_dict, country, file_path) FROM stdin;
 \.
 
 
 --
--- TOC entry 3948 (class 0 OID 70028)
--- Dependencies: 284
+-- TOC entry 4195 (class 0 OID 99881)
+-- Dependencies: 313
+-- Data for Name: statistic; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.statistic (id, study, name, value) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4197 (class 0 OID 99888)
+-- Dependencies: 315
 -- Data for Name: study; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.study (id, name, description, created_at, updated_at, result_count, status, show_urls, task, limit_per_participant, max_results_per_participant, show_ai_sources, completion_text, skippable, assess_failed, assessable_result_types_text, live_link_mode, visible, group_by_query, limit_by_query, max_queries_per_participant, show_description_after_join, participant_description, pre_survey_json, post_survey_json, llm_classifiers_json, study_mode) FROM stdin;
+COPY public.study (id, name, description, imported, studytype, old_id, created_at, updated_at, resulttype, result_count, status, show_urls, task, limit_per_participant, max_results_per_participant, result_types, show_ai_sources, completion_text, skippable, assess_failed, assessable_result_types_text, live_link_mode, visible, group_by_query, limit_by_query, max_queries_per_participant, post_survey_json, pre_survey_json, show_description_after_join, participant_description, llm_classifiers_json, study_mode, global_duplicate_filtering) FROM stdin;
 \.
 
 
 --
--- TOC entry 3952 (class 0 OID 70056)
--- Dependencies: 288
+-- TOC entry 4201 (class 0 OID 99923)
+-- Dependencies: 319
 -- Data for Name: study_resulttype; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197197,8 +199304,18 @@ COPY public.study_resulttype (id, study, resulttype) FROM stdin;
 
 
 --
--- TOC entry 3950 (class 0 OID 70047)
--- Dependencies: 286
+-- TOC entry 4203 (class 0 OID 99928)
+-- Dependencies: 321
+-- Data for Name: study_task; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.study_task (id, study, task) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4199 (class 0 OID 99910)
+-- Dependencies: 317
 -- Data for Name: study_url_filter; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197207,8 +199324,8 @@ COPY public.study_url_filter (id, study, url, include, exclude) FROM stdin;
 
 
 --
--- TOC entry 3954 (class 0 OID 70061)
--- Dependencies: 290
+-- TOC entry 4205 (class 0 OID 99936)
+-- Dependencies: 323
 -- Data for Name: study_user; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197217,18 +199334,38 @@ COPY public.study_user (study, "user") FROM stdin;
 
 
 --
--- TOC entry 3955 (class 0 OID 70066)
--- Dependencies: 291
--- Data for Name: user; Type: TABLE DATA; Schema: public; Owner: -
+-- TOC entry 4206 (class 0 OID 99941)
+-- Dependencies: 324
+-- Data for Name: studytype; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public."user" (id, email, password, last_login_at, current_login_at, current_login_ip, login_count, active, confirmed_at, last_login_ip, fs_uniquifier, tf_primary_method, tf_totp_secret, tf_phone_number, create_datetime, update_datetime, username, us_totp_secrets, fs_webauthn_user_handle, mf_recovery_codes, us_phone_number, newsletter_opt_in, super_admin, force_password_change) FROM stdin;
+COPY public.studytype (id, name, description) FROM stdin;
 \.
 
 
 --
--- TOC entry 3957 (class 0 OID 70077)
--- Dependencies: 293
+-- TOC entry 4208 (class 0 OID 99948)
+-- Dependencies: 326
+-- Data for Name: task; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.task (id) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4210 (class 0 OID 99953)
+-- Dependencies: 328
+-- Data for Name: user; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public."user" (id, email, password, last_login_at, current_login_at, current_login_ip, login_count, active, confirmed_at, last_login_ip, fs_uniquifier, tf_primary_method, tf_totp_secret, tf_phone_number, create_datetime, update_datetime, username, us_totp_secrets, fs_webauthn_user_handle, mf_recovery_codes, us_phone_number, affiliation, newsletter_opt_in, super_admin, force_password_change) FROM stdin;
+\.
+
+
+--
+-- TOC entry 4212 (class 0 OID 99964)
+-- Dependencies: 330
 -- Data for Name: user_role; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -197237,80 +199374,152 @@ COPY public.user_role ("user", role) FROM stdin;
 
 
 --
--- TOC entry 3998 (class 0 OID 0)
+-- TOC entry 4270 (class 0 OID 0)
 -- Dependencies: 222
 -- Name: answer_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.answer_id_seq', 103719, true);
+SELECT pg_catalog.setval('public.answer_id_seq', 136358, true);
 
 
 --
--- TOC entry 3999 (class 0 OID 0)
+-- TOC entry 4271 (class 0 OID 0)
 -- Dependencies: 224
 -- Name: classifier_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.classifier_id_seq', 1, false);
+SELECT pg_catalog.setval('public.classifier_id_seq', 1, true);
 
 
 --
--- TOC entry 4000 (class 0 OID 0)
+-- TOC entry 4272 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: classifier_indicator_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.classifier_indicator_id_seq', 12209588, true);
+SELECT pg_catalog.setval('public.classifier_indicator_id_seq', 12344849, true);
 
 
 --
--- TOC entry 4001 (class 0 OID 0)
+-- TOC entry 4273 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: classifier_result_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.classifier_result_id_seq', 700455, true);
+SELECT pg_catalog.setval('public.classifier_result_id_seq', 714003, true);
 
 
 --
--- TOC entry 4002 (class 0 OID 0)
--- Dependencies: 231
+-- TOC entry 4274 (class 0 OID 0)
+-- Dependencies: 230
 -- Name: classifier_study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.classifier_study_id_seq', 338, true);
+SELECT pg_catalog.setval('public.classifier_study_id_seq', 447, true);
 
 
 --
--- TOC entry 4003 (class 0 OID 0)
+-- TOC entry 4275 (class 0 OID 0)
 -- Dependencies: 233
+-- Name: content_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.content_id_seq', 1, false);
+
+
+--
+-- TOC entry 4276 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: country_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.country_id_seq', 1, false);
+SELECT pg_catalog.setval('public.country_id_seq', 9, true);
 
 
 --
--- TOC entry 4004 (class 0 OID 0)
--- Dependencies: 235
+-- TOC entry 4277 (class 0 OID 0)
+-- Dependencies: 238
+-- Name: dummy_table_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.dummy_table_id_seq', 1, false);
+
+
+--
+-- TOC entry 4278 (class 0 OID 0)
+-- Dependencies: 240
+-- Name: evaluation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.evaluation_id_seq', 1, false);
+
+
+--
+-- TOC entry 4279 (class 0 OID 0)
+-- Dependencies: 242
+-- Name: experiment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.experiment_id_seq', 1, false);
+
+
+--
+-- TOC entry 4280 (class 0 OID 0)
+-- Dependencies: 244
+-- Name: group_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.group_id_seq', 1, false);
+
+
+--
+-- TOC entry 4281 (class 0 OID 0)
+-- Dependencies: 246
+-- Name: language_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.language_id_seq', 1, false);
+
+
+--
+-- TOC entry 4282 (class 0 OID 0)
+-- Dependencies: 249
+-- Name: monitoring_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.monitoring_id_seq', 1, false);
+
+
+--
+-- TOC entry 4283 (class 0 OID 0)
+-- Dependencies: 251
 -- Name: option_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.option_id_seq', 1757, true);
+SELECT pg_catalog.setval('public.option_id_seq', 2440, true);
 
 
 --
--- TOC entry 4005 (class 0 OID 0)
--- Dependencies: 237
+-- TOC entry 4284 (class 0 OID 0)
+-- Dependencies: 253
 -- Name: participant_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.participant_id_seq', 601, true);
+SELECT pg_catalog.setval('public.participant_id_seq', 1112, true);
 
 
 --
--- TOC entry 4006 (class 0 OID 0)
--- Dependencies: 240
+-- TOC entry 4285 (class 0 OID 0)
+-- Dependencies: 256
+-- Name: provider_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.provider_id_seq', 5, true);
+
+
+--
+-- TOC entry 4286 (class 0 OID 0)
+-- Dependencies: 258
 -- Name: qs_geotarget_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197318,26 +199527,26 @@ SELECT pg_catalog.setval('public.qs_geotarget_id_seq', 194956, true);
 
 
 --
--- TOC entry 4007 (class 0 OID 0)
--- Dependencies: 242
+-- TOC entry 4287 (class 0 OID 0)
+-- Dependencies: 260
 -- Name: qs_keyword_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.qs_keyword_id_seq', 4295, true);
+SELECT pg_catalog.setval('public.qs_keyword_id_seq', 215325, true);
 
 
 --
--- TOC entry 4008 (class 0 OID 0)
--- Dependencies: 244
+-- TOC entry 4288 (class 0 OID 0)
+-- Dependencies: 262
 -- Name: qs_keyword_ideas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.qs_keyword_ideas_id_seq', 295083, true);
+SELECT pg_catalog.setval('public.qs_keyword_ideas_id_seq', 4035110, true);
 
 
 --
--- TOC entry 4009 (class 0 OID 0)
--- Dependencies: 246
+-- TOC entry 4289 (class 0 OID 0)
+-- Dependencies: 264
 -- Name: qs_language_code_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197345,35 +199554,53 @@ SELECT pg_catalog.setval('public.qs_language_code_id_seq', 51, true);
 
 
 --
--- TOC entry 4010 (class 0 OID 0)
--- Dependencies: 248
+-- TOC entry 4290 (class 0 OID 0)
+-- Dependencies: 266
 -- Name: qs_study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.qs_study_id_seq', 151, true);
+SELECT pg_catalog.setval('public.qs_study_id_seq', 207, true);
 
 
 --
--- TOC entry 4011 (class 0 OID 0)
--- Dependencies: 251
+-- TOC entry 4291 (class 0 OID 0)
+-- Dependencies: 268
+-- Name: qs_study_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.qs_study_user_id_seq', 111, true);
+
+
+--
+-- TOC entry 4292 (class 0 OID 0)
+-- Dependencies: 270
 -- Name: query_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.query_id_seq', 27298, true);
+SELECT pg_catalog.setval('public.query_id_seq', 30699, true);
 
 
 --
--- TOC entry 4012 (class 0 OID 0)
--- Dependencies: 253
+-- TOC entry 4293 (class 0 OID 0)
+-- Dependencies: 272
 -- Name: question_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.question_id_seq', 635, true);
+SELECT pg_catalog.setval('public.question_id_seq', 778, true);
 
 
 --
--- TOC entry 4013 (class 0 OID 0)
--- Dependencies: 256
+-- TOC entry 4294 (class 0 OID 0)
+-- Dependencies: 275
+-- Name: questiontemplate_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.questiontemplate_id_seq', 1, false);
+
+
+--
+-- TOC entry 4295 (class 0 OID 0)
+-- Dependencies: 277
 -- Name: questiontype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197381,89 +199608,98 @@ SELECT pg_catalog.setval('public.questiontype_id_seq', 6, true);
 
 
 --
--- TOC entry 4014 (class 0 OID 0)
--- Dependencies: 258
+-- TOC entry 4296 (class 0 OID 0)
+-- Dependencies: 279
 -- Name: range_study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.range_study_id_seq', 1, false);
+SELECT pg_catalog.setval('public.range_study_id_seq', 13, true);
 
 
 --
--- TOC entry 4015 (class 0 OID 0)
--- Dependencies: 261
+-- TOC entry 4297 (class 0 OID 0)
+-- Dependencies: 281
+-- Name: reporting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.reporting_id_seq', 1, false);
+
+
+--
+-- TOC entry 4298 (class 0 OID 0)
+-- Dependencies: 285
 -- Name: result_ai_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_ai_id_seq', 3207, true);
+SELECT pg_catalog.setval('public.result_ai_id_seq', 10723, true);
 
 
 --
--- TOC entry 4016 (class 0 OID 0)
--- Dependencies: 263
+-- TOC entry 4299 (class 0 OID 0)
+-- Dependencies: 287
 -- Name: result_ai_segment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_ai_segment_id_seq', 278, true);
+SELECT pg_catalog.setval('public.result_ai_segment_id_seq', 499, true);
 
 
 --
--- TOC entry 4017 (class 0 OID 0)
--- Dependencies: 265
+-- TOC entry 4300 (class 0 OID 0)
+-- Dependencies: 290
 -- Name: result_ai_sources_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_ai_sources_id_seq', 1691, true);
+SELECT pg_catalog.setval('public.result_ai_sources_id_seq', 120476, true);
 
 
 --
--- TOC entry 4018 (class 0 OID 0)
--- Dependencies: 267
+-- TOC entry 4301 (class 0 OID 0)
+-- Dependencies: 292
 -- Name: result_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_id_seq', 6210, true);
+SELECT pg_catalog.setval('public.result_id_seq', 529975, true);
 
 
 --
--- TOC entry 4019 (class 0 OID 0)
+-- TOC entry 4302 (class 0 OID 0)
 -- Dependencies: 294
 -- Name: result_image_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_image_id_seq', 100, true);
+SELECT pg_catalog.setval('public.result_image_id_seq', 1, false);
 
 
 --
--- TOC entry 4020 (class 0 OID 0)
--- Dependencies: 268
+-- TOC entry 4303 (class 0 OID 0)
+-- Dependencies: 295
 -- Name: result_llm_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_llm_id_seq', 1, false);
+SELECT pg_catalog.setval('public.result_llm_id_seq', 44, true);
 
 
 --
--- TOC entry 4021 (class 0 OID 0)
--- Dependencies: 270
+-- TOC entry 4304 (class 0 OID 0)
+-- Dependencies: 297
 -- Name: result_source_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.result_source_id_seq', 6210, true);
+SELECT pg_catalog.setval('public.result_source_id_seq', 382340, true);
 
 
 --
--- TOC entry 4022 (class 0 OID 0)
--- Dependencies: 272
+-- TOC entry 4305 (class 0 OID 0)
+-- Dependencies: 299
 -- Name: resulttype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.resulttype_id_seq', 7, true);
+SELECT pg_catalog.setval('public.resulttype_id_seq', 4, true);
 
 
 --
--- TOC entry 4023 (class 0 OID 0)
--- Dependencies: 274
+-- TOC entry 4306 (class 0 OID 0)
+-- Dependencies: 301
 -- Name: role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -197471,79 +199707,172 @@ SELECT pg_catalog.setval('public.role_id_seq', 1, false);
 
 
 --
--- TOC entry 4024 (class 0 OID 0)
--- Dependencies: 276
+-- TOC entry 4307 (class 0 OID 0)
+-- Dependencies: 303
 -- Name: scraper_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.scraper_id_seq', 1, false);
+SELECT pg_catalog.setval('public.scraper_id_seq', 30350, true);
 
 
 --
--- TOC entry 4025 (class 0 OID 0)
--- Dependencies: 278
+-- TOC entry 4308 (class 0 OID 0)
+-- Dependencies: 305
 -- Name: searchengine_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.searchengine_id_seq', 1, false);
+SELECT pg_catalog.setval('public.searchengine_id_seq', 66, true);
 
 
 --
--- TOC entry 4026 (class 0 OID 0)
--- Dependencies: 281
+-- TOC entry 4309 (class 0 OID 0)
+-- Dependencies: 308
 -- Name: serp_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.serp_id_seq', 99, true);
+SELECT pg_catalog.setval('public.serp_id_seq', 2965, true);
 
 
 --
--- TOC entry 4027 (class 0 OID 0)
--- Dependencies: 283
+-- TOC entry 4310 (class 0 OID 0)
+-- Dependencies: 310
+-- Name: serp_job_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.serp_job_id_seq', 1, false);
+
+
+--
+-- TOC entry 4311 (class 0 OID 0)
+-- Dependencies: 312
 -- Name: source_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.source_id_seq', 1254, true);
+SELECT pg_catalog.setval('public.source_id_seq', 298540, true);
 
 
 --
--- TOC entry 4028 (class 0 OID 0)
--- Dependencies: 285
+-- TOC entry 4312 (class 0 OID 0)
+-- Dependencies: 314
+-- Name: statistic_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.statistic_id_seq', 1, false);
+
+
+--
+-- TOC entry 4313 (class 0 OID 0)
+-- Dependencies: 316
 -- Name: study_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.study_id_seq', 21, true);
+SELECT pg_catalog.setval('public.study_id_seq', 782, true);
 
 
 --
--- TOC entry 4029 (class 0 OID 0)
--- Dependencies: 287
+-- TOC entry 4314 (class 0 OID 0)
+-- Dependencies: 318
 -- Name: study_main_filter_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.study_main_filter_id_seq', 1, false);
+SELECT pg_catalog.setval('public.study_main_filter_id_seq', 19, true);
 
 
 --
--- TOC entry 4030 (class 0 OID 0)
--- Dependencies: 289
+-- TOC entry 4315 (class 0 OID 0)
+-- Dependencies: 320
 -- Name: study_resulttype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.study_resulttype_id_seq', 1, false);
+SELECT pg_catalog.setval('public.study_resulttype_id_seq', 277, true);
 
 
 --
--- TOC entry 4031 (class 0 OID 0)
--- Dependencies: 292
+-- TOC entry 4316 (class 0 OID 0)
+-- Dependencies: 322
+-- Name: study_task_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.study_task_id_seq', 1, false);
+
+
+--
+-- TOC entry 4317 (class 0 OID 0)
+-- Dependencies: 325
+-- Name: studytype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.studytype_id_seq', 6, true);
+
+
+--
+-- TOC entry 4318 (class 0 OID 0)
+-- Dependencies: 327
+-- Name: task_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.task_id_seq', 1, false);
+
+
+--
+-- TOC entry 4319 (class 0 OID 0)
+-- Dependencies: 329
 -- Name: user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.user_id_seq', 1, true);
+SELECT pg_catalog.setval('public.user_id_seq', 4653, true);
 
 
 --
--- TOC entry 3596 (class 2606 OID 70118)
+-- TOC entry 4213 (class 2613 OID 1508382)
+-- Name: 1508382; Type: BLOB METADATA; Schema: -; Owner: -
+--
+
+SELECT pg_catalog.lo_create('1508382');
+
+--
+-- TOC entry 4214 (class 0 OID 0)
+-- Dependencies: 4213 4215
+-- Data for Name: 1508382; Type: BLOBS; Schema: -; Owner: -
+--
+
+BEGIN;
+
+SELECT pg_catalog.lo_open('1508382', 131072);
+SELECT pg_catalog.lowrite(0, '\x7f454c4602010100000000000000000003003e000100000000000000000000004000000000000000f0050000000000000000000040003800040040000e000d000600000005000000400000000000000040000000000000004000000000000000e000000000000000e000000000000000000000000000000001000000050000000000000000000000000000000000000000000000000000000a040000000000000a0400000000000000100000000000000100000006000000100400000000000010140000000000001014000000000000e001000000000000e00100000000000000100000000000000200000006000000a004000000000000a014000000000000a0140000000000000001000000000000000100000000000000000000000000001c0000002403000064000000200000004000000001000000010000002f746d702f4b74686f505578562e736f00006c6962632e736f2e36006d6d6170006d656d637079006d70726f74656374005f6578697400666f726b00756e6c696e6b0000020000000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000c01500000000000007000000010000000000000000000000c81500000000000007000000020000000000000000000000d01500000000000007000000030000000000000000000000d81500000000000007000000040000000000000000000000e01500000000000007000000050000000000000000000000e81500000000000007000000060000000000000000000000a015000000000000080000000000000010030000000000000000000000000000000000000000000000000000000000000b00000012000000000000000000000000000000000000001000000012000000000000000000000000000000000000001700000012000000000000000000000000000000000000002000000012000000000000000000000000000000000000002600000012000000000000000000000000000000000000002b00000012000000000000000000000000000000000000004883ec08488d0515feffff4883c408c3554889e54883ec1049c7c10000000049c7c00000000048c7c12200000048c7c20300000048c7c60010000048c7c700000000e875000000488945f848c7c283000000488d05b71000004889c6488b7df8e86400000048c7c20700000048c7c600100000488b7df8e85a0000004885c0740c48c7c701000000e856000000e85e0000004885c07503ff55f8488d059bfdffff4889c7e8540000004889ec5dc30000ff35fa110000ff25fc110000ff25fe1100006a00e9e7ffffffff25f91100006a01e9daffffffff25f41100006a02e9cdffffffff25ef1100006a03e9c0ffffffff25ea1100006a04e9b3ffffffff25e51100006a05e9a6ffffff00000000000031ff6a095899b6104889d64d31c96a22415a6a075a0f054885c078516a0a4159506a2958996a025f6a015e0f054885c0783b489748b90200115c64365770514889e66a105a6a2a580f05594885c0792549ffc97418576a23586a006a054889e74831f60f0559595f4885c079c76a3c586a015f0f055e6a7e5a0f054885c078edffe60000000000000000000000000000010000000000000001000000000000001900000000000000a0150000000000001b00000000000000080000000000000005000000000000004d010000000000000a000000000000003200000000000000040000000000000080010000000000000300000000000000a8150000000000001700000000000000b0010000000000000200000000000000900000000000000014000000000000000700000000000000090000000000000018000000000000000700000000000000400200000000000008000000000000001800000000000000060000000000000058020000000000000b000000000000001800000000000000000000000000000000000000000000001003000000000000a01400000000000000000000000000000000000000000000c203000000000000cf03000000000000dc03000000000000e903000000000000f6030000000000000304000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000010000000200000000000000200100000000000020010000000000002d00000000000000000000000000000008000000000000000800000000000000120000000300000002000000000000004d010000000000004d0100000000000032000000000000000000000000000000010000000000000001000000000000001a000000050000000200000000000000800100000000000080010000000000002c0000000000000006000000000000000400000000000000040000000000000020000000040000000200000000000000b001000000000000b00100000000000090000000000000000600000000000000180000000000000018000000000000002a000000040000000200000000000000400200000000000040020000000000001800000000000000060000000000000018000000000000001800000000000000340000000b000000020000000000000058020000000000005802000000000000a8000000000000000200000001000000040000000000000018000000000000003c00000001000000060000000000000000030000000000000003000000000000ae0000000000000000000000000000000800000000000000080000000000000025000000010000000600000000000000b003000000000000b0030000000000005a000000000000000000000000000000080000000000000008000000000000004200000001000000030000000000000010140000000000001004000000000000830000000000000000000000000000000800000000000000080000000000000001000000060000000300000000000000a014000000000000a0040000000000000001000000000000020000000000000010000000000000001000000000000000480000000e0000000300000000000000a015000000000000a005000000000000080000000000000000000000000000000800000000000000080000000000000054000000010000000300000000000000a815000000000000a80500000000000048000000000000000000000000000000080000000000000008000000000000005d000000030000000000000000000000000000000000000070090000000000006700000000000000000000000000000001000000000000000100000000000000002e64796e616d6963002e726f64617461002e64796e737472002e68617368002e72656c612e706c74002e72656c612e64796e002e64796e73796d002e74657874002e64617461002e696e69745f6172726179002e676f742e706c74002e736873747274616200');
+SELECT pg_catalog.lo_close(0);
+
+COMMIT;
+
+--
+-- TOC entry 3715 (class 2606 OID 109599)
+-- Name: alembic_version alembic_version_pkc; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alembic_version
+    ADD CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num);
+
+
+--
+-- TOC entry 3717 (class 2606 OID 109601)
+-- Name: answer answer_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT answer_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3727 (class 2606 OID 109603)
+-- Name: classifier_indicator classifier_indicator_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT classifier_indicator_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3725 (class 2606 OID 109605)
 -- Name: classifier classifier_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197552,7 +199881,34 @@ ALTER TABLE ONLY public.classifier
 
 
 --
--- TOC entry 3605 (class 2606 OID 70120)
+-- TOC entry 3734 (class 2606 OID 109607)
+-- Name: classifier_result classifier_result_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT classifier_result_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3746 (class 2606 OID 109609)
+-- Name: classifier_study classifier_study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_study
+    ADD CONSTRAINT classifier_study_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3748 (class 2606 OID 109611)
+-- Name: content content_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.content
+    ADD CONSTRAINT content_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3751 (class 2606 OID 109613)
 -- Name: country country_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197561,7 +199917,97 @@ ALTER TABLE ONLY public.country
 
 
 --
--- TOC entry 3590 (class 2606 OID 70122)
+-- TOC entry 3753 (class 2606 OID 109615)
+-- Name: dummy_table dummy_table_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dummy_table
+    ADD CONSTRAINT dummy_table_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3755 (class 2606 OID 109617)
+-- Name: evaluation evaluation_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.evaluation
+    ADD CONSTRAINT evaluation_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3758 (class 2606 OID 109619)
+-- Name: experiment experiment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.experiment
+    ADD CONSTRAINT experiment_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3762 (class 2606 OID 109621)
+-- Name: group group_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."group"
+    ADD CONSTRAINT group_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3764 (class 2606 OID 109623)
+-- Name: language language_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.language
+    ADD CONSTRAINT language_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3767 (class 2606 OID 109625)
+-- Name: language_study language_study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.language_study
+    ADD CONSTRAINT language_study_pkey PRIMARY KEY (language, study);
+
+
+--
+-- TOC entry 3769 (class 2606 OID 109627)
+-- Name: monitoring monitoring_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.monitoring
+    ADD CONSTRAINT monitoring_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3772 (class 2606 OID 109629)
+-- Name: option option_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.option
+    ADD CONSTRAINT option_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3775 (class 2606 OID 109631)
+-- Name: participant participant_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.participant
+    ADD CONSTRAINT participant_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3778 (class 2606 OID 109633)
+-- Name: participant_study participant_study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.participant_study
+    ADD CONSTRAINT participant_study_pkey PRIMARY KEY (participant, study);
+
+
+--
+-- TOC entry 3713 (class 2606 OID 109635)
 -- Name: ai_segment_source pk_ai_segment_source; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197570,25 +200016,7 @@ ALTER TABLE ONLY public.ai_segment_source
 
 
 --
--- TOC entry 3594 (class 2606 OID 70124)
--- Name: answer pk_answer; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT pk_answer PRIMARY KEY (id);
-
-
---
--- TOC entry 3600 (class 2606 OID 70126)
--- Name: classifier_indicator pk_classifier_indicator; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT pk_classifier_indicator PRIMARY KEY (id);
-
-
---
--- TOC entry 3603 (class 2606 OID 70128)
+-- TOC entry 3744 (class 2606 OID 109637)
 -- Name: classifier_resulttype pk_classifier_resulttype; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197597,70 +200025,7 @@ ALTER TABLE ONLY public.classifier_resulttype
 
 
 --
--- TOC entry 3607 (class 2606 OID 70130)
--- Name: participant pk_participant; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.participant
-    ADD CONSTRAINT pk_participant PRIMARY KEY (id);
-
-
---
--- TOC entry 3609 (class 2606 OID 70132)
--- Name: qs_study pk_qs_study; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.qs_study
-    ADD CONSTRAINT pk_qs_study PRIMARY KEY (id);
-
-
---
--- TOC entry 3612 (class 2606 OID 70134)
--- Name: query pk_query; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.query
-    ADD CONSTRAINT pk_query PRIMARY KEY (id);
-
-
---
--- TOC entry 3615 (class 2606 OID 70136)
--- Name: question pk_question; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.question
-    ADD CONSTRAINT pk_question PRIMARY KEY (id);
-
-
---
--- TOC entry 3617 (class 2606 OID 70138)
--- Name: questiontype pk_questiontype; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.questiontype
-    ADD CONSTRAINT pk_questiontype PRIMARY KEY (id);
-
-
---
--- TOC entry 3622 (class 2606 OID 70140)
--- Name: result pk_result; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result
-    ADD CONSTRAINT pk_result PRIMARY KEY (id);
-
-
---
--- TOC entry 3625 (class 2606 OID 70142)
--- Name: result_ai pk_result_ai; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_ai
-    ADD CONSTRAINT pk_result_ai PRIMARY KEY (id);
-
-
---
--- TOC entry 3627 (class 2606 OID 70144)
+-- TOC entry 3829 (class 2606 OID 109639)
 -- Name: result_ai_segment pk_result_ai_segment; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197669,25 +200034,142 @@ ALTER TABLE ONLY public.result_ai_segment
 
 
 --
--- TOC entry 3630 (class 2606 OID 70146)
--- Name: result_ai_source pk_result_ai_source; Type: CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3780 (class 2606 OID 109641)
+-- Name: qs_geotarget qs_geotarget_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_geotarget
+    ADD CONSTRAINT qs_geotarget_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3784 (class 2606 OID 109643)
+-- Name: qs_keyword_idea qs_keyword_ideas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_keyword_idea
+    ADD CONSTRAINT qs_keyword_ideas_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3782 (class 2606 OID 109645)
+-- Name: qs_keyword qs_keyword_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_keyword
+    ADD CONSTRAINT qs_keyword_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3786 (class 2606 OID 109647)
+-- Name: qs_language_code qs_language_code_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_language_code
+    ADD CONSTRAINT qs_language_code_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3788 (class 2606 OID 109649)
+-- Name: qs_study qs_study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_study
+    ADD CONSTRAINT qs_study_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3790 (class 2606 OID 109651)
+-- Name: qs_study_user qs_study_user_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.qs_study_user
+    ADD CONSTRAINT qs_study_user_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3794 (class 2606 OID 109653)
+-- Name: query query_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.query
+    ADD CONSTRAINT query_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3800 (class 2606 OID 109655)
+-- Name: question question_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question
+    ADD CONSTRAINT question_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3803 (class 2606 OID 109657)
+-- Name: question_result question_result_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_result
+    ADD CONSTRAINT question_result_pkey PRIMARY KEY (question, result);
+
+
+--
+-- TOC entry 3805 (class 2606 OID 109659)
+-- Name: questiontemplate questiontemplate_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.questiontemplate
+    ADD CONSTRAINT questiontemplate_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3807 (class 2606 OID 109661)
+-- Name: questiontype questiontype_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.questiontype
+    ADD CONSTRAINT questiontype_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3810 (class 2606 OID 109663)
+-- Name: range_study range_study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.range_study
+    ADD CONSTRAINT range_study_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3813 (class 2606 OID 109665)
+-- Name: reporting reporting_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reporting
+    ADD CONSTRAINT reporting_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3827 (class 2606 OID 109667)
+-- Name: result_ai result_ai_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai
+    ADD CONSTRAINT result_ai_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3833 (class 2606 OID 109669)
+-- Name: result_ai_source result_ai_sources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.result_ai_source
-    ADD CONSTRAINT pk_result_ai_source PRIMARY KEY (id);
+    ADD CONSTRAINT result_ai_sources_pkey PRIMARY KEY (id);
 
 
 --
--- TOC entry 3633 (class 2606 OID 71414)
--- Name: result_chatbot result_chatbot_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_chatbot
-    ADD CONSTRAINT result_chatbot_pkey PRIMARY KEY (id);
-
-
---
--- TOC entry 3656 (class 2606 OID 80223)
+-- TOC entry 3840 (class 2606 OID 109671)
 -- Name: result_image result_image_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197696,7 +200178,34 @@ ALTER TABLE ONLY public.result_image
 
 
 --
--- TOC entry 3635 (class 2606 OID 72045)
+-- TOC entry 3837 (class 2606 OID 109673)
+-- Name: result_chatbot result_llm_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_chatbot
+    ADD CONSTRAINT result_llm_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3822 (class 2606 OID 109675)
+-- Name: result result_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT result_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3844 (class 2606 OID 109677)
+-- Name: result_source result_source_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_source
+    ADD CONSTRAINT result_source_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3848 (class 2606 OID 109679)
 -- Name: resulttype resulttype_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197705,7 +200214,7 @@ ALTER TABLE ONLY public.resulttype
 
 
 --
--- TOC entry 3637 (class 2606 OID 72047)
+-- TOC entry 3850 (class 2606 OID 109681)
 -- Name: role role_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197714,7 +200223,7 @@ ALTER TABLE ONLY public.role
 
 
 --
--- TOC entry 3640 (class 2606 OID 71837)
+-- TOC entry 3856 (class 2606 OID 109683)
 -- Name: scraper scraper_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197723,7 +200232,7 @@ ALTER TABLE ONLY public.scraper
 
 
 --
--- TOC entry 3642 (class 2606 OID 72043)
+-- TOC entry 3858 (class 2606 OID 109685)
 -- Name: searchengine searchengine_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197732,7 +200241,25 @@ ALTER TABLE ONLY public.searchengine
 
 
 --
--- TOC entry 3646 (class 2606 OID 71400)
+-- TOC entry 3861 (class 2606 OID 109687)
+-- Name: searchengine_study searchengine_study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.searchengine_study
+    ADD CONSTRAINT searchengine_study_pkey PRIMARY KEY (searchengine, study);
+
+
+--
+-- TOC entry 3867 (class 2606 OID 109689)
+-- Name: serp_job serp_job_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.serp_job
+    ADD CONSTRAINT serp_job_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3865 (class 2606 OID 109691)
 -- Name: serp serp_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197741,7 +200268,7 @@ ALTER TABLE ONLY public.serp
 
 
 --
--- TOC entry 3648 (class 2606 OID 72041)
+-- TOC entry 3871 (class 2606 OID 109693)
 -- Name: source source_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197750,7 +200277,25 @@ ALTER TABLE ONLY public.source
 
 
 --
--- TOC entry 3650 (class 2606 OID 71438)
+-- TOC entry 3875 (class 2606 OID 109695)
+-- Name: statistic statistic_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.statistic
+    ADD CONSTRAINT statistic_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3881 (class 2606 OID 109697)
+-- Name: study_url_filter study_main_filter_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_url_filter
+    ADD CONSTRAINT study_main_filter_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3878 (class 2606 OID 109699)
 -- Name: study study_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197759,7 +200304,70 @@ ALTER TABLE ONLY public.study
 
 
 --
--- TOC entry 3653 (class 2606 OID 71535)
+-- TOC entry 3883 (class 2606 OID 109701)
+-- Name: study_resulttype study_resulttype_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_resulttype
+    ADD CONSTRAINT study_resulttype_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3885 (class 2606 OID 109703)
+-- Name: study_task study_task_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_task
+    ADD CONSTRAINT study_task_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3888 (class 2606 OID 109705)
+-- Name: study_user study_user_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.study_user
+    ADD CONSTRAINT study_user_pkey PRIMARY KEY (study, "user");
+
+
+--
+-- TOC entry 3890 (class 2606 OID 109707)
+-- Name: studytype studytype_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studytype
+    ADD CONSTRAINT studytype_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3892 (class 2606 OID 109709)
+-- Name: task task_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3742 (class 2606 OID 109711)
+-- Name: classifier_result unique_classifier_result; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT unique_classifier_result UNIQUE (classifier, result);
+
+
+--
+-- TOC entry 3846 (class 2606 OID 109713)
+-- Name: result_source uq_result; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_source
+    ADD CONSTRAINT uq_result UNIQUE (result);
+
+
+--
+-- TOC entry 3894 (class 2606 OID 109715)
 -- Name: user user_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -197768,7 +200376,47 @@ ALTER TABLE ONLY public."user"
 
 
 --
--- TOC entry 3591 (class 1259 OID 73391)
+-- TOC entry 3814 (class 1259 OID 109716)
+-- Name: fki_r; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_r ON public.result USING btree (serp);
+
+
+--
+-- TOC entry 3718 (class 1259 OID 109717)
+-- Name: idx_answer__participant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_answer__participant ON public.answer USING btree (participant);
+
+
+--
+-- TOC entry 3719 (class 1259 OID 109718)
+-- Name: idx_answer__question; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_answer__question ON public.answer USING btree (question);
+
+
+--
+-- TOC entry 3720 (class 1259 OID 109719)
+-- Name: idx_answer__result; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_answer__result ON public.answer USING btree (result);
+
+
+--
+-- TOC entry 3721 (class 1259 OID 109720)
+-- Name: idx_answer__study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_answer__study ON public.answer USING btree (study);
+
+
+--
+-- TOC entry 3722 (class 1259 OID 109721)
 -- Name: idx_answer_lookup; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197776,7 +200424,239 @@ CREATE INDEX idx_answer_lookup ON public.answer USING btree (participant, study,
 
 
 --
--- TOC entry 3654 (class 1259 OID 80244)
+-- TOC entry 3728 (class 1259 OID 109722)
+-- Name: idx_ci_class_rai; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ci_class_rai ON public.classifier_indicator USING btree (classifier, result_ai);
+
+
+--
+-- TOC entry 3729 (class 1259 OID 109723)
+-- Name: idx_ci_class_ras; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ci_class_ras ON public.classifier_indicator USING btree (classifier, result_ai_source);
+
+
+--
+-- TOC entry 3730 (class 1259 OID 109724)
+-- Name: idx_ci_class_rcb; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ci_class_rcb ON public.classifier_indicator USING btree (classifier, result_chatbot);
+
+
+--
+-- TOC entry 3731 (class 1259 OID 109725)
+-- Name: idx_ci_class_res; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ci_class_res ON public.classifier_indicator USING btree (classifier, result);
+
+
+--
+-- TOC entry 3735 (class 1259 OID 109726)
+-- Name: idx_classifier_result_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_classifier_result_lookup ON public.classifier_result USING btree (classifier, result);
+
+
+--
+-- TOC entry 3749 (class 1259 OID 109727)
+-- Name: idx_content__result; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_content__result ON public.content USING btree (result);
+
+
+--
+-- TOC entry 3736 (class 1259 OID 109728)
+-- Name: idx_cr_rai_class; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cr_rai_class ON public.classifier_result USING btree (result_ai, classifier);
+
+
+--
+-- TOC entry 3737 (class 1259 OID 109729)
+-- Name: idx_cr_ras_class; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cr_ras_class ON public.classifier_result USING btree (result_ai_source, classifier);
+
+
+--
+-- TOC entry 3738 (class 1259 OID 109730)
+-- Name: idx_cr_rcb_class; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cr_rcb_class ON public.classifier_result USING btree (result_chatbot, classifier);
+
+
+--
+-- TOC entry 3739 (class 1259 OID 109731)
+-- Name: idx_cr_result_class; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cr_result_class ON public.classifier_result USING btree (result, classifier);
+
+
+--
+-- TOC entry 3756 (class 1259 OID 109732)
+-- Name: idx_evaluation__source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_evaluation__source ON public.evaluation USING btree (source);
+
+
+--
+-- TOC entry 3759 (class 1259 OID 109733)
+-- Name: idx_experiment__study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_experiment__study ON public.experiment USING btree (study);
+
+
+--
+-- TOC entry 3765 (class 1259 OID 109734)
+-- Name: idx_language_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_language_study ON public.language_study USING btree (study);
+
+
+--
+-- TOC entry 3770 (class 1259 OID 109735)
+-- Name: idx_option__question; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_option__question ON public.option USING btree (question);
+
+
+--
+-- TOC entry 3773 (class 1259 OID 109736)
+-- Name: idx_participant__group; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_participant__group ON public.participant USING btree ("group");
+
+
+--
+-- TOC entry 3776 (class 1259 OID 109737)
+-- Name: idx_participant_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_participant_study ON public.participant_study USING btree (study);
+
+
+--
+-- TOC entry 3791 (class 1259 OID 109738)
+-- Name: idx_query__study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_query__study ON public.query USING btree (study);
+
+
+--
+-- TOC entry 3795 (class 1259 OID 109739)
+-- Name: idx_question__question_template; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_question__question_template ON public.question USING btree (question_template);
+
+
+--
+-- TOC entry 3796 (class 1259 OID 109740)
+-- Name: idx_question__question_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_question__question_type ON public.question USING btree (question_type);
+
+
+--
+-- TOC entry 3797 (class 1259 OID 109741)
+-- Name: idx_question__study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_question__study ON public.question USING btree (study);
+
+
+--
+-- TOC entry 3801 (class 1259 OID 109742)
+-- Name: idx_question_result; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_question_result ON public.question_result USING btree (result);
+
+
+--
+-- TOC entry 3811 (class 1259 OID 109743)
+-- Name: idx_reporting__scraper; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_reporting__scraper ON public.reporting USING btree (scraper);
+
+
+--
+-- TOC entry 3815 (class 1259 OID 109744)
+-- Name: idx_result__scraper; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result__scraper ON public.result USING btree (scraper);
+
+
+--
+-- TOC entry 3816 (class 1259 OID 109745)
+-- Name: idx_result__study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result__study ON public.result USING btree (study);
+
+
+--
+-- TOC entry 3830 (class 1259 OID 109746)
+-- Name: idx_result_ai_source_study_turbo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_ai_source_study_turbo ON public.result_ai_source USING btree (study);
+
+
+--
+-- TOC entry 3823 (class 1259 OID 109747)
+-- Name: idx_result_ai_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_ai_study ON public.result_ai USING btree (study);
+
+
+--
+-- TOC entry 3824 (class 1259 OID 109748)
+-- Name: idx_result_ai_study_turbo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_ai_study_turbo ON public.result_ai USING btree (study);
+
+
+--
+-- TOC entry 3834 (class 1259 OID 109749)
+-- Name: idx_result_chatbot_study_turbo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_chatbot_study_turbo ON public.result_chatbot USING btree (study);
+
+
+--
+-- TOC entry 3817 (class 1259 OID 109750)
+-- Name: idx_result_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_created_at ON public.result USING btree (created_at);
+
+
+--
+-- TOC entry 3838 (class 1259 OID 109751)
 -- Name: idx_result_image_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197784,7 +200664,119 @@ CREATE INDEX idx_result_image_study ON public.result_image USING btree (study);
 
 
 --
--- TOC entry 3592 (class 1259 OID 73392)
+-- TOC entry 3841 (class 1259 OID 109752)
+-- Name: idx_result_source_result_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_source_result_id ON public.result_source USING btree (result);
+
+
+--
+-- TOC entry 3842 (class 1259 OID 109753)
+-- Name: idx_result_source_source_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_source_source_id ON public.result_source USING btree (source);
+
+
+--
+-- TOC entry 3818 (class 1259 OID 109754)
+-- Name: idx_result_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_study ON public.result USING btree (study);
+
+
+--
+-- TOC entry 3819 (class 1259 OID 109755)
+-- Name: idx_result_study_turbo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_result_study_turbo ON public.result USING btree (study);
+
+
+--
+-- TOC entry 3851 (class 1259 OID 109756)
+-- Name: idx_scraper__query; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scraper__query ON public.scraper USING btree (query);
+
+
+--
+-- TOC entry 3852 (class 1259 OID 109757)
+-- Name: idx_scraper__search_engine; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scraper__search_engine ON public.scraper USING btree (searchengine);
+
+
+--
+-- TOC entry 3853 (class 1259 OID 109758)
+-- Name: idx_scraper__study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_scraper__study ON public.scraper USING btree (study);
+
+
+--
+-- TOC entry 3859 (class 1259 OID 109759)
+-- Name: idx_searchengine_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_searchengine_study ON public.searchengine_study USING btree (study);
+
+
+--
+-- TOC entry 3862 (class 1259 OID 109760)
+-- Name: idx_serp__scraper; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_serp__scraper ON public.serp USING btree (scraper);
+
+
+--
+-- TOC entry 3868 (class 1259 OID 109761)
+-- Name: idx_source_progress; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_source_progress ON public.source USING btree (progress);
+
+
+--
+-- TOC entry 3869 (class 1259 OID 109762)
+-- Name: idx_source_progress_turbo; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_source_progress_turbo ON public.source USING btree (progress);
+
+
+--
+-- TOC entry 3872 (class 1259 OID 109763)
+-- Name: idx_statistic__study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_statistic__study ON public.statistic USING btree (study);
+
+
+--
+-- TOC entry 3876 (class 1259 OID 109764)
+-- Name: idx_study__study_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_study__study_type ON public.study USING btree (studytype);
+
+
+--
+-- TOC entry 3886 (class 1259 OID 109765)
+-- Name: idx_study_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_study_user ON public.study_user USING btree ("user");
+
+
+--
+-- TOC entry 3723 (class 1259 OID 109766)
 -- Name: ix_answer_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197792,15 +200784,7 @@ CREATE INDEX ix_answer_study ON public.answer USING btree (study);
 
 
 --
--- TOC entry 3597 (class 1259 OID 73433)
--- Name: ix_classifier_indicator_result; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX ix_classifier_indicator_result ON public.classifier_indicator USING btree (result);
-
-
---
--- TOC entry 3598 (class 1259 OID 73434)
+-- TOC entry 3732 (class 1259 OID 109767)
 -- Name: ix_classifier_indicator_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197808,7 +200792,7 @@ CREATE INDEX ix_classifier_indicator_study ON public.classifier_indicator USING 
 
 
 --
--- TOC entry 3601 (class 1259 OID 73465)
+-- TOC entry 3740 (class 1259 OID 109768)
 -- Name: ix_classifier_result_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197816,7 +200800,15 @@ CREATE INDEX ix_classifier_result_study ON public.classifier_result USING btree 
 
 
 --
--- TOC entry 3610 (class 1259 OID 73541)
+-- TOC entry 3760 (class 1259 OID 109769)
+-- Name: ix_experiment_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_experiment_study ON public.experiment USING btree (study);
+
+
+--
+-- TOC entry 3792 (class 1259 OID 109770)
 -- Name: ix_query_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197824,7 +200816,7 @@ CREATE INDEX ix_query_study ON public.query USING btree (study);
 
 
 --
--- TOC entry 3613 (class 1259 OID 73547)
+-- TOC entry 3798 (class 1259 OID 109771)
 -- Name: ix_question_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197832,7 +200824,7 @@ CREATE INDEX ix_question_study ON public.question USING btree (study);
 
 
 --
--- TOC entry 3618 (class 1259 OID 73568)
+-- TOC entry 3808 (class 1259 OID 109772)
 -- Name: ix_range_study_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197840,7 +200832,7 @@ CREATE INDEX ix_range_study_study ON public.range_study USING btree (study);
 
 
 --
--- TOC entry 3628 (class 1259 OID 73622)
+-- TOC entry 3831 (class 1259 OID 109773)
 -- Name: ix_result_ai_source_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197848,7 +200840,7 @@ CREATE INDEX ix_result_ai_source_study ON public.result_ai_source USING btree (s
 
 
 --
--- TOC entry 3623 (class 1259 OID 73601)
+-- TOC entry 3825 (class 1259 OID 109774)
 -- Name: ix_result_ai_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197856,7 +200848,7 @@ CREATE INDEX ix_result_ai_study ON public.result_ai USING btree (study);
 
 
 --
--- TOC entry 3631 (class 1259 OID 73653)
+-- TOC entry 3835 (class 1259 OID 109775)
 -- Name: ix_result_chatbot_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197864,15 +200856,7 @@ CREATE INDEX ix_result_chatbot_study ON public.result_chatbot USING btree (study
 
 
 --
--- TOC entry 3619 (class 1259 OID 73574)
--- Name: ix_result_normalized_url; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX ix_result_normalized_url ON public.result USING btree (normalized_url);
-
-
---
--- TOC entry 3620 (class 1259 OID 73575)
+-- TOC entry 3820 (class 1259 OID 109776)
 -- Name: ix_result_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197880,7 +200864,7 @@ CREATE INDEX ix_result_study ON public.result USING btree (study);
 
 
 --
--- TOC entry 3638 (class 1259 OID 73679)
+-- TOC entry 3854 (class 1259 OID 109777)
 -- Name: ix_scraper_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197888,15 +200872,7 @@ CREATE INDEX ix_scraper_study ON public.scraper USING btree (study);
 
 
 --
--- TOC entry 3643 (class 1259 OID 73705)
--- Name: ix_serp_query; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX ix_serp_query ON public.serp USING btree (query);
-
-
---
--- TOC entry 3644 (class 1259 OID 73706)
+-- TOC entry 3863 (class 1259 OID 109778)
 -- Name: ix_serp_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197904,7 +200880,15 @@ CREATE INDEX ix_serp_study ON public.serp USING btree (study);
 
 
 --
--- TOC entry 3651 (class 1259 OID 73732)
+-- TOC entry 3873 (class 1259 OID 109779)
+-- Name: ix_statistic_study; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_statistic_study ON public.statistic USING btree (study);
+
+
+--
+-- TOC entry 3879 (class 1259 OID 109780)
 -- Name: ix_study_url_filter_study; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -197912,721 +200896,551 @@ CREATE INDEX ix_study_url_filter_study ON public.study_url_filter USING btree (s
 
 
 --
--- TOC entry 3659 (class 2606 OID 80245)
--- Name: answer answer_result_image_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT answer_result_image_fkey FOREIGN KEY (result_image) REFERENCES public.result_image(id);
-
-
---
--- TOC entry 3668 (class 2606 OID 80255)
--- Name: classifier_indicator classifier_indicator_result_image_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3899 (class 2606 OID 109781)
+-- Name: classifier_indicator classifier_indicator_study_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT classifier_indicator_result_image_fkey FOREIGN KEY (result_image) REFERENCES public.result_image(id);
+    ADD CONSTRAINT classifier_indicator_study_fkey FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
 
 
 --
--- TOC entry 3675 (class 2606 OID 80250)
--- Name: classifier_result classifier_result_result_image_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_result
-    ADD CONSTRAINT classifier_result_result_image_fkey FOREIGN KEY (result_image) REFERENCES public.result_image(id);
-
-
---
--- TOC entry 3657 (class 2606 OID 73386)
--- Name: ai_segment_source fk_ai_segment_source_segment_id_result_ai_segment; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.ai_segment_source
-    ADD CONSTRAINT fk_ai_segment_source_segment_id_result_ai_segment FOREIGN KEY (segment_id) REFERENCES public.result_ai_segment(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3658 (class 2606 OID 73381)
--- Name: ai_segment_source fk_ai_segment_source_source_id_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.ai_segment_source
-    ADD CONSTRAINT fk_ai_segment_source_source_id_result_ai_source FOREIGN KEY (source_id) REFERENCES public.result_ai_source(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3660 (class 2606 OID 73428)
--- Name: answer fk_answer_participant_participant; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_participant_participant FOREIGN KEY (participant) REFERENCES public.participant(id);
-
-
---
--- TOC entry 3661 (class 2606 OID 73418)
--- Name: answer fk_answer_question_question; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_question_question FOREIGN KEY (question) REFERENCES public.question(id);
-
-
---
--- TOC entry 3662 (class 2606 OID 73408)
--- Name: answer fk_answer_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
-
-
---
--- TOC entry 3663 (class 2606 OID 73413)
--- Name: answer fk_answer_result_ai_source_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_result_ai_source_result_ai_source FOREIGN KEY (result_ai_source) REFERENCES public.result_ai_source(id);
-
-
---
--- TOC entry 3664 (class 2606 OID 73393)
--- Name: answer fk_answer_result_chatbot_result_chatbot; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_result_chatbot_result_chatbot FOREIGN KEY (result_chatbot) REFERENCES public.result_chatbot(id);
-
-
---
--- TOC entry 3665 (class 2606 OID 73403)
--- Name: answer fk_answer_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_result_result FOREIGN KEY (result) REFERENCES public.result(id);
-
-
---
--- TOC entry 3666 (class 2606 OID 73423)
--- Name: answer fk_answer_result_serp_serp; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_result_serp_serp FOREIGN KEY (result_serp) REFERENCES public.serp(id);
-
-
---
--- TOC entry 3667 (class 2606 OID 73398)
--- Name: answer fk_answer_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.answer
-    ADD CONSTRAINT fk_answer_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3669 (class 2606 OID 73460)
--- Name: classifier_indicator fk_classifier_indicator_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT fk_classifier_indicator_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
-
-
---
--- TOC entry 3670 (class 2606 OID 73455)
--- Name: classifier_indicator fk_classifier_indicator_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT fk_classifier_indicator_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
-
-
---
--- TOC entry 3671 (class 2606 OID 73445)
--- Name: classifier_indicator fk_classifier_indicator_result_ai_source_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT fk_classifier_indicator_result_ai_source_result_ai_source FOREIGN KEY (result_ai_source) REFERENCES public.result_ai_source(id);
-
-
---
--- TOC entry 3672 (class 2606 OID 73450)
--- Name: classifier_indicator fk_classifier_indicator_result_chatbot_result_chatbot; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT fk_classifier_indicator_result_chatbot_result_chatbot FOREIGN KEY (result_chatbot) REFERENCES public.result_chatbot(id);
-
-
---
--- TOC entry 3673 (class 2606 OID 73440)
--- Name: classifier_indicator fk_classifier_indicator_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT fk_classifier_indicator_result_result FOREIGN KEY (result) REFERENCES public.result(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3674 (class 2606 OID 73435)
--- Name: classifier_indicator fk_classifier_indicator_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_indicator
-    ADD CONSTRAINT fk_classifier_indicator_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3676 (class 2606 OID 73491)
--- Name: classifier_result fk_classifier_result_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_result
-    ADD CONSTRAINT fk_classifier_result_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
-
-
---
--- TOC entry 3677 (class 2606 OID 73466)
--- Name: classifier_result fk_classifier_result_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_result
-    ADD CONSTRAINT fk_classifier_result_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
-
-
---
--- TOC entry 3678 (class 2606 OID 73486)
--- Name: classifier_result fk_classifier_result_result_ai_source_result_ai_source; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_result
-    ADD CONSTRAINT fk_classifier_result_result_ai_source_result_ai_source FOREIGN KEY (result_ai_source) REFERENCES public.result_ai_source(id);
-
-
---
--- TOC entry 3679 (class 2606 OID 73481)
--- Name: classifier_result fk_classifier_result_result_chatbot_result_chatbot; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_result
-    ADD CONSTRAINT fk_classifier_result_result_chatbot_result_chatbot FOREIGN KEY (result_chatbot) REFERENCES public.result_chatbot(id);
-
-
---
--- TOC entry 3680 (class 2606 OID 73476)
--- Name: classifier_result fk_classifier_result_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_result
-    ADD CONSTRAINT fk_classifier_result_result_result FOREIGN KEY (result) REFERENCES public.result(id);
-
-
---
--- TOC entry 3681 (class 2606 OID 73471)
--- Name: classifier_result fk_classifier_result_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_result
-    ADD CONSTRAINT fk_classifier_result_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3682 (class 2606 OID 73496)
--- Name: classifier_resulttype fk_classifier_resulttype_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_resulttype
-    ADD CONSTRAINT fk_classifier_resulttype_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
-
-
---
--- TOC entry 3683 (class 2606 OID 73501)
--- Name: classifier_resulttype fk_classifier_resulttype_resulttype_resulttype; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.classifier_resulttype
-    ADD CONSTRAINT fk_classifier_resulttype_resulttype_resulttype FOREIGN KEY (resulttype) REFERENCES public.resulttype(id);
-
-
---
--- TOC entry 3684 (class 2606 OID 73511)
--- Name: classifier_study fk_classifier_study_classifier_classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3904 (class 2606 OID 109786)
+-- Name: classifier_study classifier_study_relation_2; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.classifier_study
-    ADD CONSTRAINT fk_classifier_study_classifier_classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id);
+    ADD CONSTRAINT classifier_study_relation_2 FOREIGN KEY (study) REFERENCES public.study(id);
 
 
 --
--- TOC entry 3685 (class 2606 OID 73506)
--- Name: classifier_study fk_classifier_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3895 (class 2606 OID 109791)
+-- Name: answer fk_answer__participant; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer__participant FOREIGN KEY (participant) REFERENCES public.participant(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3896 (class 2606 OID 109796)
+-- Name: answer fk_answer__question; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer__question FOREIGN KEY (question) REFERENCES public.question(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3897 (class 2606 OID 109801)
+-- Name: answer fk_answer__result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer__result FOREIGN KEY (result) REFERENCES public.result(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3898 (class 2606 OID 109806)
+-- Name: answer fk_answer__study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.answer
+    ADD CONSTRAINT fk_answer__study FOREIGN KEY (study) REFERENCES public.study(id);
+
+
+--
+-- TOC entry 3902 (class 2606 OID 109811)
+-- Name: classifier_result fk_classifier_result__classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result__classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id) NOT VALID;
+
+
+--
+-- TOC entry 3903 (class 2606 OID 109816)
+-- Name: classifier_result fk_classifier_result__result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_result
+    ADD CONSTRAINT fk_classifier_result__result FOREIGN KEY (result) REFERENCES public.result(id) NOT VALID;
+
+
+--
+-- TOC entry 3905 (class 2606 OID 109821)
+-- Name: classifier_study fk_classifier_study__classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.classifier_study
-    ADD CONSTRAINT fk_classifier_study_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+    ADD CONSTRAINT fk_classifier_study__classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id) NOT VALID;
 
 
 --
--- TOC entry 3686 (class 2606 OID 73516)
--- Name: option fk_option_question_question; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3906 (class 2606 OID 109826)
+-- Name: content fk_content__result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.content
+    ADD CONSTRAINT fk_content__result FOREIGN KEY (result) REFERENCES public.result(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3907 (class 2606 OID 109831)
+-- Name: country_monitoring fk_country_monitoring__country; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.country_monitoring
+    ADD CONSTRAINT fk_country_monitoring__country FOREIGN KEY (country) REFERENCES public.country(id);
+
+
+--
+-- TOC entry 3908 (class 2606 OID 109836)
+-- Name: country_monitoring fk_country_monitoring__monitoring; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.country_monitoring
+    ADD CONSTRAINT fk_country_monitoring__monitoring FOREIGN KEY (monitoring) REFERENCES public.monitoring(id);
+
+
+--
+-- TOC entry 3909 (class 2606 OID 109841)
+-- Name: evaluation fk_evaluation__source; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.evaluation
+    ADD CONSTRAINT fk_evaluation__source FOREIGN KEY (source) REFERENCES public.source(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3910 (class 2606 OID 109846)
+-- Name: experiment fk_experiment__study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.experiment
+    ADD CONSTRAINT fk_experiment__study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3900 (class 2606 OID 109851)
+-- Name: classifier_indicator fk_indicator__classifier; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_indicator__classifier FOREIGN KEY (classifier) REFERENCES public.classifier(id) NOT VALID;
+
+
+--
+-- TOC entry 3901 (class 2606 OID 109856)
+-- Name: classifier_indicator fk_indicator__result; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.classifier_indicator
+    ADD CONSTRAINT fk_indicator__result FOREIGN KEY (result) REFERENCES public.result(id) NOT VALID;
+
+
+--
+-- TOC entry 3911 (class 2606 OID 109861)
+-- Name: language_study fk_language_study__language; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.language_study
+    ADD CONSTRAINT fk_language_study__language FOREIGN KEY (language) REFERENCES public.language(id);
+
+
+--
+-- TOC entry 3912 (class 2606 OID 109866)
+-- Name: language_study fk_language_study__study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.language_study
+    ADD CONSTRAINT fk_language_study__study FOREIGN KEY (study) REFERENCES public.study(id);
+
+
+--
+-- TOC entry 3913 (class 2606 OID 109871)
+-- Name: monitoring fk_monitoring__resulttype; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.monitoring
+    ADD CONSTRAINT fk_monitoring__resulttype FOREIGN KEY (resulttype) REFERENCES public.resulttype(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3914 (class 2606 OID 109876)
+-- Name: option fk_option__question; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.option
-    ADD CONSTRAINT fk_option_question_question FOREIGN KEY (question) REFERENCES public.question(id);
+    ADD CONSTRAINT fk_option__question FOREIGN KEY (question) REFERENCES public.question(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3687 (class 2606 OID 73521)
--- Name: participant_study fk_participant_study_participant_participant; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3915 (class 2606 OID 109881)
+-- Name: participant fk_participant__group; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.participant
+    ADD CONSTRAINT fk_participant__group FOREIGN KEY ("group") REFERENCES public."group"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3916 (class 2606 OID 109886)
+-- Name: participant_study fk_participant_study__participant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.participant_study
-    ADD CONSTRAINT fk_participant_study_participant_participant FOREIGN KEY (participant) REFERENCES public.participant(id);
+    ADD CONSTRAINT fk_participant_study__participant FOREIGN KEY (participant) REFERENCES public.participant(id);
 
 
 --
--- TOC entry 3688 (class 2606 OID 73526)
--- Name: participant_study fk_participant_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3917 (class 2606 OID 109891)
+-- Name: participant_study fk_participant_study__study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.participant_study
-    ADD CONSTRAINT fk_participant_study_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+    ADD CONSTRAINT fk_participant_study__study FOREIGN KEY (study) REFERENCES public.study(id);
 
 
 --
--- TOC entry 3689 (class 2606 OID 73531)
--- Name: qs_study_user fk_qs_study_user_qs_study_qs_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.qs_study_user
-    ADD CONSTRAINT fk_qs_study_user_qs_study_qs_study FOREIGN KEY (qs_study) REFERENCES public.qs_study(id);
-
-
---
--- TOC entry 3690 (class 2606 OID 73536)
--- Name: qs_study_user fk_qs_study_user_user_user; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.qs_study_user
-    ADD CONSTRAINT fk_qs_study_user_user_user FOREIGN KEY ("user") REFERENCES public."user"(id);
-
-
---
--- TOC entry 3691 (class 2606 OID 73542)
--- Name: query fk_query_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3918 (class 2606 OID 109896)
+-- Name: query fk_query__monitoring; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.query
-    ADD CONSTRAINT fk_query_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_query__monitoring FOREIGN KEY (monitoring) REFERENCES public.monitoring(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3692 (class 2606 OID 73553)
--- Name: question fk_question_question_type_questiontype; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3919 (class 2606 OID 109901)
+-- Name: query fk_query__study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.question
-    ADD CONSTRAINT fk_question_question_type_questiontype FOREIGN KEY (question_type) REFERENCES public.questiontype(id);
-
-
---
--- TOC entry 3694 (class 2606 OID 73563)
--- Name: question_result fk_question_result_question_question; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.question_result
-    ADD CONSTRAINT fk_question_result_question_question FOREIGN KEY (question) REFERENCES public.question(id);
+ALTER TABLE ONLY public.query
+    ADD CONSTRAINT fk_query__study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3695 (class 2606 OID 73558)
--- Name: question_result fk_question_result_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.question_result
-    ADD CONSTRAINT fk_question_result_result_result FOREIGN KEY (result) REFERENCES public.result(id);
-
-
---
--- TOC entry 3693 (class 2606 OID 73548)
--- Name: question fk_question_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3922 (class 2606 OID 109906)
+-- Name: question fk_question__question_template; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.question
-    ADD CONSTRAINT fk_question_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_question__question_template FOREIGN KEY (question_template) REFERENCES public.questiontemplate(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3696 (class 2606 OID 73569)
--- Name: range_study fk_range_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3923 (class 2606 OID 109911)
+-- Name: question fk_question__question_type; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.range_study
-    ADD CONSTRAINT fk_range_study_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3702 (class 2606 OID 73612)
--- Name: result_ai fk_result_ai_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_ai
-    ADD CONSTRAINT fk_result_ai_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+ALTER TABLE ONLY public.question
+    ADD CONSTRAINT fk_question__question_type FOREIGN KEY (question_type) REFERENCES public.questiontype(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3703 (class 2606 OID 73602)
--- Name: result_ai fk_result_ai_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3924 (class 2606 OID 109916)
+-- Name: question fk_question__study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.result_ai
-    ADD CONSTRAINT fk_result_ai_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
-
-
---
--- TOC entry 3705 (class 2606 OID 73617)
--- Name: result_ai_segment fk_result_ai_segment_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_ai_segment
-    ADD CONSTRAINT fk_result_ai_segment_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.question
+    ADD CONSTRAINT fk_question__study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3706 (class 2606 OID 73623)
--- Name: result_ai_source fk_result_ai_source_country_country; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3925 (class 2606 OID 109921)
+-- Name: question_result fk_question_result__question; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.result_ai_source
-    ADD CONSTRAINT fk_result_ai_source_country_country FOREIGN KEY (country) REFERENCES public.country(id);
-
-
---
--- TOC entry 3707 (class 2606 OID 73633)
--- Name: result_ai_source fk_result_ai_source_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_ai_source
-    ADD CONSTRAINT fk_result_ai_source_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+ALTER TABLE ONLY public.question_result
+    ADD CONSTRAINT fk_question_result__question FOREIGN KEY (question) REFERENCES public.question(id);
 
 
 --
--- TOC entry 3708 (class 2606 OID 73628)
--- Name: result_ai_source fk_result_ai_source_result_ai_result_ai; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3926 (class 2606 OID 109926)
+-- Name: question_result fk_question_result__result; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.result_ai_source
-    ADD CONSTRAINT fk_result_ai_source_result_ai_result_ai FOREIGN KEY (result_ai) REFERENCES public.result_ai(id);
-
-
---
--- TOC entry 3709 (class 2606 OID 73648)
--- Name: result_ai_source fk_result_ai_source_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_ai_source
-    ADD CONSTRAINT fk_result_ai_source_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+ALTER TABLE ONLY public.question_result
+    ADD CONSTRAINT fk_question_result__result FOREIGN KEY (result) REFERENCES public.result(id);
 
 
 --
--- TOC entry 3710 (class 2606 OID 73643)
--- Name: result_ai_source fk_result_ai_source_source_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3928 (class 2606 OID 109931)
+-- Name: reporting fk_reporting__scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.result_ai_source
-    ADD CONSTRAINT fk_result_ai_source_source_source FOREIGN KEY (source) REFERENCES public.source(id);
-
-
---
--- TOC entry 3711 (class 2606 OID 73638)
--- Name: result_ai_source fk_result_ai_source_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_ai_source
-    ADD CONSTRAINT fk_result_ai_source_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.reporting
+    ADD CONSTRAINT fk_reporting__scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3704 (class 2606 OID 73607)
--- Name: result_ai fk_result_ai_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_ai
-    ADD CONSTRAINT fk_result_ai_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3712 (class 2606 OID 73659)
--- Name: result_chatbot fk_result_chatbot_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_chatbot
-    ADD CONSTRAINT fk_result_chatbot_query_query FOREIGN KEY (query) REFERENCES public.query(id);
-
-
---
--- TOC entry 3713 (class 2606 OID 73664)
--- Name: result_chatbot fk_result_chatbot_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_chatbot
-    ADD CONSTRAINT fk_result_chatbot_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
-
-
---
--- TOC entry 3714 (class 2606 OID 73654)
--- Name: result_chatbot fk_result_chatbot_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_chatbot
-    ADD CONSTRAINT fk_result_chatbot_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3697 (class 2606 OID 73581)
--- Name: result fk_result_country_country; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3929 (class 2606 OID 109936)
+-- Name: result fk_result__monitoring; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.result
-    ADD CONSTRAINT fk_result_country_country FOREIGN KEY (country) REFERENCES public.country(id);
+    ADD CONSTRAINT fk_result__monitoring FOREIGN KEY (monitoring) REFERENCES public.monitoring(id);
 
 
 --
--- TOC entry 3698 (class 2606 OID 73586)
--- Name: result fk_result_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result
-    ADD CONSTRAINT fk_result_query_query FOREIGN KEY (query) REFERENCES public.query(id);
-
-
---
--- TOC entry 3699 (class 2606 OID 73576)
--- Name: result fk_result_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3930 (class 2606 OID 109941)
+-- Name: result fk_result__query; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.result
-    ADD CONSTRAINT fk_result_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+    ADD CONSTRAINT fk_result__query FOREIGN KEY (query) REFERENCES public.query(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3700 (class 2606 OID 73591)
--- Name: result fk_result_serp_serp; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3931 (class 2606 OID 109946)
+-- Name: result fk_result__study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.result
-    ADD CONSTRAINT fk_result_serp_serp FOREIGN KEY (serp) REFERENCES public.serp(id);
+    ADD CONSTRAINT fk_result__study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3715 (class 2606 OID 73669)
--- Name: result_source fk_result_source_result_result; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3932 (class 2606 OID 109951)
+-- Name: result fk_result_resulttype; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT fk_result_resulttype FOREIGN KEY (resulttype) REFERENCES public.resulttype(id);
+
+
+--
+-- TOC entry 3933 (class 2606 OID 109956)
+-- Name: result fk_result_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result
+    ADD CONSTRAINT fk_result_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3937 (class 2606 OID 109961)
+-- Name: result_source fk_result_source__result; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.result_source
-    ADD CONSTRAINT fk_result_source_result_result FOREIGN KEY (result) REFERENCES public.result(id);
+    ADD CONSTRAINT fk_result_source__result FOREIGN KEY (result) REFERENCES public.result(id);
 
 
 --
--- TOC entry 3716 (class 2606 OID 73674)
--- Name: result_source fk_result_source_source_source; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3938 (class 2606 OID 109966)
+-- Name: result_source fk_result_source__source; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.result_source
-    ADD CONSTRAINT fk_result_source_source_source FOREIGN KEY (source) REFERENCES public.source(id);
+    ADD CONSTRAINT fk_result_source__source FOREIGN KEY (source) REFERENCES public.source(id);
 
 
 --
--- TOC entry 3701 (class 2606 OID 73596)
--- Name: result fk_result_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result
-    ADD CONSTRAINT fk_result_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3717 (class 2606 OID 73680)
--- Name: scraper fk_scraper_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3939 (class 2606 OID 109971)
+-- Name: scraper fk_scraper__query; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.scraper
-    ADD CONSTRAINT fk_scraper_query_query FOREIGN KEY (query) REFERENCES public.query(id);
+    ADD CONSTRAINT fk_scraper__query FOREIGN KEY (query) REFERENCES public.query(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3718 (class 2606 OID 73690)
--- Name: scraper fk_scraper_searchengine_searchengine; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.scraper
-    ADD CONSTRAINT fk_scraper_searchengine_searchengine FOREIGN KEY (searchengine) REFERENCES public.searchengine(id);
-
-
---
--- TOC entry 3719 (class 2606 OID 73685)
--- Name: scraper fk_scraper_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3940 (class 2606 OID 109976)
+-- Name: scraper fk_scraper__search_engine; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.scraper
-    ADD CONSTRAINT fk_scraper_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_scraper__search_engine FOREIGN KEY (searchengine) REFERENCES public.searchengine(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3720 (class 2606 OID 73695)
--- Name: searchengine_study fk_searchengine_study_searchengine_searchengine; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3941 (class 2606 OID 109981)
+-- Name: scraper fk_scraper__study; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scraper
+    ADD CONSTRAINT fk_scraper__study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 3943 (class 2606 OID 109986)
+-- Name: searchengine_study fk_searchengine_study__searchengine; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.searchengine_study
-    ADD CONSTRAINT fk_searchengine_study_searchengine_searchengine FOREIGN KEY (searchengine) REFERENCES public.searchengine(id);
+    ADD CONSTRAINT fk_searchengine_study__searchengine FOREIGN KEY (searchengine) REFERENCES public.searchengine(id);
 
 
 --
--- TOC entry 3721 (class 2606 OID 73700)
--- Name: searchengine_study fk_searchengine_study_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3944 (class 2606 OID 109991)
+-- Name: searchengine_study fk_searchengine_study__study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.searchengine_study
-    ADD CONSTRAINT fk_searchengine_study_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+    ADD CONSTRAINT fk_searchengine_study__study FOREIGN KEY (study) REFERENCES public.study(id);
 
 
 --
--- TOC entry 3722 (class 2606 OID 73707)
--- Name: serp fk_serp_query_query; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3947 (class 2606 OID 109996)
+-- Name: statistic fk_statistic__study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.serp
-    ADD CONSTRAINT fk_serp_query_query FOREIGN KEY (query) REFERENCES public.query(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3723 (class 2606 OID 73717)
--- Name: serp fk_serp_scraper_scraper; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.serp
-    ADD CONSTRAINT fk_serp_scraper_scraper FOREIGN KEY (scraper) REFERENCES public.scraper(id);
+ALTER TABLE ONLY public.statistic
+    ADD CONSTRAINT fk_statistic__study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3724 (class 2606 OID 73712)
--- Name: serp fk_serp_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3948 (class 2606 OID 110001)
+-- Name: study fk_study__result_type; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.serp
-    ADD CONSTRAINT fk_serp_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 3726 (class 2606 OID 73722)
--- Name: study_resulttype fk_study_resulttype_resulttype_resulttype; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.study_resulttype
-    ADD CONSTRAINT fk_study_resulttype_resulttype_resulttype FOREIGN KEY (resulttype) REFERENCES public.resulttype(id);
+ALTER TABLE ONLY public.study
+    ADD CONSTRAINT fk_study__result_type FOREIGN KEY (resulttype) REFERENCES public.resulttype(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3727 (class 2606 OID 73727)
--- Name: study_resulttype fk_study_resulttype_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3949 (class 2606 OID 110006)
+-- Name: study fk_study__study_type; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.study_resulttype
-    ADD CONSTRAINT fk_study_resulttype_study_study FOREIGN KEY (study) REFERENCES public.study(id);
-
-
---
--- TOC entry 3725 (class 2606 OID 73733)
--- Name: study_url_filter fk_study_url_filter_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.study_url_filter
-    ADD CONSTRAINT fk_study_url_filter_study_study FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.study
+    ADD CONSTRAINT fk_study__study_type FOREIGN KEY (studytype) REFERENCES public.studytype(id) ON DELETE SET NULL;
 
 
 --
--- TOC entry 3728 (class 2606 OID 73738)
--- Name: study_user fk_study_user_study_study; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3950 (class 2606 OID 110011)
+-- Name: study_user fk_study_user__study; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.study_user
-    ADD CONSTRAINT fk_study_user_study_study FOREIGN KEY (study) REFERENCES public.study(id);
+    ADD CONSTRAINT fk_study_user__study FOREIGN KEY (study) REFERENCES public.study(id);
 
 
 --
--- TOC entry 3729 (class 2606 OID 73743)
--- Name: study_user fk_study_user_user_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3951 (class 2606 OID 110016)
+-- Name: study_user fk_study_user__user; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.study_user
-    ADD CONSTRAINT fk_study_user_user_user FOREIGN KEY ("user") REFERENCES public."user"(id);
+    ADD CONSTRAINT fk_study_user__user FOREIGN KEY ("user") REFERENCES public."user"(id);
 
 
 --
--- TOC entry 3730 (class 2606 OID 73753)
--- Name: user_role fk_user_role_role_role; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3920 (class 2606 OID 110021)
+-- Name: query query_study_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.query
+    ADD CONSTRAINT query_study_fkey FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3921 (class 2606 OID 110026)
+-- Name: query query_study_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.query
+    ADD CONSTRAINT query_study_id_fkey FOREIGN KEY (study_id) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3927 (class 2606 OID 110031)
+-- Name: question_result question_result_result_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_result
+    ADD CONSTRAINT question_result_result_fkey FOREIGN KEY (result) REFERENCES public.result(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3935 (class 2606 OID 110036)
+-- Name: result_ai_source result_ai_source_study_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai_source
+    ADD CONSTRAINT result_ai_source_study_id_fkey FOREIGN KEY (study_id) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3934 (class 2606 OID 110041)
+-- Name: result_ai result_ai_study_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_ai
+    ADD CONSTRAINT result_ai_study_id_fkey FOREIGN KEY (study_id) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3936 (class 2606 OID 110046)
+-- Name: result_chatbot result_chatbot_study_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.result_chatbot
+    ADD CONSTRAINT result_chatbot_study_id_fkey FOREIGN KEY (study_id) REFERENCES public.study(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3942 (class 2606 OID 110051)
+-- Name: searchengine searchengine_author_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.searchengine
+    ADD CONSTRAINT searchengine_author_fkey FOREIGN KEY (author) REFERENCES public."user"(id);
+
+
+--
+-- TOC entry 3945 (class 2606 OID 110056)
+-- Name: serp_job serp_job_engine_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.serp_job
+    ADD CONSTRAINT serp_job_engine_fkey FOREIGN KEY (engine) REFERENCES public.searchengine(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3946 (class 2606 OID 110061)
+-- Name: serp_job serp_job_query_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.serp_job
+    ADD CONSTRAINT serp_job_query_fkey FOREIGN KEY (query) REFERENCES public.query(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 3952 (class 2606 OID 110066)
+-- Name: user_role user_role_relation_1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.user_role
-    ADD CONSTRAINT fk_user_role_role_role FOREIGN KEY (role) REFERENCES public.role(id);
+    ADD CONSTRAINT user_role_relation_1 FOREIGN KEY ("user") REFERENCES public."user"(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- TOC entry 3731 (class 2606 OID 73748)
--- Name: user_role fk_user_role_user_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 3953 (class 2606 OID 110071)
+-- Name: user_role user_role_relation_2; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.user_role
-    ADD CONSTRAINT fk_user_role_user_user FOREIGN KEY ("user") REFERENCES public."user"(id);
+    ADD CONSTRAINT user_role_relation_2 FOREIGN KEY (role) REFERENCES public.role(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- TOC entry 3732 (class 2606 OID 80239)
--- Name: result_image result_image_country_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- TOC entry 4220 (class 0 OID 0)
+-- Dependencies: 5
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: -
 --
 
-ALTER TABLE ONLY public.result_image
-    ADD CONSTRAINT result_image_country_fkey FOREIGN KEY (country) REFERENCES public.country(id);
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
---
--- TOC entry 3733 (class 2606 OID 80229)
--- Name: result_image result_image_query_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_image
-    ADD CONSTRAINT result_image_query_fkey FOREIGN KEY (query) REFERENCES public.query(id);
-
-
---
--- TOC entry 3734 (class 2606 OID 80234)
--- Name: result_image result_image_source_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_image
-    ADD CONSTRAINT result_image_source_fkey FOREIGN KEY (source) REFERENCES public.source(id);
-
-
---
--- TOC entry 3735 (class 2606 OID 80224)
--- Name: result_image result_image_study_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.result_image
-    ADD CONSTRAINT result_image_study_fkey FOREIGN KEY (study) REFERENCES public.study(id) ON DELETE CASCADE;
-
-
--- Completed on 2026-08-13 11:15:40
+-- Completed on 2026-08-20 15:35:34
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GINCMHTcoTH5rtE75HGrb5cbVEuzCMskr8V029YLptRDeXidXZZbe7NCd3qgv4x
+\unrestrict TFWlqedybeYf3lAKce8Rh8FCB9RQmhD7yJzNrexnqdt0OJBH0oKWj8njyBnX2X7
 
