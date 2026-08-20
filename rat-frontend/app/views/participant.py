@@ -39,25 +39,61 @@ def participants(id):
     questions_count = len(study.questions) or 1
 
     for participant in study.participants:
-        query = db.session.query(Answer).filter(
-            Answer.participant == participant,
-            Answer.study == study
-        )
-        
-        closed_count = query.filter(Answer.status == 1).count() // questions_count
-        skipped_count = query.filter(Answer.status == 2).count() // questions_count
-        finished_count = closed_count + skipped_count
-
-        # JIT Target Calculation
-        if study.limit_by_query and (study.max_queries_per_participant or 0) > 0:
-            all_count = study.max_queries_per_participant
-        elif study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
-            all_count = study.max_results_per_participant
+        if study.group_by_query:
+            all_ans = db.session.query(Answer).filter(
+                Answer.participant_id == participant.id,
+                Answer.study_id == study.id
+            ).all()
+            
+            seen_queries = set()
+            open_queries = set()
+            
+            for ans in all_ans:
+                q_id = None
+                if ans.result_id and ans.result.query_id: q_id = ans.result.query_id
+                elif ans.result_ai_id and ans.result_ai.query_id: q_id = ans.result_ai.query_id
+                elif ans.result_chatbot_id and ans.result_chatbot.query_id: q_id = ans.result_chatbot.query_id
+                elif ans.result_serp_id and ans.result_serp.query_id: q_id = ans.result_serp.query_id
+                elif ans.result_ai_source_id and ans.result_ai_source.query_id: q_id = ans.result_ai_source.query_id
+                elif ans.result_image_id and ans.result_image.query_id: q_id = ans.result_image.query_id
+                
+                if q_id:
+                    seen_queries.add(q_id)
+                    if ans.status == 0: open_queries.add(q_id)
+                    
+            closed_count = len(seen_queries) - len(open_queries)
+            skipped_count = 0 
+            
+            if study.limit_by_query and study.max_queries_per_participant and study.max_queries_per_participant > 0:
+                all_count = study.max_queries_per_participant
+                if closed_count > all_count: closed_count = all_count
+            else:
+                all_count = len(seen_queries) + (1 if len(open_queries) == 0 else 0)
+                
+            open_count = all_count - closed_count
+            if open_count < 0: open_count = 0
+            
         else:
-            all_count = finished_count + 1
+            base_query = db.session.query(Answer).filter(
+                Answer.participant_id == participant.id,
+                Answer.study_id == study.id
+            )
+            
+            closed_count = base_query.filter(Answer.status == 1).count() // questions_count
+            skipped_count = base_query.filter(Answer.status == 2).count() // questions_count
+            finished_count = closed_count + skipped_count
+            open_ans_count = base_query.filter(Answer.status == 0).count() // questions_count
 
-        open_count = all_count - finished_count
-        if open_count < 0: open_count = 0
+            if study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
+                all_count = study.max_results_per_participant
+                if finished_count > all_count: all_count = finished_count
+            else:
+                all_count = finished_count + open_ans_count
+                if open_ans_count == 0:
+                    all_count = finished_count + 1
+
+            open_count = all_count - finished_count
+            if open_count < 0: open_count = 0
 
         info.append([participant, all_count, open_count, closed_count, skipped_count])
 
@@ -91,28 +127,58 @@ def participant(id):
             info.append([study.id, 0, 0, 0, 0])
             continue
 
-        base_query = db.session.query(Answer).filter(
-            Answer.participant_id == participant.id,
-            Answer.study_id == study.id
-        )
-        
-        closed_count = (base_query.filter(Answer.status == 1).count() // questions_count)
-        skipped_count = (base_query.filter(Answer.status == 2).count() // questions_count)
-        finished_count = closed_count + skipped_count
-
-        # JIT Target Calculation - Evaluates global study caps
-        if study.limit_by_query and (study.max_queries_per_participant or 0) > 0:
-            all_count = study.max_queries_per_participant
-        elif study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
-            all_count = study.max_results_per_participant
+        # WICHTIG: Prüft BEIDE Schalter
+        if study.group_by_query and study.limit_by_query:
+            # DASHBOARD ZÄHLT QUERIES (Damit es nicht zu früh "Done" anzeigt)
+            all_ans = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.study_id == study.id).all()
+            seen_queries = set()
+            open_queries = set()
+            for ans in all_ans:
+                q_id = None
+                if ans.result_id and ans.result.query_id: q_id = ans.result.query_id
+                elif ans.result_ai_id and ans.result_ai.query_id: q_id = ans.result_ai.query_id
+                elif ans.result_chatbot_id and ans.result_chatbot.query_id: q_id = ans.result_chatbot.query_id
+                elif ans.result_serp_id and ans.result_serp.query_id: q_id = ans.result_serp.query_id
+                elif ans.result_ai_source_id and ans.result_ai_source.query_id: q_id = ans.result_ai_source.query_id
+                elif ans.result_image_id and ans.result_image.query_id: q_id = ans.result_image.query_id
+                if q_id:
+                    seen_queries.add(q_id)
+                    if ans.status == 0: open_queries.add(q_id)
+            
+            closed_count = len(seen_queries) - len(open_queries)
+            skipped_count = 0 
+            
+            if (study.max_queries_per_participant or 0) > 0:
+                all_count = study.max_queries_per_participant
+            else:
+                all_count = len(seen_queries) + (1 if len(open_queries) == 0 else 0)
+                
+            open_count = all_count - closed_count
+            if open_count < 0: open_count = 0
+            
+            info.append([study.id, all_count, open_count, closed_count, skipped_count])
+            
         else:
-            # Infinite Study: Always ensure +1 so the main button shows as an "Open" task item
-            all_count = finished_count + 1
+            # DASHBOARD ZÄHLT ITEMS
+            base_query = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.study_id == study.id)
+            
+            closed_count = (base_query.filter(Answer.status == 1).count() // questions_count)
+            skipped_count = (base_query.filter(Answer.status == 2).count() // questions_count)
+            finished_count = closed_count + skipped_count
+            open_ans_count = (base_query.filter(Answer.status == 0).count() // questions_count)
 
-        open_count = all_count - finished_count
-        if open_count < 0: open_count = 0
+            if study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
+                all_count = study.max_results_per_participant
+                if finished_count > all_count: all_count = finished_count
+            else:
+                all_count = finished_count + open_ans_count
+                if open_ans_count == 0:
+                    all_count = finished_count + 1 
 
-        info.append([study.id, all_count, open_count, closed_count, skipped_count])
+            open_count = all_count - finished_count
+            if open_count < 0: open_count = 0
+
+            info.append([study.id, all_count, open_count, closed_count, skipped_count])
 
     if request.method == 'POST':
         if 'download' in request.form:

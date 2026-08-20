@@ -103,20 +103,28 @@
 
 {% if is_preview %}
 <div class="alert alert-info text-center fw-bold shadow-sm mb-4">
-    <i class="fa-solid fa-flask me-2"></i> PRETEST-MODUS: Dies ist eine Vorschau des Interfaces. Es werden keine Daten überschrieben oder gespeichert.
+    <i class="fa-solid fa-flask me-2"></i> PRETEST-MODE: This is a preview.
 </div>
 {% endif %}
 
 <div class="row">
   <div class="col-3">
-    <div class="row mb-2 py-0">
-      <div class="col-10">
-        <div class="progress" style="height: 25px">
-          <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{closed}}"
-            aria-valuemax="{{all}}"></div>
+    
+    <div class="mb-3">
+      {% if query_info_text %}
+      <div class="text-secondary small fw-bold mb-2 text-uppercase" style="letter-spacing: 0.5px;">
+        <i class="fa-solid fa-magnifying-glass me-1"></i> {{ query_info_text }}
+      </div>
+      {% endif %}
+      
+      <div class="d-flex align-items-center">
+        <div class="progress flex-grow-1 shadow-sm" style="height: 25px; border-radius: 6px;">
+          <div class="progress-bar bg-primary fw-bold" role="progressbar" style="width: {{pct}}%; font-size: 0.9rem;" 
+               aria-valuenow="{{pct}}" aria-valuemin="0" aria-valuemax="100">
+               {{ pct }}%
+          </div>
         </div>
       </div>
-      <div class="col text-start">{{ pct }}%</div>
     </div>
     {% if task_item.study.task %}
     <div class="card mb-4 shadow-sm">
@@ -361,7 +369,6 @@
       </div>
     </div>
 
-    <!-- HIER IST DER BLOCK FÜR BILDER (RESULT_IMAGE) -->
     {% elif task_type == 'result_image' %}
     <div class="card shadow-sm border-secondary">
       <div class="card-header bg-white">
@@ -369,7 +376,6 @@
       </div>
       <div class="card-body bg-light p-0">
         
-        <!-- Prüfe, ob file_path in source oder result_image liegt -->
         {% set img_path = task_item.source.file_path if task_item.source and task_item.source.file_path else task_item.file_path %}
         
         {% if img_path %}
@@ -398,7 +404,6 @@
             Source Domain: <span class="badge bg-light text-dark border">{{ task_item.source_name }}</span>
         </div>
         
-        <!-- Anzeige der URLs, wenn der Haken in den Settings gesetzt ist -->
         {% if show_urls %}
         <div class="d-flex flex-wrap gap-2 pt-2 border-top">
             <a href="{{ task_item.source_url }}" target="_blank" class="btn btn-sm btn-outline-secondary fw-bold">

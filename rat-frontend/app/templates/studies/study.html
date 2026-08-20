@@ -188,12 +188,10 @@
                     </div>
                 </div>
                 
-                <!-- === NEW: WARNING FOR FAILED SCRAPES === -->
                 <div id="failed-scrape-warning" class="text-danger small mt-2 fw-bold d-none">
                     <i class="fa-solid fa-circle-exclamation me-1"></i> 
                     <span id="failed-scrape-count">0</span> Result(s) failed to download and will be skipped.
                 </div>
-                <!-- ========================================= -->
 
             </div>
         </div></div>
@@ -531,7 +529,6 @@
                         </div>
                       </div>
 
-                      <!-- 3. Absolute Item Limit -->
                       <div class="form-check form-switch mb-3">
                         {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
                         <label class="form-check-label fw-bold" for="limit_checkbox">
@@ -545,6 +542,14 @@
                           Max Absolute Result Items
                         </label>
                         {{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary w-50") }}
+                      </div>
+
+                      <div class="form-check form-switch mb-2">
+                        {{ settings_form.global_duplicate_filtering(class="form-check-input border-secondary", id="global_duplicate_filtering") }}
+                        <label class="form-check-label fw-bold text-dark" for="global_duplicate_filtering">
+                          Evaluate identical URLs only once across the entire study (Global Deduplication)
+                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" title="If checked, assessing a URL will automatically complete it for ALL queries. If unchecked, identical URLs must be evaluated again if they appear in a different Search Query context."></i>
+                        </label>
                       </div>
 
                     </div>
@@ -668,7 +673,6 @@
 						  <label class="form-check-label fw-bold text-dark" for="{{ subfield.id }}">
 							{{ subfield.label.text }}
 							
-							<!-- NEW: Badges for supported types -->
 							<div class="mt-1">
 							  {% for rt in c.resulttypes %}
 								<span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.7rem;">
@@ -845,7 +849,7 @@
                     Analysis Dashboard
                     <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="View interactive charts and statistical breakdowns of your collected data and participant answers."></i>
                 </h6>
-                <p class="card-text text-secondary mb-4 small">View classifier results, assessment results, statistics, and result overlap analysis.</p>
+                <p class="card-text text-secondary mb-4 small">View classifier & assessment results, statistics, and result overlap analysis.</p>
                 <a href="{{ url_for('analysis', id=study.id) }}" class="btn btn-outline-success btn-sm w-100 fw-bold">View Analysis</a>
               </div>
             </div>
@@ -1229,29 +1233,43 @@
     const queryLimitContainer = document.getElementById('query_limit_container');
     const searchDepthWrapper = document.getElementById('search_depth_wrapper');
     
-    if (limitCheckbox && itemLimitContainer) {
-      limitCheckbox.addEventListener('change', () => { itemLimitContainer.style.display = limitCheckbox.checked ? 'block' : 'none'; });
-      itemLimitContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
-    }
+    function updateLimitUI() {
+        if (!limitByQueryCheckbox || !limitCheckbox) return;
 
-    // Unified logic to control nested configurations based on Group-By-Query checkbox
-    if (limitByQueryCheckbox) {
-        function toggleLimitModeUI() {
-            const isChecked = limitByQueryCheckbox.checked;
+        // 1. Logik, wenn "Group by Query" aktiv ist:
+        if (limitByQueryCheckbox.checked) {
+            // Absolute Item-Limit Checkbox MUSS deaktiviert und auf "aus" gezwungen werden
+            limitCheckbox.checked = false;
+            limitCheckbox.disabled = true;
             
-            if (queryLimitContainer) {
-                queryLimitContainer.style.display = isChecked ? 'block' : 'none';
-                queryLimitContainer.style.opacity = isChecked ? '1' : '0.3';
-            }
-            if (searchDepthWrapper) {
-                searchDepthWrapper.style.display = isChecked ? 'block' : 'none';
-            }
+            // Zeige die passenden Menüs für Query-Gruppierung
+            if (queryLimitContainer) queryLimitContainer.style.display = 'block';
+            if (searchDepthWrapper) searchDepthWrapper.style.display = 'block';
+            if (itemLimitContainer) itemLimitContainer.style.display = 'none';
+        } 
+        // 2. Logik, wenn "Group by Query" AUS ist:
+        else {
+            // Gebe die absolute Item-Limit Checkbox frei!
+            limitCheckbox.disabled = false;
+            
+            // Verstecke die Query-Menüs
+            if (queryLimitContainer) queryLimitContainer.style.display = 'none';
+            if (searchDepthWrapper) searchDepthWrapper.style.display = 'none';
+            
+            // Zeige das absolute Item-Limit Menü NUR DANN, wenn die Checkbox aktiv ist
             if (itemLimitContainer) {
-                itemLimitContainer.style.opacity = isChecked ? '0.6' : '1';
+                itemLimitContainer.style.display = limitCheckbox.checked ? 'block' : 'none';
             }
         }
-        limitByQueryCheckbox.addEventListener('change', toggleLimitModeUI);
-        toggleLimitModeUI(); // Execute initially when loading the page
+    }
+
+    if (limitByQueryCheckbox && limitCheckbox) {
+        // Event-Listener anhängen, um auf JEDEN Klick zu reagieren
+        limitByQueryCheckbox.addEventListener('change', updateLimitUI);
+        limitCheckbox.addEventListener('change', updateLimitUI);
+        
+        // Initialer Aufruf beim Laden der Seite
+        updateLimitUI();
     }
 
     const searchDepthCheckbox = document.getElementById('limit_search_depth');

@@ -13,6 +13,8 @@ from openai import OpenAI
 import os
 import inspect
 import sys
+import json
+import re
 
 from datetime import datetime, timedelta
 
@@ -21,8 +23,6 @@ sys.path.append(currentdir + "/libs/")
 sys.path.append(currentdir + "/../")
 
 from classifier import *
-import json
-import re
 
 class UniversalLlm(Classifier):
     """Universal LLM Classifier for RAT"""
@@ -30,27 +30,8 @@ class UniversalLlm(Classifier):
     def __init__(self, classifier_id: int = None, db=None, job_server: str = None):
         super().__init__(classifier_id, db, job_server)
         self.cached_configs = {}
-        
-        # Reset any tasks that were 'in process' on this server in case of a previous crash
-        with self.db.connect_to_db() as conn:
-            cur = conn.cursor()
-            
-            cutoff_time = datetime.now() - timedelta(minutes=10)
-            
-            cur.execute("""
-                UPDATE classifier_result 
-                SET value = 'error' 
-                WHERE value = 'in process' AND job_server = %s AND classifier = %s
-                AND created_at < %s
-            """, (self.job_server, self.classifier_id, cutoff_time))
-            
-            cur.execute("""
-                DELETE FROM classifier_indicator
-                WHERE value = 'in process' AND job_server = %s AND classifier = %s
-                AND created_at < %s
-            """, (self.job_server, self.classifier_id, cutoff_time))
-            # -----------------------------------------------------------------------------------------------
-            conn.commit()
+        # HINWEIS: Der Datenbank-Reset für abgestürzte Tasks findet jetzt zentral 
+        # im classifier_runner.py statt, um Deadlocks zu verhindern!
 
     def get_study_id(self, result_id):
         """Helper to extract the study_id dynamically based on the parsed composite ID."""
@@ -71,7 +52,6 @@ class UniversalLlm(Classifier):
         """
         Overrides the base class method to allow incremental batch processing,
         multiple LLM indicator saves per result, and continuous queue processing.
-        Angepasst für Fair-Play (Round-Robin): Verarbeitet nur einen Batch und beendet sich dann.
         """
         results = initial_results
         
@@ -140,12 +120,12 @@ class UniversalLlm(Classifier):
                     if (result_id, indicator_name) in existing_indicators or (str(self.to_int_id(result_id)), indicator_name) in existing_indicators:
                         continue
                         
-                    if self.db.check_indicator_result(self.classifier_id, result_id, indicator_name, None):
-                        continue  # Ein anderer Worker war in dieser Millisekunde schneller!
-
-                    self.insert_indicator(indicator_name, "in process", result_id)
-                    existing_indicators.add((result_id, indicator_name))
+                    # === NEUER ATOMIC LOCK (Kugelsicher für Multi-Server Architektur) ===
+                    if not self.db.lock_llm_indicator(indicator_name, self.classifier_id, result_id, self.job_server):
+                        # Ein anderer Server (oder Prozess) hat diesen Task in derselben Millisekunde übernommen!
+                        continue
                         
+                    existing_indicators.add((result_id, indicator_name))
                     items_to_process.append(result)
                     
                 if not items_to_process:
@@ -159,7 +139,7 @@ class UniversalLlm(Classifier):
                 is_ollama = any(x in base_url.lower() for x in ['localhost', '127.0.0.1', '11434', 'ollama'])
                 extra_headers = None if is_ollama else {"HTTP-Referer": "https://rat-software.org", "X-Title": "RAT Universal LLM"}
                 
-                # --- 2. API KEY DECRYPTION ---
+                # --- API KEY DECRYPTION ---
                 raw_key = task.get('api_key', '').strip()
                 api_key = None
                 
@@ -197,13 +177,10 @@ class UniversalLlm(Classifier):
                     api_key = "ollama-dummy-key" if is_ollama else "FEHLER_KEY_FEHLT"
 
                 key_prefix = api_key[:8] if api_key else 'NONE'
-                print(f"🔍 DEBUG -> Task: '{task_display_name}' | Model: {model_name} | Key-Präfix: {key_prefix}")
-
                 print(f"\n⚙️ Task: '{task_display_name}' | Loading Model: {model_name} (via {'Local/Ollama' if is_ollama else 'Cloud'}) for {len(items_to_process)} pending items...")
 
                 client = OpenAI(base_url=base_url, api_key=api_key, default_headers=extra_headers)
 
-                
                 for result in items_to_process:
                     result_id = str(result['id'])
                     
@@ -234,17 +211,24 @@ class UniversalLlm(Classifier):
                             result['_clean_text'] = ""
                             
                     if not result['_clean_text']:
+                        self.insert_indicator(indicator_name, 'source_failed', result_id)
                         continue
 
                     # Execute LLM API Call
                     max_tokens = int(task.get('max_tokens', 250))
                     custom_system = task.get('system_prompt', '').strip()
-                    technical_guardrail = "Follow the user's instructions exactly. Output ONLY valid JSON. No greetings, no explanations, no conversational filler."
+                    # 1. Strengere System-Anweisung für störrische Modelle
+                    
+                    technical_guardrail = (
+                        "You are a strict API data processor. You MUST output ONLY a valid JSON object. "
+                        "NO greetings, NO reasoning text outside the JSON, NO markdown formatting. "
+                        "Your entire response MUST start with '{' and end with '}'."
+                    )
 
                     if custom_system:
-                        final_system_prompt = f"{custom_system}\n\nCRITICAL SYSTEM INSTRUCTION:\n{technical_guardrail}"
+                        final_system_prompt = f"{custom_system}\n\nCRITICAL INSTRUCTION:\n{technical_guardrail}"
                     else:
-                        final_system_prompt = f"You are a strict data processor. {technical_guardrail}"
+                        final_system_prompt = technical_guardrail
 
                     query_text = result.get('query', '')
                     if not query_text:
@@ -267,7 +251,7 @@ class UniversalLlm(Classifier):
                                 {"role": "user", "content": f"{formatted_prompt}\n\nText:\n{result.get('_clean_text', '')}"}
                             ],
                             "temperature": 0.1,
-                            "timeout": 60,
+                            "timeout": 30,
                             "response_format": {"type": "json_object"},
                             "max_tokens": max_tokens
                         }
@@ -281,77 +265,70 @@ class UniversalLlm(Classifier):
                             raw_content = response.choices[0].message.content
                             answer = raw_content.strip() if raw_content else ""
                             if not answer:
-                                raise ValueError("Empty response (None) due to Moderation block or JSON-Mode/Tokenizer bug")
+                                raise ValueError("Empty response")
 
                         except (openai.BadRequestError, openai.APIConnectionError, openai.InternalServerError, ValueError) as e:
-                            print(f"⚠️ [Fallback 1] JSON/Limit Bug oder leere Antwort. Versuche ohne 'response_format'...")
+                            print(f"⚠️ [Fallback] API Error oder leere Antwort. Versuche Standard-Request...")
                             if "response_format" in api_kwargs: del api_kwargs["response_format"]
-                            if "max_tokens" in api_kwargs: del api_kwargs["max_tokens"]
-                            if is_ollama:
-                                api_kwargs["extra_body"] = {"keep_alive": "5m", "options": {"num_predict": max_tokens}}
-
                             try:
                                 response = client.chat.completions.create(**api_kwargs)
                                 raw_content = response.choices[0].message.content
                                 answer = raw_content.strip() if raw_content else ""
-                                if not answer: raise ValueError("Empty response again")
-                                    
-                            except (openai.BadRequestError, openai.APIConnectionError, openai.InternalServerError, ValueError) as e2:
-                                print(f"⚠️ [Fallback 2] Modell blockiert immer noch. Versuche komplett nackten Aufruf...")
-                                if is_ollama: api_kwargs["extra_body"] = {"keep_alive": "5m"}
-                                try:
-                                    response = client.chat.completions.create(**api_kwargs)
-                                    raw_content = response.choices[0].message.content
-                                    answer = raw_content.strip() if raw_content else ""
-                                except Exception as retry_e:
-                                    print(f"❌ API Error for {model_name} on final retry: {retry_e}")
-                                    answer = "error_api"
-                                    
-                            except openai.APITimeoutError:
-                                answer = "error_timeout"
+                            except:
+                                answer = "error_api"
                                 
                         except openai.APITimeoutError:
                             answer = "error_timeout"
                         except Exception as e:
-                            print(f"❌ General API Error for model {model_name}: {e}")
                             answer = "error_api"
                         
-                        if answer.startswith("```"):
-                            answer = answer.replace("```json", "").replace("```", "").strip()
-                            
                         if not answer or answer in ["error_api", "error_timeout"]:
                             if not answer: answer = "error_empty"
                             final_answer = answer
                             print(f"⚠️ Attempt {attempt+1}/{max_retries} failed with {final_answer}. Retrying...")
                             continue
                         
-                        # --- STRICT JSON VALIDATION ---
-                        try:
-                            json.loads(answer)
-                            final_answer = answer
-                            break 
-                        except ValueError:
-                            m = re.search(r'\{.*\}', answer, re.DOTALL)
-                            is_valid = False
-                            if m:
-                                try:
-                                    json.loads(m.group(0))
-                                    answer = m.group(0) 
+                        # =========================================================
+                        # 🛡️ DIE ULTRA-STRENGE JSON VALIDIERUNG
+                        # =========================================================
+                        is_valid = False
+                        clean_json_string = ""
+                        
+                        # 1. Alles ignorieren außer dem Bereich zwischen { und }
+                        match = re.search(r'\{.*\}', answer, re.DOTALL)
+                        
+                        if match:
+                            json_candidate = match.group(0) # Zieht das {...} exakt heraus
+                            try:
+                                # 2. Prüfen, ob es echtes JSON ist
+                                parsed_dict = json.loads(json_candidate)
+                                
+                                # 3. Prüfen, ob es wirklich ein Dictionary/Objekt ist (verbietet Zahlen/Arrays)
+                                if isinstance(parsed_dict, dict):
+                                    # 4. Magie: Wir generieren das JSON komplett neu und fehlerfrei!
+                                    clean_json_string = json.dumps(parsed_dict)
                                     is_valid = True
-                                except:
-                                    pass
-                            
-                            if not is_valid:
-                                print(f"⚠️ [JSON Error] Attempt {attempt+1}/{max_retries} failed (Truncated?) -> {answer[:50]}...")
-                                final_answer = "error_invalid_json"
-                                continue 
-                            else:
-                                final_answer = answer
-                                break 
+                            except json.JSONDecodeError:
+                                pass # Syntaxfehler im JSON
+                                
+                        if is_valid:
+                            final_answer = clean_json_string
+                            break # ERFOLG! Wir verlassen die Retry-Schleife.
+                        else:
+                            # Das Modell hat Quatsch geantwortet (z.B. "1.1" oder fehlende Klammern)
+                            print(f"⚠️ [JSON Error] Attempt {attempt+1}/{max_retries} failed. Output invalid -> {answer[:50].replace(chr(10), ' ')}...")
+                            final_answer = "error_invalid_json"
+                            continue # Zwingt das Skript in den nächsten API-Versuch!
                     
+                    # Speichern in der DB (Hier landet GARANTIERT nur noch fehlerfreies JSON oder ein Error-Code)
                     self.insert_indicator(indicator_name, final_answer, result_id)
-                    print(f"  └ {model_name} -> {result_id}: {answer[:40].replace(chr(10), ' ')}...")
+                    print(f"  └ {model_name} -> {result_id}: {final_answer[:50]}...")
 
+                # Schließt die Verbindung sofort nach den 10 Items ab (Verhindert das Einfrieren)
+                try:
+                    client.close()
+                except:
+                    pass
                 
                 if is_ollama:
                     try:
@@ -383,6 +360,8 @@ class UniversalLlm(Classifier):
                     status = "Finished"
                 
                 self.db.update_classification_result(status, result_id, self.classifier_id)
+
+            print(f"✅ Batch for Study {study_id} finished!")
 
     def get_indicators(self, result, helper):
         """Not used in UniversalLlm due to custom classify_results override."""

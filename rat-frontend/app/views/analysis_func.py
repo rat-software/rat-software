@@ -118,7 +118,7 @@ def get_result_stats(study):
     if ai_results_count > 0:
         result_stats["AI Answers Collected"] = ai_results_count
 
-    # --- NEW: AI Sources Count & Failure Metrics ---
+    # --- AI Sources Count & Failure Metrics ---
     ai_sources_count = db.session.query(ResultAiSource).filter(ResultAiSource.study_id == study.id).count()
     if ai_sources_count > 0:
         result_stats["Total AI Sources Found"] = ai_sources_count

@@ -1644,6 +1644,23 @@ class Sources:
                 # Enable CDP network monitoring right after driver creation
                 try:
                     driver.execute_cdp_cmd("Network.enable", {})
+                    
+                    # --- NEU: Google/YouTube Consent Bypass via CDP Cookie-Injection ---
+                    # Verhindert in 99% der Fälle den Umweg über consent.youtube.com
+                    cookie_payloads = [
+                        {'name': 'CONSENT', 'value': 'YES+cb.20230101-00-p0.de+FX+113', 'domain': '.youtube.com', 'path': '/', 'secure': True},
+                        {'name': 'SOCS', 'value': 'CAI', 'domain': '.youtube.com', 'path': '/', 'secure': True},
+                        {'name': 'CONSENT', 'value': 'YES+cb.20230101-00-p0.de+FX+113', 'domain': '.google.com', 'path': '/', 'secure': True},
+                        {'name': 'SOCS', 'value': 'CAI', 'domain': '.google.com', 'path': '/', 'secure': True},
+                        {'name': 'CONSENT', 'value': 'YES+cb.20230101-00-p0.de+FX+113', 'domain': '.google.de', 'path': '/', 'secure': True},
+                        {'name': 'SOCS', 'value': 'CAI', 'domain': '.google.de', 'path': '/', 'secure': True}
+                    ]
+                    for cp in cookie_payloads:
+                        try:
+                            driver.execute_cdp_cmd('Network.setCookie', cp)
+                        except: pass
+                    # -------------------------------------------------------------------
+                    
                 except Exception as e:
                     print(f"CDP Network enable failed: {e}")
                     
@@ -1671,6 +1688,35 @@ class Sources:
                     nonlocal driver
                     try:
                         driver.get(url)
+                        
+                        # --- NEU: Consent-Redirect Überwachung & Fallback-Klick ---
+                        current_url = driver.current_url
+                        if "consent.youtube.com" in current_url or "consent.google.com" in current_url:
+                            print(f"⚠️ Consent-Redirect erkannt ({current_url}). Klicke und warte auf Rückleitung...")
+                            try:
+                                # Harter JS-Klick, der Googles Formulare garantiert abfeuert
+                                driver.execute_script("""
+                                    let btns = document.querySelectorAll('button');
+                                    for(let b of btns) {
+                                        let t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase();
+                                        if(t.includes('akzeptieren') || t.includes('zustimmen') || t.includes('accept') || t.includes('agree') || t === 'alle') {
+                                            b.click();
+                                            break;
+                                        }
+                                    }
+                                """)
+                            except: pass
+                            
+                            # Wir warten maximal 10 Sekunden darauf, dass die URL wieder zu YouTube wechselt
+                            wait_start = time.time()
+                            while time.time() - wait_start < 10:
+                                if "consent." not in driver.current_url:
+                                    print("✅ Erfolgreich von Consent-Seite zurückgekehrt!")
+                                    time.sleep(2) # Kurz warten, bis YouTube das Layout aufgebaut hat
+                                    break
+                                time.sleep(0.5)
+                        # ----------------------------------------------------------
+
                         self.bypass_cookie_banners(driver)
                         time.sleep(2)
                         return True

@@ -53,13 +53,24 @@ class ReadabilityScore(Classifier):
                 classification_result = score_value
             else:
                 print(f"Non-numerical output: {analysis_output}")
-                classification_result = str(analysis_output)
-                self.insert_indicator("classification_result", classification_result, result_id)
-                self.insert_indicator("exclusion_reason", classification_result, result_id)
-
+                
+                # Prüfen, ob es einer unserer vordefinierten Abbrüche ist
+                if "too_short" in str(analysis_output) or "not supported" in str(analysis_output):
+                    classification_result = "skipped_incompatible"
+                    self.insert_indicator("exclusion_reason", str(analysis_output), result_id)
+                else:
+                    classification_result = "error"
+                    self.insert_indicator("exclusion_reason", str(analysis_output), result_id)
         except Exception as e:
-            print(f"Analyzer exception: {e}")
-            self.insert_indicator("reason", f"Analyzer exception: {str(e)}", result_id)
+            error_msg = str(e)
+            print(f"Analyzer exception: {error_msg}")
+            
+            # Wenn es an der Sprache/Mathe liegt, vergeben wir "N/A" statt eines harten Fehlers
+            if "division by zero" in error_msg.lower() or "syllable" in error_msg.lower():
+                classification_result = "language_not_supported"
+                self.insert_indicator("Reading Ease", "N/A", result_id)
+            else:
+                self.insert_indicator("reason", f"Analyzer exception: {error_msg}", result_id)
 
         return classification_result
 

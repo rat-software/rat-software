@@ -446,10 +446,10 @@ def download_manual_template():
     cw = csv.writer(si)
     header = ['query', 'engine', 'country', 'lang', 'page', 'type', 'rank', 'title', 'url', 'snippet', 'ai_full_text', 'source_type', 'image_url']
     cw.writerow(header)
-    cw.writerow(['beispiel', 'google', 'de', 'de', '1', 'organic', '1', 'Titel', 'https://beispiel.de', 'Beschreibung...', '', '', ''])
-    cw.writerow(['beispiel', 'google', 'de', 'de', '1', 'ai_overview', '', '', '', '', 'Der AI Text...', '', ''])
-    cw.writerow(['beispiel', 'google', 'de', 'de', '1', 'ai_source', '1', 'Wikipedia', 'https://de.wikipedia.org', '', '', 'inline', ''])
-    cw.writerow(['beispiel', 'google', 'de', 'de', '1', 'image', '1', 'Ein Bildtitel', 'https://beispiel.de/ursprung', 'Quelle Name', '', '', 'https://beispiel.de/bild.jpg'])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'organic', '1', 'title', 'https://example.de', 'description...', '', '', ''])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'ai_overview', '', '', '', '', 'Der AI Text...', '', ''])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'ai_source', '1', 'Wikipedia', 'https://wikipedia.org', '', '', 'inline', ''])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'image', '1', 'Picture title', 'https://example.de/ursprung', 'Source name', '', '', 'https://example.de/bild.jpg'])
     output_string = si.getvalue()
     si.close()
     return Response(output_string.encode('utf-8'), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=rat_results_template.csv"})
@@ -589,6 +589,9 @@ def study_progress(id):
                 
                 if study.llm_classifiers_json:
                     try:
+                        failed_org = db.session.query(Result.id).join(ResultSource, ResultSource.result_id == Result.id).filter(Result.study_id == id, ResultSource.progress == -1).count()
+                        failed_src = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == id, ResultAiSource.progress == -1).count()
+                        
                         tasks = json.loads(study.llm_classifiers_json)
                         for task in tasks:
                             if not task.get('active', True):
@@ -599,8 +602,12 @@ def study_progress(id):
                                 active_indicators.append(f"LLM_{disp_name}")
                             
                             tt = task.get('target_type', 'all')
-                            if tt in ('all', 'organic', None): expected_clf_runs += organic_count_total
-                            if tt in ('all', 'ai_source'): expected_clf_runs += ai_source_count_total
+                            if tt in ('all', 'organic', None): 
+                                expected_clf_runs += organic_count_total
+                                finished_clf_runs += failed_org
+                            if tt in ('all', 'ai_source'): 
+                                expected_clf_runs += ai_source_count_total
+                                finished_clf_runs += failed_src
                             if tt in ('all', 'ai_overview'): expected_clf_runs += ai_overview_count
                             if tt in ('all', 'chatbot'): expected_clf_runs += chatbot_count
                             if tt in ('all', 'image'): expected_clf_runs += image_count_total
@@ -811,10 +818,15 @@ def update_study_settings(id):
         study.show_ai_sources = form.show_ai_sources.data
         study.assess_failed = form.assess_failed.data
 
-        study.group_by_query = 'group_by_query' in request.form
-        limit_by_query = 'limit_by_query' in request.form
+        is_query_limit_active = 'limit_by_query' in request.form
+        
+        study.group_by_query = is_query_limit_active
+        study.limit_by_query = is_query_limit_active
+        
+        limit_by_query = is_query_limit_active
 
         limit_search_depth = 'limit_search_depth' in request.form
+
         if limit_search_depth:
             val_rc = request.form.get('result_count', '').strip()
             try:
@@ -840,6 +852,8 @@ def update_study_settings(id):
             study.max_results_per_participant = 0
             
         study.classifier = [Classifier.query.get(cid) for cid in form.classifiers.data]
+
+        study.global_duplicate_filtering = form.global_duplicate_filtering.data
         
         RangeStudy.query.filter_by(study=study.id).delete()
         for r_data in form.ranges.data:
@@ -849,14 +863,6 @@ def update_study_settings(id):
         study.show_description_after_join = form.show_description_after_join.data
         study.participant_description = form.participant_description.data
         study.pre_survey_json = form.pre_survey_json.data
-        study.post_survey_json = form.post_survey_json.data
-        study.completion_text = form.completion_text.data
-
-        val_rc = request.form.get('result_count', '').strip()
-        try:
-            study.result_count = int(val_rc) if val_rc else None
-        except ValueError:
-            study.result_count = None
         
         from app.utils.security import encrypt_key
         
@@ -917,6 +923,7 @@ def update_study_settings(id):
         flash('Study settings updated successfully.', 'success')
         
     else:
+        print("WTFORMS ERROR:", form.errors)
         flash('Failed to update settings. Please check your inputs.', 'danger')
 
     return redirect(url_for('study', id=id))
@@ -969,24 +976,59 @@ def delete_study(id):
     if form.validate_on_submit():
         try:
             files_to_delete = []
-            serps = Serp.query.filter_by(study_id=study.id).all()
-            for serp in serps:
-                if serp.file_path: files_to_delete.append(serp.file_path)
-                    
-            results = Result.query.filter_by(study_id=study.id).all()
-            for res in results:
-                for source in res.sources:
-                    if source and source.file_path: files_to_delete.append(source.file_path)
+            
+            serp_files = db.session.execute(text("SELECT file_path FROM serp WHERE study = :sid AND file_path IS NOT NULL"), {'sid': study.id}).fetchall()
+            img_files = db.session.execute(text("SELECT file_path FROM result_image WHERE study = :sid AND file_path IS NOT NULL"), {'sid': study.id}).fetchall()
+            src_files = db.session.execute(text("""
+                SELECT s.file_path FROM source s 
+                JOIN result_source rs ON s.id = rs.source 
+                JOIN result r ON rs.result = r.id 
+                WHERE r.study = :sid AND s.file_path IS NOT NULL
+            """), {'sid': study.id}).fetchall()
 
-            images = ResultImage.query.filter_by(study_id=study.id).all()
-            for img in images:
-                if img.file_path: files_to_delete.append(img.file_path)
+            for row in serp_files + img_files + src_files:
+                files_to_delete.append(row[0])
 
-            db.session.execute(text("DELETE FROM result_source WHERE result IN (SELECT id FROM result WHERE study = :sid)"), {'sid': study.id})
+            # --- 2. BULK DELETE (Bypass ORM Timeouts - Bulletproof Version) ---
+            sid = {'sid': study.id}
+            
+            for tbl in ['answer', 'classifier_indicator', 'classifier_result']:
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_ai_source IN (SELECT id FROM result_ai_source WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_chatbot IN (SELECT id FROM result_chatbot WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_image IN (SELECT id FROM result_image WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE study = :sid"), sid)
+
+
+            db.session.execute(text("DELETE FROM ai_segment_source WHERE segment_id IN (SELECT id FROM result_ai_segment WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid))"), sid)
+            db.session.execute(text("DELETE FROM result_ai_segment WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid)"), sid)
+            
+
+            db.session.execute(text("DELETE FROM result_ai_source WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM result_ai WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM result_chatbot WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM result_image WHERE study = :sid"), sid)
+            
+
+            db.session.execute(text("DELETE FROM result_source WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
+            db.session.execute(text("DELETE FROM question_result WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
+            db.session.execute(text("DELETE FROM result WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM serp WHERE study = :sid"), sid)
+            
+
+            db.session.execute(text("DELETE FROM scraper WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM query WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM question WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM study_url_filter WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM range_study WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM study_resulttype WHERE study = :sid"), sid)
+            
+
             db.session.delete(study)
             db.session.commit()
-            
-            storage_dir = app.config.get('STORAGE_FOLDER')
+
+            storage_dir = app.config.get('STORAGE_FOLDER', os.path.join(app.root_path, 'static', 'storage'))
             deleted_count = 0
             for filename in set(files_to_delete): 
                 file_path = os.path.join(storage_dir, filename)
@@ -996,11 +1038,14 @@ def delete_study(id):
                         deleted_count += 1
                     except: pass
 
-            flash(f'Study deleted. {deleted_count} files removed.', 'success')
+            flash(f'Study deleted successfully. {deleted_count} associated files were removed.', 'success')
             return redirect(url_for('dashboard'))
+            
         except Exception as e:
             db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
+            import traceback
+            traceback.print_exc()
+            flash(f'Database Error during deletion: {str(e)}', 'danger')
             
     return render_template('studies/delete_study.html', form=form, study=study)
 

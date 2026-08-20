@@ -380,25 +380,41 @@ def export(id):
         labels = ['Classifier Result ID', 'Classifier', 'Result ID', 'Result AI', 'Result Chatbot', 'Result AI Source', 'Result Image', 'Source Type', 'Source ID', 'URL', 'Value', 'Timestamp']
         df = pd.DataFrame.from_records(db.session.execute(sql_query, {'study_id': id}).all(), columns=labels).drop_duplicates()
 
-        # --- JSON UNPACKING LOGIC ---
+        # --- JSON UNPACKING LOGIC (Classifier Results) ---
         if not df.empty and 'Value' in df.columns:
-            def extract_json(val):
-                if not isinstance(val, str):
-                    return {'Raw': val}
+            def extract_json_safe(val):
+                if not isinstance(val, str): return {'Raw_Value': val}
+                v = val.strip()
+                
+                # Excel protection: Truncate extremely long texts to prevent file corruption
+                if len(v) > 30000:
+                    v = v[:29900] + "... [Text truncated due to excessive length]"
+                    
+                if v.startswith("```"):
+                    v = re.sub(r'^```[a-zA-Z]*\n?', '', v)
+                    v = re.sub(r'\n?```$', '', v).strip()
                 try:
-                    parsed = json.loads(val)
-                    if isinstance(parsed, dict):
-                        return parsed
-                    return {'Raw': val}
+                    parsed = json.loads(v)
+                    if isinstance(parsed, dict): return parsed
+                    return {'Raw_Value': v}
                 except json.JSONDecodeError:
-                    return {'Raw': val}
-            
-            parsed_list = df['Value'].apply(extract_json).tolist()
-            parsed_df = pd.json_normalize(parsed_list)
-            parsed_df.index = df.index 
-            parsed_df = parsed_df.add_prefix('Value_')
-            
-            df = pd.concat([df.drop(columns=['Value']), parsed_df], axis=1)
+                    m = re.search(r'\{.*\}', v, re.DOTALL)
+                    if m:
+                        try:
+                            parsed = json.loads(m.group(0))
+                            if isinstance(parsed, dict): return parsed
+                        except: pass
+                # Not a JSON (e.g., Classic Classifier like Readability) -> Keep raw text
+                return {'Raw_Value': v}
+
+            try:
+                parsed_list = df['Value'].apply(extract_json_safe).tolist()
+                parsed_df = pd.json_normalize(parsed_list)
+                parsed_df.index = df.index
+                parsed_df = parsed_df.add_prefix('Value_')
+                df = pd.concat([df.drop(columns=['Value']), parsed_df], axis=1)
+            except Exception as e:
+                pass
 
         return df
 
@@ -443,27 +459,88 @@ def export(id):
         labels = ['Indicator Result ID', 'Classifier Name', 'Result ID', 'Result AI', 'Result Chatbot', 'Result AI Source', 'Result Image', 'Source Type', 'Source ID', 'URL', 'Indicator Parameter', 'Value', 'Timestamp']
         df = pd.DataFrame.from_records(db.session.execute(sql_query, {'study_id': id}).all(), columns=labels).drop_duplicates()
 
-        # --- JSON UNPACKING LOGIC ---
+        # --- JSON UNPACKING LOGIC (Indicators) ---
         if not df.empty and 'Value' in df.columns:
-            def extract_json(val):
-                if not isinstance(val, str):
-                    return {'Raw': val}
-                try:
-                    parsed = json.loads(val)
-                    if isinstance(parsed, dict):
-                        return parsed
-                    return {'Raw': val}
-                except json.JSONDecodeError:
-                    return {'Raw': val}
-            
-            parsed_list = df['Value'].apply(extract_json).tolist()
-            parsed_df = pd.json_normalize(parsed_list)
-            parsed_df.index = df.index
-            parsed_df = parsed_df.add_prefix('Value_')
-            
-            df = pd.concat([df.drop(columns=['Value']), parsed_df], axis=1)
+            try:
+                # 1. Extract expected keys from the prompt
+                task_expected_keys = {}
+                if study.llm_classifiers_json:
+                    try:
+                        llm_tasks = json.loads(study.llm_classifiers_json)
+                        for task in llm_tasks:
+                            if not task.get('active', True): continue
+                            d_name = task.get('display_name')
+                            prompt_text = task.get('prompt', '')
+                            if d_name and prompt_text:
+                                json_block = re.search(r'\{.*\}', prompt_text, re.DOTALL)
+                                if json_block:
+                                    keys = re.findall(r'"([a-zA-Z0-9_-]+)"\s*:', json_block.group(0))
+                                    if keys:
+                                        task_expected_keys[d_name] = [k.lower() for k in keys]
+                    except: pass
+    
+                parsed_list = []
+                for index, row in df.iterrows():
+                    val = row.get('Value')
+                    ind_key = row.get('Indicator Parameter', '')
+                    clean_name = str(ind_key).replace("LLM_", "")
+                    
+                    if not isinstance(val, str):
+                        parsed_list.append({'Raw_Value': val})
+                        continue
+                        
+                    v = val.strip()
+                    # Excel protection: Truncate extremely long texts
+                    if len(v) > 30000:
+                        v = v[:29900] + "... [Text truncated due to excessive length]"
+                        
+                    if v in ['error_api', 'error_timeout', 'error_invalid_json', 'error_empty', 'in process']:
+                        parsed_list.append({'Raw_Value': v})
+                        continue
+                        
+                    if v.startswith("```"):
+                        v = re.sub(r'^```[a-zA-Z]*\n?', '', v)
+                        v = re.sub(r'\n?```$', '', v).strip()
+                        
+                    parsed_result = None
+                    try:
+                        parsed = json.loads(v)
+                        if isinstance(parsed, dict):
+                            parsed_result = parsed
+                    except json.JSONDecodeError:
+                        m = re.search(r'\{.*\}', v, re.DOTALL)
+                        if m:
+                            try:
+                                parsed = json.loads(m.group(0))
+                                if isinstance(parsed, dict):
+                                    parsed_result = parsed
+                            except: pass
+                            
+                    if parsed_result:
+                        expected_keys = task_expected_keys.get(clean_name, [])
+                        if expected_keys:
+                            # Filter keys (Case-Insensitive Match)
+                            filtered_dict = {k: pv for k, pv in parsed_result.items() if str(k).lower() in expected_keys}
+                            parsed_list.append(filtered_dict if filtered_dict else {'Raw_Value': v})
+                        else:
+                            parsed_list.append(parsed_result)
+                    else:
+                        # Not a JSON (e.g., Classic Classifier like Readability) -> Keep raw text
+                        parsed_list.append({'Raw_Value': v})
+    
+                if len(parsed_list) == len(df):
+                    parsed_df = pd.json_normalize(parsed_list)
+                    parsed_df.index = df.index
+                    parsed_df = parsed_df.add_prefix('Value_')
+                    if 'Value' in df.columns:
+                        df = df.drop(columns=['Value'])
+                    df = pd.concat([df, parsed_df], axis=1)
+                    
+            except Exception as e:
+                pass
 
         return df
+
     def get_ai_results_df():
         """
         Collects comprehensive generated raw textual records originating from search engine AI Overviews.
@@ -663,7 +740,7 @@ def export(id):
     has_survey_data = bool((study.pre_survey_json and study.pre_survey_json.strip() not in ['', '[]']) or 
                            (study.post_survey_json and study.post_survey_json.strip() not in ['', '[]']))
     
-    # Hilfsfunktion, um Classifier-Daten über ALLE Quellen hinweg zu prüfen
+    # Check classifier data across all source types
     def check_classifier_exists(model_class):
         q = db.session.query(model_class.id).filter(
             db.or_(

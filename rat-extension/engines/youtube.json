@@ -1,0 +1,108 @@
+{
+  "manifest_version": 1,
+  "engine": {
+    "id": "youtube_search",
+    "name": "YouTube",
+    "author": "RAT System",
+    "version": "2.2",
+    "description": "Scraper for YouTube Videos, Playlists & Shorts"
+  },
+  "request": {
+    "baseUrl": "https://www.youtube.com/results",
+    "params": {
+      "query": "search_query",
+      "country": "gl",
+      "language": "hl"
+    },
+    "features": {
+      "requiresUuleEncoding": false,
+      "urlDecodingMethod": "none"
+    },
+    "supportedCountries": [
+      { "code": "au", "name": "Australia", "domain": "www.youtube.com" },
+      { "code": "at", "name": "Austria", "domain": "www.youtube.com" },
+      { "code": "be", "name": "Belgium", "domain": "www.youtube.com" },
+      { "code": "br", "name": "Brazil", "domain": "www.youtube.com" },
+      { "code": "ca", "name": "Canada", "domain": "www.youtube.com" },
+      { "code": "dk", "name": "Denmark", "domain": "www.youtube.com" },
+      { "code": "fi", "name": "Finland", "domain": "www.youtube.com" },
+      { "code": "fr", "name": "France", "domain": "www.youtube.com" },
+      { "code": "de", "name": "Germany", "domain": "www.youtube.com" },
+      { "code": "in", "name": "India", "domain": "www.youtube.com" },
+      { "code": "ie", "name": "Ireland", "domain": "www.youtube.com" },
+      { "code": "it", "name": "Italy", "domain": "www.youtube.com" },
+      { "code": "jp", "name": "Japan", "domain": "www.youtube.com" },
+      { "code": "mx", "name": "Mexico", "domain": "www.youtube.com" },
+      { "code": "nl", "name": "Netherlands", "domain": "www.youtube.com" },
+      { "code": "nz", "name": "New Zealand", "domain": "www.youtube.com" },
+      { "code": "no", "name": "Norway", "domain": "www.youtube.com" },
+      { "code": "pl", "name": "Poland", "domain": "www.youtube.com" },
+      { "code": "pt", "name": "Portugal", "domain": "www.youtube.com" },
+      { "code": "ru", "name": "Russia", "domain": "www.youtube.com" },
+      { "code": "sg", "name": "Singapore", "domain": "www.youtube.com" },
+      { "code": "es", "name": "Spain", "domain": "www.youtube.com" },
+      { "code": "se", "name": "Sweden", "domain": "www.youtube.com" },
+      { "code": "ch", "name": "Switzerland", "domain": "www.youtube.com" },
+      { "code": "gb", "name": "United Kingdom", "domain": "www.youtube.com" },
+      { "code": "us", "name": "USA", "domain": "www.youtube.com" }
+    ],
+    "supportedLanguages": [
+      { "code": "en", "name": "English" },
+      { "code": "de", "name": "German" },
+      { "code": "fr", "name": "French" },
+      { "code": "it", "name": "Italian" },
+      { "code": "es", "name": "Spanish" },
+      { "code": "pt", "name": "Portuguese" },
+      { "code": "nl", "name": "Dutch" },
+      { "code": "sv", "name": "Swedish" },
+      { "code": "no", "name": "Norwegian" },
+      { "code": "da", "name": "Danish" },
+      { "code": "fi", "name": "Finnish" },
+      { "code": "pl", "name": "Polish" },
+      { "code": "ru", "name": "Russian" },
+      { "code": "ja", "name": "Japanese" }
+    ]
+  },
+  "behavior": {
+    "cookieConsentSelectors": [ 
+      "button[aria-label*='akzeptieren']",
+      "button[aria-label*='Accept']",
+      "button[aria-label*='Zustimmen']",
+      "ytd-consent-bump-v2-lightbox ytd-button-renderer.style-primary button",
+      ".eom-button-row ytd-button-renderer.style-primary button"
+    ],
+    "popupDismissSelectors": [ "yt-upsell-dialog-renderer button", "yt-dialog-renderer button" ],
+    "stickyHeaderSelectors": [ "#masthead-container" ]
+  },
+  "captcha": {
+    "urlIndicators": [ "/sorry/" ],
+    "textIndicators": [ "unusual traffic" ],
+    "selectors": [ "#recaptcha" ]
+  },
+  "selectors": {
+    "pagination": {
+      "type": "infinite_scroll",
+      "nextButton": "ytd-continuation-item-renderer"
+    },
+"organic": {
+  "container": "ytd-video-renderer:not(.ytd-in-feed-ad-layout-renderer *):not(ytd-ad-slot-renderer *):not(ytd-reel-shelf-renderer *), yt-lockup-view-model:not(.ytd-in-feed-ad-layout-renderer *):not(video-display-compact-button-group-layout-view-model *):not(ytd-ad-slot-renderer *):not(ytd-reel-shelf-renderer *)",
+  "excludeContainers": [
+    "ad-badge-view-model",
+    ".ytBadgeShapeAd",
+    "[aria-label*='Gesponsert']",
+    "[aria-label*='Sponsored']"
+  ],
+  "title": "#video-title, h3 a",
+  "url": "#video-title, h3 a",
+  "snippet": { "selector": "ytd-video-meta-block, yt-content-metadata-view-model" },
+  "image": "yt-image img, img.ytCoreImageHost"
+},
+"ads": {
+  "container": "ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, video-display-compact-button-group-layout-view-model, yt-lockup-view-model:has(ad-badge-view-model), yt-lockup-view-model:has([aria-label*='Gesponsert'])",
+  "title": "#video-title, h3 a, .yt-core-attributed-string",
+  "url": "#video-title, h3 a, a",
+  "snippet": { "selector": "ytd-video-meta-block, .ytwFeedAdMetadataViewModelHostTextsStyleCompactDescription" },
+  "image": "yt-image img, img.ytCoreImageHost"
+}
+  }
+}

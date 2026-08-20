@@ -437,7 +437,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('backToMainFromEnginesBtn').addEventListener('click', () => showView('listView'));
 
     // Dynamic Engine Selection Handlers
-    document.getElementById('confEngineSelect').addEventListener('change', (e) => populateDropdowns(e.target.value, 'confCountrySelect', 'confLangSelect'));
+    document.getElementById('confEngineSelect').addEventListener('change', (e) => {
+        populateDropdowns(e.target.value, 'confCountrySelect', 'confLangSelect');
+        
+        const limitTypeSelect = document.getElementById('sessLimitType');
+        const engineObj = availableEngines.find(eng => eng.engine.id === e.target.value);
+        
+        if (engineObj && engineObj.selectors && engineObj.selectors.pagination && engineObj.selectors.pagination.type === "infinite_scroll") {
+            limitTypeSelect.value = 'RESULTS';
+            document.getElementById('sessLimit').value = 10;
+            limitTypeSelect.style.border = '2px solid #17a2b8'; 
+            limitTypeSelect.title = "For infinite scroll (like YouTube), filtering by 'Results' instead of 'Pages' is highly recommended!";
+            const warningDiv = document.getElementById('infiniteScrollWarning');
+            if(warningDiv) warningDiv.style.display = 'block';
+        } else {
+            limitTypeSelect.style.border = '1px solid #ced4da';
+            limitTypeSelect.title = "";
+            const warningDiv = document.getElementById('infiniteScrollWarning');
+            if(warningDiv) warningDiv.style.display = 'none';
+        }
+    });
+
     document.getElementById('editConfEngineSelect').addEventListener('change', (e) => populateDropdowns(e.target.value, 'editConfCountrySelect', 'editConfLangSelect'));
 
     // Engine Form Visibility
@@ -902,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('deleteEngineBtn').addEventListener('click', () => {
         if (!currentEditingEngineId) return;
         
-        const confirmMsg = "Are you sure you want to delete this scraper permanently?\n\nMöchtest du diesen Scraper wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.";
+        const confirmMsg = "Are you sure you want to delete this scraper permanently? This action cannot be undone.";
         
         if (confirm(confirmMsg)) {
             chrome.runtime.sendMessage({ action: "DELETE_ENGINE", payload: { id: currentEditingEngineId } });
@@ -1089,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `<div class="sandbox-card" style="border-color:#17a2b8; background:#e0f7fa;">
                     <div class="sandbox-card-title">🤖 AI Overview Detected</div>
                     <div class="sandbox-card-snippet">
-                        <strong>Text-Vorschau:</strong><br>
+                        <strong>Text Preview:</strong><br>
                         <pre style="white-space: pre-wrap; word-break: break-all; font-family: monospace; font-size: 10px; background: #fff; padding: 5px;">${aiOverviewData.text_full}</pre>
                     </div>
                     <div style="font-size:10px; color:#666; margin-top:5px;">Sources found: ${aiOverviewData.sources.length}</div>
@@ -1183,6 +1203,38 @@ function populateDropdowns(engineId, countrySelectId, langSelectId) {
         engine.request.supportedLanguages.forEach(l => {
             const opt = document.createElement('option'); opt.value = l.code; opt.innerText = l.name; lSelect.appendChild(opt);
         });
+    }
+}
+
+function renderConfigs() {
+    const list = document.getElementById('addedConfigsList');
+    list.innerHTML = "";
+    
+    let hasInfiniteScroll = false;
+
+    currentConfigs.forEach((c, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span><strong>${c.engineName}</strong>: ${c.countryName} (${c.langCode || 'Auto'})</span> <span class="remove-engine-btn">×</span>`;
+        li.querySelector('.remove-engine-btn').onclick = () => { currentConfigs.splice(i, 1); renderConfigs(); };
+        list.appendChild(li);
+
+        const engineObj = availableEngines.find(e => e.engine.id === c.engineId);
+        if (engineObj && engineObj.selectors && engineObj.selectors.pagination && engineObj.selectors.pagination.type === "infinite_scroll") {
+            hasInfiniteScroll = true;
+        }
+    });
+
+    const warningDiv = document.getElementById('infiniteScrollWarning');
+    const limitTypeSelect = document.getElementById('sessLimitType');
+    
+    if (hasInfiniteScroll && warningDiv) {
+        warningDiv.style.display = 'block';
+        if (limitTypeSelect.value === 'PAGES') {
+            limitTypeSelect.value = 'RESULTS';
+            limitTypeSelect.dispatchEvent(new Event('change'));
+        }
+    } else if (warningDiv) {
+        warningDiv.style.display = 'none';
     }
 }
 
@@ -1349,17 +1401,6 @@ function addSingleLog(entry) {
 }
 
 function addConfig(c) { currentConfigs.push(c); renderConfigs(); }
-
-function renderConfigs() {
-    const list = document.getElementById('addedConfigsList');
-    list.innerHTML = "";
-    currentConfigs.forEach((c, i) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span><strong>${c.engineName}</strong>: ${c.countryName} (${c.langCode || 'Auto'})</span> <span class="remove-engine-btn">×</span>`;
-        li.querySelector('.remove-engine-btn').onclick = () => { currentConfigs.splice(i, 1); renderConfigs(); };
-        list.appendChild(li);
-    });
-}
 
 function resetCreateForm() { 
     document.getElementById('sessName').value = ""; 
