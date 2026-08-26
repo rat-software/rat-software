@@ -23,8 +23,8 @@ class ExtendedForgotPasswordForm(ForgotPasswordForm):
     recaptcha = RecaptchaField()
 
 class RangeForm(FlaskForm):
-    start_range = IntegerField("Start", validators=[NumberRange(min=1)])
-    end_range = IntegerField("End", validators=[NumberRange(min=1)])
+    start_range = IntegerField("Start", validators=[Optional(), NumberRange(min=1)])
+    end_range = IntegerField("End", validators=[Optional(), NumberRange(min=1)])
 
 class StudyForm(FlaskForm):
     id = HiddenField("Study ID", default=0)
@@ -46,7 +46,9 @@ class ConfirmUploadForm(FlaskForm):
 
 class StudySettingsForm(FlaskForm):
     # Assessment Limits
-    result_count = IntegerField("Top results to assess per query", default=10, validators=[NumberRange(min=1)])
+    result_count = IntegerField("Top results to assess per query", default=10, validators=[Optional(), NumberRange(min=1)])
+
+    limit_per_query = BooleanField('Limit workload per query')
     
     assessment_result_types = MultiCheckboxField('Result Types for Assessment') 
     
@@ -55,6 +57,8 @@ class StudySettingsForm(FlaskForm):
     assess_failed = BooleanField("Allow assessment of failed/missing sources (Show URL only)")
     
     live_link_mode = BooleanField("Live Link Mode", default=True)
+
+    global_duplicate_filtering = BooleanField('Global Duplicate Filtering')
     
     # Participant Limits
     limit_per_participant = BooleanField('Limit workload per participant')

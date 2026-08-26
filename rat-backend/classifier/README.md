@@ -30,7 +30,7 @@ source venv_rat_classifier/bin/activate
 ### Step 2: Install Dependencies
 ```bash
 python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements_rat_classifier.txt
+python3 -m pip install -r requirements.txt
 ```
 
 ### Configuration

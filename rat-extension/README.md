@@ -25,6 +25,13 @@ The extension is built on a distributed architecture to ensure stability during 
 
 ---
 
+### ⚠️ Important Preliminary Information
+
+Be sure to back up your session results before updating your browser extension to a new version. A new version usually overwrites data from previous sessions.
+---
+
+---
+
 ### 📦 Installation
 
 1. Clone or download this repository.

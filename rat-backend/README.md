@@ -34,7 +34,7 @@ source venv_rat_backend/bin/activate
 ### Step 2: Install Dependencies
 ```bash
 python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements_rat_backend.txt
+python3 -m pip install -r requirements.txt
 ```
 
 ### Step 3: Module-Specific System Setup

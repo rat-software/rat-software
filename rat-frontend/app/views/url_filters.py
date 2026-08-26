@@ -1,3 +1,11 @@
+"""
+URL Filters management module for the RAT application.
+
+This module controls backend operations for modifying target study scope constraints,
+specifically managing whitespace-cleansed inclusion and exclusion domain matching filters
+that restrict which links are presented to participants during evaluation tasks.
+"""
+
 from .. import app, db
 from ..forms import ConfirmationForm
 from ..models import Study, StudyURLFilter
@@ -9,6 +17,16 @@ from flask_security import login_required
 def url_filters(id):
     """
     Handles the display and update of URL include/exclude filters for a study.
+
+    Processes form text submissions by splitting newline arrays, stripping empty lines, 
+    purging stale criteria, and appending fresh match strings directly into active study scopes.
+
+    Args:
+        id (str or int): The unique database identifier tracking the target Study record.
+
+    Returns:
+        str or Response: The rendered template context for filter adjustments, 
+                        or a redirect instruction back to the study dashboard.
     """
     study = Study.query.get_or_404(id)
     form = ConfirmationForm()
@@ -17,14 +35,14 @@ def url_filters(id):
         # 1. Delete existing filters for this study
         StudyURLFilter.query.filter_by(study_id=id).delete()
 
-        # 2. Read and save new “Include” URLs from the form
+        # 2. Read and save new "Include" URLs from the form
         include_urls_raw = request.form.get('include_urls', '')
         for url in include_urls_raw.splitlines():
-            if url.strip(): # Nur nicht-leere Zeilen hinzufügen
+            if url.strip(): # Only add non-empty lines
                 new_filter = StudyURLFilter(study_id=id, url=url.strip(), include=True, exclude=False)
                 db.session.add(new_filter)
 
-        # 3. Read and save new “Exclude” URLs from the form
+        # 3. Read and save new "Exclude" URLs from the form
         exclude_urls_raw = request.form.get('exclude_urls', '')
         for url in exclude_urls_raw.splitlines():
             if url.strip():

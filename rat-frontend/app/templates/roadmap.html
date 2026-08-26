@@ -21,7 +21,37 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-header">
-            <h5 class="mb-0 font-weight-bold text-dark">Version 1.5 <span class="badge bg-success ms-2">Current</span></h5>
+            <h5 class="mb-0 font-weight-bold text-dark">Version 2.0 <span class="badge bg-success ms-2">Current</span></h5>
+          </div>
+          <div class="card-body">
+            <h6 class="card-title"><b>New Features in RAT Application:</b></h6>
+            <ul class="list-group list-group-flush">
+              <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Major change and redesign of the whole classifier infrastructure to make it more modular and flexible.</li> 
+                        <li class="list-group-item">Implementation of pre- and post-survey questionnaires for the assessment interface to collect additional data about the study participants.</li> 
+                        <li class="list-group-item">Additonal changes of the assessment process to include image and ai source assessments.</li>
+                        <li class="list-group-item">Implementation of a classifier for scoring the generative engine optimization (GEO) of a webpage and ai source.</li>
+                        <li class="list-group-item">Implementation of a new LLM infrastructure to classify items (webpages, ai sources, ai answers) by using LLMs via Openrouter or Ollama.</li>
+                </ul>
+              <hr>
+                  <h6 class="card-title"><b>New Features in RAT-Extension:</b></h6>
+
+              <ul class="list-group list-group-flush">
+                        <li class="list-group-item">New scraper for Goolge Images and Bing Images.</li> 
+                        <li class="list-group-item">Optional selection of types to include into the export</li>
+                        <li class="list-group-item">Extraction of AI segments uses in an ai generated answer.</li>
+            </ul></ul>
+            
+          </div>
+          <div class="card-footer text-muted">
+            Released on: August 13, 2026
+          </div>
+        </div>      
+
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-header">
+           <h5 class="mb-0 font-weight-bold text-dark">Version 1.5<span class="badge bg-warning ms-2">Deprecated</span></h5>
           </div>
           <div class="card-body">
             <h6 class="card-title">New Features:</h6>
@@ -31,7 +61,6 @@
                         <li class="list-group-item">Major change to the storage implementation. Implementation of a dedicated Flask service app for storing screenshots and source code from URLs.</li>
                         <li class="list-group-item">Major change to the study design interface. All options are now available on a single page. Uploading results from the new Chrome extension is now mandatory before designing the study.</li>
                 </ul>
-              <!-- <li class="list-group-item"><strong>Additions to the study design interface for selecting the search engines: </strong> Possibility to select search engines according to a list of search engine result types.</li>-->
             </ul>
           </div>
           <div class="card-footer text-muted">

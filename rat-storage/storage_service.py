@@ -75,8 +75,15 @@ def view(filename, file_type):
             files_in_zip = z.namelist()
             
             if file_type == 'screenshot':
-                target = 'screenshot.jpg'
-                mime = 'image/jpeg'
+                if 'screenshot.png' in files_in_zip:
+                    target = 'screenshot.png'
+                    mime = 'image/png'
+                elif 'screenshot.gif' in files_in_zip:
+                    target = 'screenshot.gif'
+                    mime = 'image/gif'
+                else:
+                    target = 'screenshot.jpg'
+                    mime = 'image/jpeg'
             else:
                 if 'source.pdf' in files_in_zip:
                     target = 'source.pdf'

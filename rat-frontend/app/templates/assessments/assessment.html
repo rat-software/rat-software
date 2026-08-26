@@ -99,18 +99,32 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="sr-only">RAT</h1>
+<h1 class="sr-only">RAT - Asssessment</h1>
+
+{% if is_preview %}
+<div class="alert alert-info text-center fw-bold shadow-sm mb-4">
+    <i class="fa-solid fa-flask me-2"></i> PRETEST-MODE: This is a preview.
+</div>
+{% endif %}
 
 <div class="row">
   <div class="col-3">
-    <div class="row mb-2 py-0">
-      <div class="col-10">
-        <div class="progress" style="height: 25px">
-          <div class="progress-bar bg-secondary" role="progressbar" style="width: {{pct}}%;" aria-valuenow="{{closed}}"
-            aria-valuemax="{{all}}"></div>
+    
+    <div class="mb-3">
+      {% if query_info_text %}
+      <div class="text-secondary small fw-bold mb-2 text-uppercase" style="letter-spacing: 0.5px;">
+        <i class="fa-solid fa-magnifying-glass me-1"></i> {{ query_info_text }}
+      </div>
+      {% endif %}
+      
+      <div class="d-flex align-items-center">
+        <div class="progress flex-grow-1 shadow-sm" style="height: 25px; border-radius: 6px;">
+          <div class="progress-bar bg-primary fw-bold" role="progressbar" style="width: {{pct}}%; font-size: 0.9rem;" 
+               aria-valuenow="{{pct}}" aria-valuemin="0" aria-valuemax="100">
+               {{ pct }}%
+          </div>
         </div>
       </div>
-      <div class="col text-start">{{ pct }}%</div>
     </div>
     {% if task_item.study.task %}
     <div class="card mb-4 shadow-sm">
@@ -124,6 +138,10 @@
             {% set query_text = task_item.query_.query %}
         {% elif task_type == 'serp' and task_item.query_ %}
             {% set query_text = task_item.query_.query %}
+        {% elif task_type == 'result_image' and task_item.query_ %}
+            {% set query_text = task_item.query_.query %}
+        {% elif task_type == 'result_ai_source' and task_item.query %}
+            {% set query_text = task_item.query.query %}
         {% endif %}
         <div class="card-text">{{ task_item.study.task | replace('[QUERY]', '<strong>'~query_text~'</strong>') | markdown }}</div>
       </div>
@@ -198,7 +216,8 @@
 
         {% if study.skippable %}
         <div>
-            <button type="submit" name="skip" class="btn btn-outline-secondary btn-lg" formnovalidate>Skip This Result</button>
+            <button type="submit" name="skip" class="btn btn-outline-secondary btn-lg" formnovalidate 
+                {% if is_preview %}onclick="event.preventDefault(); alert('Pretest: Dieses Element würde nun übersprungen werden.');"{% endif %}>Skip This Result</button>
             <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Skip this result if the page is broken or you cannot evaluate it."></i>
         </div>
         {% endif %}
@@ -207,26 +226,32 @@
   </div>
 
 <div class="col-9">
-    {% if task_type == 'result' %}
+    
+    {% if task_type == 'result' or task_type == 'result_ai_source' %}
         {% if show_urls %}
         <div class="card mb-4 shadow-sm px-3 py-2">
             <div class="d-flex align-items-center">
                 <span class="fw-bold me-2 flex-shrink-0">URL:</span>
                 <div class="text-truncate">
-                    <a href="{{ task_item.normalized_url }}" target="_blank" class="hover-underline" title="{{ task_item.normalized_url }}">
-                        {{ task_item.normalized_url }}
+                    {% set display_url = task_item.normalized_url if task_type == 'result' else task_item.url %}
+                    <a href="{{ display_url }}" target="_blank" class="hover-underline" title="{{ display_url }}">
+                        {{ display_url }}
                     </a>
                 </div>
             </div>
         </div>
         {% endif %}
 
-        {% set source = task_item.sources[0] if task_item.sources else None %}
+        {% set source = None %}
+        {% if task_type == 'result' %}
+            {% set source = task_item.sources[0] if task_item.sources else None %}
+        {% elif task_type == 'result_ai_source' %}
+            {% set source = task_item.source %}
+        {% endif %}
 
         {% if source and source.file_path %}
             
             {% if source.content_type and "pdf" in source.content_type.lower() %}
-                {# CASE 1: View PDF file directly #}
                 <div class="card shadow-sm" style="height: 850px;">
                     <embed src="{{ get_storage_url(source.file_path, 'html') }}" 
                            type="application/pdf" 
@@ -237,7 +262,6 @@
                     <i class="fa-solid fa-file-pdf"></i> PDF Document Preview
                 </div>
             {% else %}
-                {# CASE 2: Extract the screenshot (PNG) from the ZIP archive #}
                 <div class="image-preview-wrapper shadow-sm">
                 <img class="img-fluid zoomable-img" 
                     src="{{ get_storage_url(source.file_path, 'screenshot') }}"
@@ -254,7 +278,6 @@
             {% endif %}
 
         {% else %}
-            {# B: Content Not Available Fallback #}
             <div class="card shadow-sm p-5 text-center bg-white">
                 <div class="mb-3 text-secondary">
                     <i class="fa-regular fa-image fa-3x"></i>
@@ -266,7 +289,8 @@
                     The content could not be visualized directly. Please assess the website by visiting the link below.
                 </p>
                 <div>
-                    <a href="{{ task_item.normalized_url }}" target="_blank" class="btn btn-primary px-4">
+                    {% set fallback_url = task_item.normalized_url if task_type == 'result' else task_item.url %}
+                    <a href="{{ fallback_url }}" target="_blank" class="btn btn-primary px-4">
                         <i class="fa-solid fa-external-link-alt me-2"></i> Open Website
                     </a>
                 </div>
@@ -321,7 +345,7 @@
       </div>
     </div>
 
-{% elif task_type == 'serp' %}
+    {% elif task_type == 'serp' %}
     <div class="card shadow-sm">
       <div class="card-header">
         <b>Search Engine Results Page (Snapshot)</b>
@@ -341,6 +365,54 @@
         <div class="text-center text-muted small mt-2 mb-3"><i class="fa-solid fa-magnifying-glass-plus"></i> Click image to enlarge</div>
         {% else %}
         <div class="alert alert-warning m-3">No screenshot available for this SERP. The upload might have failed.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% elif task_type == 'result_image' %}
+    <div class="card shadow-sm border-secondary">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold"><i class="fa-regular fa-image text-secondary me-2"></i> Image Search Result</h6>
+      </div>
+      <div class="card-body bg-light p-0">
+        
+        {% set img_path = task_item.source.file_path if task_item.source and task_item.source.file_path else task_item.file_path %}
+        
+        {% if img_path %}
+        <div class="image-preview-wrapper shadow-sm m-3 text-center bg-dark" style="border: none;">
+          <img src="{{ get_storage_url(img_path, 'screenshot') }}"
+              class="img-fluid zoomable-img"
+              loading="lazy"
+              style="opacity: 0; max-height: 500px; object-fit: contain;"
+              onload="this.style.opacity=''"
+              onclick="openImageModal(this.src)" 
+              alt="{{ task_item.title }}"
+              onerror="retryImage(this)">
+        </div>
+        <div class="text-center text-muted small mt-2 mb-3">
+            <i class="fa-solid fa-magnifying-glass-plus me-1"></i> Click image to enlarge
+        </div>
+        {% else %}
+        <div class="alert alert-warning m-4 shadow-sm border-warning">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> Image not downloaded yet or scraping failed.
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer bg-white p-4">
+        <h5 class="mb-2 fw-bold text-dark">{{ task_item.title }}</h5>
+        <div class="text-muted small mb-3">
+            Source Domain: <span class="badge bg-light text-dark border">{{ task_item.source_name }}</span>
+        </div>
+        
+        {% if show_urls %}
+        <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+            <a href="{{ task_item.source_url }}" target="_blank" class="btn btn-sm btn-outline-secondary fw-bold">
+              <i class="fa-solid fa-external-link-alt me-1"></i> View Source Website
+            </a>
+            <a href="{{ task_item.image_url }}" target="_blank" class="btn btn-sm btn-outline-primary fw-bold">
+              <i class="fa-solid fa-image me-1"></i> Direct Image Link
+            </a>
+        </div>
         {% endif %}
       </div>
     </div>
@@ -443,10 +515,15 @@
         }
       });
 
-      if (!allValid) {
+    if (!allValid) {
         event.preventDefault();
         const firstError = form.querySelector('.is-invalid');
         if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        {% if is_preview %}
+        event.preventDefault();
+        alert('Pretest erfolgreich! Die Antworten sind valide.\n\nIn einer echten Studie würde nun der Datensatz gespeichert und das nächste Element geladen werden.');
+        {% endif %}
       }
     });
   });

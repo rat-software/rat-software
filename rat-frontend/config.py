@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -114,3 +115,9 @@ class Config(object):
         'This account has been disabled.', 
         'error'
     )
+
+    WTF_CSRF_TIME_LIMIT = None
+
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+
+    MAX_CONTENT_LENGTH = 1024 * 1024 * 1024  # 1 GB
