@@ -1,6 +1,7 @@
 [
   "google.json",
   "bing.json",
+  "bing_images.json",
   "duckduckgo.json",
   "google_not_personalized.json",
   "google_images.json",
