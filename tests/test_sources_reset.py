@@ -3,12 +3,15 @@ Unit tests for rat-backend/sources/sources_reset.py
 
 SourcesReset.reset(db, job_server)
     Iterates pending sources from db.get_sources_pending(job_server).
-    For each entry (result_source_id, source_id, result_id, ...):
+    Each row is (composite_id, source_id), e.g. ('result_ai_source:292', 99).
+    composite_id is split via db._parse_id() into (fk_column, real_id).
+    For each entry:
       - If source_id is truthy:
-          writes to logger, increments counter, calls reset_result_source,
-          calls delete_source_pending.
+          writes to logger, increments counter (keyed by the raw composite_id),
+          calls reset_result_source, calls delete_source_pending.
       - If source_id is falsy:
-          writes to logger, calls delete_result_source_pending.
+          writes to logger, increments counter (keyed by the raw composite_id),
+          calls update_result_source_result (NOT delete_result_source_pending).
     Always calls db.update_sources_failed(job_server) at the end.
 """
 
@@ -55,10 +58,19 @@ _JOB_SERVER = 'worker-1'
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _parse_id(composite_id):
+    """Mirrors libs.lib_db.DB._parse_id's real splitting logic."""
+    if isinstance(composite_id, str) and ':' in composite_id:
+        fk_column, real_id = composite_id.split(':')
+        return fk_column, int(real_id)
+    return 'result', int(composite_id)
+
+
 def _make_db(pending=None, counter=3):
     db = MagicMock()
     db.get_sources_pending.return_value       = pending or []
     db.get_source_counter_result.return_value = counter
+    db._parse_id.side_effect                  = _parse_id
     return db
 
 
@@ -66,9 +78,9 @@ def _make_logger():
     return MagicMock()
 
 
-def _pending_row(result_source_id=10, source_id=99, result_id=5):
-    """Build a fake pending-source tuple (result_source_id, source_id, result_id)."""
-    return (result_source_id, source_id, result_id)
+def _pending_row(composite_id='result:5', source_id=99):
+    """Build a fake pending-source tuple (composite_id, source_id), as returned by get_sources_pending."""
+    return (composite_id, source_id)
 
 
 def _run(pending=None, counter=3):
@@ -126,7 +138,7 @@ class TestSourcesResetDbCalls(unittest.TestCase):
 class TestSourcesResetWithSourceId(unittest.TestCase):
 
     def setUp(self):
-        row          = _pending_row(result_source_id=10, source_id=99, result_id=5)
+        row          = _pending_row(composite_id='result:5', source_id=99)
         self.db, self.logger = _run(pending=[row], counter=3)
 
     def test_logger_write_to_log_called(self):
@@ -136,8 +148,8 @@ class TestSourcesResetWithSourceId(unittest.TestCase):
         log_arg = self.logger.write_to_log.call_args[0][0]
         self.assertIn('99', log_arg)
 
-    def test_get_source_counter_result_called_with_result_id(self):
-        self.db.get_source_counter_result.assert_called_once_with(5)
+    def test_get_source_counter_result_called_with_composite_id(self):
+        self.db.get_source_counter_result.assert_called_once_with('result:5')
 
     def test_counter_incremented_by_one(self):
         args = self.db.reset_result_source.call_args[0]
@@ -165,8 +177,8 @@ class TestSourcesResetWithSourceId(unittest.TestCase):
 
     def test_processes_multiple_rows(self):
         rows = [
-            _pending_row(result_source_id=1, source_id=10, result_id=1),
-            _pending_row(result_source_id=2, source_id=20, result_id=2),
+            _pending_row(composite_id='result:1', source_id=10),
+            _pending_row(composite_id='result:2', source_id=20),
         ]
         db, _ = _run(pending=rows)
         self.assertEqual(db.reset_result_source.call_count, 2)
@@ -180,14 +192,23 @@ class TestSourcesResetWithSourceId(unittest.TestCase):
 class TestSourcesResetWithoutSourceId(unittest.TestCase):
 
     def setUp(self):
-        row = _pending_row(result_source_id=77, source_id=None, result_id=5)
-        self.db, self.logger = _run(pending=[row])
+        row = _pending_row(composite_id='result_ai_source:77', source_id=None)
+        self.db, self.logger = _run(pending=[row], counter=3)
 
     def test_logger_write_to_log_called(self):
         self.logger.write_to_log.assert_called()
 
-    def test_delete_result_source_pending_called_with_result_source_id(self):
-        self.db.delete_result_source_pending.assert_called_once_with(77)
+    def test_update_result_source_result_called_with_composite_id(self):
+        args = self.db.update_result_source_result.call_args[0]
+        self.assertEqual(args[0], 'result_ai_source:77')
+
+    def test_update_result_source_result_progress_is_zero(self):
+        args = self.db.update_result_source_result.call_args[0]
+        self.assertEqual(args[1], 0)
+
+    def test_update_result_source_result_counter_incremented_by_one(self):
+        args = self.db.update_result_source_result.call_args[0]
+        self.assertEqual(args[2], 4)   # counter=3 + 1
 
     def test_reset_result_source_not_called(self):
         self.db.reset_result_source.assert_not_called()
@@ -195,8 +216,11 @@ class TestSourcesResetWithoutSourceId(unittest.TestCase):
     def test_delete_source_pending_not_called(self):
         self.db.delete_source_pending.assert_not_called()
 
-    def test_get_source_counter_result_not_called(self):
-        self.db.get_source_counter_result.assert_not_called()
+    def test_delete_result_source_pending_not_called(self):
+        self.db.delete_result_source_pending.assert_not_called()
+
+    def test_get_source_counter_result_called_with_composite_id(self):
+        self.db.get_source_counter_result.assert_called_once_with('result_ai_source:77')
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -209,7 +233,8 @@ class TestSourcesResetCallOrder(unittest.TestCase):
         call_order = []
         db     = MagicMock()
         logger = MagicMock()
-        db.get_sources_pending.return_value       = [_pending_row(source_id=1, result_id=1)]
+        db._parse_id.side_effect                  = _parse_id
+        db.get_sources_pending.return_value       = [_pending_row(composite_id='result:1', source_id=1)]
         db.get_source_counter_result.return_value = 0
         db.reset_result_source.side_effect        = lambda *a: call_order.append('reset')
         db.update_sources_failed.side_effect      = lambda *a: call_order.append('update_failed')

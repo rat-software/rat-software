@@ -131,120 +131,138 @@ class TestLoadClassifierImport(unittest.TestCase):
         self.assertIn('classifiers.seo_rule_based.seo_rule_based',      imported)
 
 
+def _real_helper():
+    """A MagicMock helper whose to_camel_case behaves like libs.lib_helper.Helper.to_camel_case."""
+    helper = MagicMock()
+    helper.to_camel_case.side_effect = lambda s: "".join(x.capitalize() for x in s.lower().split("_"))
+    return helper
+
+
 class TestLoadClassifierMainCall(unittest.TestCase):
-    """Verifies that each imported module's main() is called correctly."""
+    """Verifies that each imported module's classifier class is instantiated and run correctly.
+
+    load_classifier resolves the class via helper.to_camel_case(name), instantiates it as
+    cls(classifier_id=, db=, job_server=), fetches results via db.get_results(id, study), then
+    calls classifier.classify_results(results, helper).
+    """
 
     @patch('classifier_runner.importlib.import_module')
     def test_main_called_with_classifier_id(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
-        db, helper = MagicMock(), MagicMock()
+        db, helper = MagicMock(), _real_helper()
 
         ClassifierRunner().load_classifier([_make_classifier(cid=42)], db, helper, 'srv')
 
-        args = fake_module.main.call_args[0]
-        self.assertEqual(args[0], 42)
+        kwargs = fake_module.SeoScore.call_args.kwargs
+        self.assertEqual(kwargs['classifier_id'], 42)
 
     @patch('classifier_runner.importlib.import_module')
     def test_main_called_with_db(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
-        db, helper = MagicMock(), MagicMock()
+        db, helper = MagicMock(), _real_helper()
 
         ClassifierRunner().load_classifier([_make_classifier()], db, helper, 'srv')
 
-        args = fake_module.main.call_args[0]
-        self.assertIs(args[1], db)
+        kwargs = fake_module.SeoScore.call_args.kwargs
+        self.assertIs(kwargs['db'], db)
 
     @patch('classifier_runner.importlib.import_module')
     def test_main_called_with_helper(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
-        db, helper = MagicMock(), MagicMock()
+        db, helper = MagicMock(), _real_helper()
 
         ClassifierRunner().load_classifier([_make_classifier()], db, helper, 'srv')
 
-        args = fake_module.main.call_args[0]
-        self.assertIs(args[2], helper)
+        classifier_instance = fake_module.SeoScore.return_value
+        args = classifier_instance.classify_results.call_args[0]
+        self.assertIs(args[1], helper)
 
     @patch('classifier_runner.importlib.import_module')
     def test_main_called_with_job_server(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
+        helper = _real_helper()
 
         ClassifierRunner().load_classifier(
-            [_make_classifier()], MagicMock(), MagicMock(), 'my_server'
+            [_make_classifier()], MagicMock(), helper, 'my_server'
         )
 
-        args = fake_module.main.call_args[0]
-        self.assertEqual(args[3], 'my_server')
+        kwargs = fake_module.SeoScore.call_args.kwargs
+        self.assertEqual(kwargs['job_server'], 'my_server')
 
     @patch('classifier_runner.importlib.import_module')
     def test_main_called_with_study_id(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
+        db, helper = MagicMock(), _real_helper()
 
         ClassifierRunner().load_classifier(
-            [_make_classifier(study=99)], MagicMock(), MagicMock(), 'srv'
+            [_make_classifier(study=99)], db, helper, 'srv'
         )
 
-        args = fake_module.main.call_args[0]
-        self.assertEqual(args[4], 99)
+        args = db.get_results.call_args[0]
+        self.assertEqual(args[1], 99)
 
     @patch('classifier_runner.importlib.import_module')
     def test_main_called_exactly_once_per_classifier(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
+        helper = _real_helper()
 
         ClassifierRunner().load_classifier(
             [_make_classifier(cid=1), _make_classifier(cid=2)],
-            MagicMock(), MagicMock(), 'srv'
+            MagicMock(), helper, 'srv'
         )
-        self.assertEqual(fake_module.main.call_count, 2)
+        self.assertEqual(fake_module.SeoScore.return_value.classify_results.call_count, 2)
 
     @patch('classifier_runner.importlib.import_module')
     def test_each_classifier_gets_its_own_id_and_study(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
+        db, helper = MagicMock(), _real_helper()
 
         classifiers = [
             _make_classifier('seo_score',        cid=10, study=1),
             _make_classifier('readability_score', cid=20, study=2),
         ]
-        ClassifierRunner().load_classifier(classifiers, MagicMock(), MagicMock(), 'srv')
+        ClassifierRunner().load_classifier(classifiers, db, helper, 'srv')
 
-        calls = fake_module.main.call_args_list
-        self.assertEqual(calls[0][0][0], 10)
-        self.assertEqual(calls[0][0][4], 1)
-        self.assertEqual(calls[1][0][0], 20)
-        self.assertEqual(calls[1][0][4], 2)
+        self.assertEqual(fake_module.SeoScore.call_args.kwargs['classifier_id'], 10)
+        self.assertEqual(fake_module.ReadabilityScore.call_args.kwargs['classifier_id'], 20)
+        study_args = [c[0][1] for c in db.get_results.call_args_list]
+        self.assertEqual(study_args, [1, 2])
 
     @patch('classifier_runner.importlib.import_module')
     def test_db_and_helper_same_object_for_all_classifiers(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
-        db, helper = MagicMock(), MagicMock()
+        db, helper = MagicMock(), _real_helper()
 
         classifiers = [_make_classifier(cid=1), _make_classifier(cid=2)]
         ClassifierRunner().load_classifier(classifiers, db, helper, 'srv')
 
-        for c in fake_module.main.call_args_list:
-            self.assertIs(c[0][1], db)
-            self.assertIs(c[0][2], helper)
+        for c in fake_module.SeoScore.call_args_list:
+            self.assertIs(c.kwargs['db'], db)
+        for c in fake_module.SeoScore.return_value.classify_results.call_args_list:
+            self.assertIs(c[0][1], helper)
 
     @patch('classifier_runner.importlib.import_module')
     def test_classifiers_processed_in_order(self, mock_import):
         fake_module = MagicMock()
         mock_import.return_value = fake_module
+        db, helper = MagicMock(), _real_helper()
 
         classifiers = [
             _make_classifier('seo_score',        cid=1),
             _make_classifier('readability_score', cid=2),
             _make_classifier('seo_rule_based',    cid=3),
         ]
-        ClassifierRunner().load_classifier(classifiers, MagicMock(), MagicMock(), 'srv')
+        ClassifierRunner().load_classifier(classifiers, db, helper, 'srv')
 
-        ids_in_order = [c[0][0] for c in fake_module.main.call_args_list]
+        ids_in_order = [c[0][0] for c in db.get_results.call_args_list]
         self.assertEqual(ids_in_order, [1, 2, 3])
 
 
