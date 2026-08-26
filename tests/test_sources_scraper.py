@@ -107,6 +107,7 @@ def _make_sources(save_result=None):
 
 class _SyncExecutor:
     """Replaces ThreadPoolExecutor inside scrape_url — runs fn synchronously."""
+    def __init__(self, *args, **kwargs): pass
     def __enter__(self): return self
     def __exit__(self, *a): pass
     def submit(self, fn, *args, **kwargs):

@@ -30,7 +30,8 @@ sys.modules.setdefault('app.views', _views_pkg)
 
 _models_mod = types.ModuleType('app.models')
 for _n in ('Scraper', 'Answer', 'Result', 'ResultAi', 'ResultSource',
-           'ClassifierResult', 'ResultAiSource', 'ResultType', 'ResultChatbot'):
+           'ClassifierResult', 'ResultAiSource', 'ResultType', 'ResultChatbot',
+           'ResultImage', 'ClassifierIndicator'):
     setattr(_models_mod, _n, MagicMock())
 sys.modules.setdefault('app.models', _models_mod)
 
