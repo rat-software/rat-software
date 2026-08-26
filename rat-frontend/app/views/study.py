@@ -1,8 +1,17 @@
+"""
+Study management module for the RAT application.
+
+This module provides the core backend functionality for configuring, modifying, and monitoring 
+research studies. It handles dataset imports (CSV/ZIP), parses generative AI text layouts, 
+calculates overall scraping and classifier completion progress, processes LLM API tests, 
+and manages all settings associated with the evaluation workspace and search index mappings.
+"""
+
 from .. import app, db
 from ..forms import StudyForm, ConfirmationForm, StudySettingsForm, UploadResultsForm, ConfirmUploadForm
 from ..models import (Study, Query, Answer,
                       Result, Classifier, RangeStudy, 
-                      ResultAi, ResultAiSource, ResultSource, ResultChatbot, Serp, ClassifierResult)
+                      ResultAi, ResultAiSource, ResultAiSegment, ResultSource, ResultChatbot, Serp, ClassifierResult, ClassifierIndicator, ResultImage)
 from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, send_file, jsonify
 from markupsafe import Markup
 from sqlalchemy.orm import raiseload, joinedload
@@ -31,10 +40,14 @@ import platform
 import tempfile
 import traceback
 
+from sqlalchemy.orm import joinedload
+
 def upload_to_storage(file_data, filename):
+    """
+    Transfers captured assets (such as HTML or screenshot ZIPs) to the remote or local storage service.
+    """
     base_url = app.config.get('STORAGE_BASE_URL')
     
-    # Determine the correct API endpoint based on the environment (local vs. live)
     if "127.0.0.1" in base_url or "localhost" in base_url:
         api_url = f"{base_url.rstrip('/')}/upload"
     else:
@@ -47,13 +60,11 @@ def upload_to_storage(file_data, filename):
     files = {'file': (filename, file_data, 'application/zip')}
     
     try:
-        # Increased timeout to 30 seconds to prevent large files from timing out immediately
         response = requests.post(api_url, headers=headers, files=files, timeout=30)
         
         if response.status_code == 200:
             return response.json().get('filename')
         else:
-            # Instead of silently ignoring the error, we print it out for debugging
             print(f"❌ Server rejected the upload. Status: {response.status_code}")
             print(f"Details: {response.text}")
             return None
@@ -125,34 +136,51 @@ def check_and_update_status(study):
     from sqlalchemy import or_, and_
     status_changed = False
 
-    # 1. Echten, globalen Fortschritt berechnen (unabhängig von den Checkboxen!)
-    total_tasks = db.session.query(ResultSource.result_id)\
+    total_organic = db.session.query(ResultSource.result_id)\
         .join(Result, ResultSource.result_id == Result.id)\
         .filter(Result.study_id == study.id).count()
-    
-    finished_q = db.session.query(ResultSource.result_id)\
-        .join(Result, ResultSource.result_id == Result.id)\
-        .filter(Result.study_id == study.id)
+        
+    total_ai_sources = db.session.query(ResultAiSource.id)\
+        .filter(ResultAiSource.study_id == study.id).count()
 
-    if study.assess_failed:
-        finished_q = finished_q.filter(ResultSource.progress.in_([1, -1]))
-    else:
-        finished_q = finished_q.filter(
-            or_(
-                ResultSource.progress == 1, 
-                and_(ResultSource.progress == -1, ResultSource.counter > 2)
-            )
-        )
+    total_images = db.session.query(ResultImage.id)\
+        .filter(ResultImage.study_id == study.id).count()
+        
+    total_tasks = total_organic + total_ai_sources + total_images
     
-    finished_tasks = finished_q.count()
+    finished_organic = db.session.query(ResultSource.result_id)\
+        .join(Result, ResultSource.result_id == Result.id)\
+        .filter(
+            Result.study_id == study.id,
+            ResultSource.progress.in_([1, -1])
+        ).count()
+        
+    finished_ai_sources = db.session.query(ResultAiSource.id)\
+        .filter(
+            ResultAiSource.study_id == study.id,
+            ResultAiSource.progress.in_([1, -1])
+        ).count()
+
+    finished_images = db.session.query(ResultImage.id)\
+        .filter(
+            ResultImage.study_id == study.id,
+            ResultImage.progress.in_([1, -1])
+        ).count()
+
+    finished_tasks = finished_organic + finished_ai_sources + finished_images
+
     progress_percent = round((finished_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+
+    if study.status in [2, 4]:
+        progress_percent = 100
     
     ai_count = db.session.query(ResultAi.id).filter_by(study_id=study.id).count()
     chatbot_count = db.session.query(ResultChatbot.id).filter_by(study_id=study.id).count()
     serp_count = db.session.query(Serp.id).filter(Serp.study_id == study.id, Serp.file_path.isnot(None)).count()    
-    has_data = (total_tasks > 0 or ai_count > 0 or chatbot_count > 0 or serp_count > 0)
+    image_count = db.session.query(ResultImage.id).filter_by(study_id=study.id).count()
 
-    # 2. Status-Updates
+    has_data = (total_tasks > 0 or ai_count > 0 or chatbot_count > 0 or serp_count > 0 or image_count > 0)
+
     if study.status == 0 and has_data:
         study.status = 1
         status_changed = True
@@ -188,9 +216,9 @@ def process_upload_file(study_id, filepath):
                 zip_ref.close()
                 return False, "rat_results.csv not found in ZIP"
             with zip_ref.open('rat_results.csv') as csvfile:
-                df = pd.read_csv(csvfile)
+                df = pd.read_csv(csvfile, on_bad_lines='skip') 
         else:
-            try: df = pd.read_csv(filepath)
+            try: df = pd.read_csv(filepath, on_bad_lines='skip')
             except: return False, "Invalid CSV file."
 
         if 'url' in df.columns and 'query' not in df.columns:
@@ -216,6 +244,8 @@ def process_upload_file(study_id, filepath):
         results_added = 0
         ai_added = 0
         ai_sources_added = 0
+        segments_added = 0
+        images_added = 0
 
         for index, row in df.iterrows():
             img_fn = row['screenshot_file'] if 'screenshot_file' in df.columns and pd.notna(row['screenshot_file']) else None
@@ -237,7 +267,6 @@ def process_upload_file(study_id, filepath):
             serp_key = f"{query_id}_{engine_str}_{page_num}"
 
             if serp_key not in serp_cache:
-                # 1. First, check whether there are any files (HTML/JPG) in the ZIP file
                 has_content = False
                 img_match = None
                 html_match = None
@@ -273,7 +302,6 @@ def process_upload_file(study_id, filepath):
                     if img_match or html_match:
                         has_content = True
 
-                # 2. ONLY if content is found do we create the SERP record
                 if has_content:
                     serp = db.session.query(Serp).filter_by(study_id=study.id, query_id=query_id, page=page_num, engine_text=engine_str).first()
                     if not serp:
@@ -298,11 +326,9 @@ def process_upload_file(study_id, filepath):
                     db.session.flush()
                     serp_cache[serp_key] = serp.id
                 else:
-                    # No image/HTML found -> We will NOT generate a SERP listing!
                     serp_cache[serp_key] = None
 
             serp_id = serp_cache[serp_key]
-
             res_type = str(row['type']).lower().strip()
             
             if res_type == 'organic':
@@ -339,17 +365,72 @@ def process_upload_file(study_id, filepath):
                 url = row['url'] if pd.notna(row['url']) else ""
                 title = row['title'] if pd.notna(row['title']) else ""
                 parent_ai_id = ai_parent_cache.get(f"{query_id}_{engine_str}")
+                source_type_val = str(row['source_type']).lower().strip() if 'source_type' in df.columns and pd.notna(row['source_type']) else 'carousel'
                 if url and parent_ai_id:
                     existing_src = db.session.query(ResultAiSource).filter_by(study_id=study.id, result_ai_id=parent_ai_id, url=url).first()
                     if not existing_src:
                         main_domain = get_main_domain(url)
-                        new_ai_source = ResultAiSource(study_id=study.id, query_id=query_id, result_ai_id=parent_ai_id, url=url, title=title, main=main_domain, created_at=datetime.now(), progress=0, counter=0, result_type_text=res_type, engine_text=engine_str)
+                        new_ai_source = ResultAiSource(
+                            study_id=study.id, query_id=query_id, result_ai_id=parent_ai_id, 
+                            url=url, title=title, main=main_domain, created_at=datetime.now(), 
+                            progress=0, counter=0, result_type_text=res_type, engine_text=engine_str,
+                            source_type=source_type_val
+                        )
                         db.session.add(new_ai_source)
+                        db.session.flush() 
                         ai_sources_added += 1
+                        
+            elif 'ai' in res_type and 'segment' in res_type:
+                segment_text = str(row['snippet']) if pd.notna(row['snippet']) else ""
+                cited_urls_raw = str(row['url']) if pd.notna(row['url']) else ""
+                position = int(row['rank']) if pd.notna(row['rank']) else 0
+                
+                parent_ai_id = ai_parent_cache.get(f"{query_id}_{engine_str}")
+                
+                if segment_text and parent_ai_id:
+                    existing_seg = db.session.query(ResultAiSegment).filter_by(result_ai_id=parent_ai_id, position=position).first()
+                    if not existing_seg:
+                        new_segment = ResultAiSegment(
+                            result_ai_id=parent_ai_id,
+                            text=segment_text,
+                            position=position
+                        )
+                        
+                        if cited_urls_raw:
+                            urls = [u.strip() for u in cited_urls_raw.split('|') if u.strip()]
+                            for u in urls:
+                                source = db.session.query(ResultAiSource).filter_by(result_ai_id=parent_ai_id, url=u).first()
+                                if source:
+                                    new_segment.sources.append(source)
+                        
+                        db.session.add(new_segment)
+                        segments_added += 1                        
+
+            elif res_type == 'image':
+                img_url = str(row['image_url']) if 'image_url' in df.columns and pd.notna(row['image_url']) else ""
+                src_url = str(row['url']) if pd.notna(row['url']) else ""
+                title = str(row['title']) if pd.notna(row['title']) else ""
+                snippet = str(row['snippet']) if pd.notna(row['snippet']) else ""
+                rank = int(row['rank']) if pd.notna(row['rank']) else 0
+                
+                if img_url:
+                    existing_img = db.session.query(ResultImage).filter_by(
+                        study_id=study.id, query_id=query_id, image_url=img_url, engine_text=engine_str
+                    ).first()
+                    if not existing_img:
+                        new_img = ResultImage(
+                            study_id=study.id, query_id=query_id, source_url=src_url,
+                            image_url=img_url, title=title, source_name=snippet,
+                            position=rank, created_at=datetime.now(),
+                            result_type_text=res_type, engine_text=engine_str
+                        )
+                        db.session.add(new_img)
+                        db.session.flush()
+                        images_added += 1
 
         db.session.commit()
         if zip_ref: zip_ref.close()
-        return True, f"Import complete: {results_added} organic, {ai_added} AI, {ai_sources_added} AI sources imported."
+        return True, f"Import complete: {results_added} organic, {ai_added} AI, {ai_sources_added} AI sources, {segments_added} AI segments, {images_added} images imported."
     except Exception as e:
         db.session.rollback()
         if zip_ref: zip_ref.close()
@@ -363,10 +444,12 @@ def process_upload_file(study_id, filepath):
 def download_manual_template():
     si = StringIO()
     cw = csv.writer(si)
-    header = ['query', 'engine', 'country', 'lang', 'page', 'type', 'rank', 'title', 'url', 'snippet', 'ai_full_text']
+    header = ['query', 'engine', 'country', 'lang', 'page', 'type', 'rank', 'title', 'url', 'snippet', 'ai_full_text', 'source_type', 'image_url']
     cw.writerow(header)
-    cw.writerow(['beispiel', 'google', 'de', 'de', '1', 'organic', '1', 'Titel', 'https://beispiel.de', 'Beschreibung...', ''])
-    cw.writerow(['beispiel', 'google', 'de', 'de', '1', 'ai_overview', '', '', '', '', 'Der AI Text...'])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'organic', '1', 'title', 'https://example.de', 'description...', '', '', ''])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'ai_overview', '', '', '', '', 'Der AI Text...', '', ''])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'ai_source', '1', 'Wikipedia', 'https://wikipedia.org', '', '', 'inline', ''])
+    cw.writerow(['example', 'google', 'de', 'de', '1', 'image', '1', 'Picture title', 'https://example.de/ursprung', 'Source name', '', '', 'https://example.de/bild.jpg'])
     output_string = si.getvalue()
     si.close()
     return Response(output_string.encode('utf-8'), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=rat_results_template.csv"})
@@ -419,6 +502,9 @@ def upload_study_results(id):
 
                         ai_sources_df = df[df['type'].astype(str).str.contains('ai_source', case=False, na=False)].head(3)
                         preview_rows.extend(ai_sources_df.to_dict(orient='records'))
+                        
+                        image_df = df[df['type'].astype(str).str.lower() == 'image'].head(3)
+                        preview_rows.extend(image_df.to_dict(orient='records'))
                     else:
                         preview_rows = df.head(10).to_dict(orient='records')
 
@@ -463,52 +549,143 @@ def preview_csv():
 @app.route('/study/<int:id>/progress')
 @login_required
 def study_progress(id):
+    """
+    Serves asynchronous metric payloads outlining exact numerical progressions.
+    Fix: Strictly counts LLM tasks based on active configurations and uses absolute fallback metrics.
+    """
+    from sqlalchemy import text  
+    
     study = Study.query.get_or_404(id)
     status, progress_percent = check_and_update_status(study)
     
-    # --- NEU: Classifier Progress Berechnung ---
-    active_classifiers_count = len(study.classifier)
+    results_count = db.session.query(Result).filter_by(study_id=id).count()
+    
+    active_classifiers = [c.name for c in study.classifier]
     clf_progress_percent = 0
-    has_classifiers = active_classifiers_count > 0
+    has_classifiers = len(active_classifiers) > 0
     
     if has_classifiers:
-        # 1. Wie viele Ergebnisse wurden erfolgreich gescrapt? (Nur diese können klassifiziert werden)
-        # scraped_results_count = db.session.query(Result.id)\
-        #     .join(ResultSource, ResultSource.result_id == Result.id)\
-        #     .filter(Result.study_id == id, ResultSource.progress == 1)\
-        #     .count()
-
-
-        results_count = db.session.query(Result).filter_by(study_id=id).count()
+        organic_count_scraped = db.session.query(Result.id)\
+            .join(ResultSource, ResultSource.result_id == Result.id)\
+            .filter(Result.study_id == id, ResultSource.progress == 1).count()
             
-        expected_clf_runs = active_classifiers_count * results_count
+        ai_source_count_scraped = db.session.query(ResultAiSource.id)\
+            .filter(ResultAiSource.study_id == id, ResultAiSource.progress == 1).count()
+            
+        ai_overview_count = db.session.query(ResultAi.id).filter_by(study_id=id).count()
+        chatbot_count = db.session.query(ResultChatbot.id).filter_by(study_id=id).count()
+
+        organic_count_total = db.session.query(Result.id).filter_by(study_id=id).count()
+        ai_source_count_total = db.session.query(ResultAiSource.id).filter_by(study_id=id).count()
+        image_count_total = db.session.query(ResultImage.id).filter_by(study_id=id).count()
+
+        expected_clf_runs = 0
+        finished_clf_runs = 0
         
-        # 2. Wie viele Klassifizierungen sind bereits fertig? (JOIN über Result, da study_id in ClassifierResult NULL ist)
-        finished_clf_runs = db.session.query(ClassifierResult.id)\
-            .join(Result, ClassifierResult.result_id == Result.id)\
-            .filter(Result.study_id == id)\
-            .count()
-            
-        # 3. Prozent berechnen (mit Cap bei 100%, falls es mal asynchrone Überschneidungen gibt)
+        for clf in study.classifier:
+            if clf.name == 'universal_llm':
+                # --- A: UNIVERSAL LLM LOGIC ---
+                active_indicators = []
+                
+                if study.llm_classifiers_json:
+                    try:
+                        failed_org = db.session.query(Result.id).join(ResultSource, ResultSource.result_id == Result.id).filter(Result.study_id == id, ResultSource.progress == -1).count()
+                        failed_src = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == id, ResultAiSource.progress == -1).count()
+                        
+                        tasks = json.loads(study.llm_classifiers_json)
+                        for task in tasks:
+                            if not task.get('active', True):
+                                continue
+                            
+                            disp_name = task.get('display_name')
+                            if disp_name:
+                                active_indicators.append(f"LLM_{disp_name}")
+                            
+                            tt = task.get('target_type', 'all')
+                            if tt in ('all', 'organic', None): 
+                                expected_clf_runs += organic_count_total
+                                finished_clf_runs += failed_org
+                            if tt in ('all', 'ai_source'): 
+                                expected_clf_runs += ai_source_count_total
+                                finished_clf_runs += failed_src
+                            if tt in ('all', 'ai_overview'): expected_clf_runs += ai_overview_count
+                            if tt in ('all', 'chatbot'): expected_clf_runs += chatbot_count
+                            if tt in ('all', 'image'): expected_clf_runs += image_count_total
+                    except:
+                        pass
+                
+                if active_indicators:
+                    for model_class, fk_col in [
+                        (Result, ClassifierIndicator.result_id), 
+                        (ResultAiSource, ClassifierIndicator.result_ai_source_id), 
+                        (ResultAi, ClassifierIndicator.result_ai_id), 
+                        (ResultChatbot, ClassifierIndicator.result_chatbot_id),
+                        (ResultImage, ClassifierIndicator.result_image_id)
+                    ]:
+                        finished_clf_runs += db.session.query(ClassifierIndicator.id)\
+                            .join(model_class, fk_col == model_class.id)\
+                            .filter(
+                                model_class.study_id == id, 
+                                ClassifierIndicator.classifier_id == clf.id,
+                                ClassifierIndicator.indicator.in_(active_indicators)
+                            ).count()
+            else:
+                # --- B: NORMAL CLASSIFIER LOGIC ---
+                sql_allowed = text("""
+                    SELECT LOWER(rt.name) FROM classifier_resulttype crt
+                    JOIN resulttype rt ON crt.resulttype = rt.id
+                    WHERE crt.classifier = :cid
+                """)
+                allowed_types = [row[0] for row in db.session.execute(sql_allowed, {'cid': clf.id}).fetchall()]
+                
+                if any('organic' in t or t == 'result' for t in allowed_types): expected_clf_runs += organic_count_total
+                if any('source' in t or t == 'result_ai_source' for t in allowed_types): expected_clf_runs += ai_source_count_total
+                if any('overview' in t or t == 'result_ai' for t in allowed_types): expected_clf_runs += ai_overview_count
+                if any('chatbot' in t or t == 'result_chatbot' for t in allowed_types): expected_clf_runs += chatbot_count
+                if any('image' in t or t == 'result_image' for t in allowed_types): expected_clf_runs += image_count_total
+                
+                # Finished runs based on ClassifierResult
+                for model_class, fk_col in [
+                    (Result, ClassifierResult.result_id), 
+                    (ResultAiSource, ClassifierResult.result_ai_source_id), 
+                    (ResultAi, ClassifierResult.result_ai_id), 
+                    (ResultChatbot, ClassifierResult.result_chatbot_id),
+                    (ResultImage, ClassifierResult.result_image_id)
+                ]:
+                    finished_clf_runs += db.session.query(ClassifierResult.id)\
+                        .join(model_class, fk_col == model_class.id)\
+                        .filter(
+                            model_class.study_id == id, 
+                            ClassifierResult.classifier_id == clf.id,
+                            ClassifierResult.value != 'in process'
+                        ).count()
+
+        # 5. Calculate percentage value and cap it
         if expected_clf_runs > 0:
             clf_progress_percent = min(100, round((finished_clf_runs / expected_clf_runs) * 100))
-        elif expected_clf_runs == 0 and scraped_results_count == 0 and progress_percent < 100:
-            # Warten auf Scraping
+        elif expected_clf_runs == 0 and progress_percent < 100:
             clf_progress_percent = 0
         else:
             clf_progress_percent = 100
-    # -------------------------------------------
+    # ------------------------------------------------------------------
+    
+    failed_organic = db.session.query(Result.id).join(ResultSource, ResultSource.result_id == Result.id).filter(Result.study_id == id, ResultSource.progress == -1).count()
+    failed_ai_sources = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == id, ResultAiSource.progress == -1).count()
+    failed_images = db.session.query(ResultImage.id).filter(ResultImage.study_id == id, ResultImage.progress == -1).count()
+    failed_scrape_count = failed_organic + failed_ai_sources + failed_images
     
     return jsonify({
         'status': status, 
         'progress_percent': progress_percent,
-        'has_classifiers': has_classifiers,      # Dem Frontend mitteilen, ob Classifier aktiv sind
-        'clf_progress_percent': clf_progress_percent, # Der neue Prozentwert
-        'results': db.session.query(Result).filter(Result.study_id == id).count(),
+        'has_classifiers': has_classifiers,      
+        'clf_progress_percent': clf_progress_percent, 
+        'results': results_count,
         'results_ai': db.session.query(ResultAi).where(ResultAi.study_id == id).count(),
         'results_chatbot': db.session.query(ResultChatbot).where(ResultChatbot.study_id == id).count(),
         'results_serp': db.session.query(Serp).filter(Serp.study_id == id, Serp.file_path.isnot(None)).count(),        
-        'ai_source_count': db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == id).count()
+        'ai_source_count': db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == id).count(),
+        'results_image': db.session.query(ResultImage.id).filter_by(study_id=id).count(),
+        'failed_scrape_count': failed_scrape_count 
     })
 
 @app.route('/studies', methods=['GET', 'POST'])
@@ -530,6 +707,7 @@ def study(id):
     results_chatbot = db.session.query(ResultChatbot).where(ResultChatbot.study_id == id).count()
     results_serp = db.session.query(Serp).filter(Serp.study_id == id, Serp.file_path.isnot(None)).count()    
     ai_source_count = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == id).count()
+    results_image = db.session.query(ResultImage).filter_by(study_id=id).count()
 
     recent_queries = db.session.query(Query).filter_by(study_id=id).order_by(Query.id.asc()).limit(5).all()
     total_queries = db.session.query(Query).filter_by(study_id=id).count()
@@ -552,9 +730,9 @@ def study(id):
     settings_form = StudySettingsForm(obj=study)
     
     available_types = set()
-    for model in [Result, ResultAi, ResultChatbot, Serp]:
+    for model in [Result, ResultAi, ResultChatbot, Serp, ResultAiSource, ResultImage]:
         for r in db.session.query(model.result_type_text).filter_by(study_id=id).distinct():
-            if r[0] and r[0] != 'ai_source': 
+            if r[0]: 
                 available_types.add(r[0])
     if db.session.query(Serp.id).filter_by(study_id=id).first(): 
         available_types.add('serp')
@@ -563,7 +741,9 @@ def study(id):
         'serp': 'SERP (Search Engine Result Page)',
         'organic': 'Organic Results (Standard Links)',
         'ai_overview': 'AI Overview (Generative AI Answer)',
-        'chatbot': 'Chatbot Answer'
+        'chatbot': 'Chatbot Answer',
+        'ai_source': 'AI Sources (Citations / Source Links)',
+        'image': 'Image Search Results'
     }
 
     settings_form.classifiers.choices = [(c.id, c.display_name) for c in Classifier.query.filter_by(display=True).all()]
@@ -581,14 +761,18 @@ def study(id):
         while len(settings_form.ranges) > 0: settings_form.ranges.pop_entry()
         for r in existing_ranges: 
             settings_form.ranges.append_entry(data={'start_range': r.range_start, 'end_range': r.range_end})
+            
+    all_classifiers = Classifier.query.options(joinedload(Classifier.resulttypes)).filter_by(display=True).order_by(Classifier.display_name.asc()).all()
 
     return render_template('studies/study.html', study=study, 
-                           progress_percent=progress_percent, # Verhindert das 0% Flackern beim Laden
-                           results=results, results_ai=results_ai, ai_source_count=ai_source_count, 
+                           progress_percent=progress_percent,
+                           results=results, results_ai=results_ai, ai_source_count=ai_source_count,
+                           results_image=results_image,  
                            results_chatbot=results_chatbot, results_serp=results_serp,
                            recent_queries=recent_queries, total_queries=total_queries, imported_engines=imported_engines,
                            answers=answers, max_answers=max_answers, a_pct=a_pct, 
-                           upload_form=upload_form, settings_form=settings_form, base=request.url_root)
+                           upload_form=upload_form, settings_form=settings_form, base=request.url_root,
+                           all_classifiers=all_classifiers)
 
 @app.route('/study/<id>/update_settings', methods=['POST'])
 @login_required
@@ -597,9 +781,9 @@ def update_study_settings(id):
     form = StudySettingsForm(request.form)
     
     available_types = set()
-    for model in [Result, ResultAi, ResultChatbot, Serp]:
+    for model in [Result, ResultAi, ResultChatbot, Serp, ResultAiSource, ResultImage]:
         for r in db.session.query(model.result_type_text).filter_by(study_id=id).distinct():
-            if r[0] and r[0] != 'ai_source': 
+            if r[0]: 
                 available_types.add(r[0])
     if db.session.query(Serp.id).filter_by(study_id=id).first(): 
         available_types.add('serp')
@@ -608,7 +792,9 @@ def update_study_settings(id):
         'serp': 'SERP (Search Engine Result Page)',
         'organic': 'Organic Results (Standard Links)',
         'ai_overview': 'AI Overview (Generative AI Answer)',
-        'chatbot': 'Chatbot Answer'
+        'chatbot': 'Chatbot Answer',
+        'ai_source': 'AI Sources (Citations / Source Links)',
+        'image': 'Image Search Results'
     }
 
     form.classifiers.choices = [(c.id, c.display_name) for c in Classifier.query.filter_by(display=True).all()]
@@ -619,11 +805,10 @@ def update_study_settings(id):
 
     if form.validate_on_submit():
         study.assessable_result_types_text = ",".join(form.assessment_result_types.data) if form.assessment_result_types.data else ""
+        study.study_mode = request.form.get('study_mode', 'unselected')
         
-        # --- 1. SAVE LIVE MODE ---
         study.live_link_mode = form.live_link_mode.data
         
-        # ---  2. SHOW URLS LOGIC ---
         if study.live_link_mode:
             study.show_urls = True  
         else:
@@ -633,11 +818,23 @@ def update_study_settings(id):
         study.show_ai_sources = form.show_ai_sources.data
         study.assess_failed = form.assess_failed.data
 
-        # --- 3. WORKLOAD & ASSIGNMENT LIMITS ---
+        is_query_limit_active = 'limit_by_query' in request.form
         
-        study.group_by_query = 'group_by_query' in request.form
+        study.group_by_query = is_query_limit_active
+        study.limit_by_query = is_query_limit_active
         
-        limit_by_query = 'limit_by_query' in request.form
+        limit_by_query = is_query_limit_active
+
+        limit_search_depth = 'limit_search_depth' in request.form
+
+        if limit_search_depth:
+            val_rc = request.form.get('result_count', '').strip()
+            try:
+                study.result_count = int(val_rc) if val_rc else None
+            except ValueError:
+                study.result_count = None
+        else:
+            study.result_count = None        
         
         if limit_by_query:
             val = request.form.get('max_queries_per_participant', '').strip()
@@ -646,46 +843,89 @@ def update_study_settings(id):
             except ValueError:
                 study.max_queries_per_participant = 0
         else:
-            # -1 Checkbox deactivated
             study.max_queries_per_participant = -1
 
-        # 2. Item-Limit
         study.limit_per_participant = form.limit_per_participant.data
         if study.limit_per_participant:
             study.max_results_per_participant = form.max_results_per_participant.data
         else:
             study.max_results_per_participant = 0
             
-
-        # --- 4. CLASSIFIERS & RANGES ---
         study.classifier = [Classifier.query.get(cid) for cid in form.classifiers.data]
+
+        study.global_duplicate_filtering = form.global_duplicate_filtering.data
         
         RangeStudy.query.filter_by(study=study.id).delete()
         for r_data in form.ranges.data:
             if r_data['start_range'] and r_data['end_range']:
                 db.session.add(RangeStudy(study=study.id, range_start=r_data['start_range'], range_end=r_data['end_range']))
                 
-        # --- 5. ONBOARDING
         study.show_description_after_join = form.show_description_after_join.data
         study.participant_description = form.participant_description.data
         study.pre_survey_json = form.pre_survey_json.data
-        study.post_survey_json = form.post_survey_json.data
-        study.completion_text = form.completion_text.data
         
-        study.updated_at = datetime.now()
+        from app.utils.security import encrypt_key
+        
+        existing_tasks = {}
+        old_task_names = {}
+        if study.llm_classifiers_json:
+            try:
+                old_tasks = json.loads(study.llm_classifiers_json)
+                existing_tasks = {t['id']: t.get('api_key') for t in old_tasks}
+                old_task_names = {t['id']: t.get('display_name') for t in old_tasks}
+            except:
+                pass
+
+        llm_config_raw = request.form.get('llm_classifiers_json', '').strip()
+        universal_clf = Classifier.query.filter_by(name='universal_llm').first()
+
+        if llm_config_raw:
+            try:
+                tasks = json.loads(llm_config_raw)
+                new_task_ids = [t['id'] for t in tasks]
+                
+                for task in tasks:
+                    tid = task.get('id')
+                    api_key = task.get('api_key', '').strip()
+                    
+                    if (api_key == "PLACEHOLDER_EXISTING_KEY" or not api_key) and tid in existing_tasks:
+                        task['api_key'] = existing_tasks[tid]
+                    elif api_key and not api_key.startswith('gAAAAA'):
+                        task['api_key'] = encrypt_key(api_key)
+                
+                deleted_task_ids = set(existing_tasks.keys()) - set(new_task_ids)
+                
+                if deleted_task_ids and universal_clf:
+                    deleted_indicators = [f"LLM_{old_task_names[tid]}" for tid in deleted_task_ids if tid in old_task_names]
+                    
+                    if deleted_indicators:
+                        db.session.query(ClassifierIndicator).filter(
+                            ClassifierIndicator.classifier_id == universal_clf.id,
+                            ClassifierIndicator.indicator.in_(deleted_indicators)
+                        ).delete(synchronize_session=False)
+                # -------------------------------------------
+
+                study.llm_classifiers_json = json.dumps(tasks)
+                
+                if len(tasks) > 0 and universal_clf and universal_clf not in study.classifier:
+                    study.classifier.append(universal_clf)
+                elif len(tasks) == 0 and universal_clf and universal_clf in study.classifier:
+                    study.classifier.remove(universal_clf)
+
+            except Exception as e:
+                print(f"Error compiling secure LLM tasks: {e}")
+        else:
+            study.llm_classifiers_json = None
+            if universal_clf and universal_clf in study.classifier:
+                study.classifier.remove(universal_clf)
+                
         db.session.commit()
+        flash('Study settings updated successfully.', 'success')
         
-        check_and_update_status(study)
-        
-        flash('Configuration saved.', 'success')
     else:
-        # Fehler ausgeben, damit wir wissen, was kaputt ist!
-        error_msg = 'There was an error with saving the configuration.'
-        if form.errors:
-            error_msg += f" Errors: {form.errors}"
-        flash(error_msg, 'danger')
-        print(f"FORM ERRORS: {form.errors}") # Wird in der Konsole angezeigt
-        
+        print("WTFORMS ERROR:", form.errors)
+        flash('Failed to update settings. Please check your inputs.', 'danger')
+
     return redirect(url_for('study', id=id))
 
 @app.route('/study/new', methods=['GET'])
@@ -736,20 +976,59 @@ def delete_study(id):
     if form.validate_on_submit():
         try:
             files_to_delete = []
-            serps = Serp.query.filter_by(study_id=study.id).all()
-            for serp in serps:
-                if serp.file_path: files_to_delete.append(serp.file_path)
-                    
-            results = Result.query.filter_by(study_id=study.id).all()
-            for res in results:
-                for source in res.sources:
-                    if source and source.file_path: files_to_delete.append(source.file_path)
+            
+            serp_files = db.session.execute(text("SELECT file_path FROM serp WHERE study = :sid AND file_path IS NOT NULL"), {'sid': study.id}).fetchall()
+            img_files = db.session.execute(text("SELECT file_path FROM result_image WHERE study = :sid AND file_path IS NOT NULL"), {'sid': study.id}).fetchall()
+            src_files = db.session.execute(text("""
+                SELECT s.file_path FROM source s 
+                JOIN result_source rs ON s.id = rs.source 
+                JOIN result r ON rs.result = r.id 
+                WHERE r.study = :sid AND s.file_path IS NOT NULL
+            """), {'sid': study.id}).fetchall()
 
-            db.session.execute(text("DELETE FROM result_source WHERE result IN (SELECT id FROM result WHERE study = :sid)"), {'sid': study.id})
+            for row in serp_files + img_files + src_files:
+                files_to_delete.append(row[0])
+
+            # --- 2. BULK DELETE (Bypass ORM Timeouts - Bulletproof Version) ---
+            sid = {'sid': study.id}
+            
+            for tbl in ['answer', 'classifier_indicator', 'classifier_result']:
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_ai_source IN (SELECT id FROM result_ai_source WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_chatbot IN (SELECT id FROM result_chatbot WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE result_image IN (SELECT id FROM result_image WHERE study = :sid)"), sid)
+                db.session.execute(text(f"DELETE FROM {tbl} WHERE study = :sid"), sid)
+
+
+            db.session.execute(text("DELETE FROM ai_segment_source WHERE segment_id IN (SELECT id FROM result_ai_segment WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid))"), sid)
+            db.session.execute(text("DELETE FROM result_ai_segment WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid)"), sid)
+            
+
+            db.session.execute(text("DELETE FROM result_ai_source WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM result_ai WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM result_chatbot WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM result_image WHERE study = :sid"), sid)
+            
+
+            db.session.execute(text("DELETE FROM result_source WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
+            db.session.execute(text("DELETE FROM question_result WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
+            db.session.execute(text("DELETE FROM result WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM serp WHERE study = :sid"), sid)
+            
+
+            db.session.execute(text("DELETE FROM scraper WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM query WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM question WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM study_url_filter WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM range_study WHERE study = :sid"), sid)
+            db.session.execute(text("DELETE FROM study_resulttype WHERE study = :sid"), sid)
+            
+
             db.session.delete(study)
             db.session.commit()
-            
-            storage_dir = app.config.get('STORAGE_FOLDER')
+
+            storage_dir = app.config.get('STORAGE_FOLDER', os.path.join(app.root_path, 'static', 'storage'))
             deleted_count = 0
             for filename in set(files_to_delete): 
                 file_path = os.path.join(storage_dir, filename)
@@ -759,11 +1038,14 @@ def delete_study(id):
                         deleted_count += 1
                     except: pass
 
-            flash(f'Study deleted. {deleted_count} files removed.', 'success')
+            flash(f'Study deleted successfully. {deleted_count} associated files were removed.', 'success')
             return redirect(url_for('dashboard'))
+            
         except Exception as e:
             db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
+            import traceback
+            traceback.print_exc()
+            flash(f'Database Error during deletion: {str(e)}', 'danger')
             
     return render_template('studies/delete_study.html', form=form, study=study)
 
@@ -771,34 +1053,125 @@ def delete_study(id):
 @login_required
 def close_study(id):
     study = Study.query.get_or_404(id)
-    study.status = 4 # Geschlossen
+    study.status = 4 
     db.session.commit()
     flash('Study archived.', 'success')
     return redirect(url_for("study", id=id))
 
-
 @app.route('/study/download_extension')
 @login_required
 def download_extension():
-    # 1. Define the path for the log file (e.g., in the app's main directory)
     log_file_path = os.path.join(app.root_path, 'extension_downloads.csv')
-    
-    # 2. Check whether the file already exists so that a header can be written if necessary
     file_exists = os.path.isfile(log_file_path)
     
-    # 3. Append data to the CSV file
     with open(log_file_path, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(['Timestamp', 'User_ID', 'User_Email']) # CSV Header
+            writer.writerow(['Timestamp', 'User_ID', 'User_Email'])
         
-        # Write a data record for this download
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             current_user.id,
             current_user.email
         ])
 
-    # 4. Send the actual ZIP file to the user
-    extension_path = os.path.join(app.root_path, 'static', 'rat-extension_v1.zip')
+    extension_path = os.path.join(app.root_path, 'static', 'rat-extension.zip')
     return send_file(extension_path, as_attachment=True)
+    
+@app.route('/study/test_llm_connection', methods=['POST'])
+@login_required
+def test_llm_connection():
+    print("--- TEST CONNECTION TRIGGERED ---")
+    print("Raw Content-Type Header:", request.headers.get('Content-Type'))
+    print("Raw Data:", request.data)
+
+    data = request.get_json(silent=True)
+    
+    if data is None:
+        print("❌ ERROR: Flask failed to parse a valid JSON payload from request.data!")
+        return jsonify({
+            'success': False, 
+            'message': 'Data transmission error: Invalid JSON format received from the frontend.'
+        }), 400
+
+    base_url = data.get('base_url', '').strip()
+    api_key = data.get('api_key', '').strip()
+    model = data.get('model', '').strip()
+    study_id = data.get('study_id')
+    task_id = data.get('task_id')
+    
+    if not api_key or api_key == "PLACEHOLDER_EXISTING_KEY":
+        study = Study.query.get(study_id)
+        if study and study.llm_classifiers_json:
+            try:
+                tasks = json.loads(study.llm_classifiers_json)
+                for t in tasks:
+                    if t.get('id') == task_id:
+                        from app.utils.security import decrypt_key 
+                        api_key = decrypt_key(t.get('api_key'))
+                        break
+            except Exception as e:
+                print(f"❌ Decryption error: {e}")
+
+    if not api_key:
+        api_key = app.config.get('LLM_SECRET_KEY') or os.environ.get('LLM_SECRET_KEY')
+
+    if not api_key:
+        print("❌ ERROR: Missing API key. No frontend input and no global fallback found.")
+        return jsonify({
+            'success': False, 
+            'message': 'Connection failed: No API Key provided and no global fallback configuration found.'
+        })
+    
+    if not base_url or not model:
+        print("❌ ERROR: Missing required configuration parameters (base_url or model).")
+        return jsonify({
+            'success': False, 
+            'message': 'Connection failed: Base URL and Model parameters are strictly required.'
+        })
+
+    try:
+        from openai import OpenAI
+        
+        if not base_url.endswith('/v1'):
+            base_url = base_url.rstrip('/') + '/v1'
+
+        print(f"Connecting to Endpoint: {base_url} using Model: {model}")
+
+        client = OpenAI(
+            base_url=base_url, 
+            api_key=api_key,
+            default_headers={
+                "HTTP-Referer": "http://localhost:5000",
+                "X-Title": "RAT Research Tool"
+            }
+        )
+        
+        client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": "Test connection. Reply exactly with: OK"}],
+            max_tokens=5,
+            temperature=0
+        )
+        
+        print("✅ SUCCESS: LLM connection test passed successfully!")
+        return jsonify({
+            'success': True, 
+            'message': 'Connection successful! The LLM endpoint responded correctly.'
+        })
+
+    except Exception as e:
+        error_msg = str(e)
+        print(f"❌ LLM Connection Test failed with exception: {error_msg}")
+        
+        if "401" in error_msg:
+            user_message = "Authentication failed: The provided API Key is invalid or has expired."
+        elif "404" in error_msg:
+            user_message = f"Resource not found: The model '{model}' does not exist or the Base URL endpoint is incorrect."
+        else:
+            user_message = f"Connection error: {error_msg}"
+        
+        return jsonify({
+            'success': False, 
+            'message': user_message
+        })

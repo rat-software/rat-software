@@ -776,6 +776,52 @@ class Sources:
         # All methods failed
         return None
 
+    def save_image_robust(self, url, proxy=None, timeout=15):
+        """Direkter, robuster Download für Bilder ohne Selenium."""
+        error_codes = ""
+        bin_data = None
+        content_type = "image/jpeg"
+        status_code = -1
+        
+        try:
+            if url.startswith("data:image"):
+                header, encoded = url.split(",", 1)
+                bin_data = base64.b64decode(encoded)
+                status_code = 200
+                if "png" in header: content_type = "image/png"
+                elif "gif" in header: content_type = "image/gif"
+            else:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'image/*,*/*;q=0.8',
+                    'Referer': 'https://www.google.com/' # Gegen Hotlink-Protection
+                }
+                proxies_dict = {"http": proxy, "https": proxy} if proxy else None
+                resp = requests.get(url, headers=headers, proxies=proxies_dict, timeout=timeout, verify=False)
+                status_code = resp.status_code
+                if status_code == 200:
+                    bin_data = resp.content
+                    content_type = resp.headers.get('Content-Type', 'image/jpeg')
+                else:
+                    error_codes = f"HTTP Error {status_code}"
+        except Exception as e:
+            error_codes = f"Image Fetch Error: {str(e)}"
+        
+        file_path = None
+        if bin_data and status_code == 200:
+            # Nutzt deine bestehende Methode. Sie packt das Bild automatisch in die ZIP-Datei
+            file_path = self.upload_to_storage(html_content=None, bin_data=bin_data, content_type=content_type)
+        
+        return {
+            "file_path": file_path,
+            "code": "image" if file_path else "error",
+            "bin_data": len(bin_data) if bin_data else "error",
+            "request": {"content_type": content_type, "status_code": status_code},
+            "final_url": url,
+            "meta": {"ip": "-1", "main": url},
+            "error_codes": error_codes,
+            "content_dict": {"":""}
+        }
 
     def bypass_cookie_banners(self, driver):
         """
@@ -1598,6 +1644,23 @@ class Sources:
                 # Enable CDP network monitoring right after driver creation
                 try:
                     driver.execute_cdp_cmd("Network.enable", {})
+                    
+                    # --- NEU: Google/YouTube Consent Bypass via CDP Cookie-Injection ---
+                    # Verhindert in 99% der Fälle den Umweg über consent.youtube.com
+                    cookie_payloads = [
+                        {'name': 'CONSENT', 'value': 'YES+cb.20230101-00-p0.de+FX+113', 'domain': '.youtube.com', 'path': '/', 'secure': True},
+                        {'name': 'SOCS', 'value': 'CAI', 'domain': '.youtube.com', 'path': '/', 'secure': True},
+                        {'name': 'CONSENT', 'value': 'YES+cb.20230101-00-p0.de+FX+113', 'domain': '.google.com', 'path': '/', 'secure': True},
+                        {'name': 'SOCS', 'value': 'CAI', 'domain': '.google.com', 'path': '/', 'secure': True},
+                        {'name': 'CONSENT', 'value': 'YES+cb.20230101-00-p0.de+FX+113', 'domain': '.google.de', 'path': '/', 'secure': True},
+                        {'name': 'SOCS', 'value': 'CAI', 'domain': '.google.de', 'path': '/', 'secure': True}
+                    ]
+                    for cp in cookie_payloads:
+                        try:
+                            driver.execute_cdp_cmd('Network.setCookie', cp)
+                        except: pass
+                    # -------------------------------------------------------------------
+                    
                 except Exception as e:
                     print(f"CDP Network enable failed: {e}")
                     
@@ -1625,8 +1688,35 @@ class Sources:
                     nonlocal driver
                     try:
                         driver.get(url)
-                        #driver.uc_open_with_reconnect(url, reconnect_time=4)
-                        #driver.uc_gui_click_captcha()   # klickt die Cloudflare-Box, falls vorhanden
+                        
+                        # --- NEU: Consent-Redirect Überwachung & Fallback-Klick ---
+                        current_url = driver.current_url
+                        if "consent.youtube.com" in current_url or "consent.google.com" in current_url:
+                            print(f"⚠️ Consent-Redirect erkannt ({current_url}). Klicke und warte auf Rückleitung...")
+                            try:
+                                # Harter JS-Klick, der Googles Formulare garantiert abfeuert
+                                driver.execute_script("""
+                                    let btns = document.querySelectorAll('button');
+                                    for(let b of btns) {
+                                        let t = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase();
+                                        if(t.includes('akzeptieren') || t.includes('zustimmen') || t.includes('accept') || t.includes('agree') || t === 'alle') {
+                                            b.click();
+                                            break;
+                                        }
+                                    }
+                                """)
+                            except: pass
+                            
+                            # Wir warten maximal 10 Sekunden darauf, dass die URL wieder zu YouTube wechselt
+                            wait_start = time.time()
+                            while time.time() - wait_start < 10:
+                                if "consent." not in driver.current_url:
+                                    print("✅ Erfolgreich von Consent-Seite zurückgekehrt!")
+                                    time.sleep(2) # Kurz warten, bis YouTube das Layout aufgebaut hat
+                                    break
+                                time.sleep(0.5)
+                        # ----------------------------------------------------------
+
                         self.bypass_cookie_banners(driver)
                         time.sleep(2)
                         return True

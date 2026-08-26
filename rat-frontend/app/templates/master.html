@@ -21,6 +21,7 @@
 
   <title>{% block title %}{% endblock %} - RAT</title>
 
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
   {% endblock %}
 </head>
@@ -130,6 +131,42 @@
 
       <div id="main">{% block content %}{% endblock %}</div>
     </div>
+
+    {% if current_user.is_authenticated %}
+    <!-- Floating Speech Bubble Button -->
+    <button type="button" class="btn btn-primary rounded-circle shadow-lg" data-bs-toggle="modal" data-bs-target="#feedbackModal" style="position: fixed; bottom: 90px; left: 30px; width: 60px; height: 60px; z-index: 1050;" title="Send Feedback">
+        <i class="fa-solid fa-comment-dots fs-3"></i>
+    </button>
+
+    <!-- Feedback Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title fw-bold"><i class="fa-solid fa-paper-plane me-2"></i> Questions or Feedback?</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4 text-dark">
+            <p class="text-secondary small mb-3">Sending as <strong>{{ current_user.email }}</strong>.</p>
+            <form id="feedbackForm" onsubmit="return false;">
+              <div class="mb-3">
+                <label for="feedbackMessage" class="form-label fw-bold">How can we help you?</label>
+                <textarea class="form-control border-secondary" id="feedbackMessage" rows="5" placeholder="Found a bug? Have a feature request? Let us know..." required></textarea>
+              </div>
+            </form>
+            <div id="feedback-alert" class="alert d-none" role="alert"></div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary fw-bold" id="sendFeedbackBtn" onclick="sendFeedback()">
+                <i class="fa-solid fa-paper-plane me-1"></i> Send Message
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     </main>
 
     <div class="container-fluid text-small bg-primary mt-auto">
@@ -300,19 +337,14 @@
               // Berechnen, wie weit der Bildschirm den Footer bereits überlappt
               const overlap = windowBottom - footerTop;
 
-              // Wenn eine Überlappung stattfindet (overlap > 0),
-              // verschiebe den Button um genau diesen Wert nach oben.
               if (overlap > 0) {
-                // Der neue 'bottom'-Wert ist die Überlappung + der ursprüngliche Abstand von 20px
                 button.css('bottom', overlap + 20 + 'px');
               } else {
-                // Wenn keine Überlappung, setze den Button auf seine Standardposition zurück
                 button.css('bottom', '20px');
               }
             }
           });
 
-          // --- Bestehender Klick-Handler (bleibt unverändert) ---
           $('.back-to-top').click(function () {
             $('body,html').animate({
               scrollTop: 0
@@ -356,6 +388,62 @@
         // Show toast messages
         $('.toast').toast('show')
       });
+
+    {% if current_user.is_authenticated %}
+    async function sendFeedback() {
+        const btn = document.getElementById('sendFeedbackBtn');
+        const messageInput = document.getElementById('feedbackMessage');
+        const message = messageInput.value.trim();
+        const alertBox = document.getElementById('feedback-alert');
+
+        if (!message) {
+            alertBox.className = 'alert alert-warning mt-3';
+            alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Please enter a message.';
+            return;
+        }
+
+        // Set UI to loading state
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...';
+        alertBox.className = 'alert d-none';
+
+        try {
+            const response = await fetch('/submit_feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ message: message })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Show success and clear out the box
+                alertBox.className = 'alert alert-success mt-3';
+                alertBox.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> ' + data.message;
+                messageInput.value = '';
+                
+                // Auto-close modal after 2 seconds
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('feedbackModal')).hide();
+                    alertBox.className = 'alert d-none';
+                }, 2000);
+            } else {
+                alertBox.className = 'alert alert-danger mt-3';
+                alertBox.innerText = data.error || 'An error occurred.';
+            }
+        } catch (error) {
+            alertBox.className = 'alert alert-danger mt-3';
+            alertBox.innerText = 'Network error. Please try again later.';
+        } finally {
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send Message';
+        }
+    }
+    {% endif %}
 
 
     </script>

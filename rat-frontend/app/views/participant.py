@@ -1,3 +1,11 @@
+"""
+Participant module for the RAT application.
+
+This module handles participant workflow loops, including generation metrics 
+for researcher dashboards, individual task completion stats for participant 
+landing panels, concurrent signup pipelines, and session recovery routes.
+"""
+
 from .. import app, db
 from app.models import (Study, Participant, Answer, Result, Question, ResultAi, 
                         ResultChatbot, ResultSource, Serp, RangeStudy, ResultType)
@@ -10,36 +18,82 @@ from io import BytesIO
 import sqlalchemy
 from sqlalchemy import func, update, or_, and_, literal_column
 from ..helpers import clean_filter_string
-
 from datetime import timedelta
 
 @app.route('/study/<id>/participants')
 def participants(id):
-    # --- Repariert für das Dashboard des Admins/Forschers ---
+    """
+    Renders the study participant tracking overview panel for the researcher dashboard.
+
+    Calculates task progression markers (answered, skipped, and open counts)
+    for every connected user relative to fixed structural study limit parameters.
+
+    Args:
+        id (str): Unique primary identifier of the parent Study record.
+
+    Returns:
+        str: Rendered researcher-facing participants list view layout.
+    """
     study = Study.query.get_or_404(id)
     info = []
     questions_count = len(study.questions) or 1
 
     for participant in study.participants:
-        query = db.session.query(Answer).filter(
-            Answer.participant == participant,
-            Answer.study == study
-        )
-        
-        closed_count = query.filter(Answer.status == 1).count() // questions_count
-        skipped_count = query.filter(Answer.status == 2).count() // questions_count
-        finished_count = closed_count + skipped_count
-
-        # JIT Target Calculation
-        if study.limit_by_query and (study.max_queries_per_participant or 0) > 0:
-            all_count = study.max_queries_per_participant
-        elif study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
-            all_count = study.max_results_per_participant
+        if study.group_by_query:
+            all_ans = db.session.query(Answer).filter(
+                Answer.participant_id == participant.id,
+                Answer.study_id == study.id
+            ).all()
+            
+            seen_queries = set()
+            open_queries = set()
+            
+            for ans in all_ans:
+                q_id = None
+                if ans.result_id and ans.result.query_id: q_id = ans.result.query_id
+                elif ans.result_ai_id and ans.result_ai.query_id: q_id = ans.result_ai.query_id
+                elif ans.result_chatbot_id and ans.result_chatbot.query_id: q_id = ans.result_chatbot.query_id
+                elif ans.result_serp_id and ans.result_serp.query_id: q_id = ans.result_serp.query_id
+                elif ans.result_ai_source_id and ans.result_ai_source.query_id: q_id = ans.result_ai_source.query_id
+                elif ans.result_image_id and ans.result_image.query_id: q_id = ans.result_image.query_id
+                
+                if q_id:
+                    seen_queries.add(q_id)
+                    if ans.status == 0: open_queries.add(q_id)
+                    
+            closed_count = len(seen_queries) - len(open_queries)
+            skipped_count = 0 
+            
+            if study.limit_by_query and study.max_queries_per_participant and study.max_queries_per_participant > 0:
+                all_count = study.max_queries_per_participant
+                if closed_count > all_count: closed_count = all_count
+            else:
+                all_count = len(seen_queries) + (1 if len(open_queries) == 0 else 0)
+                
+            open_count = all_count - closed_count
+            if open_count < 0: open_count = 0
+            
         else:
-            all_count = finished_count + 1
+            base_query = db.session.query(Answer).filter(
+                Answer.participant_id == participant.id,
+                Answer.study_id == study.id
+            )
+            
+            closed_count = base_query.filter(Answer.status == 1).count() // questions_count
+            skipped_count = base_query.filter(Answer.status == 2).count() // questions_count
+            finished_count = closed_count + skipped_count
+            open_ans_count = base_query.filter(Answer.status == 0).count() // questions_count
 
-        open_count = all_count - finished_count
-        if open_count < 0: open_count = 0
+            if study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
+                all_count = study.max_results_per_participant
+                if finished_count > all_count: all_count = finished_count
+            else:
+                all_count = finished_count + open_ans_count
+                if open_ans_count == 0:
+                    all_count = finished_count + 1
+
+            open_count = all_count - finished_count
+            if open_count < 0: open_count = 0
 
         info.append([participant, all_count, open_count, closed_count, skipped_count])
 
@@ -48,7 +102,18 @@ def participants(id):
 
 @app.route('/participant/<id>', methods=["GET", "POST"])
 def participant(id):
-    # --- Repariert für das Dashboard des Probanden (Der START-Button) ---
+    """
+    Renders the task gateway cockpit or resume panel for an active participant.
+
+    Compiles task stats across all studies linked to the user profile 
+    and handles file compilation downloads for localized session identity backups.
+
+    Args:
+        id (str): Unique primary identifier matching the target Participant record.
+
+    Returns:
+        Response: Rendered participant landing page context or secure identity text stream.
+    """
     logout_user()
     participant = Participant.query.get_or_404(id)
     base = request.url_root
@@ -62,28 +127,58 @@ def participant(id):
             info.append([study.id, 0, 0, 0, 0])
             continue
 
-        base_query = db.session.query(Answer).filter(
-            Answer.participant_id == participant.id,
-            Answer.study_id == study.id
-        )
-        
-        closed_count = (base_query.filter(Answer.status == 1).count() // questions_count)
-        skipped_count = (base_query.filter(Answer.status == 2).count() // questions_count)
-        finished_count = closed_count + skipped_count
-
-        # JIT Target Calculation - Fragt die globalen Studien-Limits ab
-        if study.limit_by_query and (study.max_queries_per_participant or 0) > 0:
-            all_count = study.max_queries_per_participant
-        elif study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
-            all_count = study.max_results_per_participant
+        # WICHTIG: Prüft BEIDE Schalter
+        if study.group_by_query and study.limit_by_query:
+            # DASHBOARD ZÄHLT QUERIES (Damit es nicht zu früh "Done" anzeigt)
+            all_ans = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.study_id == study.id).all()
+            seen_queries = set()
+            open_queries = set()
+            for ans in all_ans:
+                q_id = None
+                if ans.result_id and ans.result.query_id: q_id = ans.result.query_id
+                elif ans.result_ai_id and ans.result_ai.query_id: q_id = ans.result_ai.query_id
+                elif ans.result_chatbot_id and ans.result_chatbot.query_id: q_id = ans.result_chatbot.query_id
+                elif ans.result_serp_id and ans.result_serp.query_id: q_id = ans.result_serp.query_id
+                elif ans.result_ai_source_id and ans.result_ai_source.query_id: q_id = ans.result_ai_source.query_id
+                elif ans.result_image_id and ans.result_image.query_id: q_id = ans.result_image.query_id
+                if q_id:
+                    seen_queries.add(q_id)
+                    if ans.status == 0: open_queries.add(q_id)
+            
+            closed_count = len(seen_queries) - len(open_queries)
+            skipped_count = 0 
+            
+            if (study.max_queries_per_participant or 0) > 0:
+                all_count = study.max_queries_per_participant
+            else:
+                all_count = len(seen_queries) + (1 if len(open_queries) == 0 else 0)
+                
+            open_count = all_count - closed_count
+            if open_count < 0: open_count = 0
+            
+            info.append([study.id, all_count, open_count, closed_count, skipped_count])
+            
         else:
-            # Endlos-Studie: Immer +1, damit der Start-Button als "Offen" angezeigt wird!
-            all_count = finished_count + 1 
+            # DASHBOARD ZÄHLT ITEMS
+            base_query = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.study_id == study.id)
+            
+            closed_count = (base_query.filter(Answer.status == 1).count() // questions_count)
+            skipped_count = (base_query.filter(Answer.status == 2).count() // questions_count)
+            finished_count = closed_count + skipped_count
+            open_ans_count = (base_query.filter(Answer.status == 0).count() // questions_count)
 
-        open_count = all_count - finished_count
-        if open_count < 0: open_count = 0
+            if study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
+                all_count = study.max_results_per_participant
+                if finished_count > all_count: all_count = finished_count
+            else:
+                all_count = finished_count + open_ans_count
+                if open_ans_count == 0:
+                    all_count = finished_count + 1 
 
-        info.append([study.id, all_count, open_count, closed_count, skipped_count])
+            open_count = all_count - finished_count
+            if open_count < 0: open_count = 0
+
+            info.append([study.id, all_count, open_count, closed_count, skipped_count])
 
     if request.method == 'POST':
         if 'download' in request.form:
@@ -104,6 +199,18 @@ def participant(id):
 @app.route('/study/<study_id>/participant/new', methods=["GET", "POST"])
 @app.route('/join/<study_id>', methods=["GET", "POST"])
 def new_participant(study_id):
+    """
+    Registers a new anonymous participant and assigns them to the chosen study context.
+
+    Generates safe serialized account handles using auto-increment routines without 
+    requiring restrictive thread locking mechanisms.
+
+    Args:
+        study_id (str): Unique primary identifier of the chosen targeted Study.
+
+    Returns:
+        Response: A redirect instruction to the personal cockpit screen, or the access view.
+    """
     logout_user()
     form = JoinForm()
     if not form.is_submitted() or not form.new.data:
@@ -111,10 +218,10 @@ def new_participant(study_id):
             return redirect(url_for('returning_participant', study_id=study_id))
         return render_template('participants/join.html', form=form)
 
-    # 1. KEINE PESSIMISTISCHE SPERRE MEHR!
+    # No pessimistic locking required
     study = Study.query.get_or_404(study_id)
     
-    # 2. Neuen Teilnehmer generieren
+    # Generate new unique participant parameters
     max_id = db.session.query(func.max(Participant.id)).scalar() or 0
     participant = Participant(
         name='user' + str(max_id + 1),
@@ -124,7 +231,7 @@ def new_participant(study_id):
     participant.studies.append(study)
     db.session.add(participant)
 
-    # 3. Direkt speichern und weiterleiten. Keine Dummys mehr!
+    # Directly commit data transactions without temporary placeholders
     db.session.commit()
     
     return redirect(url_for('participant', id=participant.id))
@@ -132,6 +239,15 @@ def new_participant(study_id):
 @app.route('/study/<study_id>/participant/returning', methods=["GET", "POST"])
 @app.route('/returning/<study_id>', methods=["GET", "POST"])
 def returning_participant(study_id):
+    """
+    Authenticates a returning user via explicit credentials to restore past tracking sessions.
+
+    Args:
+        study_id (str): Unique primary identifier of the targeted active Study.
+
+    Returns:
+        Response: Forwarding routing rules to ongoing assessment loops or retry panels.
+    """
     logout_user()
     form = ParticipantLogInForm()
 
@@ -157,6 +273,16 @@ def returning_participant(study_id):
 @app.route('/participant/<id>/<code>/resume')
 @app.route('/resume/<id>/<code>')
 def resume(id, code):
+    """
+    Restores sessions using secure authenticated quick-access signature link parameters.
+
+    Args:
+        id (str): Unique primary key identifier of the restoring Participant.
+        code (str): Plain-text access code key mapped to user password records.
+
+    Returns:
+        Response: Redirect routing leading safely back onto matching cockpit setups.
+    """
     logout_user()
     participant = Participant.query.get(id)
     if participant and int(participant.password) == int(code):
@@ -169,6 +295,15 @@ def resume(id, code):
 
 @app.route('/participant/<id>/delete', methods=["GET", "POST"])
 def delete_participant(id):
+    """
+    Deletes a participant profile along with all associated manual answer records.
+
+    Args:
+        id (str): Unique primary key identifier of the target Participant record.
+
+    Returns:
+        Response: Redirect routing rules returning back onto central tracking dashboards.
+    """
     logout_user()
     participant = Participant.query.get(id)
     

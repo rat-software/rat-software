@@ -1,4 +1,11 @@
-# VOLLSTÄNDIGER, KORRIGIERTER INHALT FÜR app/views/query_sampler.py
+"""
+Query sampler module for the RAT application.
+
+This module controls backend operations for seed keyword expansion workflows, 
+including single-page setup wizards, geographical and linguistic configuration lookups, 
+asynchronous multi-line text input filters combined with tabular CSV validation previews, 
+progress tracking endpoints, and structured spreadsheet data generation pipelines.
+"""
 
 import os
 import subprocess
@@ -18,10 +25,18 @@ from io import BytesIO, StringIO
 import csv
 from sqlalchemy import desc
 
-# Index-Seite, die alle Query Sampler Studien auflistet
 @app.route('/dashboard')
 @login_required
 def qs_studies():
+    """
+    Index view route displaying all current query sampler studies on the user dashboard.
+
+    Args:
+        None
+
+    Returns:
+        str: Rendered central dashboard view layout displaying linked studies.
+    """
     user = User.query.get(current_user.id)
     
     rat_studies = user.studies
@@ -33,12 +48,17 @@ def qs_studies():
                            qs_studies=qs_studies)
 
 
-# +++ NEUE ROUTE FÜR TEMPLATE DOWNLOAD +++
 @app.route('/query_sampler/download_template/<template_type>')
 @login_required
 def qs_download_template(template_type):
     """
-    Generates and provides a CSV template for keywords to download.
+    Generates and downloads a structural skeleton template CSV file for seed keyword uploads.
+
+    Args:
+        template_type (str): The configuration type key identifying the requested layout.
+
+    Returns:
+        Response: A Flask streaming file response providing the blank schema CSV file.
     """
     si = StringIO()
     cw = csv.writer(si)
@@ -60,13 +80,21 @@ def qs_download_template(template_type):
         download_name=f"{template_type}_template.csv"
     )
 
-# +++ NEUE ROUTE FÜR CSV-VORSCHAU +++
+
 @app.route('/query_sampler/preview_csv', methods=['POST'])
 @login_required
 def preview_qs_query_csv():
     """
-    Takes an uploaded query CSV file, validates it,
-    and returns a preview of the first 10 rows as JSON.
+    Validates an uploaded query CSV file and generates a JSON snapshot preview of its initial rows.
+
+    Ensures that mandatory data headers are declared correctly and falls back 
+    to alternative text encodings if reading via strict UTF-8 rules fails.
+
+    Args:
+        None
+
+    Returns:
+        Response: A Flask JSON string payload providing file content previews or validation failure errors.
     """
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'No file part in the request.'}), 400
@@ -101,16 +129,25 @@ def preview_qs_query_csv():
         return jsonify({'success': False, 'message': f'Error processing file: {str(e)}'}), 500
 
 
-# Route für den mehrstufigen Wizard (behandelt GET und POST)
 @app.route('/query_sampler/new', methods=['GET', 'POST'])
 @login_required
 def new_qs_study_wizard():
     """
-    Creates a new Query Sampler study on a single page.
+    Renders and processes the unified wizard to configure a new query sampler study.
+
+    Parses geographical target regions, specific language identifiers, 
+    and combines text-area manual inputs with uploaded batch files. It screens out 
+    duplicate keyword strings before saving transaction contexts.
+
+    Args:
+        None
+
+    Returns:
+        Response: Forwarding routing instructions or the base wizard configuration interface.
     """
     form = QuerySamplerWizardForm()
 
-    # Dropdown-Optionen laden
+    # Populate dropdown lists dynamically from reference databases
     form.geotargets.choices = [
         (g.criterion_id, g.name) for g in
         Qs_Geotarget.query.filter_by(target_type='Country').order_by(Qs_Geotarget.name).all()
@@ -124,10 +161,10 @@ def new_qs_study_wizard():
         # 1. Gather keywords
         seed_keywords_text = form.seed_keywords.data
         
-        # Create a list
+        # Split block input text strings into a sanitized array list
         final_keywords_list = [k.strip() for k in seed_keywords_text.splitlines() if k.strip()]
 
-        # Verify additional file (optional)
+        # Verify additional file data drops (optional template parameter)
         uploaded_file = request.files.get(form.query_list.name)
         if uploaded_file and uploaded_file.filename != '':
             try:
@@ -139,7 +176,7 @@ def new_qs_study_wizard():
 
                 if 'query' in df.columns:
                     queries_from_file = df['query'].dropna().astype(str).tolist()
-                    # Datei-Keywords zur Liste hinzufügen
+                    # Append external file keywords onto the active extraction list
                     final_keywords_list.extend([q.strip() for q in queries_from_file if q.strip()])
                 else:
                     flash("Uploaded CSV is missing the required 'query' column.", "danger")
@@ -148,7 +185,7 @@ def new_qs_study_wizard():
                 flash(f"Error processing the uploaded file: {e}", "danger")
                 return render_template('query_sampler/new_qs_study_wizard.html', form=form, title="Create Query Sampler Study")
 
-        # 2. Create a study
+        # 2. Create a study database entity
         try:
             new_study = Qs_Study(
                 name=form.name.data,
@@ -162,13 +199,13 @@ def new_qs_study_wizard():
                 new_study.users.append(user)
 
             db.session.add(new_study)
-            db.session.commit() 
+            db.session.commit()
 
-            # 3. Save keywords
+            # 3. Save unique keywords to database tables
             geotarget_id = form.geotargets.data
             language_id = form.languages.data
             
-            # Remove duplicates (set)
+            # Filter structural duplicates using distinct sets
             unique_keywords = list(set(final_keywords_list))
 
             for keyword_text in unique_keywords:
@@ -199,6 +236,15 @@ def new_qs_study_wizard():
 @app.route('/query_sampler/new/create', methods=['POST'])
 @login_required
 def create_new_qs_study():
+    """
+    Constructs a basic query sampler study framework from raw fallback form variables.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect instruction forward onto the setup presentation screen.
+    """
     data_json_str = request.form.get('data')
 
     if not data_json_str:
@@ -240,10 +286,21 @@ def create_new_qs_study():
     return redirect(url_for('show_qs_study', id=new_study.id))
 
 
-# Dashboard und Aktions-Routen (unverändert)
 @app.route('/query_sampler/show/<int:id>', methods=['GET'])
 @login_required
 def show_qs_study(id):
+    """
+    Renders the principal control dashboard showing metrics and logs for a single study.
+
+    Compiles global tracking numbers, calculates macro execution percentages, 
+    and checks if background worker tasks are actively running.
+
+    Args:
+        id (int): Unique primary key identifier of the selected Qs_Study database entry.
+
+    Returns:
+        str: Rendered study configuration view context.
+    """
     study = Qs_Study.query.get_or_404(id)
     keywords = db.session.query(
         Qs_Keyword.keyword,
@@ -279,6 +336,15 @@ def show_qs_study(id):
 @app.route('/query_sampler/export/<int:id>')
 @login_required
 def export_keyword_ideas(id):
+    """
+    Compiles all discovered expansion search keyword ideas into a flattened tabular matrix layout spreadsheet.
+
+    Args:
+        id (int): Unique primary key matching the selected source study.
+
+    Returns:
+        Response: A binary document download stream delivering the compiled Excel workbook report.
+    """
     study = Qs_Study.query.get_or_404(id)
     results = db.session.query(
         Qs_Keyword_Idea,
@@ -316,6 +382,18 @@ def export_keyword_ideas(id):
 @app.route('/query_sampler/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_qs_study(id):
+    """
+    Updates core study descriptive text fields or appends new keywords to an existing queue.
+
+    Verifies user permissions before accepting incoming updates, automatically 
+    re-using regional and language parameters configured on past data instances.
+
+    Args:
+        id (int): Unique primary identifier of the targeted active Qs_Study.
+
+    Returns:
+        str: Rendered update configuration dashboard window panel or custom dashboard forward rules.
+    """
     study = Qs_Study.query.get_or_404(id)
     if study not in current_user.qs_studies:
         flash("You don't have permission to edit this study.", "danger")
@@ -365,6 +443,18 @@ def edit_qs_study(id):
 @app.route('/query_sampler/status/<int:id>')
 @login_required
 def qs_study_status(id):
+    """
+    Provides a real-time JSON polling API tracking quantitative keyword processing counters.
+
+    Tracks absolute processing distributions across multiple distinct data execution parameters 
+    and determines whether worker instances are occupied.
+
+    Args:
+        id (int): Unique primary key reference pointing to the logged Qs_Study record.
+
+    Returns:
+        Response: A Flask JSON dictionary containing live calculation metrics.
+    """
     study = Qs_Study.query.get_or_404(id)
     if study not in current_user.qs_studies:
         return jsonify({'error': 'Permission denied'}), 403
@@ -393,6 +483,18 @@ def qs_study_status(id):
 @app.route('/query_sampler/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_qs_study(id):
+    """
+    Purges a query sampler study entity completely along with all cascading data records.
+
+    Prompts for confirmation before executing deletions, cleaning keyword mappings 
+    and dependent search results from relational database tables.
+
+    Args:
+        id (int): Unique primary key identifier of the target Qs_Study profile.
+
+    Returns:
+        str: Rendered verification template frame or standard main page forward directions.
+    """
     form = ConfirmationForm()
     study = Qs_Study.query.get_or_404(id)
     if study not in current_user.qs_studies:
@@ -401,6 +503,7 @@ def delete_qs_study(id):
 
     if request.method == 'POST':
         try:
+            # Purge downstream tables manually to handle execution contexts cleanly
             Qs_Keyword_Idea.query.filter_by(qs_study_id=id).delete()
             Qs_Keyword.query.filter_by(qs_study_id=id).delete()
             db.session.delete(study)

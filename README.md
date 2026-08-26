@@ -86,7 +86,7 @@ Alternatively, you can install the global requirements manually:
 ```bash
 python3 -m venv venv_rat
 source venv_rat/bin/activate
-python3 -m pip install -r requirements_rat.txt
+python3 -m pip install -r requirements.txt
 ```
 
 > 💡 **Next Step:** After completing the global setup, navigate to the individual component directories to configure their specific environment files and systemd services as outlined below.

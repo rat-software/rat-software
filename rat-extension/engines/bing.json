@@ -268,6 +268,10 @@
           ".hs-header"
         ]
       },
+		"inline_citations": {
+		  "selector": "a.md_citlink",
+		  "dataAttribute": "data-sups" 
+		},
       "sources": [
         {
           "type": "standard",

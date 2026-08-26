@@ -1,0 +1,74 @@
+{
+  "manifest_version": 1,
+  "engine": {
+    "id": "google_images_not_personalized",
+    "name": "Google Images (not personalized)",
+    "author": "RAT System",
+    "version": "1.0",
+    "description": "Scraper for Google Image Search showing not personalized results"
+  },
+  "request": {
+    "baseUrl": "https://{domain}/search?udm=2&peek_pws=0",
+    "params": {
+      "query": "q",
+      "country": "gl",
+      "language": "hl",
+      "location": "uule"
+    },
+    "features": {
+      "requiresUuleEncoding": true,
+      "urlDecodingMethod": "none"
+    },
+    "supportedCountries": [
+      { "code": "au", "name": "Australia", "domain": "www.google.com.au" },
+      { "code": "at", "name": "Austria", "domain": "www.google.at" },
+      { "code": "be", "name": "Belgium", "domain": "www.google.be" },
+      { "code": "ca", "name": "Canada", "domain": "www.google.ca" },
+      { "code": "fr", "name": "France", "domain": "www.google.fr" },
+      { "code": "de", "name": "Germany", "domain": "www.google.de" },
+      { "code": "ie", "name": "Ireland", "domain": "www.google.ie" },
+      { "code": "it", "name": "Italy", "domain": "www.google.it" },
+      { "code": "nl", "name": "Netherlands", "domain": "www.google.nl" },
+      { "code": "nz", "name": "New Zealand", "domain": "www.google.co.nz" },
+      { "code": "es", "name": "Spain", "domain": "www.google.es" },
+      { "code": "ch", "name": "Switzerland", "domain": "www.google.ch" },
+      { "code": "gb", "name": "United Kingdom", "domain": "www.google.co.uk" },
+      { "code": "us", "name": "USA", "domain": "www.google.com" }
+    ],
+    "supportedLanguages": [
+      { "code": "en", "name": "English" },
+      { "code": "de", "name": "German" },
+      { "code": "fr", "name": "French" },
+      { "code": "it", "name": "Italian" },
+      { "code": "es", "name": "Spanish" },
+      { "code": "nl", "name": "Dutch" }
+    ]
+  },
+  "behavior": {
+    "cookieConsentSelectors": [ "#L2AGLb", "#W0wltc" ],
+    "popupDismissSelectors": [],
+    "aiExpandSelectors": []
+  },
+  "captcha": {
+    "urlIndicators": [ "/sorry/" ],
+    "textIndicators": [ "unusual traffic", "ungewöhnlicher datenverkehr", "not a robot", "kein roboter" ],
+    "selectors": [ "form[action*=\"Captcha\"]", ".g-recaptcha", "#recaptcha" ]
+  },
+  "selectors": {
+    "pagination": {
+      "type": "infinite_scroll",
+      "nextButton": ".mye4qd"
+    },
+    "images": {
+      "mainCol": "#rso, #islrg",
+      "container": ".ivg-i",
+      "title": ".Q6A6Dc",
+      "url": "a.LBcIee",
+      "image": "img",
+      "snippet": { "selector": ".VYhLad", "minLength": 0 }
+    },
+    "organic": null,
+    "ads": { "container": null, "title": null, "url": null, "snippet": { "selector": null } },
+    "ai_overview": { "container": null, "text": null, "inline_citations": { "selector": null }, "sources": null }
+  }
+}

@@ -14,12 +14,17 @@ rat-backend/config/config_db.ini
 rat-backend/config/config_sources.ini
 rat-frontend/.env
 rat-storage/.env
+rat-backend/.env
 rat-backend/query_sampler/google-ads.yaml
 .claude
 extension_downloads.csv
 nohup.out
 **/tmp_uploads
 **/test-sources/
+.env
+.Zone.Identifier
+*.Identifier
+
 
 # Virtuelle Umgebungen (lokal, nicht versionieren)
 venv_rat/

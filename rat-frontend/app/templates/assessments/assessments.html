@@ -6,10 +6,25 @@
 {% block content %}
 <h1 class="sr-only">RAT</h1>
 
+{% if is_preview %}
+<div class="alert alert-info text-center fw-bold shadow-sm mb-4">
+    <i class="fa-solid fa-flask me-2"></i> PRETEST-MODE: This is a preview of the completion screen.
+</div>
+{% endif %}
+
 <div class="row justify-content-center mt-5">
   <div class="col-12 text-center mb-4">
     <h3 class="fw-bold text-dark">Assessments for: {{ study.name }}</h3>
-    <p class="lead text-secondary">Welcome, <strong>{{ participant.name }}</strong>!</p>
+    <p class="lead text-secondary">
+      Welcome, 
+      <strong>
+        {% if participant %}
+          {{ participant.name }}
+        {% else %}
+          Pretest User
+        {% endif %}
+      </strong>!
+    </p>
   </div>
   
   <div class="col-md-6 col-lg-5">
@@ -47,8 +62,10 @@
       </div>
       {% else %}
       <div class="card-footer bg-white border-top-0 text-center p-4">
-        <a href="{{ url_for('assessment', participant_id=participant.id, study_id=study.id) }}"
-           class="btn btn-primary btn-lg fw-bold shadow-sm w-100" data-bs-toggle="tooltip" title="Click here to load the next search result to evaluate.">
+        <a href="{{ url_for('assessment', participant_id=participant.id if participant else 0, study_id=study.id) }}"
+           class="btn btn-primary btn-lg fw-bold shadow-sm w-100" 
+           data-bs-toggle="tooltip" title="Click here to load the next search result to evaluate."
+           {% if is_preview %}onclick="event.preventDefault(); alert('Pretest: A real participant would now be redirected to the assessment loop.');"{% endif %}>
            {% if answers_closed > 0 %}
              Continue Assessment
            {% else %}

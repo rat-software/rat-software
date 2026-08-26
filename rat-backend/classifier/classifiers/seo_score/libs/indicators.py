@@ -8,6 +8,7 @@ import inspect
 from seleniumbase import Driver
 from bs4 import BeautifulSoup
 from lxml import html
+import requests
 
 def create_webdriver():
 
@@ -32,19 +33,11 @@ def read_config_file(filename):
     with open(os.path.join(parentdir, filename), 'r') as f:
         return json.load(f)
 
-def save_robot_txt(main):
-    """
-    Function to get the content of a robots.txt file of a domain.
-
-    Args:
-        main (str): The main URL of the website.
-
-    Returns:
-        str: The content of the robots.txt file, or False if it cannot be retrieved.
-    """
-    url = main+'/robots.txt'
-    if ("https://" or "http://") not in url:
-        url = "https://"+url
+def _save_robot_txt_selenium(main):
+    """Fallback: Uses heavy SeleniumBase to bypass Cloudflare/WAFs if requests is blocked."""
+    url = main.rstrip('/') + '/robots.txt'
+    if not url.startswith("http"):
+        url = "https://" + url
 
     driver = create_webdriver()
     driver.set_page_load_timeout(10)
@@ -53,65 +46,79 @@ def save_robot_txt(main):
         time.sleep(1)
         code = driver.page_source
         driver.quit()
-
+        return code
     except:
-        code = False
         try:
             driver.quit()
-        except Exception as e:
-            print(str(e))
+        except:
+            pass
+        return False
+
+def save_robot_txt(main):
+    """Tries lightning-fast requests first. Falls back to Selenium if blocked."""
+    url = main.rstrip('/') + '/robots.txt'
+    if not url.startswith("http"):
+        url = "https://" + url
 
     try:
-        driver.quit()
-    except Exception as e:
-        print(str(e))
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Accept': 'text/plain,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Connection': 'keep-alive',
+        }
+        response = requests.get(url, headers=headers, timeout=5)
         
+        # Check if we got blocked by a WAF (403 Forbidden, 406 Not Acceptable, 503 Service Unavailable)
+        if response.status_code in [403, 406, 503]:
+            return _save_robot_txt_selenium(main)
+            
+        # Check if Cloudflare gave us a 200 OK but returned a JS challenge instead of the robots.txt
+        response_text = response.text.lower()
+        if "cloudflare" in response_text or "just a moment" in response_text or "<html" in response_text:
+            return _save_robot_txt_selenium(main)
 
-    return code
+        # Success via fast requests!
+        if response.status_code == 200:
+            return response.text
+            
+        return False
+        
+    except requests.RequestException:
+        # If there's a timeout or connection error with requests, try Selenium as a last resort
+        return _save_robot_txt_selenium(main)
 
 
 def calculate_loading_time(url):
-    """
-    Function to calculate the loading time of a URL.
-
-    Args:
-        url (str): The URL to calculate the loading time for.
-
-    Returns:
-        float: The loading time in seconds, or -1 if it cannot be calculated.
-    """
     driver = create_webdriver()
-    driver.set_page_load_timeout(10)
+    driver.set_page_load_timeout(10) # Bricht nach 10 Sekunden gnadenlos ab[cite: 13]
     loading_time = -1
 
     try:
         driver.get(url)
-        time.sleep(1)
-        ''' Use Navigation Timing  API to calculate the timings that matter the most '''
+        # HINWEIS: Das time.sleep(1) wurde hier entfernt, da driver.get() ohnehin blockiert, 
+        # bis die Seite geladen ist. Wir sparen uns 1 Sekunde Wartezeit pro URL!
+        
         navigationStart = driver.execute_script("return window.performance.timing.navigationStart")
-        responseStart = driver.execute_script("return window.performance.timing.responseStart")
-        domComplete = driver.execute_script("return window.performance.timing.domComplete")
-        loadStart = driver.execute_script("return window.performance.timing.domInteractive")
-        EventEnd = driver.execute_script("return window.performance.timing.loadEventEnd")
-        ''' Calculate the performance'''
-        backendPerformance_calc = responseStart - navigationStart
-        frontendPerformance_calc = domComplete - responseStart
-        loadingTime = EventEnd - navigationStart
-        loading_time = loadingTime / 1000
+        # FIX: Wir nutzen domContentLoadedEventEnd statt loadEventEnd. 
+        # Das misst die Zeit, bis der reine Text/HTML-Code da ist!
+        domComplete = driver.execute_script("return window.performance.timing.domContentLoadedEventEnd")
+        
+        # Sicherheits-Check: Falls der DOM noch nicht da ist (z.B. bei Blockaden), ist der Wert 0
+        if domComplete > 0:
+            loadingTime = domComplete - navigationStart
+            loading_time = loadingTime / 1000
+        else:
+            loading_time = -1
+            
         driver.quit()
     except:
         loading_time = -1
         try:
             driver.quit()
         except Exception as e:
-            print(str(e))
-
-    try:
-        driver.quit()
-    except Exception as e:
-        print(str(e))
+            pass
     
-
     return loading_time
 
 def match_text(text, pattern):
@@ -521,59 +528,51 @@ def identify_keywords_in_url(url, search_query):
     return counter
 
 def identify_keyword_density(source, search_query):
-    """
-    Function to identify the keyword density in the source code of a webpage.
-
-    Args:
-        source (str): The source code of the webpage.
-        search_query (str): The search query containing the keywords.
-
-    Returns:
-        float: The keyword density.
-    """
     soup = BeautifulSoup(source, 'lxml')
-
-    w_counter = 0
-    kw_counter = 0
-    kw_density = 0
+    kw_density = 0.0
 
     if search_query:
-
-        query_split = search_query.split()
-        q_patterns = []
-        for q in query_split:
-            q_patterns.append('*'+q+'*')
-
         for script in soup(["script", "style"]):
             script.extract()
 
-        text = soup.get_text()
+        # 1. Text und Query bereinigen 
+        # (Wandelt alles in Kleinbuchstaben um und normalisiert Zeilenumbrüche/mehrfache Leerzeichen zu einem)
+        raw_text = soup.get_text(separator=' ', strip=True).lower()
+        text = ' '.join(raw_text.split())
+        query_lower = ' '.join(search_query.lower().split())
+        
+        if not query_lower or not text:
+            return 0.0
 
-        lines = (line.strip() for line in text.splitlines())
+        # 2. Gesamtwörter im Text zählen 
+        # Wir nutzen \w+ (Wortzeichen), das unterstützt automatisch alle Unicode-Schriftzeichen 
+        # (inklusive japanischer Kanji/Kana, kyrillisch, etc.)
+        import re
+        source_words = re.findall(r'\w+', text)
+        w_counter = len(source_words)
 
-        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        text = ''.join(chunk for chunk in chunks if chunk)
+        # Fallback für Sonderfälle (z.B. extrem exotische Zeichen ohne regex-Treffer)
+        if w_counter == 0:
+            w_counter = max(1, len(text))
+            query_words_len = len(query_lower)
+        else:
+            query_words_len = max(1, len(re.findall(r'\w+', query_lower)))
 
-        text = ' '.join(text.split())
+        # 3. EXAKTES Phrase-Matching (Sprachenunabhängig!)
+        # Wir suchen nach der genauen Phrase im Fließtext. 
+        kw_counter = text.count(query_lower)
 
-        source_list = text.split(' ')
-
-        w_counter = len(source_list)
-
-        kw_counter = 0
-
-        for q in q_patterns:
-
-            for w in source_list:
-                if match_text(w, q):
-                    kw_counter = kw_counter + 1
-
-        kw_density = kw_counter / w_counter * 100
-        decimals=0
+        # 4. Berechnung der Dichte 
+        # (Anzahl der Phrasen-Treffer * Wörter in der Phrase) / Gesamtwörter des Textes
+        kw_density = (kw_counter * query_words_len) / w_counter * 100
+            
+        decimals = 2
         multiplier = 10 ** decimals
         kw_density = int(kw_density * multiplier) / multiplier
 
         return kw_density
+    
+    return 0.0
 
 def identify_description(source):
     """
