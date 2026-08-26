@@ -66,16 +66,16 @@ class TestWordCountThreshold(unittest.TestCase):
         self.tx = Text_Analyzer()
 
     def test_empty_body_returns_error(self):
-        self.assertEqual(self.tx.analyze('<html><body></body></html>'), 'error')
+        self.assertEqual(self.tx.analyze('<html><body></body></html>'), 'text_too_short_or_unspaced')
 
     def test_99_words_returns_error(self):
-        self.assertEqual(self.tx.analyze(_html_words(99)), 'error')
+        self.assertEqual(self.tx.analyze(_html_words(99)), 'text_too_short_or_unspaced')
 
     def test_100_words_does_not_return_error(self):
         # 100 words passes the threshold; result may be float, unsupported-lang, or
         # undetectable — anything but the word-count sentinel
         result = self.tx.analyze(_html_words(100))
-        self.assertNotEqual(result, 'error')
+        self.assertNotEqual(result, 'text_too_short_or_unspaced')
 
     def test_script_text_excluded_from_word_count(self):
         # 50 real words in <p>, 100 words inside <script> → total visible < 100
@@ -85,7 +85,7 @@ class TestWordCountThreshold(unittest.TestCase):
             '<script>' + ' '.join(['var'] * 100) + '</script>'
             '</body></html>'
         )
-        self.assertEqual(self.tx.analyze(html), 'error')
+        self.assertEqual(self.tx.analyze(html), 'text_too_short_or_unspaced')
 
     def test_style_text_excluded_from_word_count(self):
         html = (
@@ -94,7 +94,7 @@ class TestWordCountThreshold(unittest.TestCase):
             '<style>' + ' '.join(['.class'] * 100) + '</style>'
             '</body></html>'
         )
-        self.assertEqual(self.tx.analyze(html), 'error')
+        self.assertEqual(self.tx.analyze(html), 'text_too_short_or_unspaced')
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -227,27 +227,27 @@ class TestMainClassifyResults(unittest.TestCase):
 
     # ── HTTP / error-code guards ──────────────────────────────────────────────
 
-    def test_status_not_200_writes_error(self):
+    def test_status_not_200_writes_excluded(self):
         db, _ = self._run([self._result(status_code=404)],
                           code='<html><body></body></html>')
-        db.update_classification_result.assert_called_once_with('error', 1, 1)
+        db.update_classification_result.assert_called_once_with('excluded', 1, 1)
 
-    def test_error_code_set_writes_error(self):
+    def test_error_code_set_writes_excluded(self):
         db, _ = self._run([self._result(error_code='timeout')],
                           code='<html><body></body></html>')
-        db.update_classification_result.assert_called_once_with('error', 1, 1)
+        db.update_classification_result.assert_called_once_with('excluded', 1, 1)
 
-    def test_empty_code_writes_error(self):
+    def test_empty_code_writes_excluded(self):
         db, _ = self._run([self._result()], code='')
-        db.update_classification_result.assert_called_once_with('error', 1, 1)
+        db.update_classification_result.assert_called_once_with('excluded', 1, 1)
 
     # ── Not enough text ───────────────────────────────────────────────────────
 
     def test_too_few_words_writes_exclusion_reason_indicator(self):
         db, _ = self._run([self._result()],
                           code='<html><body><p>too short</p></body></html>')
-        db.insert_indicator.assert_called_with('exclusion_reason', 'error', 1, 1, 'test')
-        db.update_classification_result.assert_called_once_with('error', 1, 1)
+        db.insert_indicator.assert_called_with('exclusion_reason', 'text_too_short_or_unspaced', 1, 1, 'test')
+        db.update_classification_result.assert_called_once_with('skipped_incompatible', 1, 1)
 
     # ── Successful English classification ─────────────────────────────────────
 
@@ -285,8 +285,9 @@ class TestMainClassifyResults(unittest.TestCase):
 
     # ── In-process marker ─────────────────────────────────────────────────────
 
-    def test_in_process_marker_inserted_before_classification(self):
-        #import readability_score as rs
+    def test_no_in_process_marker_inserted(self):
+        # Classifier.classify_results no longer writes an "in process" marker before
+        # classifying; it goes straight from extraction to indicator/result writes.
         db = MagicMock()
         helper = MagicMock()
         helper.decode_code.return_value = ''
@@ -297,7 +298,7 @@ class TestMainClassifyResults(unittest.TestCase):
         readability_score = ReadabilityScore(classifier_id=1, db=db, job_server='test')
         readability_score.classify_results([self._result()], helper)
 
-        db.insert_classification_result.assert_called_with(1, 'in process', 1, 'test')
+        db.insert_classification_result.assert_not_called()
 
 
 if __name__ == '__main__':
