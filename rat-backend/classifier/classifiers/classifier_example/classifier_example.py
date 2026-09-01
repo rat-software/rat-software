@@ -4,10 +4,6 @@ duplicates, classifying results, and updating the database with classification i
 
 :param classifier_id: The `classifier_id` is a unique identifier for a specific classifier. It is
 used to retrieve and classify results associated with that particular classifier in the database.
-:param db: The `db` parameter refers to a Database connection object. This object is used to interact
-with the database where the classification results are stored. It allows performing operations such as
-querying for results, inserting classification results, updating records, and checking for duplicates
-in the database.
 :param helper: The `helper` parameter is an object that provides additional functionality to the classifier.
 It likely contains methods or attributes that assist in decoding data, handling specific operations, or
 performing other tasks that are necessary for the classification process.
@@ -44,7 +40,7 @@ sys.path.append(currentdir + "/../")
 
 from classifier import *
 
-class ReadabilityScore(Classifier):
+class ClassifierExample(Classifier):
 
     def process_result(self, result, indicators):
         """
