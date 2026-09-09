@@ -198,6 +198,6 @@ async def main(input_file, output_file):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Nutzung: python demo_scraper.py failed_source.csv results.csv")
+        print("Nutzung: python demo_new_scraping.py failed_source.csv results.csv")
         sys.exit(1)
     asyncio.run(main(sys.argv[1], sys.argv[2]))
