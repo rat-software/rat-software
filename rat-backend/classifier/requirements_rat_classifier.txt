@@ -56,7 +56,7 @@ multiprocess==0.70.19
 murmurhash==1.0.15
 mycdp==1.3.7
 mypy_extensions==1.1.0
-nltk>=3.10.0
+nltk>=3.10.3
 numpy==2.4.4
 omegaconf==2.3.0
 orjson==3.11.8
