@@ -1,5 +1,5 @@
 /**
- * @file background.js - Version 2.0 (Plugin Engine Ready with Video Support)
+ * @file background.js - Version 2.1 (Plugin Engine Ready with Video Support)
  * Core Service Worker for the Result Assessment Tool (RAT).
  * Handles persistence (IndexedDB), proxy rotation, and the main scraping queue.
  * Dynamically loads JSON scrapers (Engines) instead of hardcoding logic.
@@ -151,9 +151,8 @@ async function syncDefaultEngines() {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const engineJson = await response.json();
             
-            if (!existingEngineIds.includes(engineJson.engine.id)) {
-                enginesToSave.push(engineJson);
-            }
+            enginesToSave.push(engineJson);
+            
         } catch (err) {
             console.error(`❌ Error loading ${fileName}:`, err);
         }
@@ -528,11 +527,14 @@ async function removeConfigFromSession(payload) {
     const newConfigs = session.originalConfigs.filter((_, idx) => idx !== configIndex);
     session.originalConfigs = newConfigs;
 
-    let cancelledCount = 0;
+	let cancelledCount = 0;
     session.tasks.forEach(task => {
-        if (task.config.countryCode === configToRemove.countryCode && 
+        // Enforce strict matching including the specific engine and location parameter
+        if (task.config.engineId === configToRemove.engineId &&
+            task.config.countryCode === configToRemove.countryCode && 
             task.config.langCode === configToRemove.langCode &&
-            task.config.domain === configToRemove.domain) {
+            task.config.domain === configToRemove.domain &&
+            (task.config.location || '') === (configToRemove.location || '')) {
             
             if (task.status === "OPEN" || task.status === "FAILED") {
                 task.status = "CANCELLED";
@@ -706,10 +708,19 @@ async function processQueue(sessionId) {
                                 (session.settings.saveSerp || session.settings.saveScreenshots || session.settings.saveHtml) && 
                                 (currentTask.pages.length < serpLimit);
 
-            let screenshotData = null;
+			let screenshotData = null;
             if (shouldSaveSerp) {
-                logToSession(sessionId, "📸 CAPTURING: Full page screenshot...");
-                try { screenshotData = await captureFullPage(tabId, engineConfig); } catch (e) { logToSession(sessionId, `⚠️ SCREENSHOT FAILED: ${e}`); }
+                // Check if the engine explicitly disabled screenshots due to memory limits
+                if (engineConfig.request && engineConfig.request.features && engineConfig.request.features.disableScreenshots) {
+                    logToSession(sessionId, `⚠️ SKIPPING SCREENSHOT: ${engineConfig.engine.name} is incompatible with full-page captures due to Chrome memory limits.`, "WARN");
+                } else {
+                    logToSession(sessionId, "📸 CAPTURING: Full page screenshot...");
+                    try { 
+                        screenshotData = await captureFullPage(tabId, engineConfig); 
+                    } catch (e) { 
+                        logToSession(sessionId, `⚠️ SCREENSHOT FAILED: ${e}`); 
+                    }
+                }
             }
 
             if (await isPaused(sessionId)) break;
@@ -841,11 +852,23 @@ function buildSearchUrl(term, taskConfig, engineConfig) {
     if (reqData.params.country && taskConfig.countryCode) urlObj.searchParams.set(reqData.params.country, taskConfig.countryCode);
     if (reqData.params.language && taskConfig.langCode) urlObj.searchParams.set(reqData.params.language, taskConfig.langCode);
     
+	let uuleValue = null;
     if (reqData.features && reqData.features.requiresUuleEncoding && taskConfig.location) {
-        urlObj.searchParams.set(reqData.params.location, generateUule(taskConfig.location));
+        // Check if the user pasted a pre-encoded UULE string
+        if (taskConfig.location.startsWith("w+CAIQICI")) {
+            uuleValue = taskConfig.location;
+        } else {
+            // Otherwise, encode the Canonical Name automatically
+            uuleValue = generateUule(taskConfig.location);
+        }
     }
-    
-    return urlObj.toString();
+
+    let finalUrl = urlObj.toString();
+    if (uuleValue) {
+        finalUrl += (finalUrl.includes('?') ? '&' : '?')
+                  + reqData.params.location + '=' + uuleValue;
+    }
+    return finalUrl;
 }
 
 function generateUule(loc) {

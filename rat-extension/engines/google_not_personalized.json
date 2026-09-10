@@ -71,7 +71,16 @@
       "ok", "confirm", "accept", "agree", "continue", "not now", "no thanks", "later", "reject",
       "bestätigen", "akzeptieren", "zustimmen", "fortfahren", "nicht jetzt", "nein danke", "später", "ablehnen", "pas maintenant"
     ],
-    "aiExpandSelectors": [ ".in7vHe[role=\"button\"]", "div[role=\"button\"]", "button", "span[role=\"button\"]" ],
+    "aiExpandSelectors": [ 
+      ".in7vHe[role=\"button\"]", 
+      "div[role=\"button\"]", 
+      "button", 
+      "span[role=\"button\"]",
+      "a[role=\"button\"]",
+      "g-more-button",
+      "div[jsaction]",
+      ".T3k7jd"
+    ],
     "aiExpandKeywords": [
       "Mehr anzeigen", "Show more", "Mostrar más", "Afficher plus", "Mostra altro", "Meer weergeven", "Mostrar mais",
       "Mehr Quellen", "Alle anzeigen", "Show all", "Ver todo", "Tout afficher", "Visualizza tutto", "Alles weergeven",
@@ -88,6 +97,13 @@
     "selectors": [ "form[action*=\"Captcha\"]", ".g-recaptcha", "#recaptcha", "iframe[src*=\"recaptcha\"]" ]
   },
   "selectors": {
+	  	  "excludeUrlPatterns": [
+      "/search/about-this-result",
+      "support.google.com",
+      "policies.google.com",
+      "accounts.google.com",
+      "/search?q="
+    ],
     "pagination": {
       "nextButton": "#pnnext",
       "fallbackUrlMath": "start=(\\d+)"
@@ -128,6 +144,7 @@
     },
     "ai_overview": {
       "container": ".pWvJNd",
+      "excludeContainers": [ ".Wt5Tfe" ], 
       "text": {
         "selector": ".pWvJNd",
         "elementsToRemove": [

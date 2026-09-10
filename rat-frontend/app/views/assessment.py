@@ -201,13 +201,13 @@ def assessment(participant_id, study_id):
     if exclude_filters:
         open_result_tasks_query = open_result_tasks_query.filter(and_(*[~Result.normalized_url.contains(clean_filter_string(f)) for f in exclude_filters]))
 
-    valid_result_ids = [item[0] for item in open_result_tasks_query.all()]
+    valid_result_ids = set([item[0] for item in open_result_tasks_query.all()])
 
     # 2. AI OVERVIEW
     open_ai_tasks_query = db.session.query(Answer.result_ai_id).filter(
         Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_ai_id.isnot(None)
     ).distinct()
-    valid_ai_ids = [item[0] for item in open_ai_tasks_query.all()]
+    valid_ai_ids = set([item[0] for item in open_ai_tasks_query.all()])
     
     # 3. AI SOURCES (Citations)
     open_ai_source_tasks_query = db.session.query(Answer.result_ai_source_id).filter(
@@ -228,19 +228,19 @@ def assessment(participant_id, study_id):
         open_ai_source_tasks_query = open_ai_source_tasks_query.filter(or_(*ai_src_range_filters))
 
     open_ai_source_tasks_query = open_ai_source_tasks_query.distinct()
-    valid_ai_source_ids = [item[0] for item in open_ai_source_tasks_query.all()]
+    valid_ai_source_ids = set([item[0] for item in open_ai_source_tasks_query.all()])
 
     # 4. CHATBOTS
     open_chatbot_tasks_query = db.session.query(Answer.result_chatbot_id).filter(
         Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_chatbot_id.isnot(None)
     ).distinct()
-    valid_chatbot_ids = [item[0] for item in open_chatbot_tasks_query.all()]
+    valid_chatbot_ids = set([item[0] for item in open_chatbot_tasks_query.all()])
     
     # 5. SERPs
     open_serp_tasks_query = db.session.query(Answer.result_serp_id).filter(
         Answer.participant_id == participant.id, Answer.study_id == study.id, Answer.status == 0, Answer.result_serp_id.isnot(None)
     ).distinct()
-    valid_serp_ids = [item[0] for item in open_serp_tasks_query.all()]
+    valid_serp_ids = set([item[0] for item in open_serp_tasks_query.all()])
 
     # 6. IMAGE TASKS
     open_image_tasks_query = db.session.query(Answer.result_image_id).filter(
@@ -261,22 +261,41 @@ def assessment(participant_id, study_id):
         open_image_tasks_query = open_image_tasks_query.filter(or_(*img_range_filters))
 
     open_image_tasks_query = open_image_tasks_query.distinct()
-    valid_image_ids = [item[0] for item in open_image_tasks_query.all()]
+    valid_image_ids = set([item[0] for item in open_image_tasks_query.all()])
     
-    # --- GET NEXT ANSWER ---
-    next_answer = db.session.query(Answer).filter(
+    # 7. FETCH ALL OPEN ANSWERS AND VALIDATE THEM
+    open_answers = db.session.query(Answer).filter(
         Answer.participant_id == participant.id,
         Answer.study_id == study.id,
-        Answer.status == 0,
-        or_(
-            Answer.result_id.in_(valid_result_ids),
-            Answer.result_ai_id.in_(valid_ai_ids),
-            Answer.result_chatbot_id.in_(valid_chatbot_ids),
-            Answer.result_serp_id.in_(valid_serp_ids),
-            Answer.result_ai_source_id.in_(valid_ai_source_ids),
-            Answer.result_image_id.in_(valid_image_ids)
-        )
-    ).order_by(Answer.id).first()
+        Answer.status == 0
+    ).order_by(Answer.id).all()
+
+    invalid_open_answers = []
+    valid_answers = []
+    
+    for ans in open_answers:
+        is_valid = False
+        if ans.result_id and ans.result_id in valid_result_ids: is_valid = True
+        elif ans.result_ai_id and ans.result_ai_id in valid_ai_ids: is_valid = True
+        elif ans.result_chatbot_id and ans.result_chatbot_id in valid_chatbot_ids: is_valid = True
+        elif ans.result_serp_id and ans.result_serp_id in valid_serp_ids: is_valid = True
+        elif ans.result_ai_source_id and ans.result_ai_source_id in valid_ai_source_ids: is_valid = True
+        elif ans.result_image_id and ans.result_image_id in valid_image_ids: is_valid = True
+        
+        if not is_valid:
+            invalid_open_answers.append(ans)
+        else:
+            valid_answers.append(ans)
+
+    if invalid_open_answers:
+        for ans in invalid_open_answers:
+            ans.status = 2
+            ans.created_at = datetime.now()
+        db.session.commit()
+        return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
+
+    # --- GET NEXT ANSWER ---
+    next_answer = valid_answers[0] if valid_answers else None
 
     if not next_answer:
         # Load all assigned elements to correctly measure query limits!
@@ -301,20 +320,19 @@ def assessment(participant_id, study_id):
             
         limit_reached = False
         
-        # 1. QUERY LIMIT PRÜFEN
+        # 1. QUERY LIMIT
         if study.group_by_query and study.limit_by_query:
             if study.max_queries_per_participant is not None and study.max_queries_per_participant > 0:
                 if len(seen_queries) >= study.max_queries_per_participant: 
                     limit_reached = True
 
-        # 2. ITEM LIMIT PRÜFEN
+        # 2. ITEM LIMIT
         if study.limit_per_participant:
             if study.max_results_per_participant is not None and study.max_queries_per_participant > 0:
                 if seen_items_count >= study.max_results_per_participant: 
                     limit_reached = True
             
         if not limit_reached:
-            # Berechne Restplatz für Items
             items_left = 99999
             if study.limit_per_participant and study.max_results_per_participant:
                 items_left = study.max_results_per_participant - seen_items_count
@@ -331,7 +349,6 @@ def assessment(participant_id, study_id):
                 ).all()
                 
                 if available_queries:
-                    # 1. Berechne die Häufigkeit pro Query vorab (Besser für die Server-Performance!)
                     query_counts = {}
                     for q in available_queries:
                         count = db.session.query(Answer.participant_id).filter(
@@ -347,11 +364,8 @@ def assessment(participant_id, study_id):
                         ).distinct().count()
                         query_counts[q.id] = count
 
-                    # 2. Echte Randomisierung: Mische die Liste zuerst mit roher Gewalt komplett durch
                     random.shuffle(available_queries)
                     
-                    # 3. Balancierung: Sortiere nach der Häufigkeit
-                    # (Da Python's Sort "stable" ist, bleiben gleich oft zugewiesene Queries perfekt zufällig gemischt!)
                     available_queries.sort(key=lambda q: query_counts[q.id])
                     
                     for candidate_query in available_queries:
@@ -388,7 +402,6 @@ def assessment(participant_id, study_id):
                                 if ranges: q = q.filter(or_(*[and_(ResultImage.position >= r.range_start, ResultImage.position <= r.range_end) for r in ranges]))
                                 items_to_assign.extend(q.all())
                             
-                            # BALANCIERTE ZUWEISUNG (Kürzt die Liste, wenn das Item-Limit zuschlägt)
                             if items_to_assign:
                                 if len(items_to_assign) > items_left:
                                     grouped = {}
@@ -533,14 +546,12 @@ def assessment(participant_id, study_id):
             
             if task_item.normalized_url:
                 if study.global_duplicate_filtering:
-                    # GLOBALE SPERRE: Ignoriert die Query, sucht in der gesamten Studie
                     duplicates = Result.query.filter(
                         Result.study_id == study_id,
                         Result.normalized_url == task_item.normalized_url, 
                         Result.id != task_item.id
                     ).all()
                 else:
-                    # LOKALE SPERRE (Standard): Filtert nur innerhalb derselben Query
                     duplicates = Result.query.filter(
                         Result.study_id == study_id,
                         Result.query_id == task_item.query_id,
@@ -648,7 +659,6 @@ def assessment(participant_id, study_id):
             
             if q_id:
                 seen_queries.add(q_id)
-                # Nur Items der AKTUELLEN Query für den Balken zählen
                 if q_id == active_query_id:
                     if ans.status in [1, 2]: query_closed += 1
                     elif ans.status == 0: query_open += 1
@@ -661,7 +671,6 @@ def assessment(participant_id, study_id):
         pct = round((closed_tasks_count / all_tasks_count) * 100) if all_tasks_count > 0 else 0
         if pct > 100: pct = 100
         
-        # Text generieren (-1 oder 0 = unendlich)
         current_q = len(seen_queries) if len(seen_queries) > 0 else 1
         
         if study.limit_by_query and study.max_queries_per_participant is not None and study.max_queries_per_participant > 0:
@@ -705,10 +714,8 @@ def assessment(participant_id, study_id):
                 db.session.commit()
                 return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
             
-            # FEHLERBEHEBUNG: query_info_text übergeben
             return render_template('assessments/assessment.html', form=form, answers=answers_for_item, task_item=task_item, task_type=task_type, all=all_tasks_count, closed=closed_tasks_count, pct=pct, show_urls=study.show_urls, study=study, errors=errors, submitted_data=request.form, query_info_text=query_info_text)
 
-    # FEHLERBEHEBUNG: query_info_text übergeben
     return render_template('assessments/assessment.html', form=form, answers=answers_for_item, task_item=task_item, task_type=task_type, all=all_tasks_count, closed=closed_tasks_count, pct=pct, show_urls=study.show_urls, study=study, errors={}, submitted_data={}, query_info_text=query_info_text)
 
 @app.route('/serp_image/<int:id>')
@@ -753,27 +760,48 @@ def preview_survey(study_id, survey_type):
 def preview_assessment(study_id):
     study = Study.query.get_or_404(study_id)
     
-    task_item = Result.query.filter_by(study_id=study.id).first()
-    task_type = 'result'
-    if not task_item:
-        task_item = ResultAi.query.filter_by(study_id=study.id).first()
-        task_type = 'result_ai'
-    if not task_item:
-        task_item = ResultChatbot.query.filter_by(study_id=study.id).first()
-        task_type = 'result_chatbot'
-    if not task_item:
-        task_item = Serp.query.filter_by(study_id=study.id).first()
-        task_type = 'serp'
-    if not task_item:
-        task_item = ResultAiSource.query.filter_by(study_id=study.id).first()
-        task_type = 'result_ai_source'
-    if not task_item:
-        task_item = ResultImage.query.filter_by(study_id=study.id).first()
-        task_type = 'result_image'
+    allowed_types = [t.strip().lower() for t in study.assessable_result_types_text.split(',')] if study.assessable_result_types_text else []
+    
+    preview_tasks = []
+    
+    if 'organic' in allowed_types:
+        item = Result.query.filter_by(study_id=study.id).first()
+        if item: preview_tasks.append((item, 'result'))
         
-    if not task_item:
+    if 'ai_overview' in allowed_types or 'ai overview' in allowed_types:
+        item = ResultAi.query.filter_by(study_id=study.id).first()
+        if item: preview_tasks.append((item, 'result_ai'))
+        
+    if 'chatbot' in allowed_types:
+        item = ResultChatbot.query.filter_by(study_id=study.id).first()
+        if item: preview_tasks.append((item, 'result_chatbot'))
+        
+    if 'serp' in allowed_types:
+        item = Serp.query.filter_by(study_id=study.id).first()
+        if item: preview_tasks.append((item, 'serp'))
+        
+    if 'ai_source' in allowed_types:
+        item = ResultAiSource.query.filter_by(study_id=study.id).first()
+        if item: preview_tasks.append((item, 'result_ai_source'))
+        
+    if 'image' in allowed_types or 'image result' in allowed_types:
+        item = ResultImage.query.filter_by(study_id=study.id).first()
+        if item: preview_tasks.append((item, 'result_image'))
+        
+    if not preview_tasks:
+        # Fallback to whatever is available if no valid types or nothing found
+        if Result.query.filter_by(study_id=study.id).first(): preview_tasks.append((Result.query.filter_by(study_id=study.id).first(), 'result'))
+        elif ResultAi.query.filter_by(study_id=study.id).first(): preview_tasks.append((ResultAi.query.filter_by(study_id=study.id).first(), 'result_ai'))
+        elif ResultChatbot.query.filter_by(study_id=study.id).first(): preview_tasks.append((ResultChatbot.query.filter_by(study_id=study.id).first(), 'result_chatbot'))
+        elif Serp.query.filter_by(study_id=study.id).first(): preview_tasks.append((Serp.query.filter_by(study_id=study.id).first(), 'serp'))
+        elif ResultAiSource.query.filter_by(study_id=study.id).first(): preview_tasks.append((ResultAiSource.query.filter_by(study_id=study.id).first(), 'result_ai_source'))
+        elif ResultImage.query.filter_by(study_id=study.id).first(): preview_tasks.append((ResultImage.query.filter_by(study_id=study.id).first(), 'result_image'))
+        
+    if not preview_tasks:
         flash("Für die Vorschau des Assessments müssen zuerst Daten hochgeladen werden.", "warning")
         return redirect(request.referrer or '/')
+
+    first_task_item, first_task_type = preview_tasks[0]
 
     dummy_answers = []
     for q in study.questions:
@@ -784,7 +812,8 @@ def preview_assessment(study_id):
     
     return render_template('assessments/assessment.html', 
                            form=form, answers=dummy_answers, 
-                           task_item=task_item, task_type=task_type, 
+                           task_item=first_task_item, task_type=first_task_type,
+                           preview_tasks=preview_tasks,
                            all=1, closed=0, pct=0, 
                            show_urls=study.show_urls, study=study, 
                            errors={}, submitted_data={},

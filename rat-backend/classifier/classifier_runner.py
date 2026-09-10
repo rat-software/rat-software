@@ -39,12 +39,10 @@ class ClassifierRunner:
         # Iterate over each classifier in the list
         for c in classifiers:
             import time
-            import traceback
-            
+            import traceback  # Zwingt Python, die Fehlergründe preiszugeben!
             print("\n" + "="*40)
             print(f"Starte Verarbeitung für Studie {c['study']} (Classifier: {c['name']})")
             
-            # --- 1. Dead Sources ---
             t0 = time.time()
             try:
                 db.flag_dead_sources(c['id'], c['study'], job_server)
@@ -52,35 +50,27 @@ class ClassifierRunner:
             except Exception as e:
                 print(f"❌ Fehler in flag_dead_sources: {e}")
                 
-            # --- 2. IMPORT (Hier passiert dein Absturz!) ---
             try:
+                # === JETZT IST AUCH DER IMPORT IM TRY-BLOCK ===
                 module = importlib.import_module(f"classifiers.{c['name']}.{c['name']}")
-            except Exception as e:
-                print(f"\n🔥 FATALER IMPORT-FEHLER BEI {c['name']} 🔥")
-                print(f"Grund: {e}")
-                print(traceback.format_exc())
-                continue  # Überspringt diesen Classifier und macht mit dem nächsten weiter
                 
-            # --- 3. Klassifizierung ---
-            classifier_name = c['name']
-            if(classifier_name):
-                class_name = helper.to_camel_case(classifier_name)
-                try:
-                    classifier_class = getattr(module, class_name)
-                    classifier = classifier_class(classifier_id=c['id'], db=db, job_server=job_server)
-                    
-                    t1 = time.time()
-                    results = db.get_results(c['id'], c['study'])
-                    print(f"⏱️ Zeit für 'get_results' ({len(results)} gefunden): {time.time() - t1:.2f} Sekunden")
-                    
-                    t2 = time.time()
-                    print(f"🚀 Starte eigentliche Klassifizierung...")
-                    classifier.classify_results(results, helper)
-                    print(f"⏱️ Zeit für Klassifizierung: {time.time() - t2:.2f} Sekunden")
-                    
-                except Exception as e:
-                    print(f"\n❌ FEHLER WÄHREND DER AUSFÜHRUNG BEI {c['name']}:")
-                    print(traceback.format_exc())
+                class_name = helper.to_camel_case(c['name'])
+                classifier_class = getattr(module, class_name)
+                classifier = classifier_class(classifier_id=c['id'], db=db, job_server=job_server)
+                
+                t1 = time.time()
+                results = db.get_results(c['id'], c['study'])
+                print(f"⏱️ Zeit für 'get_results' ({len(results)} gefunden): {time.time() - t1:.2f} Sekunden")
+                
+                t2 = time.time()
+                print(f"🚀 Starte eigentliche Klassifizierung...")
+                classifier.classify_results(results, helper)
+                print(f"⏱️ Zeit für Klassifizierung: {time.time() - t2:.2f} Sekunden")
+                
+            except Exception as e:
+                print(f"\n❌ KRITISCHER ABSTURZ BEI {c['name']}:")
+                # Dies druckt den ECHTEN Grund (z.B. SyntaxError in Zeile XY) in dein Log!
+                print(traceback.format_exc())
 
 def main():
     """
@@ -123,9 +113,6 @@ def main():
     # Initialize the DB object with the connection credentials and synchronization parameters.
     # Passing the max_counter allows the central DB instance to know the exact failure threshold.
     db = DB(helper.file_to_dict(path_db_cnf), job_server, refresh_time, max_counter)
-  
-    # Retrieve the list of active classifiers from the database
-    classifiers = db.get_classifiers()
     
     # Retrieve the list of active classifiers from the database
     classifiers = db.get_classifiers()

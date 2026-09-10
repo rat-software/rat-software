@@ -210,6 +210,10 @@
     ]
   },
   "selectors": {
+	"excludeUrlPatterns": [
+      "/search?q=",
+      "bing.com/search"
+    ],
     "pagination": {
       "nextButton": "a.sb_pagN, a[title=\"Nächste Seite\"], a[title=\"Page suivante\"], a[title=\"Pagina successiva\"], a[title=\"Next page\"]",
       "fallbackActiveSibling": ".sb_pagS"

@@ -227,6 +227,25 @@
 
 <div class="col-9">
     
+    {% set items_to_render = preview_tasks if (is_preview and preview_tasks) else [(task_item, task_type)] %}
+    
+    {% for current_item, current_type in items_to_render %}
+        {% set task_item = current_item %}
+        {% set task_type = current_type %}
+        
+        {% if is_preview and preview_tasks %}
+            <div class="alert alert-secondary text-center fw-bold shadow-sm mb-3">
+                Preview Example: 
+                {% if task_type == 'result' %}Organic Result
+                {% elif task_type == 'result_ai' %}AI Overview
+                {% elif task_type == 'result_ai_source' %}AI Source Citation
+                {% elif task_type == 'result_image' %}Image Result
+                {% elif task_type == 'result_chatbot' %}Chatbot Result
+                {% elif task_type == 'serp' %}SERP View
+                {% endif %}
+            </div>
+        {% endif %}
+
     {% if task_type == 'result' or task_type == 'result_ai_source' %}
         {% if show_urls %}
         <div class="card mb-4 shadow-sm px-3 py-2">
@@ -401,7 +420,16 @@
       <div class="card-footer bg-white p-4">
         <h5 class="mb-2 fw-bold text-dark">{{ task_item.title }}</h5>
         <div class="text-muted small mb-3">
-            Source Domain: <span class="badge bg-light text-dark border">{{ task_item.source_name }}</span>
+            Source Domain: 
+            <span class="badge bg-light text-dark border">
+                {% if task_item.source_name %}
+                    {{ task_item.source_name }}
+                {% elif task_item.source_url %}
+                    {{ task_item.source_url.split('/')[2] if '//' in task_item.source_url else task_item.source_url.split('/')[0] }}
+                {% else %}
+                    Unknown Domain
+                {% endif %}
+            </span>
         </div>
         
         {% if show_urls %}
@@ -417,6 +445,9 @@
       </div>
     </div>
     {% endif %}
+        
+        {% if not loop.last %}<hr class="my-5 border-0" style="border-top: dashed 3px #adb5bd !important; background: transparent;">{% endif %}
+    {% endfor %}
   </div>
 </div>
 

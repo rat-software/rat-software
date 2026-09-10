@@ -83,7 +83,7 @@ def _get_analysis_data(study_id):
     def process_stats_dict(stats_dict):
         # 1. Define explicit system errors (no word fragments)
         system_errors = ['error', 'source_failed', 'classifier_error', 'excluded', 
-                         'error_api', 'error_timeout', 'error_empty', 'error_no_config', 'error_no_study']
+                         'error_api', 'error_timeout', 'error_empty', 'error_no_config', 'error_no_study', 'classifier_failed_permanently']
         
         others = {}
         total_count = sum(stats_dict.values())
@@ -242,7 +242,7 @@ def _get_analysis_data(study_id):
     if not has_classifier_errors:
         has_classifier_errors = db.session.query(ClassifierResult.id).filter(
             ClassifierResult.study_id == study.id,
-            ClassifierResult.value.in_(error_vals + ['error', 'classifier_error', 'source_failed'])
+            ClassifierResult.value.in_(error_vals + ['error', 'classifier_error', 'source_failed', 'classifier_failed_permanently'])
         ).first() is not None
 
     return {
@@ -254,7 +254,7 @@ def _get_analysis_data(study_id):
         'overlap_list': overlap_list, 
         'answer_stats': answer_stats,
         'query_eval_stats': query_eval_stats,
-        'has_classifier_errors': has_classifier_errors # <-- Die neue Variable für das HTML
+        'has_classifier_errors': has_classifier_errors
     }
 
 
@@ -296,15 +296,16 @@ def retry_classifier_errors(id):
     This effectively resets the queue, allowing the background worker to pick them up again.
     """
     error_vals = ['error_api', 'error_timeout', 'error_empty', 'error_invalid_json', 'error_no_config', 'error_no_study']
+    all_errors = error_vals + ['error', 'classifier_error', 'source_failed', 'classifier_failed_permanently']
     
     db.session.query(ClassifierIndicator).filter(
         ClassifierIndicator.study_id == id,
-        ClassifierIndicator.value.in_(error_vals)
+        ClassifierIndicator.value.in_(all_errors)
     ).delete(synchronize_session=False)
     
     db.session.query(ClassifierResult).filter(
         ClassifierResult.study_id == id,
-        ClassifierResult.value.in_(error_vals + ['error', 'classifier_error', 'source_failed'])
+        ClassifierResult.value.in_(all_errors)
     ).delete(synchronize_session=False)
     
     db.session.commit()

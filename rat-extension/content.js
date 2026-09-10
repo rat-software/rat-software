@@ -144,19 +144,23 @@ if (!window.ratListenerAdded) {
             await wait(1500);
         }
 
-        if (config.behavior.aiExpandSelectors) {
+if (config.behavior.aiExpandSelectors) {
             for (let sel of config.behavior.aiExpandSelectors) {
-                let attempts = 0;
-                while (attempts < 10) {
-                    attempts++;
-                    let btn = document.querySelector(`${sel}:not([data-rat-clicked])`);
-                    if (!btn) break; 
-                    
+                // Finde ALLE potenziellen Buttons, statt nur den ersten (wichtig bei generischen Selektoren)
+                let buttons = document.querySelectorAll(`${sel}:not([data-rat-clicked])`);
+                
+                for (let btn of buttons) {
                     btn.setAttribute('data-rat-clicked', 'true'); 
-                    if (btn.offsetParent === null) continue; 
+                    if (btn.offsetParent === null) continue; // Überspringen, wenn unsichtbar
 
                     if (config.behavior.aiExpandKeywords && config.behavior.aiExpandKeywords.length > 0) {
                         let text = (btn.innerText || btn.getAttribute('aria-label') || btn.title || "").toLowerCase().trim();
+                        
+                        // --- NEUER SCHUTZ: Keine riesigen Container anklicken ---
+                        // Ein Button-Text sollte nicht länger als 80 Zeichen sein. 
+                        // Verhindert, dass z.B. ein ganzes Suchergebnis geklickt wird, nur weil "mehr anzeigen" darin vorkommt.
+                        if (text.length > 80) continue; 
+
                         let match = config.behavior.aiExpandKeywords.some(k => text === k.toLowerCase() || text.includes(k.toLowerCase()));
                         if (!match) continue; 
                     }
@@ -170,7 +174,19 @@ if (!window.ratListenerAdded) {
                             anchor.removeAttribute('href');
                         }
                         
+                        // --- ROBUSTER KLICK FÜR MODERNE GOOGLE-STRUKTUREN ---
+                        // 1. Nativer Klick
+                        btn.click();
+                        // 2. Simulierte Maus-Events (für jsaction-Listener)
+                        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+                        btn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
                         btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                        
+                        // 3. Fallback: Manchmal liegt der Event-Listener auf einem inneren <span>
+                        if (btn.firstElementChild) {
+                            btn.firstElementChild.click();
+                        }
+                        
                         await wait(1500);
                     } catch (err) {}
                 }
@@ -217,13 +233,20 @@ if (!window.ratListenerAdded) {
         return rankOffset;
     }
 
-    function isValidSourceUrl(url, config) {
+	function isValidSourceUrl(url, config) {
         if (!url || typeof url !== 'string') return false;
         url = url.trim();
         if (!url.startsWith('http') && !url.startsWith('/')) return false;
         if (url.includes('favicon')) return false;
         if (url.includes('gstatic.com')) return false;
         if (url.includes('google.com/search')) return false;
+        
+        if (config && config.selectors && config.selectors.excludeUrlPatterns) {
+            const lowerUrl = url.toLowerCase();
+            if (config.selectors.excludeUrlPatterns.some(pattern => lowerUrl.includes(pattern.toLowerCase()))) {
+                return false;
+            }
+        }
         
         try {
             let u = new URL(url, window.location.origin);
@@ -441,9 +464,23 @@ if (!window.ratListenerAdded) {
             currentNode = treeWalker.nextNode();
         }
 
-        // 1. Process AI Overview
+		// 1. Process AI Overview
         if (selConfig.ai_overview && selConfig.ai_overview.container) {
-            const aiContainer = document.querySelector(selConfig.ai_overview.container);
+            let aiContainer = null;
+            const candidates = document.querySelectorAll(selConfig.ai_overview.container);
+            
+            for (let c of candidates) {
+                let isExcluded = false;
+                if (selConfig.ai_overview.excludeContainers) {
+                    isExcluded = selConfig.ai_overview.excludeContainers.some(ex => c.closest(ex) !== null);
+                }
+                
+                if (!isExcluded) {
+                    aiContainer = c;
+                    break;
+                }
+            }
+
             if (aiContainer) {
                 result.ai_overview.found = true;
                 const tempSources = new Map();

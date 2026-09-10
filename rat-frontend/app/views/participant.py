@@ -8,7 +8,7 @@ landing panels, concurrent signup pipelines, and session recovery routes.
 
 from .. import app, db
 from app.models import (Study, Participant, Answer, Result, Question, ResultAi, 
-                        ResultChatbot, ResultSource, Serp, RangeStudy, ResultType)
+                        ResultChatbot, ResultSource, Serp, RangeStudy, ResultType, AnalyticsEvent)
 from ..forms import JoinForm, ParticipantLogInForm, ConfirmationForm
 from flask import render_template, flash, redirect, url_for, request, send_file
 from datetime import datetime
@@ -232,6 +232,11 @@ def new_participant(study_id):
     db.session.add(participant)
 
     # Directly commit data transactions without temporary placeholders
+    db.session.commit()
+    
+    # --- NEW: Track the "Participant Joined" Milestone Event ---
+    # Note: user_id is left blank because participants are anonymous, but we link the study_id!
+    db.session.add(AnalyticsEvent(event_type='participant_joined', study_id=study.id))
     db.session.commit()
     
     return redirect(url_for('participant', id=participant.id))

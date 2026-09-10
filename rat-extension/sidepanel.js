@@ -436,30 +436,58 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('manageEnginesBtn').addEventListener('click', () => { showView('engineView'); document.getElementById('engineEditView').style.display = 'none'; document.getElementById('engineListView').style.display = 'block'; });
     document.getElementById('backToMainFromEnginesBtn').addEventListener('click', () => showView('listView'));
 
+	// --- UULE / LOCATION VISIBILITY HELPER ---
+	function updateLocationVisibility(engineId, rowId, inputId) {
+		const row = document.getElementById(rowId);
+		const input = document.getElementById(inputId);
+		if (!row || !input) return;
+
+		const engineObj = availableEngines.find(eng => eng.engine.id === engineId);
+		
+		// Check if the engine requires UULE or has 'google' in the ID
+		const isGoogle = engineObj 
+			? Boolean(engineObj.request?.features?.requiresUuleEncoding || engineObj.engine?.id?.toLowerCase().includes('google'))
+			: false;
+
+		if (isGoogle) {
+			row.style.display = 'flex'; // Your .row class uses display: flex
+		} else {
+			row.style.display = 'none';
+			input.value = ''; // Clear the hidden input so it doesn't get sent by mistake
+		}
+	}
+
+
     // Dynamic Engine Selection Handlers
-    document.getElementById('confEngineSelect').addEventListener('change', (e) => {
-        populateDropdowns(e.target.value, 'confCountrySelect', 'confLangSelect');
-        
-        const limitTypeSelect = document.getElementById('sessLimitType');
-        const engineObj = availableEngines.find(eng => eng.engine.id === e.target.value);
-        
-        if (engineObj && engineObj.selectors && engineObj.selectors.pagination && engineObj.selectors.pagination.type === "infinite_scroll") {
-            limitTypeSelect.value = 'RESULTS';
-            document.getElementById('sessLimit').value = 10;
-            limitTypeSelect.style.border = '2px solid #17a2b8'; 
-            limitTypeSelect.title = "For infinite scroll (like YouTube), filtering by 'Results' instead of 'Pages' is highly recommended!";
-            const warningDiv = document.getElementById('infiniteScrollWarning');
-            if(warningDiv) warningDiv.style.display = 'block';
-        } else {
-            limitTypeSelect.style.border = '1px solid #ced4da';
-            limitTypeSelect.title = "";
-            const warningDiv = document.getElementById('infiniteScrollWarning');
-            if(warningDiv) warningDiv.style.display = 'none';
-        }
-    });
+	document.getElementById('confEngineSelect').addEventListener('change', (e) => {
+		populateDropdowns(e.target.value, 'confCountrySelect', 'confLangSelect');
+		
+		// Toggle UULE / Location field for Google only
+		updateLocationVisibility(e.target.value, 'confLocRow', 'confLoc');
 
-    document.getElementById('editConfEngineSelect').addEventListener('change', (e) => populateDropdowns(e.target.value, 'editConfCountrySelect', 'editConfLangSelect'));
+		const limitTypeSelect = document.getElementById('sessLimitType');
+		const engineObj = availableEngines.find(eng => eng.engine.id === e.target.value);
+		
+		if (engineObj && engineObj.selectors && engineObj.selectors.pagination && engineObj.selectors.pagination.type === "infinite_scroll") {
+			limitTypeSelect.value = 'RESULTS';
+			document.getElementById('sessLimit').value = 10;
+			limitTypeSelect.style.border = '2px solid #17a2b8'; 
+			limitTypeSelect.title = "For infinite scroll (like YouTube), filtering by 'Results' instead of 'Pages' is highly recommended!";
+			const warningDiv = document.getElementById('infiniteScrollWarning');
+			if(warningDiv) warningDiv.style.display = 'block';
+		} else {
+			limitTypeSelect.style.border = '1px solid #ced4da';
+			limitTypeSelect.title = "";
+			const warningDiv = document.getElementById('infiniteScrollWarning');
+			if(warningDiv) warningDiv.style.display = 'none';
+		}
+	});
 
+	document.getElementById('editConfEngineSelect').addEventListener('change', (e) => {
+		populateDropdowns(e.target.value, 'editConfCountrySelect', 'editConfLangSelect');
+		// Toggle UULE / Location field for Google only
+		updateLocationVisibility(e.target.value, 'editConfLocRow', 'editConfLoc');
+	});
     // Engine Form Visibility
     document.getElementById('showEngineFormBtn').addEventListener('click', () => {
         document.getElementById('engineFormContainer').style.display = 'block';
@@ -491,16 +519,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const location = document.getElementById('confLoc').value.trim();
         
         const engine = availableEngines.find(e => e.engine.id === engineId);
-        if (engine && countryCode) {
+		if (engine && countryCode) {
             const countryData = engine.request.supportedCountries.find(c => c.code === countryCode);
+            const isGoogle = engine.request?.features?.requiresUuleEncoding || engine.engine.id.toLowerCase().includes('google');
+            const finalLocation = isGoogle ? location : "";
+            
+            // Format the location nicely (add pin and truncate long UULE strings)
+            let displayLoc = finalLocation;
+            if (displayLoc.startsWith("w+CAIQICI") && displayLoc.length > 20) {
+                displayLoc = displayLoc.substring(0, 15) + "...";
+            }
+            const finalEngineName = displayLoc ? `${engine.engine.name} (📍 ${displayLoc})` : engine.engine.name;
+
             addConfig({
                 engineId: engine.engine.id,
-                engineName: engine.engine.name,
+                engineName: finalEngineName, // <-- FIX: Now using finalEngineName!
                 countryName: countryData.name,
                 countryCode: countryData.code,
                 domain: countryData.domain || "",
                 langCode: langCode || "", 
-                location: location
+                location: finalLocation
             });
             document.getElementById('engineFormContainer').style.display = 'none';
             document.getElementById('showEngineFormBtn').style.display = 'block';
@@ -630,19 +668,30 @@ document.addEventListener('DOMContentLoaded', () => {
         errorDiv.style.display = 'none';
         if (!countryCode) { errorDiv.innerText = "⚠️ Please select a Country to configure the search engine."; errorDiv.style.display = 'block'; return; }
 
-        if (countryCode && currentSessionId) {
+		if (countryCode && currentSessionId) {
             const engine = availableEngines.find(e => e.engine.id === engineId);
             const countryData = engine.request.supportedCountries.find(c => c.code === countryCode);
             
+            const isGoogle = engine.request?.features?.requiresUuleEncoding || engine.engine.id.toLowerCase().includes('google');
+            const finalLocation = isGoogle ? location : "";
+            
+            // Format the location nicely
+            let displayLoc = finalLocation;
+            if (displayLoc.startsWith("w+CAIQICI") && displayLoc.length > 20) {
+                displayLoc = displayLoc.substring(0, 15) + "...";
+            }
+            const finalEngineName = displayLoc ? `${engine.engine.name} (📍 ${displayLoc})` : engine.engine.name;
+            
             const newConfig = {
                 engineId: engine.engine.id,
-                engineName: engine.engine.name, 
+                engineName: finalEngineName, 
                 countryName: countryData.name,
                 countryCode: countryData.code, 
                 domain: countryData.domain || "",
                 langCode: langCode || "", 
-                location: location
+                location: finalLocation
             };
+            
             if(confirm(`Add ${engine.engine.name} ${countryData.name} and generate tasks for ALL existing keywords?`)) {
                 chrome.runtime.sendMessage({ action: "ADD_ITEMS", payload: { sessionId: currentSessionId, newConfigs: [newConfig] } });
                 document.getElementById('editEngineFormContainer').style.display = 'none';

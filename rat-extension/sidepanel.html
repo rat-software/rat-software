@@ -390,6 +390,13 @@
       opacity: 1;
       visibility: visible;
     }
+	
+	/* Prevents tooltips on the far right edge from overflowing */
+    .tooltip-left::after {
+      left: auto;
+      right: -5px;
+      transform: none;
+    }	
 
   </style>
 </head>
@@ -471,7 +478,10 @@
           <select id="confCountrySelect" style="flex:1"><option value="" disabled selected>Select Country</option></select>
           <select id="confLangSelect" style="flex:1"><option value="" disabled selected>Select Language</option></select>
         </div>
-        <div class="row"><input type="text" id="confLoc" placeholder="Location (City / UULE) - Optional" style="flex:1"></div>
+			<div class="row" id="confLocRow">
+				<input type="text" id="confLoc" placeholder="Canonical Name or UULE (e.g. Berlin,Berlin,Germany)" style="flex:1" title="Enter an exact Canonical Location Name or a pre-generated UULE string">
+					<a href="https://developers.google.com/google-ads/api/data/geotargets" target="_blank" class="tooltip tooltip-left" data-tip="Use an official Canonical Name (click here for the list) OR paste a pre-generated UULE string." style="text-decoration:none; display:flex;">?</a>
+			</div>
         <div class="row" style="margin-top:8px; justify-content: flex-end;">
           <button id="cancelConfigBtn" class="btn-secondary btn-sm" style="margin-top:0; margin-right:5px;">Cancel</button>
           <button id="addConfigBtn" class="btn-success btn-sm" style="margin-top:0;">Save</button>
@@ -563,8 +573,10 @@
               <select id="editConfCountrySelect" style="flex:1"><option value="" disabled selected>Select Country</option></select>
               <select id="editConfLangSelect" style="flex:1"></select>
             </div>
-            <div class="row"><input type="text" id="editConfLoc" placeholder="Location" style="flex:1"></div>
-            
+				<div class="row" id="editConfLocRow">
+					<input type="text" id="editConfLoc" placeholder="Canonical Name or UULE (e.g. Berlin,Berlin,Germany)" style="flex:1" title="Enter an exact Canonical Location Name or a pre-generated UULE string">
+						<a href="https://developers.google.com/google-ads/api/data/geotargets" target="_blank" class="tooltip tooltip-left" data-tip="Use an official Canonical Name (click here for the list) OR paste a pre-generated UULE string." style="text-decoration:none; display:flex;">?</a>
+				</div>          
             <div id="addEngineErrorMsg" style="color: #dc3545; font-size: 11px; font-weight: bold; margin-top: 5px; display: none; background: #fff5f5; padding: 6px; border: 1px solid #ffcccc; border-radius: 4px;"></div>
 
             <div class="row" style="margin-top:8px; justify-content: flex-end;">

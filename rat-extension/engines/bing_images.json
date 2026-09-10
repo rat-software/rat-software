@@ -4,8 +4,8 @@
     "id": "bing_images",
     "name": "Bing Images",
     "author": "RAT System",
-    "version": "1.0",
-    "description": "Scraper for Bing Image Search (Excluding Shop Results)"
+    "version": "1.5",
+    "description": "Scraper for Bing Image Search (Duplicate Fix)"
   },
   "request": {
     "baseUrl": "https://www.bing.com/images/search",
@@ -16,7 +16,8 @@
     },
     "features": {
       "requiresUuleEncoding": false,
-      "urlDecodingMethod": "bing_base64"
+      "urlDecodingMethod": "none",
+      "disableScreenshots": true
     },
     "supportedCountries": [
       { "code": "au", "name": "Australia" },
@@ -44,33 +45,35 @@
     ]
   },
   "behavior": {
-    "cookieConsentSelectors": [ "#bnp_btn_accept", ".bnp_btn_accept" ],
+    "cookieConsentSelectors": [],
     "popupDismissSelectors": [],
     "aiExpandSelectors": []
   },
   "captcha": {
-    "urlIndicators": [],
+    "urlIndicators": [ "/checkpoint", "showcheck" ],
     "textIndicators": [],
-    "selectors": [ ".g-recaptcha", "#recaptcha" ]
+    "selectors": [ ".g-recaptcha", "#recaptcha", "#b_captcha" ]
   },
   "selectors": {
     "pagination": {
-      "type": "infinite_scroll"
+      "type": "infinite_scroll",
+      "nextButton": "a.btn_seemore, .mm_seemore, .mUI_b_btn, #b_moreItems"
     },
     "images": {
-      "mainCol": "#mmreq, .dg_b, #b_results",
-      "container": ".iuscp",
+      "mainCol": null,
+      "container": ".iuscp, .dg_u",
       "excludeContainers": [
         ".shoptiles", 
         ".shop", 
         "[class*='shop']", 
         "[data-tag*='shop']", 
         ".rich-badge", 
-        ".offer"
+        ".offer",
+        ".carousel"
       ],
-      "title": ".info, .fileinfo, a.inflnk",
-      "url": "a.inflnk",
-      "image": "img.mimg, img",
+      "title": ".infpd a, .infnmpt a, .info, .fileinfo",
+      "url": ".lnkw a, a.iusc, a.inflnk",
+      "image": "img.mimg, img.rms_img, img",
       "snippet": { "selector": ".infsd, .infpd", "minLength": 0 }
     },
     "organic": null,

@@ -66,8 +66,9 @@
         <li><button class="dropdown-item text-danger fw-bold" onclick="resetDashboardLayout()"><i class="fa-solid fa-rotate-right me-2"></i>Reset Layout</button></li>
       </ul>
     </div>
-    {% if has_classifier_errors %}
+	{% if has_classifier_errors %}
     <form action="{{ url_for('retry_classifier_errors', id=study.id) }}" method="POST" class="d-inline-block me-2" onsubmit="return confirm('Do you want to retry all failed AI and classifier tasks?\n\nTip: If you encountered invalid JSON errors, make sure you increased the Max Tokens limit in the Study Settings before retrying.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <button type="submit" class="btn btn-warning fw-bold text-dark shadow-sm">
         <i class="fa-solid fa-rotate-right me-2"></i> Retry Errors
       </button>

@@ -58,13 +58,15 @@ class SourcesReset:
         """
         Resets the jobs that have been pending for too long.
 
-        This method retrieves all pending sources from the database, checks if they have been pending for more than a specified threshold (0.2 hours), and if so, resets their status.
+        This method retrieves all pending sources from the database, checks if they have been pending for more than a specified threshold (e.g., 10 minutes), and if so, resets their status.
+        Finally, it also expires any stuck jobs older than 14 days to prevent them from clogging up the system.
 
         Args:
             db (object): Database object used to interact with the sources and update their status.
+            job_server (str): Name of the job server running the scraper.
         """
         
-        # NEU: Konsolen-Feedback zu blockierten Jobs unter 10 Minuten
+        # NEW: Console feedback for blocked jobs under 10 minutes
         try:
             conn = db.connect_to_db()
             cur = conn.cursor()
@@ -78,23 +80,23 @@ class SourcesReset:
             waiting = cur.fetchone()[0]
             conn.close()
             if waiting and waiting > 0:
-                print(f"INFO: {waiting} Job(s) stecken in Progress 2/-1 fest, sind aber noch keine 10 Min. alt. Sie werden beim nächsten Aufruf ignoriert!")
+                print(f"INFO: {waiting} job(s) are stuck in Progress 2/-1 but are not yet 10 minutes old. They will be ignored in this run!")
         except Exception as e:
             pass
             
         sources_pending = db.get_sources_pending(job_server)  # Retrieve all pending sources
-        print(f"Gefundene Jobs, die fuer den Reset qualifiziert sind (> 10 Min alt): {len(sources_pending)}")      
+        print(f"Found jobs qualifying for reset (> 10 min old): {len(sources_pending)}")      
 
         for s in sources_pending:
-            # 1. Sicherstellen, dass wir keine IndexErrors werfen
-            raw_composite_id = s[0]  # Das ist z.B. 'result_ai_source:292'
+            # 1. Ensure that we don't throw any IndexErrors
+            raw_composite_id = s[0]  # This is e.g., 'result_ai_source:292'
             source_id = s[1] if len(s) > 1 else None
             
-            # 2. Die Composite-ID mithilfe der DB-Helper-Methode aufsplitten
+            # 2. Split the composite ID using the DB helper method
             fk_column, result_id = db._parse_id(raw_composite_id)
             
-            # Da das Skript alt ist und "result_source_id" an manchen Stellen braucht, 
-            # nutzen wir hier die bereinigte 'result_id' als Fallback
+            # Since the script is old and requires "result_source_id" in some places, 
+            # we use the cleaned 'result_id' as a fallback here
             result_source_id = result_id 
 
             if source_id:
@@ -102,7 +104,7 @@ class SourcesReset:
                 log = f"Reset \t source \t {source_id} \t"
                 self.logger.write_to_log(log)
                 
-                # WICHTIG: raw_composite_id übergeben, damit die DB weiß, ob es 'result' oder 'result_ai_source' ist!
+                # IMPORTANT: Pass raw_composite_id so the DB knows whether it is 'result', 'result_ai_source' or 'result_image'!
                 counter = db.get_source_counter_result(raw_composite_id) + 1
                 progress = 0
                 created_at = datetime.now()
@@ -115,17 +117,25 @@ class SourcesReset:
                 log = f"Reset \t source_failed_missing_id \t {raw_composite_id} \t"
                 self.logger.write_to_log(log)
                 
-                # WICHTIG: Statt den Eintrag zu löschen (was zur Endlosschleife führt),
-                # setzen wir ihn zurück und erhöhen den Counter.
+                # IMPORTANT: Instead of deleting the entry (which leads to an infinite loop),
+                # we reset it and increase the counter.
                 counter = db.get_source_counter_result(raw_composite_id) + 1
                 progress = 0
                 created_at = datetime.now()
                 
-                # Aktualisiert den Eintrag in der korrekten Tabelle (result_source oder result_ai_source)
+                # Updates the entry in the correct table
                 db.update_result_source_result(raw_composite_id, progress, counter, created_at)
 
-        db.update_sources_failed(job_server) # Reset all finally failed sources (counter >= 3)
+        # Reset all finally failed sources (counter >= 3)
+        db.update_sources_failed(job_server) 
 
+        # --- NEW CODE: Expire old sources stuck beyond 14 days ---
+        try:
+            print("Expiring old stuck sources older than 14 days...")
+            db.expire_old_pending_sources()
+        except Exception as e:
+            self.logger.write_to_log(f"Error expiring old sources: {str(e)}")
+            print(f"Error expiring old sources: {str(e)}")
             
 
 if __name__ == "__main__":
