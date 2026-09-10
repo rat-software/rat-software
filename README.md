@@ -68,6 +68,63 @@ psql -h <HOST> -p <PORT> -U <USER> -d <DB_NAME> -f install-database/rat-db-insta
 ```
 
 > 💡 **Tip for Windows Users:** If the `createdb` or `psql` commands are not recognized in your command prompt or PowerShell, you need to provide the full path to your PostgreSQL installation (e.g., `"C:\Program Files\PostgreSQL\17\bin\psql.exe"`).
+>
+
+## Local Database Sync Guide (Flask & PostgreSQL)
+
+In this project, we do not track the `migrations` folder in Git. Instead, whenever you pull the latest code and receive an updated `models.py`, you will generate a local migration from scratch to automatically update your PostgreSQL database.
+
+This process calculates the exact differences between your current local database and the new `models.py` (like new columns or tables) and applies them safely without deleting your existing data.
+
+---
+
+### How to update your database to match `models.py`
+
+Whenever you pull new code and need to update your database schema, run through these quick steps:
+
+#### Step 1: Clean up old tracking files
+Delete the `migrations/` folder in your local project directory (if it exists). 
+*(Note: If you are using a code editor like VS Code, you can just right-click and delete it, or run `rm -rf migrations` in the terminal).*
+
+#### Step 2: Clear the tracking table in Postgres
+We need to tell PostgreSQL to forget any previous migration history so it can start fresh. Open your database (via pgAdmin, DBeaver, or `psql`) and execute this SQL command:
+```sql
+DROP TABLE IF EXISTS alembic_version;
+```
+
+#### Step 3: Initialize the fresh migration environment
+In your terminal, inside the project folder, run:
+```bash
+flask db init
+```
+*(This recreates the `migrations/` folder).*
+
+#### Step 4: Generate the update script
+Tell Flask to look at the new `models.py`, compare it to your current Postgres database, and automatically write the update instructions:
+```bash
+flask db migrate -m "Sync local database"
+```
+*(You will see output in the terminal showing exactly what it found, like `add_column` or `create_table`).*
+
+#### Step 5: Apply the updates
+Execute the script to safely update your PostgreSQL tables:
+```bash
+flask db upgrade
+```
+
+🎉 **You're done!** Your local database now perfectly matches the new `models.py` and is ready to use. 
+
+---
+
+### Starting completely from scratch? (Empty Database)
+If you are setting up the project for the very first time and your PostgreSQL database is completely empty, the process is exactly the same! 
+
+Skip Step 1 and Step 2 (since you have no folder and no tables yet), and just run:
+1. `flask db init`
+2. `flask db migrate -m "Initial setup"`
+3. `flask db upgrade`
+
+*(This will automatically create all the tables defined in `models.py`).*
 
 ---
 
