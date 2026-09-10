@@ -15,31 +15,20 @@ from sqlalchemy import func, or_, and_, text, case
 from ..helpers import percentage_calc
 import pandas as pd
 from itertools import combinations
+from collections import defaultdict
 
 def get_result_stats(study):
     """
     Calculates scraping progress metrics and totals for all distinct source types.
-
-    This function parses standard search engine results, SERPs, AI responses, 
-    and chatbot results to establish a comprehensive overview of successfully 
-    retrieved documents versus failed attempts or items pending a retry.
-
-    Args:
-        study (Study): The SQLAlchemy database model instance for the current study.
-
-    Returns:
-        dict: A dictionary of key-value pairs representing metrics displayed 
-              on the dashboard.
     """
-    from ..models import Serp  # Import Serp model inline to ensure no circular import flags
+    from ..models import Serp 
     
-    # Central variable for the maximum number of scraper retries
     max_retries = 3 
     
     scrapers_all = db.session.query(Scraper.id).filter(Scraper.study_id == study.id).count()
     scrapers_done = db.session.query(Scraper.id).filter(
         Scraper.study_id == study.id,
-        or_(Scraper.progress == 1, and_(Scraper.progress == -1, Scraper.counter >= max_retries)) # For initial scrapers
+        or_(Scraper.progress == 1, and_(Scraper.progress == -1, Scraper.counter >= max_retries)) 
     ).count()
     scraper_percent = (scrapers_done / scrapers_all) * 100 if scrapers_all > 0 else 0
 
@@ -50,7 +39,6 @@ def get_result_stats(study):
     else:
         collection_status_percent = scraper_percent
         if total_results_to_process > 0 or scrapers_all > 0:
-            # FIXED: Counts only definitively finished (1) or definitively failed (>= max_retries) sources
             finished_sources = db.session.query(ResultSource.result_id).join(Result).filter(
                 Result.study_id == study.id,
                 or_(ResultSource.progress == 1, and_(ResultSource.progress == -1, ResultSource.counter >= max_retries))
@@ -88,13 +76,11 @@ def get_result_stats(study):
                 .filter(Result.study_id == study.id, ResultSource.progress == 1)\
                 .distinct().count()
             
-            # FIXED: Count only definitively failed sources (reached max retries limit)
             failed_results_count = db.session.query(Result.id)\
                 .join(Result.source_associations)\
                 .filter(Result.study_id == study.id, ResultSource.progress == -1, ResultSource.counter >= max_retries)\
                 .distinct().count()
             
-            # NEW: Count sources that are currently in the retry loop
             retry_results_count = db.session.query(Result.id)\
                 .join(Result.source_associations)\
                 .filter(Result.study_id == study.id, ResultSource.progress == -1, ResultSource.counter < max_retries)\
@@ -104,22 +90,18 @@ def get_result_stats(study):
                 result_stats["Results with Processed Source"] = processed_results_count
                 result_stats["Results with Failed Source"] = failed_results_count
                 
-                # Display this row in the dashboard as long as the scraper is still attempting retries
                 if retry_results_count > 0:
                     result_stats["Sources currently in Retry"] = retry_results_count
 
-    # --- SERP Layout Pages ---
-    serp_results_count = db.session.query(Serp).filter(Serp.study_id == study.id).count()
+    serp_results_count = db.session.query(Serp.id).filter(Serp.study_id == study.id).count()
     if serp_results_count > 0:
         result_stats["SERP Pages Collected"] = serp_results_count
 
-    # --- AI Answers ---
-    ai_results_count = db.session.query(ResultAi).filter(ResultAi.study_id == study.id).count()
+    ai_results_count = db.session.query(ResultAi.id).filter(ResultAi.study_id == study.id).count()
     if ai_results_count > 0:
         result_stats["AI Answers Collected"] = ai_results_count
 
-    # --- AI Sources Count & Failure Metrics ---
-    ai_sources_count = db.session.query(ResultAiSource).filter(ResultAiSource.study_id == study.id).count()
+    ai_sources_count = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == study.id).count()
     if ai_sources_count > 0:
         result_stats["Total AI Sources Found"] = ai_sources_count
         
@@ -140,7 +122,7 @@ def get_result_stats(study):
                 if retry_ai_sources > 0:
                     result_stats["AI Sources currently in Retry"] = retry_ai_sources
 
-    image_results_count = db.session.query(ResultImage).filter(ResultImage.study_id == study.id).count()
+    image_results_count = db.session.query(ResultImage.id).filter(ResultImage.study_id == study.id).count()
     if image_results_count > 0:
         result_stats["Total Image Results"] = image_results_count
         if not study.live_link_mode:
@@ -150,8 +132,7 @@ def get_result_stats(study):
                 result_stats["Images Processed"] = processed_img
                 result_stats["Images Failed"] = failed_img
 
-    # --- Chatbot Results ---
-    chatbot_results_count = db.session.query(ResultChatbot).filter(ResultChatbot.study_id == study.id).count()
+    chatbot_results_count = db.session.query(ResultChatbot.id).filter(ResultChatbot.study_id == study.id).count()
     if chatbot_results_count > 0:
         result_stats["Chatbot Results Collected"] = chatbot_results_count
         
@@ -160,16 +141,6 @@ def get_result_stats(study):
 def get_evaluation_stats(study):
     """
     Computes performance summary markers for participant questionnaire progress.
-
-    Tracks answers that are fully submitted, explicitly skipped, or still pending 
-    and classifies them into granular type categories (e.g., Organic Results, AI Answers).
-
-    Args:
-        study (Study): The SQLAlchemy database model instance for the current study.
-
-    Returns:
-        dict: Summary statistics including submission status percentages 
-              and type breakdowns.
     """
     num_questions = len(study.questions)
     if num_questions == 0:
@@ -213,7 +184,6 @@ def get_evaluation_stats(study):
 
     if study.participants:
         breakdown_query_obj = breakdown_query_obj.filter(Answer.participant_id.isnot(None))
-    
 
     breakdown_query = breakdown_query_obj.group_by(
         ResultType.display
@@ -265,7 +235,6 @@ def get_classifier_stats(study, use_limit=True):
 
     for classifier in study.classifier:
         
-        # Label the output based on which item it belongs to
         source_type_case = case(
             (Result.id.isnot(None), 'Organic Results'),
             (ResultAiSource.id.isnot(None), 'AI Sources'),
@@ -276,7 +245,6 @@ def get_classifier_stats(study, use_limit=True):
         )
 
         if classifier.name == 'universal_llm':
-            # Create a distinct target ID to prevent counting duplicates (solves the x100 multiplier bug)
             target_id = func.coalesce(
                 ClassifierIndicator.result_id, 
                 ClassifierIndicator.result_ai_source_id, 
@@ -289,7 +257,7 @@ def get_classifier_stats(study, use_limit=True):
                 source_type_case.label('source_type'),
                 ClassifierIndicator.indicator,
                 ClassifierIndicator.value,
-                func.count(target_id.distinct()) # <-- This forces the DB to count each item only once!
+                func.count(target_id.distinct()) 
             ).select_from(ClassifierIndicator) \
              .outerjoin(Result, ClassifierIndicator.result_id == Result.id) \
              .outerjoin(ResultAiSource, ClassifierIndicator.result_ai_source_id == ResultAiSource.id) \
@@ -304,7 +272,7 @@ def get_classifier_stats(study, use_limit=True):
                     ResultAi.study_id == study.id,
                     ResultChatbot.study_id == study.id,
                     ResultImage.study_id == study.id,
-                    ClassifierIndicator.study_id == study.id # Fallback
+                    ClassifierIndicator.study_id == study.id 
                 )
             ).group_by(source_type_case, ClassifierIndicator.indicator, ClassifierIndicator.value).all()
 
@@ -332,7 +300,6 @@ def get_classifier_stats(study, use_limit=True):
                         raw_dict[str(val)] = raw_dict.get(str(val), 0) + count
 
         else:
-            # Create a distinct target ID for classic classifiers
             target_id = func.coalesce(
                 ClassifierResult.result_id, 
                 ClassifierResult.result_ai_source_id, 
@@ -344,7 +311,7 @@ def get_classifier_stats(study, use_limit=True):
             stats_query = db.session.query(
                 source_type_case.label('source_type'),
                 ClassifierResult.value,
-                func.count(target_id.distinct()) # <-- Counts each item only once, dropping duplicates!
+                func.count(target_id.distinct()) 
             ).select_from(ClassifierResult) \
              .outerjoin(Result, ClassifierResult.result_id == Result.id) \
              .outerjoin(ResultAiSource, ClassifierResult.result_ai_source_id == ResultAiSource.id) \
@@ -359,7 +326,7 @@ def get_classifier_stats(study, use_limit=True):
                     ResultAi.study_id == study.id,
                     ResultChatbot.study_id == study.id,
                     ResultImage.study_id == study.id,
-                    ClassifierResult.study_id == study.id # Fallback
+                    ClassifierResult.study_id == study.id 
                 )
             ).group_by(source_type_case, ClassifierResult.value).all()
 
@@ -394,21 +361,9 @@ def get_classifier_stats(study, use_limit=True):
 def get_top_main_domains(study, limit=10):
     """
     Compiles visibility matrices highlighting domain presence across standard search and AI channels.
-
-    Identifies top core domains based on frequency counts while compiling 
-    average visibility placements (ranking positions) for every entry.
-
-    Args:
-        study (Study): The SQLAlchemy database model instance for the current study.
-        limit (int): The maximum number of top records returned. Defaults to 10.
-
-    Returns:
-        dict or None: Structured collections separated by standard and AI source types, 
-                      or None if empty.
     """
     top_domains_data = {}
 
-    # --- 1. Organic Standard Results  ---
     total_q = db.session.query(Result.id).filter(
         Result.study_id == study.id, Result.main.isnot(None)
     )
@@ -437,7 +392,6 @@ def get_top_main_domains(study, limit=10):
             } for domain, count, avg_pos in results
         ]
 
-    # --- 2. AI Sources  ---
     total_ai_sources_with_main = db.session.query(ResultAiSource.id).filter(
         ResultAiSource.study_id == study.id, ResultAiSource.main.isnot(None)
     ).count()
@@ -471,16 +425,6 @@ def get_top_main_domains(study, limit=10):
 def get_answer_stats(study):
     """
     Aggregates question options distribution details and descriptive numeric metrics.
-
-    Separates question logic between metric types (Likert scales, MCQs) and free text comments. 
-    Applies visibility depth constraints based on maximum result thresholds.
-
-    Args:
-        study (Study): The SQLAlchemy database model instance for the current study.
-
-    Returns:
-        list or None: Grouped statistics separated per dynamic source tab, 
-                      or None if no questions exist.
     """
     if not study.questions:
         return None
@@ -506,7 +450,7 @@ def get_answer_stats(study):
             Answer.result_id,
             Answer.result_ai_id,
             Answer.result_chatbot_id,
-            text("answer.result_serp")  # Bypasses the Serp entity model class resolution completely
+            text("answer.result_serp")
         ).select_from(Answer)\
          .outerjoin(ResultType, Answer.resulttype == ResultType.id)\
          .outerjoin(Result, Answer.result_id == Result.id)\
@@ -526,12 +470,10 @@ def get_answer_stats(study):
 
         grouped_data = {} 
 
-        # Group by result type
         for val, type_name, pos, r_id, ai_id, chat_id, serp_id in results:
             if limit_val and pos is not None and pos > limit_val:
                 continue 
             
-            # Formulates dynamic labels cleanly for the dashboard UI tabs
             if type_name:
                 t_name = type_name
             elif serp_id:
@@ -553,7 +495,6 @@ def get_answer_stats(study):
             count = len(values)
             if count == 0: continue
 
-            # 1. Categorical Questions (Charts)
             if question.questiontype.display in ('likert_scale', 'true_false', 'multiple_choice'):
                 options_map = {opt.value: opt.label for opt in question.options}
                 counts = {}
@@ -582,7 +523,6 @@ def get_answer_stats(study):
                             var = sum([((x - m) ** 2) for x in nums]) / n
                             type_stats['numeric_stats'] = {"mean": m, "std_dev": var ** 0.5, "count": n}
 
-            # 2. Numeric Questions (Charts)
             elif question.questiontype.display == 'scale_number':
                 nums = [float(v) for v in values if v and v.replace('.', '', 1).isdigit()]
                 if nums:
@@ -592,7 +532,6 @@ def get_answer_stats(study):
                     }
                     type_stats['raw_values'] = nums
             
-            # 3. Text/Comment Questions (Scrollable List)
             else:
                 text_answers = [str(v).strip() for v in values if v and str(v).strip()]
                 if text_answers:
@@ -608,15 +547,6 @@ def get_answer_stats(study):
 def convert_answer_stats_to_df(answer_stats_data):
     """
     Flattens the structured question metrics dictionary format into a Pandas DataFrame.
-
-    This function reformats question metadata, distribution shares, and numeric ranges 
-    into a structured matrix optimized for CSV or Excel generation.
-
-    Args:
-        answer_stats_data (list): The compiled list structure generated by get_answer_stats.
-
-    Returns:
-        DataFrame: A Pandas DataFrame containing the flat layout version of the data.
     """
     if not answer_stats_data:
         return pd.DataFrame()
@@ -661,11 +591,9 @@ def convert_answer_stats_to_df(answer_stats_data):
 def get_overlap_stats(study):
     """
     Calculates intersecting URL distributions across distinct search engines.
-    Corrected to calculate overlap strictly PER QUERY to prevent false positives.
+    Heavily optimized to fetch data in bulk rather than hammering the database
+    with thousands of singular queries (fixes N+1 Query Timeout Problem).
     """
-    from itertools import combinations
-    
-    # 1. Identify all existing search engines in this study
     engine_rows = db.session.query(Result.engine_text).filter(
         Result.study_id == study.id, 
         Result.engine_text.isnot(None)
@@ -683,15 +611,25 @@ def get_overlap_stats(study):
             return f"{parts[0].capitalize()} ({parts[1].upper()} / {parts[2].upper()})"
         return engine_str.replace('_', ' ').title()
 
-    # 2. Identify all queries associated with this study
-    query_rows = db.session.query(Result.query_id).filter(
-        Result.study_id == study.id
-    ).distinct().all()
+    # --- SUPER OPTIMIZATION: Fetch ALL relevant URLs in ONE single bulk query ---
+    q = db.session.query(Result.query_id, Result.engine_text, Result.normalized_url).filter(
+        Result.study_id == study.id,
+        Result.normalized_url.isnot(None)
+    )
     
-    query_ids = [q[0] for q in query_rows if q[0]]
+    if study.result_count:
+        q = q.filter(Result.position <= int(study.result_count))
+        
+    all_results = q.all()
+    
+    # Build memory map: data[query_id][engine_text] = set(urls)
+    query_data = defaultdict(lambda: defaultdict(set))
+    for q_id, engine, url in all_results:
+        query_data[q_id][engine].add(url)
+
     overlap_list = []
     
-    # 3. Calculate intersections PER QUERY for every search engine pair
+    # Calculate intersections PER QUERY for every search engine pair purely in Python memory
     for e1, e2 in combinations(engines, 2):
         name1 = get_nice_name(e1)
         name2 = get_nice_name(e2)
@@ -701,35 +639,15 @@ def get_overlap_stats(study):
         total_overlap = 0
         total_union = 0
         
-        for qid in query_ids:
-            # Fetch URLs for Engine 1 on this specific query
-            q1 = db.session.query(Result.normalized_url).filter(
-                Result.study_id == study.id,
-                Result.query_id == qid,
-                Result.engine_text == e1,
-                Result.normalized_url.isnot(None)
-            )
-            if study.result_count:
-                q1 = q1.filter(Result.position <= int(study.result_count))
-            # Accessing the first tuple element safely (r[0])
-            urls1 = {r[0] for r in q1.all() if r[0]}
-
-            # Fetch URLs for Engine 2 on this specific query
-            q2 = db.session.query(Result.normalized_url).filter(
-                Result.study_id == study.id,
-                Result.query_id == qid,
-                Result.engine_text == e2,
-                Result.normalized_url.isnot(None)
-            )
-            if study.result_count:
-                q2 = q2.filter(Result.position <= int(study.result_count))
-            urls2 = {r[0] for r in q2.all() if r[0]}
+        for qid, engine_dict in query_data.items():
+            urls1 = engine_dict.get(e1, set())
+            urls2 = engine_dict.get(e2, set())
             
             # If neither engine has data for this query, skip
             if not urls1 and not urls2:
                 continue
                 
-            # Calculate Set Math specifically for this query
+            # Calculate Set Math rapidly in memory
             total_excl_1 += len(urls1 - urls2)
             total_excl_2 += len(urls2 - urls1)
             total_overlap += len(urls1.intersection(urls2))
@@ -753,20 +671,10 @@ def get_overlap_stats(study):
 def get_query_evaluation_stats(study):
     """
     Monitors question progress status filtered individually per query.
-
-    Maps all processed data structures (Organic, AI, Chatbots, SERPs) to their 
-    parent queries. It tracks answered versus pending records to compute completion percentages 
-    and returns a list sorted from lowest to highest completion rate.
-
-    Args:
-        study (Study): The SQLAlchemy database model instance for the current study.
-
-    Returns:
-        list or None: Collection of metrics maps containing completion counts and tracking shares, 
-                      or None if no queries exist.
+    Optimized mapping queries to drastically reduce SQLAlchemy object initialization overhead.
     """
     from ..models import Serp
-    # 1. Load all queries belonging to the study
+    
     queries = {q.id: {
         "text": q.query, "total_items": 0, 
         "finished_answers": 0, "open_answers": 0, 
@@ -776,37 +684,38 @@ def get_query_evaluation_stats(study):
     if not queries:
         return None
         
-    # 2. Mapping: Which result ID belongs to which query ID?
-    res_map = {r.id: r.query_id for r in db.session.query(Result.id, Result.query_id).filter_by(study_id=study.id).all()}
-    ai_map = {r.id: r.query_id for r in db.session.query(ResultAi.id, ResultAi.query_id).filter_by(study_id=study.id).all()}
-    chat_map = {r.id: r.query_id for r in db.session.query(ResultChatbot.id, ResultChatbot.query_id).filter_by(study_id=study.id).all()}
-    serp_map = {r.id: r.query_id for r in db.session.query(Serp.id, Serp.query_id).filter_by(study_id=study.id).all()}
+    # OPTIMIZATION: Fetch tuple mappings directly to bypass slow SQLAlchemy Model loading
+    res_map = {r[0]: r[1] for r in db.session.query(Result.id, Result.query_id).filter_by(study_id=study.id).all()}
+    ai_map = {r[0]: r[1] for r in db.session.query(ResultAi.id, ResultAi.query_id).filter_by(study_id=study.id).all()}
+    chat_map = {r[0]: r[1] for r in db.session.query(ResultChatbot.id, ResultChatbot.query_id).filter_by(study_id=study.id).all()}
+    serp_map = {r[0]: r[1] for r in db.session.query(Serp.id, Serp.query_id).filter_by(study_id=study.id).all()}
     
-    # 3. Aggregate available items per individual query
     for q_id in res_map.values(): queries[q_id]["total_items"] += 1
     for q_id in ai_map.values(): queries[q_id]["total_items"] += 1
     for q_id in chat_map.values(): queries[q_id]["total_items"] += 1
     for q_id in serp_map.values(): queries[q_id]["total_items"] += 1
     
-    # 4. Process all answers and map them to their corresponding query
-    answers = db.session.query(Answer.result_id, Answer.result_ai_id, Answer.result_chatbot_id, Answer.result_serp_id, Answer.status, Answer.participant_id).filter_by(study_id=study.id).all()
+    # Process all answers via raw tuple projection to save memory
+    answers = db.session.query(
+        Answer.result_id, Answer.result_ai_id, Answer.result_chatbot_id, 
+        Answer.result_serp_id, Answer.status, Answer.participant_id
+    ).filter_by(study_id=study.id).all()
     
-    for ans in answers:
+    for r_id, ai_id, chat_id, serp_id, status, p_id in answers:
         q_id = None
-        if ans.result_id: q_id = res_map.get(ans.result_id)
-        elif ans.result_ai_id: q_id = ai_map.get(ans.result_ai_id)
-        elif ans.result_chatbot_id: q_id = chat_map.get(ans.result_chatbot_id)
-        elif ans.result_serp_id: q_id = serp_map.get(ans.result_serp_id)
+        if r_id: q_id = res_map.get(r_id)
+        elif ai_id: q_id = ai_map.get(ai_id)
+        elif chat_id: q_id = chat_map.get(chat_id)
+        elif serp_id: q_id = serp_map.get(serp_id)
         
         if q_id and q_id in queries:
-            if ans.status in [1, 2]: # Completed (1) OR Skipped (2)
+            if status in [1, 2]: # Completed (1) OR Skipped (2)
                 queries[q_id]["finished_answers"] += 1
-                if ans.participant_id: 
-                    queries[q_id]["unique_participants"].add(ans.participant_id)
-            elif ans.status == 0: # Open / In Progress
+                if p_id: 
+                    queries[q_id]["unique_participants"].add(p_id)
+            elif status == 0: # Open / In Progress
                 queries[q_id]["open_answers"] += 1
                 
-    # 5. Format the collected datasets for the frontend components
     num_questions = len(study.questions) or 1
     result_list = []
     
@@ -825,6 +734,5 @@ def get_query_evaluation_stats(study):
             "progress_pct": round(progress_pct, 1)
         })
         
-    # Default sorting: Queries with the lowest completion percentage appear first
     result_list.sort(key=lambda x: x["progress_pct"])
     return result_list

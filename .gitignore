@@ -5,10 +5,11 @@
 **/.pytest_cache
 **/.ipynb_checkpoints
 *.log
-**.DS_Store
+**/.DS_Store
 !empty.txt
 **/node_modules/
 tests/coverage/
+migrations/
 .vscode/settings.json
 rat-backend/config/config_db.ini
 rat-backend/config/config_sources.ini

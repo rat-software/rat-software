@@ -1,11 +1,11 @@
 from .. import app, db
 from app.models import (Study, Answer, Question, Result, Participant, ClassifierResult, 
-                        Classifier, ClassifierIndicator, participant_study, Option, ResultAi, ResultChatbot, ResultAiSource, Serp, ResultImage)
+                        Classifier, ClassifierIndicator, participant_study, Option, ResultAi, ResultChatbot, ResultAiSource, Serp, ResultImage, AnalyticsEvent)
 from .analysis_func import (get_result_stats, get_evaluation_stats, get_classifier_stats, 
                            get_top_main_domains, get_answer_stats, convert_answer_stats_to_df)
 from ..forms import ExportForm
 from flask import request, Blueprint, render_template, send_file, flash
-from flask_security import login_required
+from flask_security import login_required, current_user
 import pandas as pd
 from datetime import datetime
 from io import BytesIO
@@ -818,6 +818,10 @@ def export(id):
         safe_study_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', study.name)
         
         filename = f"study_{id}_{safe_study_name}_full_report_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+        
+        # --- NEW: Track the RAT Study Export Event ---
+        db.session.add(AnalyticsEvent(event_type='study_export', user_id=current_user.id, study_id=study.id))
+        db.session.commit()
         
         return send_file(output, download_name=filename, as_attachment=True)
 

@@ -8,6 +8,8 @@ collected search results, AI-generated content, and human participant assessment
 
 from app import db
 from flask_security import UserMixin, RoleMixin
+from datetime import datetime
+
 
 
 # ==============================================================================
@@ -216,6 +218,7 @@ class ClassifierResult(db.Model):
     value = db.Column('value', db.String)
     job_server = db.Column('job_server', db.String)
     created_at = db.Column(db.DateTime)
+    retry_count = db.Column(db.Integer, default=0, nullable=True) 
     classifier = db.relationship("Classifier", back_populates="results")
     
     result_ai_id = db.Column("result_ai", db.Integer, db.ForeignKey('result_ai.id'), nullable=True)
@@ -665,7 +668,7 @@ class ResultAiSource(db.Model):
     scraper_id = db.Column('scraper', db.Integer, db.ForeignKey('scraper.id'))
     scraper = db.relationship('Scraper', backref=db.backref('result_ai_sources', lazy=True))
     query_id = db.Column('query', db.Integer, db.ForeignKey('query.id'))
-    query = db.relationship('Query', backref=db.backref('result_ai_sources', lazy='select'))
+    query_ = db.relationship('Query', backref=db.backref('result_ai_sources', lazy='select'))
     country_id = db.Column('country', db.Integer, db.ForeignKey('country.id'))
     country = db.relationship('Country', backref=db.backref('result_ai_sources', lazy=True))
     result_type_text = db.Column(db.String(50), nullable=True)
@@ -736,3 +739,28 @@ class ResultImage(db.Model):
     query_ = db.relationship('Query', backref=db.backref('result_images', lazy=True))
     source = db.relationship('Source', backref=db.backref('result_images', lazy=True))
     answers = db.relationship('Answer', back_populates='result_image', lazy='select')
+    
+from datetime import datetime
+
+class AnalyticsEvent(db.Model):
+    """
+    Model for tracking system-wide metrics and user behaviors over time.
+    Used for Super Admin statistics and Google Sheets export.
+    """
+    __tablename__ = 'analytics_event'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_type = db.Column(db.String(50), index=True, nullable=False) 
+    # Examples: 'extension_download', 'study_export', 'data_upload', 'login', 'study_milestone'
+    
+    user_id = db.Column('user', db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    study_id = db.Column('study', db.Integer, db.ForeignKey('study.id', ondelete='SET NULL'), nullable=True)
+    
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    # Optional: store JSON context (e.g., which milestone, which classifiers were active during export)
+    event_metadata = db.Column(db.Text, nullable=True) 
+
+    user = db.relationship('User', backref=db.backref('analytics_events', lazy='dynamic'))
+    study = db.relationship('Study', backref=db.backref('analytics_events', lazy='dynamic'))

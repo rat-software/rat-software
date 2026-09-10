@@ -114,7 +114,7 @@ class SourcesScraper:
             result_dict = None
             
             try:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Starte Download: {sources_url[:80]}... (Ist Bild: {is_image_task_flag})")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Starting download: {sources_url[:80]}... (Is image: {is_image_task_flag})")
                 self.logger.write_to_log(f"Starting scrape for URL: {sources_url} with timeout {timeout}s")
                 start_time = time.time()
                 
@@ -128,7 +128,7 @@ class SourcesScraper:
                             future = executor.submit(self.sources.save_code, sources_url, proxy, country_code)
                             result_dict = future.result(timeout=timeout)
                         elapsed = time.time() - start_time
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✓ Download beendet ({elapsed:.2f}s): {sources_url[:80]}...")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✓ Download finished ({elapsed:.2f}s): {sources_url[:80]}...")
                         self.logger.write_to_log(f"Scraping completed for {sources_url} in {elapsed:.2f}s")
                     except concurrent.futures.TimeoutError as te:
                         # Handle cases where the target site hangs or the proxy is too slow
@@ -196,6 +196,20 @@ class SourcesScraper:
             country_code = source_to_scrape[3]
 
             is_image_task = isinstance(result_id, str) and result_id.startswith('result_image:') 
+            
+            # --- NEW: FAST FAIL FOR INVALID URLS ---
+            # If the URL doesn't even start with http or https, it's impossible to scrape.
+            safe_url = str(url).strip() if url else ""
+            if not safe_url.startswith(('http://', 'https://')):
+                msg = f"FAST FAIL: Invalid URL format (No HTTP/HTTPS): {safe_url[:80]}..."
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] 🛑 {msg}")
+                self.logger.write_to_log(msg)
+                
+                # Instantly mark as permanently dead (progress = -1, counter = 3)
+                created_at = datetime.now()
+                self.db.update_result_source_result(result_id, -1, 3, created_at, self.job_server)
+                continue  # Skip all the heavy scraping logic and jump to the next URL!
+            # ---------------------------------------
 
             base_main = url
             base_ip = "-1"
@@ -239,7 +253,7 @@ class SourcesScraper:
                     source_id_check = self.db.get_source_check(url, country_proxy) 
 
                     if source_id_check:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ♻️ Deduplikation: URL bereits gescrapt -> Mappe Source ID {source_id_check}")
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ♻️ Deduplication: URL already scraped -> Mapping Source ID {source_id_check}")
                         log = str(source_id_check)+"_"+str(result_id)+"\t"+url+"\tupdate result"
                         self.logger.write_to_log(log)
                         
@@ -277,7 +291,7 @@ class SourcesScraper:
                                 source_id = source_id[0]
                                 counter = 1
                             created_at = datetime.now()
-                            print(f"[{datetime.now().strftime('%H:%M:%S')}] Neue Source ID: {source_id}")
+                            print(f"[{datetime.now().strftime('%H:%M:%S')}] New Source ID: {source_id}")
                             self.db.update_result_source(result_id, source_id, 2, counter, created_at, self.job_server)
                         else:
                             source_id = False
@@ -369,11 +383,15 @@ class SourcesScraper:
                                 timeout_indicators = ["timeout", "timed out", "partial content"]
                                 has_timeout = any(indicator in error_code.lower() for indicator in timeout_indicators)
 
+                                critical_errors = ["invalid session id", "content processing failed", "webdriverexception", "sessionnotcreated", "chrome not reachable"]
+                                has_critical_error = any(indicator in error_code.lower() for indicator in critical_errors)
+
                                 # Determine success or failure progress state based on payload integrity
                                 if (status_code != 200 or 
                                     content_type == 'error' or 
                                     file_path is None or  
-                                    has_timeout):
+                                    has_timeout or
+                                    has_critical_error): # NEW: Fails if Selenium crashed
                                     progress = -1
                                 else:
                                     progress = 1
@@ -387,9 +405,10 @@ class SourcesScraper:
                                         reasons.append("content_type is error")
                                     if has_timeout:
                                         reasons.append(f"timeout detected: '{error_code}'")
+                                    if has_critical_error:
+                                        reasons.append(f"critical selenium error detected") 
                                     
                                     log_msg += ", reasons: " + ", ".join(reasons)
-                                self.logger.write_to_log(log_msg)
 
                                 if len(final_url) == 0:
                                     final_url = url
@@ -470,7 +489,7 @@ class SourcesScraper:
                         self.db.update_source(source_id, None, progress, error, error_code, status_code, created_at, content_dict) 
                         self.db.update_result_source(result_id, source_id, progress, counter, created_at, self.job_server) 
                     else:
-                        # BUGFIX für fehlenden DB-Eintrag wenn die Generierung vorher crasht
+                        # BUGFIX for missing DB entry if generation crashes earlier
                         self.db.update_result_source_result(result_id, -1, counter, created_at)
 
 if __name__ == "__main__":
@@ -566,7 +585,7 @@ if __name__ == "__main__":
         del sources
         sys.exit(1)
 
-    print(f"Gefundene URLs zum Scrapen: {len(get_sources)}")
+    print(f"Found URLs to scrape: {len(get_sources)}")
 
     # Establish an overarching runtime limit to ensure cron jobs do not overlap infinitely
     MAX_TOTAL_RUNTIME = 7200  

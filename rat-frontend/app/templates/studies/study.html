@@ -138,7 +138,7 @@
                   Browser Extension
                   <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Use the RAT Chrome Extension to scrape results from search engines directly from your browser."></i>
               </h6>
-              <div class="text-secondary small">Current Version: <strong>2.0</strong></div>
+              <div class="text-secondary small">Current Version: <strong>2.1</strong></div>
               <div class="text-secondary small"><strong>Always back up your session results before updating your browser extension to a new version.</strong></div>
             </div>
             <div>
@@ -172,7 +172,6 @@
         {% set has_scrapeable_data = (results > 0 or ai_source_count > 0 or results_image > 0) %}
 
         <div id="progress-container" class="{% if not has_scrapeable_data %}d-none{% endif %}">
-        <div id="progress-container" class="{% if not has_any_data %}d-none{% endif %}">
             <div id="download-progress-area" class="bg-light p-3 rounded border mb-4">
                 <label class="fw-bold text-dark mb-1 small">
                     <i class="fa-solid fa-spinner fa-spin text-primary me-1" id="scraping-status-icon"></i> Background Download Progress
@@ -194,7 +193,7 @@
                 </div>
 
             </div>
-        </div></div>
+        </div>
 
         <hr class="my-4 text-secondary">
 
@@ -914,28 +913,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="installGuideModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content shadow border-0">
-      <div class="modal-header">
-        <h6 class="modal-title fw-bold text-dark"><i class="fa-brands fa-chrome me-2 text-primary"></i> Extension Installation Guide</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4 text-dark">
-        <ol class="list-group list-group-numbered list-group-flush mb-4">
-          <li class="list-group-item py-2"><strong>Download & Unzip:</strong><br>Download the <code>rat-extension_v1.zip</code> and extract (unzip) it.</li>
-          <li class="list-group-item py-2"><strong>Open Extensions Menu:</strong><br>Open Google Chrome and type <code class="bg-light p-1 rounded">chrome://extensions</code> in the address bar.</li>
-          <li class="list-group-item py-2"><strong>Enable Developer Mode:</strong><br>Toggle the switch <strong>Developer mode</strong> in the top right.</li>
-          <li class="list-group-item py-2"><strong>Load Extension:</strong><br>Click <strong>Load unpacked</strong>.</li>
-          <li class="list-group-item py-2 border-bottom-0"><strong>Select Folder:</strong><br>Select the extracted folder.</li>
-        </ol>
-      </div>
-      <div class="modal-footer border-0">
-        <button type="button" class="btn btn-primary fw-bold px-4" data-bs-dismiss="modal">Got it!</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 <div class="modal fade" id="llmGuideModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -1183,7 +1161,7 @@
           showHuman: true, showClassifiers: false, showLaunch: true, forceLive: null
       },
       'hybrid': {
-          desc: "Activates full background HTML code scraping for automated classifiers, while opening all options for human annotation.",
+          desc: "Activates full background HTML code scraping for automated classifiers, while opening all options for human annotation.<br/><br/><strong>Example Study:</strong><br/><br/><i class='fa-solid fa-book-open text-primary me-1'></i> <strong>Schultheiß, S., Häusler, H., & Lewandowski, D. (2022). Does Search Engine Optimization come along with high-quality content? - A comparison between optimized and non-optimized health-related web pages:</strong> <a href='https://dl.acm.org/doi/10.1145/3498366.3505811' target='_blank' class='text-decoration-underline'>https://dl.acm.org/doi/10.1145/3498366.3505811</a>",
           showHuman: true, showClassifiers: true, showLaunch: true, forceLive: false
       }
   };
@@ -1444,7 +1422,8 @@
                 <div class="text-warning fw-bold small mb-2"><i class="fa-solid fa-lock me-1"></i> <strong>Unsaved Changes Captured:</strong> Save configuration structures to unlock participant distribution channels.</div>`;
         }
 
-        if (!isLiveModeActive && currentScrapingProgress < 100 && checkedTypes.includes('organic') && studyTemplates[selectedMode].showHuman) {
+		const requiresScraping = checkedTypes.some(t => ['organic', 'ai_source', 'image'].includes(t));
+        if (!isLiveModeActive && currentScrapingProgress < 100 && requiresScraping && studyTemplates[selectedMode].showHuman) {
             isLocked = true;
             warningsContainer.innerHTML += `
                 <div class="text-secondary fw-bold small mb-2"><i class="fa-solid fa-hourglass-half me-1"></i> <strong>Scraping Incomplete:</strong> Waiting for system to finish scraping result items (100%) before you can invite participants.</div>`;
@@ -1486,17 +1465,21 @@
     }
 
     const settingsForm = document.getElementById('study-settings-form');
+    let initialFormState = null;
+    const getFormState = () => {
+        if (!settingsForm) return "";
+        return new URLSearchParams(new FormData(settingsForm)).toString();
+    };
+
+    const checkDirtyState = () => {
+        if (initialFormState === null) return;
+        const currentFormState = getFormState();
+        isDirty = (currentFormState !== initialFormState); 
+        updateLiveModeDependentUI();
+        updateUIState();
+    };
+
     if (settingsForm) {
-        const getFormState = () => new URLSearchParams(new FormData(settingsForm)).toString();
-        const initialFormState = getFormState();
-
-        const checkDirtyState = () => {
-            const currentFormState = getFormState();
-            isDirty = (currentFormState !== initialFormState); 
-            updateLiveModeDependentUI();
-            updateUIState();
-        };
-
         settingsForm.addEventListener('input', checkDirtyState);
         settingsForm.addEventListener('change', checkDirtyState);
 
@@ -1523,8 +1506,8 @@
           progressBarText: document.getElementById('scraping-progress-bar-text')
         };
 
-      // 1. Update counters for uploaded/scraped data
-      const hasScrapeableData = (data.results > 0 || data.ai_source_count > 0);
+		// 1. Update counters for uploaded/scraped data
+      const hasScrapeableData = (data.results > 0 || data.ai_source_count > 0 || data.results_image > 0);
       
       if (hasScrapeableData && uiElements.progressContainer) {
           uiElements.progressContainer.classList.remove('d-none');
@@ -1647,10 +1630,12 @@
           if (!isApplicable && checkedTypes.length > 0) {
               item.style.opacity = '0.4'; // Gray out
               item.style.pointerEvents = 'none'; // Prevent clicks
-              if (cb) {
+              if (cb && cb.checked) {
                   cb.checked = false; // Remove checkmark
-                  // To trigger the form save event (isDirty) in case it was checked:
-                  cb.dispatchEvent(new Event('change', { bubbles: true })); 
+                  // Only dispatch 'change' if initial loading logic is fully completed
+                  if (initialFormState !== null) {
+                      cb.dispatchEvent(new Event('change', { bubbles: true })); 
+                  }
               }
               item.setAttribute('title', 'Not applicable for the selected Result Data Formats.');
           } else {
@@ -1668,6 +1653,16 @@
   
   // Execute initially when loading the page
   updateClassifierVisibility();
+  
+  // FINALIZE STATE
+  // Take a snapshot after a small delay to allow all browser extensions and the UI modifications above to settle.
+  setTimeout(() => {
+      if (settingsForm) {
+          initialFormState = getFormState();
+          isDirty = false;
+          updateUIState();
+      }
+  }, 250);
 	
   }); 
 

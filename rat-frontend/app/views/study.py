@@ -6,18 +6,18 @@ research studies. It handles dataset imports (CSV/ZIP), parses generative AI tex
 calculates overall scraping and classifier completion progress, processes LLM API tests, 
 and manages all settings associated with the evaluation workspace and search index mappings.
 """
+import threading
 
 from .. import app, db
 from ..forms import StudyForm, ConfirmationForm, StudySettingsForm, UploadResultsForm, ConfirmUploadForm
 from ..models import (Study, Query, Answer,
                       Result, Classifier, RangeStudy, 
-                      ResultAi, ResultAiSource, ResultAiSegment, ResultSource, ResultChatbot, Serp, ClassifierResult, ClassifierIndicator, ResultImage)
-from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, send_file, jsonify
+                      ResultAi, ResultAiSource, ResultAiSegment, ResultSource, ResultChatbot, Serp, ClassifierResult, ClassifierIndicator, ResultImage, AnalyticsEvent)
+from flask import Blueprint, render_template, flash, redirect, url_for, request, Response, send_file, jsonify, current_app
 from markupsafe import Markup
 from sqlalchemy.orm import raiseload, joinedload
 from sqlalchemy import or_, and_, text, func
 from flask_security import login_required, current_user, roles_accepted
-from flask import send_file
 from datetime import datetime
 import pandas as pd
 from io import BytesIO, StringIO
@@ -41,6 +41,8 @@ import tempfile
 import traceback
 
 from sqlalchemy.orm import joinedload
+
+
 
 def upload_to_storage(file_data, filename):
     """
@@ -148,31 +150,40 @@ def check_and_update_status(study):
         
     total_tasks = total_organic + total_ai_sources + total_images
     
+    # CRITICAL FIX: Only consider it finished if it's a success (1) 
+    # OR a permanent failure (-1 AND counter >= 3)
     finished_organic = db.session.query(ResultSource.result_id)\
         .join(Result, ResultSource.result_id == Result.id)\
         .filter(
             Result.study_id == study.id,
-            ResultSource.progress.in_([1, -1])
+            or_(
+                ResultSource.progress == 1,
+                and_(ResultSource.progress == -1, ResultSource.counter >= 3)
+            )
         ).count()
         
     finished_ai_sources = db.session.query(ResultAiSource.id)\
         .filter(
             ResultAiSource.study_id == study.id,
-            ResultAiSource.progress.in_([1, -1])
+            or_(
+                ResultAiSource.progress == 1,
+                and_(ResultAiSource.progress == -1, ResultAiSource.counter >= 3)
+            )
         ).count()
 
     finished_images = db.session.query(ResultImage.id)\
         .filter(
             ResultImage.study_id == study.id,
-            ResultImage.progress.in_([1, -1])
+            or_(
+                ResultImage.progress == 1,
+                and_(ResultImage.progress == -1, ResultImage.counter >= 3)
+            )
         ).count()
 
     finished_tasks = finished_organic + finished_ai_sources + finished_images
 
+    # Calculate actual mathematical progress
     progress_percent = round((finished_tasks / total_tasks) * 100) if total_tasks > 0 else 0
-
-    if study.status in [2, 4]:
-        progress_percent = 100
     
     ai_count = db.session.query(ResultAi.id).filter_by(study_id=study.id).count()
     chatbot_count = db.session.query(ResultChatbot.id).filter_by(study_id=study.id).count()
@@ -181,19 +192,32 @@ def check_and_update_status(study):
 
     has_data = (total_tasks > 0 or ai_count > 0 or chatbot_count > 0 or serp_count > 0 or image_count > 0)
 
-    if study.status == 0 and has_data:
-        study.status = 1
-        status_changed = True
-
-    if study.status in [0, 1, 3]:
-        if total_tasks > 0 and finished_tasks >= total_tasks:
-            study.status = 2
-            progress_percent = 100
-            status_changed = True
+    # Only update status automatically if the study isn't manually archived (Status 4)
+    if study.status != 4:
+        if total_tasks > 0 and finished_tasks < total_tasks:
+            # If there are unfinished tasks, force status back to In Progress (1)
+            if study.status != 1:
+                study.status = 1
+                status_changed = True
+        elif total_tasks > 0 and finished_tasks >= total_tasks:
+            # All tasks finished
+            if study.status != 2:
+                study.status = 2
+                status_changed = True
         elif total_tasks == 0 and has_data:
-            study.status = 2
-            progress_percent = 100
-            status_changed = True
+            # No dynamic tasks, but static data exists
+            if study.status != 2:
+                study.status = 2
+                status_changed = True
+        elif total_tasks == 0 and not has_data:
+            # Completely empty
+            if study.status != 0:
+                study.status = 0
+                status_changed = True
+
+    # Override progress ONLY if the study is permanently archived
+    if study.status == 4:
+        progress_percent = 100
 
     if status_changed:
         db.session.commit()
@@ -533,6 +557,11 @@ def confirm_study_upload(id):
             except: pass
             if success:
                 check_and_update_status(study)
+                
+                # --- NEW: Track the Data Upload Event ---
+                db.session.add(AnalyticsEvent(event_type='data_upload', user_id=current_user.id, study_id=study.id))
+                db.session.commit()
+                
                 flash(message, 'success')
             else:
                 flash(f'Import failed: {message}', 'danger')
@@ -578,6 +607,13 @@ def study_progress(id):
         organic_count_total = db.session.query(Result.id).filter_by(study_id=id).count()
         ai_source_count_total = db.session.query(ResultAiSource.id).filter_by(study_id=id).count()
         image_count_total = db.session.query(ResultImage.id).filter_by(study_id=id).count()
+        
+        failed_org = db.session.query(Result.id).join(ResultSource, ResultSource.result_id == Result.id).filter(
+            Result.study_id == id, ResultSource.progress == -1, ResultSource.counter >= 3).count()
+        failed_src = db.session.query(ResultAiSource.id).filter(
+            ResultAiSource.study_id == id, ResultAiSource.progress == -1, ResultAiSource.counter >= 3).count()
+        failed_img = db.session.query(ResultImage.id).filter(
+            ResultImage.study_id == id, ResultImage.progress == -1, ResultImage.counter >= 3).count()
 
         expected_clf_runs = 0
         finished_clf_runs = 0
@@ -631,6 +667,7 @@ def study_progress(id):
                             ).count()
             else:
                 # --- B: NORMAL CLASSIFIER LOGIC ---
+
                 sql_allowed = text("""
                     SELECT LOWER(rt.name) FROM classifier_resulttype crt
                     JOIN resulttype rt ON crt.resulttype = rt.id
@@ -638,11 +675,19 @@ def study_progress(id):
                 """)
                 allowed_types = [row[0] for row in db.session.execute(sql_allowed, {'cid': clf.id}).fetchall()]
                 
-                if any('organic' in t or t == 'result' for t in allowed_types): expected_clf_runs += organic_count_total
-                if any('source' in t or t == 'result_ai_source' for t in allowed_types): expected_clf_runs += ai_source_count_total
-                if any('overview' in t or t == 'result_ai' for t in allowed_types): expected_clf_runs += ai_overview_count
-                if any('chatbot' in t or t == 'result_chatbot' for t in allowed_types): expected_clf_runs += chatbot_count
-                if any('image' in t or t == 'result_image' for t in allowed_types): expected_clf_runs += image_count_total
+                if any('organic' in t or t == 'result' for t in allowed_types): 
+                    expected_clf_runs += organic_count_total
+                    finished_clf_runs += failed_org
+                if any('source' in t or t == 'result_ai_source' for t in allowed_types): 
+                    expected_clf_runs += ai_source_count_total
+                    finished_clf_runs += failed_src
+                if any('overview' in t or t in ['result_ai', 'ai'] for t in allowed_types): 
+                    expected_clf_runs += ai_overview_count
+                if any('chatbot' in t or t in ['result_chatbot', 'chatbot'] for t in allowed_types): 
+                    expected_clf_runs += chatbot_count
+                if any('image' in t or t in ['result_image', 'image'] for t in allowed_types): 
+                    expected_clf_runs += image_count_total
+                    finished_clf_runs += failed_img
                 
                 # Finished runs based on ClassifierResult
                 for model_class, fk_col in [
@@ -657,7 +702,7 @@ def study_progress(id):
                         .filter(
                             model_class.study_id == id, 
                             ClassifierResult.classifier_id == clf.id,
-                            ClassifierResult.value != 'in process'
+                            ClassifierResult.value.notin_(['in process', 'source_failed', 'error', 'classifier_error', 'skipped_timeout'])
                         ).count()
 
         # 5. Calculate percentage value and cap it
@@ -669,9 +714,15 @@ def study_progress(id):
             clf_progress_percent = 100
     # ------------------------------------------------------------------
     
-    failed_organic = db.session.query(Result.id).join(ResultSource, ResultSource.result_id == Result.id).filter(Result.study_id == id, ResultSource.progress == -1).count()
-    failed_ai_sources = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == id, ResultAiSource.progress == -1).count()
-    failed_images = db.session.query(ResultImage.id).filter(ResultImage.study_id == id, ResultImage.progress == -1).count()
+    failed_organic = db.session.query(Result.id).join(ResultSource, ResultSource.result_id == Result.id).filter(
+        Result.study_id == id, ResultSource.progress == -1, ResultSource.counter >= 3).count()
+        
+    failed_ai_sources = db.session.query(ResultAiSource.id).filter(
+        ResultAiSource.study_id == id, ResultAiSource.progress == -1, ResultAiSource.counter >= 3).count()
+        
+    failed_images = db.session.query(ResultImage.id).filter(
+        ResultImage.study_id == id, ResultImage.progress == -1, ResultImage.counter >= 3).count()
+        
     failed_scrape_count = failed_organic + failed_ai_sources + failed_images
     
     return jsonify({
@@ -863,18 +914,40 @@ def update_study_settings(id):
         study.show_description_after_join = form.show_description_after_join.data
         study.participant_description = form.participant_description.data
         study.pre_survey_json = form.pre_survey_json.data
+        study.post_survey_json = form.post_survey_json.data
+        study.completion_text = form.completion_text.data
         
         from app.utils.security import encrypt_key
         
         existing_tasks = {}
         old_task_names = {}
         if study.llm_classifiers_json:
-            try:
-                old_tasks = json.loads(study.llm_classifiers_json)
-                existing_tasks = {t['id']: t.get('api_key') for t in old_tasks}
-                old_task_names = {t['id']: t.get('display_name') for t in old_tasks}
-            except:
-                pass
+                    try:
+                        tasks = json.loads(study.llm_classifiers_json)
+                        for task in tasks:
+                            if not task.get('active', True):
+                                continue
+                            
+                            disp_name = task.get('display_name')
+                            if disp_name:
+                                active_indicators.append(f"LLM_{disp_name}")
+                            
+                            tt = task.get('target_type', 'all')
+                            if tt in ('all', 'organic', None): 
+                                expected_clf_runs += organic_count_total
+                                finished_clf_runs += failed_org
+                            if tt in ('all', 'ai_source'): 
+                                expected_clf_runs += ai_source_count_total
+                                finished_clf_runs += failed_src
+                            if tt in ('all', 'ai_overview'): 
+                                expected_clf_runs += ai_overview_count
+                            if tt in ('all', 'chatbot'): 
+                                expected_clf_runs += chatbot_count
+                            if tt in ('all', 'image'): 
+                                expected_clf_runs += image_count_total
+                                finished_clf_runs += failed_img
+                    except:
+                        pass
 
         llm_config_raw = request.form.get('llm_classifiers_json', '').strip()
         universal_clf = Classifier.query.filter_by(name='universal_llm').first()
@@ -967,31 +1040,35 @@ def edit_study(id):
     form.id.data = study.id
     return render_template('studies/new_study.html', form=form, study=study, title=f"Edit study: {study.name}")
 
-@app.route('/study/<id>/delete', methods=['GET', 'POST'])
-@login_required
-def delete_study(id):
-    study = Study.query.get_or_404(id)
-    form = ConfirmationForm()
-    
-    if form.validate_on_submit():
+def background_delete_study(app, study_id):
+    """
+    Executes the massive database and file deletion process in the background
+    to prevent 504 Gateway Timeouts for large studies.
+    """
+    with app.app_context():
         try:
+            study = Study.query.get(study_id)
+            if not study:
+                return
+
             files_to_delete = []
             
-            serp_files = db.session.execute(text("SELECT file_path FROM serp WHERE study = :sid AND file_path IS NOT NULL"), {'sid': study.id}).fetchall()
-            img_files = db.session.execute(text("SELECT file_path FROM result_image WHERE study = :sid AND file_path IS NOT NULL"), {'sid': study.id}).fetchall()
+            # 1. Collect files
+            sid = {'sid': study.id}
+            
+            serp_files = db.session.execute(text("SELECT file_path FROM serp WHERE study = :sid AND file_path IS NOT NULL"), sid).fetchall()
+            img_files = db.session.execute(text("SELECT file_path FROM result_image WHERE study = :sid AND file_path IS NOT NULL"), sid).fetchall()
             src_files = db.session.execute(text("""
                 SELECT s.file_path FROM source s 
                 JOIN result_source rs ON s.id = rs.source 
                 JOIN result r ON rs.result = r.id 
                 WHERE r.study = :sid AND s.file_path IS NOT NULL
-            """), {'sid': study.id}).fetchall()
+            """), sid).fetchall()
 
             for row in serp_files + img_files + src_files:
                 files_to_delete.append(row[0])
 
-            # --- 2. BULK DELETE (Bypass ORM Timeouts - Bulletproof Version) ---
-            sid = {'sid': study.id}
-            
+            # 2. BULK DELETE in the correct order (Bypass ORM Timeouts)
             for tbl in ['answer', 'classifier_indicator', 'classifier_result']:
                 db.session.execute(text(f"DELETE FROM {tbl} WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
                 db.session.execute(text(f"DELETE FROM {tbl} WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid)"), sid)
@@ -1000,23 +1077,19 @@ def delete_study(id):
                 db.session.execute(text(f"DELETE FROM {tbl} WHERE result_image IN (SELECT id FROM result_image WHERE study = :sid)"), sid)
                 db.session.execute(text(f"DELETE FROM {tbl} WHERE study = :sid"), sid)
 
-
             db.session.execute(text("DELETE FROM ai_segment_source WHERE segment_id IN (SELECT id FROM result_ai_segment WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid))"), sid)
             db.session.execute(text("DELETE FROM result_ai_segment WHERE result_ai IN (SELECT id FROM result_ai WHERE study = :sid)"), sid)
             
-
             db.session.execute(text("DELETE FROM result_ai_source WHERE study = :sid"), sid)
             db.session.execute(text("DELETE FROM result_ai WHERE study = :sid"), sid)
             db.session.execute(text("DELETE FROM result_chatbot WHERE study = :sid"), sid)
             db.session.execute(text("DELETE FROM result_image WHERE study = :sid"), sid)
             
-
             db.session.execute(text("DELETE FROM result_source WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
             db.session.execute(text("DELETE FROM question_result WHERE result IN (SELECT id FROM result WHERE study = :sid)"), sid)
             db.session.execute(text("DELETE FROM result WHERE study = :sid"), sid)
             db.session.execute(text("DELETE FROM serp WHERE study = :sid"), sid)
             
-
             db.session.execute(text("DELETE FROM scraper WHERE study = :sid"), sid)
             db.session.execute(text("DELETE FROM query WHERE study = :sid"), sid)
             db.session.execute(text("DELETE FROM question WHERE study = :sid"), sid)
@@ -1024,10 +1097,10 @@ def delete_study(id):
             db.session.execute(text("DELETE FROM range_study WHERE study = :sid"), sid)
             db.session.execute(text("DELETE FROM study_resulttype WHERE study = :sid"), sid)
             
-
             db.session.delete(study)
             db.session.commit()
 
+            # 3. Delete physical files
             storage_dir = app.config.get('STORAGE_FOLDER', os.path.join(app.root_path, 'static', 'storage'))
             deleted_count = 0
             for filename in set(files_to_delete): 
@@ -1037,18 +1110,39 @@ def delete_study(id):
                         os.remove(file_path)
                         deleted_count += 1
                     except: pass
+            print(f"Background deletion completed. {deleted_count} files removed.")
 
-            flash(f'Study deleted successfully. {deleted_count} associated files were removed.', 'success')
-            return redirect(url_for('dashboard'))
-            
         except Exception as e:
             db.session.rollback()
             import traceback
             traceback.print_exc()
-            flash(f'Database Error during deletion: {str(e)}', 'danger')
+
+
+@app.route('/study/<id>/delete', methods=['GET', 'POST'])
+@login_required
+def delete_study(id):
+    study = Study.query.get_or_404(id)
+    form = ConfirmationForm()
+    
+    if form.validate_on_submit():
+        # Rename the study temporarily so the user knows it's being processed
+        study.name = f"[DELETING] {study.name}"
+        
+        # Status 4 = Archived/Hidden (prevents users from interacting with it while it's being deleted)
+        study.status = 4 
+        db.session.commit()
+
+        # Start the background thread
+        app_instance = current_app._get_current_object()
+        thread = threading.Thread(target=background_delete_study, args=(app_instance, study.id))
+        thread.start()
+
+        flash('The deletion process for this study has been started in the background. It will be completely removed in a few moments.', 'info')
+        
+        # Redirecting to dashboard is generally safer here so they don't look for the study anymore
+        return redirect(url_for('dashboard')) 
             
     return render_template('studies/delete_study.html', form=form, study=study)
-
 @app.route('/study/<id>/close')
 @login_required
 def close_study(id):
@@ -1074,6 +1168,10 @@ def download_extension():
             current_user.id,
             current_user.email
         ])
+
+    # --- NEW: Track the Extension Download Event in Database ---
+    db.session.add(AnalyticsEvent(event_type='extension_download', user_id=current_user.id))
+    db.session.commit()
 
     extension_path = os.path.join(app.root_path, 'static', 'rat-extension.zip')
     return send_file(extension_path, as_attachment=True)

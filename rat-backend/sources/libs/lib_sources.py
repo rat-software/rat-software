@@ -112,7 +112,7 @@ class Sources:
                 zf.writestr('source.html', html_content.encode('utf-8', 'ignore'))
             
             if bin_data and bin_data != "error":
-                # KORREKTUR FÜR PDF-ERKENNUNG
+                # CORRECTION FOR PDF DETECTION
                 c_type = str(content_type).lower() if content_type else ""
                 filename = 'source.pdf' if "pdf" in c_type else 'screenshot.jpg'
                 zf.writestr(filename, bin_data)
@@ -137,7 +137,7 @@ class Sources:
                 else:
                     print(f"API upload failed: {response.status_code} - {response.text}")
             except Exception as e:
-                print(f"API Fehler: {e}")
+                print(f"API Error: {e}")
         
         # CASE B: No API or upload failed -> Save locally
         try:
@@ -175,7 +175,7 @@ class Sources:
     def _cleanup_driver(self, driver):
         if driver:
             try:
-                # Force disconnect from DevTools vor dem Schließen
+                # Force disconnect from DevTools before closing
                 try:
                     if hasattr(driver, 'execute_cdp_cmd'):
                         driver.execute_cdp_cmd('Network.disable', {})
@@ -183,7 +183,7 @@ class Sources:
                 except:
                     pass
                 
-                # Versuche alle Sessions zu beenden
+                # Try to terminate all sessions
                 try:
                     driver.execute_script('window.onbeforeunload = null;')
                 except:
@@ -196,8 +196,6 @@ class Sources:
                 driver.quit()
             except:
                 pass
-
-
 
     def get_result_meta(self, url):
         """
@@ -247,7 +245,7 @@ class Sources:
         """
 
         print("Try to use CDP")
-        # Standard-Werte
+        # Standard defaults
         content_type = "error"
         status_code = -1
 
@@ -301,7 +299,6 @@ class Sources:
                 })
             except Exception as e:
                 pass
-
 
             time.sleep(1)
 
@@ -368,7 +365,7 @@ class Sources:
         print(status_code)
         
         if status_code == -1 or status_code == 0:
-            print("Versuche normale get_url_header")
+            print("Trying normal get_url_header")
             return self.get_url_header(url, driver)
 
         # Normalize the Content-Type
@@ -457,7 +454,7 @@ class Sources:
                 # Restore original socket timeout
                 socket.setdefaulttimeout(original_timeout)
         except Exception as e:
-            print(f"Fehler bei der Verbindung: {e}")
+            print(f"Connection error: {e}")
             print("Trying urllib")
         
         # Check if we're running out of time
@@ -476,7 +473,7 @@ class Sources:
                 status_code = e.code
                 content_type = e.headers.get('Content-Type', '')
             except Exception as e:
-                print(f"Fehler bei der Verbindung: {e}")
+                print(f"Connection error: {e}")
                 print("Trying requests")
 
         # Check if we're running out of time
@@ -610,7 +607,6 @@ class Sources:
         return {"content_type": content_type, "status_code": status_code}
         
 
-
     def get_pdf(self, url, timeout=30):
         """
         Downloads a PDF file from a URL and encodes it in Base64.
@@ -671,9 +667,9 @@ class Sources:
                 except Exception as e:
                     print(f"Error verifying PDF content: {e}")
                 
-                # Encode the file content
+                # Read binary file content
                 with open(pdf_file, 'rb') as f:
-                    pdf_data = f.read() # Rohe Bytes
+                    pdf_data = f.read() 
                 print(f"PDF downloaded successfully ({os.path.getsize(pdf_file)} bytes)")
                 return pdf_data
                 
@@ -698,7 +694,6 @@ class Sources:
                     print(f"Failed to remove temporary PDF file: {e}")
             
         return None
-
 
     # Fallback method for cases where direct download fails
     def get_pdf_with_fallback(self, url, timeout=30):
@@ -732,7 +727,7 @@ class Sources:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
                 
-                with open(pdf_file, 'rb') as f: # Binär einlesen
+                with open(pdf_file, 'rb') as f: # Read binary
                     bin_data = f.read()
                 print(f"PDF downloaded with fallback session ({os.path.getsize(pdf_file)} bytes)")
                 return bin_data
@@ -777,7 +772,7 @@ class Sources:
         return None
 
     def save_image_robust(self, url, proxy=None, timeout=15):
-        """Direkter, robuster Download für Bilder ohne Selenium."""
+        """Direct, robust download for images without Selenium."""
         error_codes = ""
         bin_data = None
         content_type = "image/jpeg"
@@ -791,17 +786,28 @@ class Sources:
                 if "png" in header: content_type = "image/png"
                 elif "gif" in header: content_type = "image/gif"
             else:
+                # Add broader accept headers so CDNs don't block us as bots
                 headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'image/*,*/*;q=0.8',
-                    'Referer': 'https://www.google.com/' # Gegen Hotlink-Protection
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Referer': 'https://www.google.com/' # Against hotlink protection
                 }
                 proxies_dict = {"http": proxy, "https": proxy} if proxy else None
-                resp = requests.get(url, headers=headers, proxies=proxies_dict, timeout=timeout, verify=False)
+                
+                # Use a Session for better redirect handling
+                session = requests.Session()
+                resp = session.get(url, headers=headers, proxies=proxies_dict, timeout=timeout, verify=False)
                 status_code = resp.status_code
+                
                 if status_code == 200:
                     bin_data = resp.content
                     content_type = resp.headers.get('Content-Type', 'image/jpeg')
+                    # Validation: check if the CDN returned an HTML block page instead of the image
+                    if 'text/html' in content_type.lower():
+                        error_codes = f"Expected image but received HTML page from server."
+                        status_code = -1
+                        bin_data = None
                 else:
                     error_codes = f"HTTP Error {status_code}"
         except Exception as e:
@@ -809,8 +815,11 @@ class Sources:
         
         file_path = None
         if bin_data and status_code == 200:
-            # Nutzt deine bestehende Methode. Sie packt das Bild automatisch in die ZIP-Datei
+            # Uses existing method. Automatically packages image into ZIP file.
             file_path = self.upload_to_storage(html_content=None, bin_data=bin_data, content_type=content_type)
+            if not file_path:
+                error_codes += " | Failed to upload to storage"
+                status_code = -1
         
         return {
             "file_path": file_path,
@@ -982,14 +991,13 @@ class Sources:
         except Exception as e:
             print(f"Warning: Cookie heuristics failed: {e}")
     
-
     def take_screenshot(self, driver):
         screenshot_folder = os.path.join(parentdir, "tmp")
         screenshot_file = os.path.join(screenshot_folder, f"{uuid.uuid1()}")
         temp_png = screenshot_file + ".png"
         temp_jpg = screenshot_file + ".jpg"
 
-        # 1. Desktop-Standard setzen
+        # 1. Set desktop standard
         target_w = sources_cnf.get('max-width', 1280)
 
         driver.maximize_window()  # Maximize browser window for screenshot
@@ -1044,7 +1052,6 @@ class Sources:
             driver.maximize_window()  # Maximize browser window for screenshot
             required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
 
-
             # Forcefully unlock the page scroll before simulation
             try:
                 driver.execute_script("""
@@ -1073,7 +1080,6 @@ class Sources:
             except Exception as e:
                 print(f"Failed to unlock scroll: {e}")
 
-
             try:
                 driver.execute_script("window.scrollTo(0,1)")
             except Exception:
@@ -1099,7 +1105,6 @@ class Sources:
             max_allowed = sources_cnf.get('max-height', 5000)
             final_height = min(total_height, max_allowed)
 
-
             try:
                 screenshot_base64 = driver.execute_cdp_cmd('Page.captureScreenshot', {
                     'format': 'png',
@@ -1116,7 +1121,7 @@ class Sources:
                 with open(temp_png, "wb") as f:
                     f.write(base64.b64decode(screenshot_base64['data']))
             except Exception as e:
-                print(f"CDP Screenshot fehlgeschlagen, nutze Fallback: {e}")
+                print(f"CDP Screenshot failed, using Fallback: {e}")
                 driver.set_window_size(target_w, final_height)
                 driver.save_screenshot(temp_png)
 
@@ -1465,10 +1470,10 @@ class Sources:
                 pass
                 
         if is_likely_pdf:
-            print(f"PDF erkannt VOR Browser-Start: {url}")
+            print(f"PDF detected BEFORE starting browser: {url}")
             pdf_data = self.get_pdf_with_fallback(url, timeout=30)
             if pdf_data:
-                print("PDF erfolgreich direkt heruntergeladen, überspringe Browser!")
+                print("PDF successfully downloaded directly, skipping browser!")
                 try:
                     meta = self.get_result_meta(url)
                 except: 
@@ -1645,8 +1650,8 @@ class Sources:
                 try:
                     driver.execute_cdp_cmd("Network.enable", {})
                     
-                    # --- NEU: Google/YouTube Consent Bypass via CDP Cookie-Injection ---
-                    # Verhindert in 99% der Fälle den Umweg über consent.youtube.com
+                    # --- NEW: Google/YouTube Consent Bypass via CDP Cookie-Injection ---
+                    # Prevents the detour via consent.youtube.com in 99% of cases
                     cookie_payloads = [
                         {'name': 'CONSENT', 'value': 'YES+cb.20230101-00-p0.de+FX+113', 'domain': '.youtube.com', 'path': '/', 'secure': True},
                         {'name': 'SOCS', 'value': 'CAI', 'domain': '.youtube.com', 'path': '/', 'secure': True},
@@ -1689,12 +1694,12 @@ class Sources:
                     try:
                         driver.get(url)
                         
-                        # --- NEU: Consent-Redirect Überwachung & Fallback-Klick ---
+                        # --- NEW: Consent redirect monitoring & fallback click ---
                         current_url = driver.current_url
                         if "consent.youtube.com" in current_url or "consent.google.com" in current_url:
-                            print(f"⚠️ Consent-Redirect erkannt ({current_url}). Klicke und warte auf Rückleitung...")
+                            print(f"⚠️ Consent redirect detected ({current_url}). Clicking and waiting for redirect...")
                             try:
-                                # Harter JS-Klick, der Googles Formulare garantiert abfeuert
+                                # Hard JS click that guarantees firing Google's forms
                                 driver.execute_script("""
                                     let btns = document.querySelectorAll('button');
                                     for(let b of btns) {
@@ -1707,12 +1712,12 @@ class Sources:
                                 """)
                             except: pass
                             
-                            # Wir warten maximal 10 Sekunden darauf, dass die URL wieder zu YouTube wechselt
+                            # Wait a maximum of 10 seconds for the URL to return to YouTube
                             wait_start = time.time()
                             while time.time() - wait_start < 10:
                                 if "consent." not in driver.current_url:
-                                    print("✅ Erfolgreich von Consent-Seite zurückgekehrt!")
-                                    time.sleep(2) # Kurz warten, bis YouTube das Layout aufgebaut hat
+                                    print("✅ Successfully returned from consent page!")
+                                    time.sleep(2) # Wait briefly until YouTube renders layout
                                     break
                                 time.sleep(0.5)
                         # ----------------------------------------------------------

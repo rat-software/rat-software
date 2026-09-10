@@ -8,7 +8,7 @@ Attributes:
     job_server (str): Name of the job server.
     refresh_time (int): Hours for refreshing scraped sources.
 """
-#load required libs
+# load required libs
 import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime
@@ -20,7 +20,7 @@ class DB:
     job_server: str
     """Name of the job server"""
     refresh_time: int
-    """Hours for refreh scraped sources"""
+    """Hours to refresh scraped sources"""
 
     def __init__(self, db_cnf: dict, job_server: str, refresh_time: int):
         self.db_cnf = db_cnf
@@ -40,12 +40,12 @@ class DB:
         
     def _parse_id(self, composite_id):
         """
-        Splittet Composite-IDs (z.B. 'result_ai_source:42' oder 'result_image:15').
+        Splits Composite-IDs (e.g., 'result_ai_source:42' or 'result_image:15').
         """
         if isinstance(composite_id, str) and ':' in composite_id:
             fk_column, real_id = composite_id.split(':')
             return fk_column, int(real_id)
-        # Fallback für alte numerische IDs
+        # Fallback for old numeric IDs
         return 'result', int(composite_id)        
 
     def insert_result_source(self, result_id, progress, created_at, job_server):
@@ -65,28 +65,39 @@ class DB:
 
     def get_sources_pending(self, job_server):
         """
-        Get all failed sources from ALL tables (progress = 2 or progress = -1)
-        BUGFIX: Akzeptiert jetzt auch NULL-Werte für job_server, um alte fehlerhafte Locks zu retten!
+        Get all pending sources from ALL tables (progress = 2 or progress = -1)
+        OPTIMIZED: 'progress = -1' gets retried instantly, 'progress = 2' gets a 5-minute grace period.
+        CRITICAL FIX 1: Uses 'result' instead of 'id' for result_source to match composite ID logic!
+        CRITICAL FIX 2: Removed job_server restriction so ANY active server can clean up dead jobs globally.
         """
         conn = self.connect_to_db()
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("""
-            SELECT 'result:' || id AS composite_rs_id, source 
+            SELECT 'result:' || result AS composite_rs_id, source 
             FROM result_source 
-            WHERE (progress = 2 OR progress = -1) AND counter < 3 AND (job_server = %s OR job_server IS NULL) AND created_at < now() - interval '10 minutes'
+            WHERE (
+                (progress = 2 AND created_at < now() - interval '5 minutes') 
+                OR progress = -1
+            ) AND counter < 3
             
             UNION ALL
             
             SELECT 'result_ai_source:' || id AS composite_rs_id, source 
             FROM result_ai_source 
-            WHERE (progress = 2 OR progress = -1) AND counter < 3 AND (job_server = %s OR job_server IS NULL) AND created_at < now() - interval '10 minutes'
+            WHERE (
+                (progress = 2 AND created_at < now() - interval '5 minutes') 
+                OR progress = -1
+            ) AND counter < 3
             
             UNION ALL
             
             SELECT 'result_image:' || id AS composite_rs_id, source 
             FROM result_image 
-            WHERE (progress = 2 OR progress = -1) AND counter < 3 AND (job_server = %s OR job_server IS NULL) AND created_at < now() - interval '10 minutes'
-        """, (job_server, job_server, job_server))
+            WHERE (
+                (progress = 2 AND created_at < now() - interval '5 minutes') 
+                OR progress = -1
+            ) AND counter < 3
+        """)
         
         sources_pending = cur.fetchall()
         conn.commit()
@@ -96,53 +107,116 @@ class DB:
     def update_sources_failed(self, job_server):
         """
         Get all finally failed sources (Counter >= 3) across ALL tables.
+        CRITICAL FIX 1: Only touches progress 0 or 2. Protects progress 1 (Success) from being overwritten!
+        CRITICAL FIX 2: Removed job_server restriction to allow global cleanup of dead servers.
         """
         from datetime import datetime, timedelta
         
         conn = self.connect_to_db()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur = conn.cursor()
         
-        threshold_time = datetime.now() - timedelta(minutes=10)
+        # Changed from 10 to 5 minutes to speed up the failure detection
+        threshold_time = datetime.now() - timedelta(minutes=5)
         
-        sql = """
-            SELECT 'result:' || id AS composite_rs_id, source 
-            FROM result_source 
-            WHERE counter >= 3 AND (job_server = %s OR job_server IS NULL) AND (progress = -1 OR (progress IN (0, 2) AND created_at < %s))
+        try:
+            cur.execute("SET lock_timeout = '10s';")
             
-            UNION ALL
+            cur.execute("""
+                UPDATE result_source
+                SET progress = -1
+                WHERE counter >= 3 
+                  AND progress IN (0, 2) 
+                  AND created_at < %s;
+            """, (threshold_time,))
             
-            SELECT 'result_ai_source:' || id AS composite_rs_id, source 
-            FROM result_ai_source 
-            WHERE counter >= 3 AND (job_server = %s OR job_server IS NULL) AND (progress = -1 OR (progress IN (0, 2) AND created_at < %s))
+            cur.execute("""
+                UPDATE result_ai_source
+                SET progress = -1
+                WHERE counter >= 3 
+                  AND progress IN (0, 2) 
+                  AND created_at < %s;
+            """, (threshold_time,))
             
-            UNION ALL
+            cur.execute("""
+                UPDATE result_image
+                SET progress = -1
+                WHERE counter >= 3 
+                  AND progress IN (0, 2) 
+                  AND created_at < %s;
+            """, (threshold_time,))
             
-            SELECT 'result_image:' || id AS composite_rs_id, source 
-            FROM result_image 
-            WHERE counter >= 3 AND (job_server = %s OR job_server IS NULL) AND (progress = -1 OR (progress IN (0, 2) AND created_at < %s))
-        """
-        cur.execute(sql, (job_server, threshold_time, job_server, threshold_time, job_server, threshold_time))
-        sources_failed = cur.fetchall()
+            conn.commit()
+        except Exception as e:
+            print(f"Notice: Could not bulk-update failed sources. Details: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
 
-        for s in sources_failed:
-            composite_rs_id = s[0]
-            source_id = s[1]
-            fk_column, real_id = self._parse_id(composite_rs_id)
+    def expire_old_pending_sources(self):
+        """
+        Aggressively mark ALL uncompleted sources associated with studies older than 14 days 
+        as permanently failed (progress = -1, counter = 3).
+        CRITICAL FIX: Ignores progress = 1 so we do not delete successful scrapes!
+        """
+        conn = self.connect_to_db()
+        cur = conn.cursor()
+        
+        try:
+            cur.execute("SET lock_timeout = '10s';")
             
-            # 1. Update Brücken-Tabellen basierend auf dem Composite-String
-            if fk_column == 'result':
-                cur.execute("UPDATE result_source SET progress=-1 WHERE id = %s", (real_id,))
-            elif fk_column == 'result_ai_source':
-                cur.execute("UPDATE result_ai_source SET progress=-1 WHERE id = %s", (real_id,))
-            elif fk_column == 'result_image':
-                cur.execute("UPDATE result_image SET progress=-1 WHERE id = %s", (real_id,))
+            # 1. Update AI Sources
+            print("Expiring uncompleted AI sources > 14 days...")
+            cur.execute("""
+                UPDATE result_ai_source
+                SET progress = -1, counter = 3
+                FROM study s
+                WHERE result_ai_source.study = s.id 
+                AND s.created_at < now() - interval '14 days'
+                AND (result_ai_source.progress IS NULL OR result_ai_source.progress IN (0, 2));
+            """)
             
-            # 2. Update Source Tabelle
-            if source_id:
-                cur.execute("UPDATE source SET progress=-1 WHERE id = %s", (source_id,))
-                
-        conn.commit()                   
-        conn.close()
+            # 2. Update Image Sources
+            print("Expiring uncompleted Image sources > 14 days...")
+            cur.execute("""
+                UPDATE result_image
+                SET progress = -1, counter = 3
+                FROM study s
+                WHERE result_image.study = s.id 
+                AND s.created_at < now() - interval '14 days'
+                AND (result_image.progress IS NULL OR result_image.progress IN (0, 2));
+            """)
+            
+            # 3. Update Organic Sources
+            print("Expiring uncompleted Organic sources > 14 days...")
+            cur.execute("""
+                UPDATE result_source
+                SET progress = -1, counter = 3
+                FROM result r
+                JOIN study s ON r.study = s.id
+                WHERE result_source.result = r.id
+                AND s.created_at < now() - interval '14 days'
+                AND (result_source.progress IS NULL OR result_source.progress IN (0, 2));
+            """)
+            
+            # 4. Insert dummy records for untouched Organic Sources
+            print("Generating ghost records for un-attempted Organic sources > 14 days...")
+            cur.execute("""
+                INSERT INTO result_source (result, progress, counter, created_at, job_server)
+                SELECT r.id, -1, 3, now(), 'expired_14_days'
+                FROM result r
+                JOIN study s ON r.study = s.id
+                LEFT JOIN result_source rs ON rs.result = r.id
+                WHERE s.created_at < now() - interval '14 days'
+                AND rs.id IS NULL;
+            """)
+            
+            conn.commit()
+            print("✅ Expiration of 14-day old sources complete.")
+        except Exception as e:
+            print(f"❌ Error expiring old sources. Details: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
 
     def get_source_check(self, url, country):
         """
@@ -163,7 +237,6 @@ class DB:
             diff_in_hours = diff.total_seconds() / 3600
 
             if diff_in_hours < self.refresh_time:
-                print(diff_in_hours)
                 return source_id
             else:
                 return False
@@ -263,7 +336,7 @@ class DB:
         elif fk_column == 'result_ai_source':
             cur.execute("UPDATE result_ai_source SET ip=%s, main=%s, final_url=%s WHERE id=%s", (ip, main, final_url, real_id))
         elif fk_column == 'result_image':
-            pass # Bild-Ergebnisse haben kein Redirect/IP/Main in dem Sinne
+            pass # Image results have no redirect/IP/main
             
         conn.commit()
         conn.close()
@@ -302,7 +375,7 @@ class DB:
 
     def update_result_source_result(self, result_id, progress, counter, created_at, job_server=None):
         """
-        BUGFIX: Akzeptiert jetzt optional 'job_server', um den Servernamen beim Locking zu speichern!
+        Accepts optional 'job_server' to save the server name when locking!
         """
         fk_column, real_id = self._parse_id(result_id)
         conn = self.connect_to_db()
@@ -382,7 +455,7 @@ class DB:
             progress = 0
             created_at = datetime.now()
             self.delete_source_pending(source_id, progress, created_at)
-            self.reset_result_source(progress, counter, created_at, source_id)
+            self.reset_result_source(progress, 0, created_at, source_id)
 
     def get_result_source(self, result_id):
         fk_column, real_id = self._parse_id(result_id)
@@ -424,7 +497,7 @@ class DB:
         
         sql = """
             WITH RankedSources AS (
-                -- 1. Organische Ergebnisse
+                -- 1. Organic results
                 SELECT 
                     'result:' || r.id AS composite_id, r.url, c.name AS country_name, c.code, s.created_at as study_date,
                     ROW_NUMBER() OVER(PARTITION BY r.study ORDER BY r.id ASC) as rank_within_study
@@ -432,8 +505,9 @@ class DB:
                 JOIN study s ON r.study = s.id 
                 LEFT JOIN country c ON r.country = c.id 
                 LEFT JOIN result_source rs ON rs.result = r.id 
-                WHERE (rs.source IS NULL OR (rs.progress = 0 AND rs.counter < 3))
+                WHERE (rs.id IS NULL OR (rs.progress = 0 AND rs.counter < 3))
                 AND s.live_link_mode = FALSE
+                AND s.created_at >= CURRENT_DATE - INTERVAL '14 days'
                 
                 UNION ALL
                 
@@ -444,21 +518,22 @@ class DB:
                 FROM result_ai_source ras
                 JOIN study s ON ras.study = s.id
                 LEFT JOIN country c ON ras.country = c.id
-                WHERE (ras.source IS NULL OR (ras.progress = 0 AND ras.counter < 3))
+                WHERE (ras.progress IS NULL OR (ras.progress = 0 AND ras.counter < 3))
                 AND s.live_link_mode = FALSE
-                
+                AND s.created_at >= CURRENT_DATE - INTERVAL '14 days'
                 
                 UNION ALL
                 
-                -- 3. Bilder-Ergebnisse (Direkter Download)
+                -- 3. Image results (Direct download)
                 SELECT 
                     'result_image:' || ri.id AS composite_id, ri.image_url as url, c.name AS country_name, c.code, s.created_at as study_date,
                     ROW_NUMBER() OVER(PARTITION BY ri.study ORDER BY ri.id ASC) as rank_within_study
                 FROM result_image ri
                 JOIN study s ON ri.study = s.id
                 LEFT JOIN country c ON ri.country = c.id
-                WHERE (ri.source IS NULL OR (ri.progress = 0 AND ri.counter < 3))
+                WHERE (ri.progress IS NULL OR (ri.progress = 0 AND ri.counter < 3))
                 AND s.live_link_mode = FALSE
+                AND s.created_at >= CURRENT_DATE - INTERVAL '14 days'
             )
             SELECT composite_id, url, country_name, code
             FROM RankedSources
@@ -482,7 +557,6 @@ class DB:
                 counter = self.get_source_counter_result(result_id)
                 counter = counter + 1
                 created_at = datetime.now()
-                # BUGFIX: Übergabe von job_server, damit die Zeile korrekt reserviert wird!
                 self.update_result_source_result(result_id, progress, counter, created_at, job_server)
             else:
                 created_at = datetime.now()
