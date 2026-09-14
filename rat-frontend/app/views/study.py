@@ -1017,7 +1017,7 @@ def create_new_study():
     except: study_id = 0
 
     if study_id == 0:
-        study = Study(name=name, description=description, status=0, created_at=datetime.now(), result_count=10)
+        study = Study(name=name, description=description, status=0, created_at=datetime.now(), result_count=None)
         study.users.append(current_user)
         db.session.add(study)
         db.session.commit()

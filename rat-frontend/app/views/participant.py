@@ -8,7 +8,7 @@ landing panels, concurrent signup pipelines, and session recovery routes.
 
 from .. import app, db
 from app.models import (Study, Participant, Answer, Result, Question, ResultAi, 
-                        ResultChatbot, ResultSource, Serp, RangeStudy, ResultType, AnalyticsEvent)
+                        ResultChatbot, ResultSource, Serp, RangeStudy, ResultType, AnalyticsEvent, Query)
 from ..forms import JoinForm, ParticipantLogInForm, ConfirmationForm
 from flask import render_template, flash, redirect, url_for, request, send_file
 from datetime import datetime
@@ -64,11 +64,18 @@ def participants(id):
             closed_count = len(seen_queries) - len(open_queries)
             skipped_count = 0 
             
-            if study.limit_by_query and study.max_queries_per_participant and study.max_queries_per_participant > 0:
+            # NEW: Calculate how many queries actually exist in the study
+            total_study_queries = db.session.query(Query.id).filter_by(study_id=study.id).count()
+            has_more_queries = total_study_queries > len(seen_queries)
+            
+            if (study.max_queries_per_participant or 0) > 0:
                 all_count = study.max_queries_per_participant
-                if closed_count > all_count: closed_count = all_count
+                # Prevent target from being larger than what exists
+                if all_count > total_study_queries:
+                    all_count = total_study_queries
             else:
-                all_count = len(seen_queries) + (1 if len(open_queries) == 0 else 0)
+                # Only add +1 to the target if there is actually another query left in the database
+                all_count = len(seen_queries) + (1 if len(open_queries) == 0 and has_more_queries else 0)
                 
             open_count = all_count - closed_count
             if open_count < 0: open_count = 0
@@ -127,9 +134,10 @@ def participant(id):
             info.append([study.id, 0, 0, 0, 0])
             continue
 
-        # WICHTIG: Prüft BEIDE Schalter
+        allowed_types = [t.strip().lower() for t in study.assessable_result_types_text.split(',')] if study.assessable_result_types_text else []
+
         if study.group_by_query and study.limit_by_query:
-            # DASHBOARD ZÄHLT QUERIES (Damit es nicht zu früh "Done" anzeigt)
+            # DASHBOARD ZÄHLT QUERIES
             all_ans = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.study_id == study.id).all()
             seen_queries = set()
             open_queries = set()
@@ -148,10 +156,17 @@ def participant(id):
             closed_count = len(seen_queries) - len(open_queries)
             skipped_count = 0 
             
+            # Count actual queries in DB
+            total_study_queries = db.session.query(Query.id).filter_by(study_id=study.id).count()
+            has_more_queries = total_study_queries > len(seen_queries)
+            
             if (study.max_queries_per_participant or 0) > 0:
                 all_count = study.max_queries_per_participant
+                # Prevent target from exceeding available queries
+                if all_count > total_study_queries:
+                    all_count = total_study_queries
             else:
-                all_count = len(seen_queries) + (1 if len(open_queries) == 0 else 0)
+                all_count = len(seen_queries) + (1 if len(open_queries) == 0 and has_more_queries else 0)
                 
             open_count = all_count - closed_count
             if open_count < 0: open_count = 0
@@ -167,12 +182,64 @@ def participant(id):
             finished_count = closed_count + skipped_count
             open_ans_count = (base_query.filter(Answer.status == 0).count() // questions_count)
 
+            # COUNT HOW MANY VALID ITEMS EXIST IN THE STUDY
+            total_valid_items = 0
+            
+            # Helper for ranges
+            ranges = RangeStudy.query.filter_by(study=study.id).all()
+            
+            if 'organic' in allowed_types:
+                q = db.session.query(Result).filter_by(study_id=study.id)
+                if not study.live_link_mode and not study.assess_failed:
+                    q = q.join(ResultSource).filter(ResultSource.progress == 1)
+                if study.result_count: 
+                    q = q.filter(Result.position <= study.result_count)
+                if ranges: 
+                    q = q.filter(or_(*[and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]))
+                total_valid_items += q.count()
+                
+            if 'ai_overview' in allowed_types or 'ai overview' in allowed_types:
+                total_valid_items += db.session.query(ResultAi).filter_by(study_id=study.id).count()
+                
+            if 'chatbot' in allowed_types:
+                total_valid_items += db.session.query(ResultChatbot).filter_by(study_id=study.id).count()
+                
+            if 'serp' in allowed_types:
+                total_valid_items += db.session.query(Serp).filter_by(study_id=study.id).count()
+                
+            if 'ai_source' in allowed_types:
+                q = db.session.query(ResultAiSource).filter_by(study_id=study.id)
+                if not study.live_link_mode and not study.assess_failed:
+                    q = q.filter(ResultAiSource.progress == 1)
+                if study.result_count: 
+                    q = q.filter(ResultAiSource.position <= study.result_count)
+                if ranges: 
+                    q = q.filter(or_(*[and_(ResultAiSource.position >= r.range_start, ResultAiSource.position <= r.range_end) for r in ranges]))
+                total_valid_items += q.count()
+                
+            if 'image' in allowed_types or 'image result' in allowed_types:
+                q = db.session.query(ResultImage).filter_by(study_id=study.id)
+                if not study.live_link_mode and not study.assess_failed:
+                    q = q.filter(ResultImage.progress == 1)
+                if study.result_count: 
+                    q = q.filter(ResultImage.position <= study.result_count)
+                if ranges: 
+                    q = q.filter(or_(*[and_(ResultImage.position >= r.range_start, ResultImage.position <= r.range_end) for r in ranges]))
+                total_valid_items += q.count()
+
+            has_more_items = total_valid_items > finished_count
+
             if study.limit_per_participant and (study.max_results_per_participant or 0) > 0:
                 all_count = study.max_results_per_participant
-                if finished_count > all_count: all_count = finished_count
+                # Prevent target from exceeding available items
+                if all_count > total_valid_items: 
+                    all_count = total_valid_items
+                if finished_count > all_count: 
+                    all_count = finished_count
             else:
                 all_count = finished_count + open_ans_count
-                if open_ans_count == 0:
+                # Only add +1 if there are actually unassigned items left in the database
+                if open_ans_count == 0 and has_more_items:
                     all_count = finished_count + 1 
 
             open_count = all_count - finished_count
@@ -194,7 +261,6 @@ def participant(id):
                            info=info,
                            base=base,
                            form=form)
-
 
 @app.route('/study/<study_id>/participant/new', methods=["GET", "POST"])
 @app.route('/join/<study_id>', methods=["GET", "POST"])

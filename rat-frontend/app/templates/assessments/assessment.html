@@ -246,9 +246,25 @@
             </div>
         {% endif %}
 
-    {% if task_type == 'result' or task_type == 'result_ai_source' %}
-        {% if show_urls %}
-        <div class="card mb-4 shadow-sm px-3 py-2">
+        {% if task_type == 'result' or task_type == 'result_ai_source' %}
+        
+        {% set source = None %}
+        {% set is_failed = False %}
+        
+        {% if task_type == 'result' %}
+            {% set source = task_item.sources[0] if task_item.sources else None %}
+        {% elif task_type == 'result_ai_source' %}
+            {% set source = task_item.source %}
+        {% endif %}
+
+        {# Define as failed if no source exists or progress is not 1 (success) #}
+        {% if not source or source.progress != 1 %}
+            {% set is_failed = True %}
+        {% endif %}
+
+        {# Show URL: Either if globally allowed, OR if the scraping failed #}
+        {% if show_urls or is_failed %}
+        <div class="card mb-4 shadow-sm px-3 py-2 border-primary">
             <div class="d-flex align-items-center">
                 <span class="fw-bold me-2 flex-shrink-0">URL:</span>
                 <div class="text-truncate">
@@ -257,18 +273,15 @@
                         {{ display_url }}
                     </a>
                 </div>
+                {% if is_failed and not show_urls %}
+                <span class="badge bg-warning text-dark ms-3" data-bs-toggle="tooltip" title="The system could not capture this page. Please open the URL manually."><i class="fa-solid fa-triangle-exclamation"></i> Capture failed</span>
+                {% endif %}
             </div>
         </div>
         {% endif %}
 
-        {% set source = None %}
-        {% if task_type == 'result' %}
-            {% set source = task_item.sources[0] if task_item.sources else None %}
-        {% elif task_type == 'result_ai_source' %}
-            {% set source = task_item.source %}
-        {% endif %}
-
-        {% if source and source.file_path %}
+        {# Only render the image/PDF if file_path exists AND progress == 1 (success) #}
+        {% if source and source.file_path and source.progress == 1 %}
             
             {% if source.content_type and "pdf" in source.content_type.lower() %}
                 <div class="card shadow-sm" style="height: 850px;">
