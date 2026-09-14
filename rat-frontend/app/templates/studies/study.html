@@ -61,6 +61,14 @@
       max-width: 600px;
       margin: 0 !important;
   }
+
+  .advanced-options-toolbar {
+      background-color: #e9ecef;
+      border-radius: 6px;
+      padding: 12px 20px;
+      margin-bottom: 25px;
+      border: 1px solid #dee2e6;
+  }
 </style>
 {% endblock %}
 
@@ -287,23 +295,10 @@
 
       <div id="section-study-design" style="display: none;">
         
-        <div class="card mb-4 shadow-sm" id="live-mode-banner-card" style="border: 2px solid #0d6efd; background-color: #f8fbff;">
-          <div class="card-body p-3 d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="fw-bold mb-1 text-primary">
-                <i class="fa-solid fa-bolt text-warning me-2"></i> Live Link Mode (Lightweight Study)
-              </h6>
-              <div class="text-secondary small">
-                Disables background scraping (no screenshots or HTML will be captured). Participants visit live URLs directly. <b>Note: Disables Automated Classifiers and forces URLs to be visible.</b>
-              </div>
-            </div>
-            <div class="form-check form-switch ms-3" style="transform: scale(1.3); transform-origin: right center;">
-              {{ settings_form.live_link_mode(class="form-check-input", id="live_link_mode_checkbox", style="cursor: pointer;") }}
-            </div>
-          </div>
-        </div>
+
 
         <div class="card mb-4 shadow-sm border-secondary" id="human-assessment-configuration-card">
+          <!-- CARD HEADER (Only for Expand/Collapse) -->
           <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseAssessment" aria-expanded="true" aria-controls="collapseAssessment">
             <span class="fw-bold text-dark">
                 <i class="fa-solid fa-users-viewfinder me-2 text-secondary"></i> Human Assessment Settings
@@ -312,8 +307,35 @@
             <i class="fa-solid fa-chevron-down text-secondary"></i>
           </div>
           
-          <div id="collapseAssessment" class="collapse show">
-            <div class="card-body bg-light border-top p-4">
+        <div id="collapseAssessment" class="collapse show">
+                    <div class="card-body bg-light border-top p-4">
+                      
+                      <!-- ADVANCED OPTIONS TOOLBAR (Inside Body) -->
+                      <div class="advanced-options-toolbar d-flex justify-content-between align-items-center shadow-sm">
+
+                          <div class="form-check form-switch m-0">
+                              <input class="form-check-input border-secondary" type="checkbox" id="advanced_human_toggle" style="cursor: pointer; transform: scale(1.15);">
+                              <label class="form-check-label small text-dark fw-bold ms-1" for="advanced_human_toggle" style="cursor: pointer;">Enable Advanced Options (Filters, Custom Limits, etc.)</label>
+                          </div>
+                      </div>
+
+                      <!-- HIER EINGEFÜGT: Die Live Link Mode Card -->
+                      <div class="card mb-4 shadow-sm" id="live-mode-banner-card" style="border: 2px solid #0d6efd; background-color: #f8fbff;">
+                        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                          <div>
+                            <h6 class="fw-bold mb-1 text-primary">
+                              <i class="fa-solid fa-bolt text-warning me-2"></i> Live Link Mode (Lightweight Study)
+                            </h6>
+                            <div class="text-secondary small">
+                              Disables background scraping (no screenshots or HTML will be captured). Participants visit live URLs directly. <b>Note: Disables Automated Classifiers and forces URLs to be visible.</b>
+                    </div>
+                  </div>
+                  <div class="form-check form-switch ms-3" style="transform: scale(1.3); transform-origin: right center;">
+                    {{ settings_form.live_link_mode(class="form-check-input", id="live_link_mode_checkbox", style="cursor: pointer;") }}
+                  </div>
+                </div>
+              </div>
+              <!-- ENDE der Live Link Mode Card -->
 
               <div class="card border-secondary shadow-sm mb-4 bg-white">
                 <div class="card-body p-4">
@@ -428,7 +450,7 @@
                 </div>
               </div>
               
-              <div class="row mb-4 g-3 align-items-stretch">
+              <div class="row mb-4 g-3 align-items-stretch" id="advanced-filters-row">
                 <div class="col-md-6">
                   <div class="card border-secondary shadow-sm h-100 bg-white">
                     <div class="card-body p-4 d-flex flex-column justify-content-between">
@@ -496,7 +518,7 @@
                       </h6>                   
                       
                       <!-- 1. Query Limit -->
-                      <div class="form-check form-switch mb-2">
+                      <div id="adv_workload_group_by_query" class="form-check form-switch mb-2">
                         <input class="form-check-input border-secondary" type="checkbox" id="limit_by_query" name="limit_by_query" {% if study.limit_by_query %}checked{% endif %}>
                         <label class="form-check-label text-dark fw-bold" for="limit_by_query">
                           Group task sequences by Search Query (Highly Recommended)
@@ -511,39 +533,43 @@
                       </div>
 
                       <!-- 2. Search Depth Limit (only visible if Group by Query is active) -->
-                      <div id="search_depth_wrapper" style="display: none;">
-                        <div class="form-check form-switch mb-2">
-                          <input class="form-check-input border-secondary" type="checkbox" id="limit_search_depth" name="limit_search_depth" {% if study.result_count %}checked{% endif %}>
-                          <label class="form-check-label text-dark fw-bold" for="limit_search_depth">
-                            Limit search depth (Top X items from the original SERP) 
-                            <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" title="Only evaluate items up to this original rank (e.g., 10 to only include Top-10 results)."></i>
-                          </label>
-                        </div>
+                      <div id="adv_workload_search_depth">
+                          <div id="search_depth_wrapper" style="display: none;">
+                            <div class="form-check form-switch mb-2">
+                              <input class="form-check-input border-secondary" type="checkbox" id="limit_search_depth" name="limit_search_depth" {% if study.result_count %}checked{% endif %}>
+                              <label class="form-check-label text-dark fw-bold" for="limit_search_depth">
+                                Limit search depth (Top X items from the original SERP) 
+                                <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" title="Only evaluate items up to this original rank (e.g., 10 to only include Top-10 results)."></i>
+                              </label>
+                            </div>
 
-                        <div class="mt-2 mb-4 ms-4 ps-2 border-start border-3 border-info" id="search_depth_container" style="display: none;">
-                          <label for="result_count" class="form-label mb-1">
-                            Maximum Rank Depth (e.g. 10 for Page 1)
-                          </label>
-                          <input type="number" class="form-control form-control-sm border-secondary w-50" id="result_count" name="result_count" placeholder="e.g. 10" value="{{ study.result_count if study.result_count else '' }}">
-                        </div>
+                            <div class="mt-2 mb-4 ms-4 ps-2 border-start border-3 border-info" id="search_depth_container" style="display: none;">
+                              <label for="result_count" class="form-label mb-1">
+                                Maximum Rank Depth (e.g. 10 for Page 1)
+                              </label>
+                              <input type="number" class="form-control form-control-sm border-secondary w-50" id="result_count" name="result_count" placeholder="e.g. 10" value="{{ study.result_count if study.result_count else '' }}">
+                            </div>
+                          </div>
                       </div>
 
-                      <div class="form-check form-switch mb-3">
-                        {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
-                        <label class="form-check-label fw-bold" for="limit_checkbox">
-                          Limit maximum total items displayed per participant independent of query or top X results
-                          <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Set a hard cap on how many total items (across all queries and types) a participant evaluates before they are marked as finished."></i>
-                        </label>
-                      </div>
-                      
-                      <div id="item_limit_container" class="ms-4 ps-2 border-start border-3 border-secondary" style="display: none;">
-                        <label for="max_results_per_participant" class="form-label mb-1">
-                          Max Absolute Result Items
-                        </label>
-                        {{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary w-50") }}
+                      <div id="adv_workload_absolute_limit">
+                          <div class="form-check form-switch mb-3">
+                            {{ settings_form.limit_per_participant(class="form-check-input border-secondary", id="limit_checkbox") }}
+                            <label class="form-check-label fw-bold" for="limit_checkbox">
+                              Limit maximum total items displayed per participant independent of query or top X results
+                              <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Set a hard cap on how many total items (across all queries and types) a participant evaluates before they are marked as finished."></i>
+                            </label>
+                          </div>
+                          
+                          <div id="item_limit_container" class="ms-4 ps-2 border-start border-3 border-secondary" style="display: none;">
+                            <label for="max_results_per_participant" class="form-label mb-1">
+                              Max Absolute Result Items
+                            </label>
+                            {{ settings_form.max_results_per_participant(class="form-control form-control-sm border-secondary w-50") }}
+                          </div>
                       </div>
 
-                      <div class="form-check form-switch mb-2">
+                      <div id="adv_workload_global_dedup" class="form-check form-switch mb-2">
                         {{ settings_form.global_duplicate_filtering(class="form-check-input border-secondary", id="global_duplicate_filtering") }}
                         <label class="form-check-label fw-bold text-dark" for="global_duplicate_filtering">
                           Evaluate identical URLs only once across the entire study (Global Deduplication)
@@ -627,6 +653,7 @@
       </div>
 
       <div class="card mb-4 shadow-sm border-secondary" id="classifiers-card" style="display: none;">
+        <!-- CARD HEADER (Only for Expand/Collapse) -->
         <div class="card-header bg-white py-3 config-section-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseClassifiers" aria-expanded="true" aria-controls="collapseClassifiers">
           <span class="fw-bold text-dark">
               <i class="fa-solid fa-robot me-2 text-secondary"></i> Automated Classifiers
@@ -634,9 +661,19 @@
           </span>
           <i class="fa-solid fa-chevron-down text-secondary"></i>
         </div>
+        
         <div id="collapseClassifiers" class="collapse show">
           <div class="card-body bg-light border-top p-4">
             
+            <!-- ADVANCED OPTIONS TOOLBAR (Inside Body) -->
+            <div class="advanced-options-toolbar d-flex justify-content-between align-items-center shadow-sm">
+
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input border-secondary shadow-sm" type="checkbox" id="advanced_classifiers_toggle" style="cursor: pointer; transform: scale(1.15);">
+                    <label class="form-check-label small text-dark fw-bold ms-1" for="advanced_classifiers_toggle" style="cursor: pointer;">Enable Advanced Options (Custom LLM Integration Settings)</label>
+                </div>
+            </div>
+
             <div id="classifier-progress-wrapper" class="d-none mb-4 p-3 bg-white border rounded shadow-sm">
                 <label class="fw-bold text-dark mb-1 small">
                     <i class="fa-solid fa-spinner fa-spin text-primary me-1" id="clf-status-icon"></i> Classifier Processing Status
@@ -710,62 +747,64 @@
               </ul>
             </div>
 			
-            <hr class="text-secondary my-4">
-            
-            {% set llm_clf = all_classifiers | selectattr('name', 'equalto', 'universal_llm') | first %}
-            
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="fw-bold text-dark mb-0 small">
-                  <i class="fa-solid fa-brain me-2 text-primary"></i> Custom LLM Content Analysis (OpenAI-Compatible API)
-                  <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Deploy dynamic generative AI prompt instructions onto your scraped web pages using any OpenAI-compliant API endpoint (e.g., local Ollama instance or cloud routers)."></i>
-              </h6>
-              
-              {% if llm_clf and llm_clf.description and llm_clf.description.strip() %}
-              <button type="button" class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" 
-                      data-bs-toggle="collapse" 
-                      data-bs-target="#desc_clf_llm" 
-                      aria-expanded="false">
-                <i class="fa-solid fa-circle-info me-1"></i> Description
-              </button>
-              {% endif %}
-            </div>
-
-            {% if llm_clf and llm_clf.description and llm_clf.description.strip() %}
-            <div class="collapse mb-3 text-secondary small p-2 bg-light rounded" id="desc_clf_llm">
-              <div class="mb-2 text-dark">{{ llm_clf.description }}</div>
-              
-              {% if llm_clf.description_url %}
-              <div>
-                <a href="{{ llm_clf.description_url }}" 
-                   target="_blank" 
-                   class="text-primary fw-bold text-decoration-underline small">
-                  <i class="fa-solid fa-book-open me-1"></i> Read Knowledge Base documentation
-                </a>
-              </div>
-              {% else %}
-              <div>
-                <span class="text-muted small"><i class="fa-solid fa-book text-muted me-1"></i> No manual page linked yet.</span>
-              </div>
-              {% endif %}
-            </div>
-            {% endif %}
-
-            <p class="small text-secondary mb-3">
-              <i class="fa-solid fa-circle-info me-1"></i> Add prompt rules to process the cleaned visible text of pages through large language models.
-            </p>
-
-            <input type="hidden" name="llm_classifiers_json" id="llm_classifiers_hidden" value="{{ study.llm_classifiers_json or '' }}">
-
-			<div id="llm-tasks-container" class="mb-3 d-flex flex-column gap-2">
+            <div id="advanced-llm-section">
+                <hr class="text-secondary my-4">
+                
+                {% set llm_clf = all_classifiers | selectattr('name', 'equalto', 'universal_llm') | first %}
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold text-dark mb-0 small">
+                      <i class="fa-solid fa-brain me-2 text-primary"></i> Custom LLM Content Analysis (OpenAI-Compatible API)
+                      <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Deploy dynamic generative AI prompt instructions onto your scraped web pages using any OpenAI-compliant API endpoint (e.g., local Ollama instance or cloud routers)."></i>
+                  </h6>
+                  
+                  {% if llm_clf and llm_clf.description and llm_clf.description.strip() %}
+                  <button type="button" class="btn btn-sm btn-link text-secondary p-0 text-decoration-none" 
+                          data-bs-toggle="collapse" 
+                          data-bs-target="#desc_clf_llm" 
+                          aria-expanded="false">
+                    <i class="fa-solid fa-circle-info me-1"></i> Description
+                  </button>
+                  {% endif %}
                 </div>
 
-            <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="openLlmTaskModal()">
-                    <i class="fa-solid fa-plus me-1"></i> Add LLM Analysis Task
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-info fw-bold" data-bs-toggle="modal" data-bs-target="#llmGuideModal">
-                    <i class="fa-solid fa-book-open-reader me-1"></i> Setup Guide (Ollama & Cloud APIs)
-                </button>
+                {% if llm_clf and llm_clf.description and llm_clf.description.strip() %}
+                <div class="collapse mb-3 text-secondary small p-2 bg-light rounded" id="desc_clf_llm">
+                  <div class="mb-2 text-dark">{{ llm_clf.description }}</div>
+                  
+                  {% if llm_clf.description_url %}
+                  <div>
+                    <a href="{{ llm_clf.description_url }}" 
+                       target="_blank" 
+                       class="text-primary fw-bold text-decoration-underline small">
+                      <i class="fa-solid fa-book-open me-1"></i> Read Knowledge Base documentation
+                    </a>
+                  </div>
+                  {% else %}
+                  <div>
+                    <span class="text-muted small"><i class="fa-solid fa-book text-muted me-1"></i> No manual page linked yet.</span>
+                  </div>
+                  {% endif %}
+                </div>
+                {% endif %}
+
+                <p class="small text-secondary mb-3">
+                  <i class="fa-solid fa-circle-info me-1"></i> Add prompt rules to process the cleaned visible text of pages through large language models.
+                </p>
+
+                <input type="hidden" name="llm_classifiers_json" id="llm_classifiers_hidden" value="{{ study.llm_classifiers_json or '' }}">
+
+                <div id="llm-tasks-container" class="mb-3 d-flex flex-column gap-2">
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="openLlmTaskModal()">
+                        <i class="fa-solid fa-plus me-1"></i> Add LLM Analysis Task
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info fw-bold" data-bs-toggle="modal" data-bs-target="#llmGuideModal">
+                        <i class="fa-solid fa-book-open-reader me-1"></i> Setup Guide (Ollama & Cloud APIs)
+                    </button>
+                </div>
             </div>
         </div>
       </div></div>
@@ -1338,11 +1377,15 @@
         toggleSectionState(secClassifiers, config.showClassifiers);
         toggleSectionState(secLaunch, config.showLaunch);
 
-        if (config.forceLive === false && liveToggle) {
+        const liveCard = document.getElementById('live-mode-banner-card');
+        
+        if (selectedMode !== 'human' && liveToggle) {
             liveToggle.checked = false;
             liveToggle.disabled = true;
+            if (liveCard) liveCard.style.display = 'none'; // Versteckt die Karte in allen nicht-Human Modi komplett
         } else if (liveToggle) {
             liveToggle.disabled = false;
+            if (liveCard) liveCard.style.display = 'block'; // Zeigt sie exklusiv bei Human Assessment an
         }
 
         updateLiveModeDependentUI();
@@ -1654,6 +1697,74 @@
   // Execute initially when loading the page
   updateClassifierVisibility();
   
+  // --- ADVANCED OPTIONS TOGGLES ---
+  const advHumanToggle = document.getElementById('advanced_human_toggle');
+  const advFiltersRow = document.getElementById('advanced-filters-row');
+  const advWlGroupByQuery = document.getElementById('adv_workload_group_by_query');
+  const advWlSearchDepth = document.getElementById('adv_workload_search_depth');
+  const advWlAbsLimit = document.getElementById('adv_workload_absolute_limit');
+  const advWlGlobalDedup = document.getElementById('adv_workload_global_dedup');
+  const limitByQueryCb = document.getElementById('limit_by_query');
+
+  function updateAdvancedHuman() {
+      if (!advHumanToggle) return;
+      const isAdv = advHumanToggle.checked;
+      localStorage.setItem('rat_adv_human_' + studyId, isAdv);
+
+      if (isAdv) {
+          if(advFiltersRow) advFiltersRow.style.display = 'flex';
+          if(advWlGroupByQuery) advWlGroupByQuery.style.display = 'block';
+          if(advWlSearchDepth) advWlSearchDepth.style.display = 'block';
+          if(advWlAbsLimit) advWlAbsLimit.style.display = 'block';
+          if(advWlGlobalDedup) advWlGlobalDedup.style.display = 'block';
+      } else {
+          if(advFiltersRow) advFiltersRow.style.display = 'none';
+          if(advWlGroupByQuery) advWlGroupByQuery.style.display = 'none';
+          if(advWlSearchDepth) advWlSearchDepth.style.display = 'none';
+          if(advWlAbsLimit) advWlAbsLimit.style.display = 'none';
+          if(advWlGlobalDedup) advWlGlobalDedup.style.display = 'none';
+
+          // Force group by query ON
+          if (limitByQueryCb && !limitByQueryCb.checked) {
+              limitByQueryCb.checked = true;
+              limitByQueryCb.dispatchEvent(new Event('change'));
+          }
+      }
+  }
+
+  if (advHumanToggle) {
+      const saved = localStorage.getItem('rat_adv_human_' + studyId);
+      if (saved === 'true') advHumanToggle.checked = true;
+      else advHumanToggle.checked = false;
+
+      advHumanToggle.addEventListener('change', updateAdvancedHuman);
+      updateAdvancedHuman();
+  }
+
+  const advClfToggle = document.getElementById('advanced_classifiers_toggle');
+  const advLlmSection = document.getElementById('advanced-llm-section');
+
+  function updateAdvancedClassifiers() {
+      if (!advClfToggle) return;
+      const isAdv = advClfToggle.checked;
+      localStorage.setItem('rat_adv_clf_' + studyId, isAdv);
+
+      if (isAdv) {
+          if(advLlmSection) advLlmSection.style.display = 'block';
+      } else {
+          if(advLlmSection) advLlmSection.style.display = 'none';
+      }
+  }
+
+  if (advClfToggle) {
+      const saved = localStorage.getItem('rat_adv_clf_' + studyId);
+      if (saved === 'true') advClfToggle.checked = true;
+      else advClfToggle.checked = false;
+
+      advClfToggle.addEventListener('change', updateAdvancedClassifiers);
+      updateAdvancedClassifiers();
+  }
+
   // FINALIZE STATE
   // Take a snapshot after a small delay to allow all browser extensions and the UI modifications above to settle.
   setTimeout(() => {

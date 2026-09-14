@@ -287,10 +287,11 @@ def assessment(participant_id, study_id):
         else:
             valid_answers.append(ans)
 
+    # FIX: Delete invalid assigned items entirely instead of skipping them.
+    # This preserves the participant's limits if settings are changed mid-study.
     if invalid_open_answers:
         for ans in invalid_open_answers:
-            ans.status = 2
-            ans.created_at = datetime.now()
+            db.session.delete(ans)
         db.session.commit()
         return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
 
@@ -375,6 +376,8 @@ def assessment(participant_id, study_id):
                             
                             if 'organic' in allowed_types: 
                                 q = db.session.query(Result).filter_by(query_id=locked_query.id)
+                                if not study.live_link_mode and not study.assess_failed:
+                                    q = q.join(ResultSource).filter(ResultSource.progress == 1)
                                 if study.result_count: q = q.filter(Result.position <= study.result_count)
                                 if ranges: q = q.filter(or_(*[and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]))
                                 if include_filters: q = q.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
@@ -392,12 +395,16 @@ def assessment(participant_id, study_id):
                                 
                             if 'ai_source' in allowed_types: 
                                 q = db.session.query(ResultAiSource).filter_by(query_id=locked_query.id)
+                                if not study.live_link_mode and not study.assess_failed:
+                                    q = q.filter(ResultAiSource.progress == 1)
                                 if study.result_count: q = q.filter(ResultAiSource.position <= study.result_count)
                                 if ranges: q = q.filter(or_(*[and_(ResultAiSource.position >= r.range_start, ResultAiSource.position <= r.range_end) for r in ranges]))
                                 items_to_assign.extend(q.all())
                                 
                             if 'image result' in allowed_types or 'image' in allowed_types: 
                                 q = db.session.query(ResultImage).filter_by(query_id=locked_query.id)
+                                if not study.live_link_mode and not study.assess_failed:
+                                    q = q.filter(ResultImage.progress == 1)
                                 if study.result_count: q = q.filter(ResultImage.position <= study.result_count)
                                 if ranges: q = q.filter(or_(*[and_(ResultImage.position >= r.range_start, ResultImage.position <= r.range_end) for r in ranges]))
                                 items_to_assign.extend(q.all())
@@ -436,15 +443,51 @@ def assessment(participant_id, study_id):
                                     elif isinstance(task, ResultImage): task_type_text = "image"
                                     
                                     resolved_type_id = res_types_map.get(task_type_text, 1)
+
+                                    # DEDUPLICATION CHECK ON ASSIGNMENT
+                                    already_answered = []
+                                    url = None
+                                    if isinstance(task, Result): url = task.normalized_url
+                                    elif isinstance(task, ResultAiSource): url = task.url
+                                    elif isinstance(task, ResultImage): url = task.image_url
+                                    
+                                    if url and isinstance(task, (Result, ResultAiSource, ResultImage)):
+                                        if isinstance(task, Result):
+                                            q_dup = db.session.query(Result.id).filter(Result.study_id == study.id, Result.normalized_url == url)
+                                            if not study.global_duplicate_filtering: q_dup = q_dup.filter(Result.query_id == task.query_id)
+                                            dup_ids = [r[0] for r in q_dup.all()]
+                                            if dup_ids: already_answered = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_id.in_(dup_ids), Answer.status.in_([1,2])).all()
+                                                
+                                        elif isinstance(task, ResultAiSource):
+                                            q_dup = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == study.id, ResultAiSource.url == url)
+                                            if not study.global_duplicate_filtering: q_dup = q_dup.filter(ResultAiSource.query_id == task.query_id)
+                                            dup_ids = [r[0] for r in q_dup.all()]
+                                            if dup_ids: already_answered = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_ai_source_id.in_(dup_ids), Answer.status.in_([1,2])).all()
+                                                
+                                        elif isinstance(task, ResultImage):
+                                            q_dup = db.session.query(ResultImage.id).filter(ResultImage.study_id == study.id, ResultImage.image_url == url)
+                                            if not study.global_duplicate_filtering: q_dup = q_dup.filter(ResultImage.query_id == task.query_id)
+                                            dup_ids = [r[0] for r in q_dup.all()]
+                                            if dup_ids: already_answered = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_image_id.in_(dup_ids), Answer.status.in_([1,2])).all()
+
+                                    ans_dict_to_copy = {}
+                                    if already_answered:
+                                        for a in already_answered:
+                                            ans_dict_to_copy[a.question_id] = (a.value, a.status)
+
                                     for question in study.questions:
-                                        ans = Answer(study_id=study.id, question_id=question.id, participant_id=participant.id, status=0, created_at=datetime.now(), resulttype=resolved_type_id, result_type_text=task_type_text)
+                                        val, st = ans_dict_to_copy.get(question.id, (None, 0))
+                                        ans = Answer(study_id=study.id, question_id=question.id, participant_id=participant.id, status=st, value=val, created_at=datetime.now(), resulttype=resolved_type_id, result_type_text=task_type_text)
+                                        
                                         if isinstance(task, Result): ans.result = task
                                         elif isinstance(task, ResultAi): ans.result_ai = task
                                         elif isinstance(task, ResultChatbot): ans.result_chatbot = task
                                         elif isinstance(task, Serp): ans.result_serp = task
                                         elif isinstance(task, ResultAiSource): ans.result_ai_source = task
                                         elif isinstance(task, ResultImage): ans.result_image = task
+                                        
                                         db.session.add(ans)
+                                        
                                 db.session.commit()
                                 assigned_successfully = True
                                 break
@@ -463,6 +506,8 @@ def assessment(participant_id, study_id):
                     
                     if 'organic' in allowed_types: 
                         q = db.session.query(Result).filter(Result.study_id == study.id, ~Result.id.in_(seen_res_ids if seen_res_ids else [-1]))
+                        if not study.live_link_mode and not study.assess_failed:
+                            q = q.join(ResultSource).filter(ResultSource.progress == 1)
                         if study.result_count: q = q.filter(Result.position <= study.result_count)
                         if ranges: q = q.filter(or_(*[and_(Result.position >= r.range_start, Result.position <= r.range_end) for r in ranges]))
                         if include_filters: q = q.filter(or_(*[Result.normalized_url.contains(clean_filter_string(f)) for f in include_filters]))
@@ -480,12 +525,16 @@ def assessment(participant_id, study_id):
                         
                     if 'ai_source' in allowed_types: 
                         q = db.session.query(ResultAiSource).filter(ResultAiSource.study_id == study.id, ~ResultAiSource.id.in_(seen_ai_source_ids if seen_ai_source_ids else [-1]))
+                        if not study.live_link_mode and not study.assess_failed:
+                            q = q.filter(ResultAiSource.progress == 1)
                         if study.result_count: q = q.filter(ResultAiSource.position <= study.result_count)
                         if ranges: q = q.filter(or_(*[and_(ResultAiSource.position >= r.range_start, ResultAiSource.position <= r.range_end) for r in ranges]))
                         pools['ai_source'] = q.all()
                         
                     if 'image result' in allowed_types or 'image' in allowed_types: 
                         q = db.session.query(ResultImage).filter(ResultImage.study_id == study.id, ~ResultImage.id.in_(seen_image_ids if seen_image_ids else [-1]))
+                        if not study.live_link_mode and not study.assess_failed:
+                            q = q.filter(ResultImage.progress == 1)
                         if study.result_count: q = q.filter(ResultImage.position <= study.result_count)
                         if ranges: q = q.filter(or_(*[and_(ResultImage.position >= r.range_start, ResultImage.position <= r.range_end) for r in ranges]))
                         pools['image'] = q.all()
@@ -512,14 +561,49 @@ def assessment(participant_id, study_id):
                                 elif isinstance(locked_task, ResultImage): task_type_text = "image"
                                 
                                 resolved_type_id = res_types_map.get(task_type_text, 1)
+
+                                # DEDUPLICATION CHECK ON ASSIGNMENT
+                                already_answered = []
+                                url = None
+                                if isinstance(locked_task, Result): url = locked_task.normalized_url
+                                elif isinstance(locked_task, ResultAiSource): url = locked_task.url
+                                elif isinstance(locked_task, ResultImage): url = locked_task.image_url
+                                
+                                if url and isinstance(locked_task, (Result, ResultAiSource, ResultImage)):
+                                    if isinstance(locked_task, Result):
+                                        q_dup = db.session.query(Result.id).filter(Result.study_id == study.id, Result.normalized_url == url)
+                                        if not study.global_duplicate_filtering: q_dup = q_dup.filter(Result.query_id == locked_task.query_id)
+                                        dup_ids = [r[0] for r in q_dup.all()]
+                                        if dup_ids: already_answered = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_id.in_(dup_ids), Answer.status.in_([1,2])).all()
+                                            
+                                    elif isinstance(locked_task, ResultAiSource):
+                                        q_dup = db.session.query(ResultAiSource.id).filter(ResultAiSource.study_id == study.id, ResultAiSource.url == url)
+                                        if not study.global_duplicate_filtering: q_dup = q_dup.filter(ResultAiSource.query_id == locked_task.query_id)
+                                        dup_ids = [r[0] for r in q_dup.all()]
+                                        if dup_ids: already_answered = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_ai_source_id.in_(dup_ids), Answer.status.in_([1,2])).all()
+                                            
+                                    elif isinstance(locked_task, ResultImage):
+                                        q_dup = db.session.query(ResultImage.id).filter(ResultImage.study_id == study.id, ResultImage.image_url == url)
+                                        if not study.global_duplicate_filtering: q_dup = q_dup.filter(ResultImage.query_id == locked_task.query_id)
+                                        dup_ids = [r[0] for r in q_dup.all()]
+                                        if dup_ids: already_answered = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_image_id.in_(dup_ids), Answer.status.in_([1,2])).all()
+
+                                ans_dict_to_copy = {}
+                                if already_answered:
+                                    for a in already_answered:
+                                        ans_dict_to_copy[a.question_id] = (a.value, a.status)
+
                                 for question in study.questions:
-                                    ans = Answer(study_id=study.id, question_id=question.id, participant_id=participant.id, status=0, created_at=datetime.now(), resulttype=resolved_type_id, result_type_text=task_type_text)
+                                    val, st = ans_dict_to_copy.get(question.id, (None, 0))
+                                    ans = Answer(study_id=study.id, question_id=question.id, participant_id=participant.id, status=st, value=val, created_at=datetime.now(), resulttype=resolved_type_id, result_type_text=task_type_text)
+                                    
                                     if isinstance(locked_task, Result): ans.result = locked_task
                                     elif isinstance(locked_task, ResultAi): ans.result_ai = locked_task
                                     elif isinstance(locked_task, ResultChatbot): ans.result_chatbot = locked_task
                                     elif isinstance(locked_task, Serp): ans.result_serp = locked_task
                                     elif isinstance(locked_task, ResultAiSource): ans.result_ai_source = locked_task
                                     elif isinstance(locked_task, ResultImage): ans.result_image = locked_task
+                                    
                                     db.session.add(ans)
                                 db.session.commit()
                                 assigned_successfully = True
@@ -609,25 +693,63 @@ def assessment(participant_id, study_id):
         task_type = 'result_ai_source'
         task_item = db.session.get(ResultAiSource, next_answer.result_ai_source_id)
         if task_item:
+            
+            # Identify duplicates for reactive submission/skipping
+            all_duplicate_ids = set()
+            if task_item.url:
+                if study.global_duplicate_filtering:
+                    duplicates = ResultAiSource.query.filter(ResultAiSource.study_id == study_id, ResultAiSource.url == task_item.url, ResultAiSource.id != task_item.id).all()
+                else:
+                    duplicates = ResultAiSource.query.filter(ResultAiSource.study_id == study_id, ResultAiSource.query_id == task_item.query_id, ResultAiSource.url == task_item.url, ResultAiSource.id != task_item.id).all()
+                all_duplicate_ids = {d.id for d in duplicates}
+
             if task_item.progress != 1 and not study.assess_failed and not study.live_link_mode:
-                next_answer.status = 2
-                next_answer.created_at = datetime.now()
-                db.session.commit()
+                target_skip_ids = all_duplicate_ids.union({task_item.id})
+                if target_skip_ids:
+                    answers_to_skip = db.session.query(Answer).filter(
+                        Answer.participant_id == participant.id, 
+                        Answer.result_ai_source_id.in_(target_skip_ids)
+                    ).all()
+                    for answer in answers_to_skip: 
+                        answer.status = 2
+                        answer.created_at = datetime.now()
+                    db.session.commit()
                 return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
+                
             answers_for_item = db.session.query(Answer).filter(Answer.result_ai_source_id == task_item.id, Answer.participant_id == participant.id).join(Question).options(joinedload(Answer.question)).order_by(Question.position).all()
-            answers_to_update = answers_for_item            
+            target_ids = all_duplicate_ids.union({task_item.id})
+            answers_to_update = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_ai_source_id.in_(target_ids)).all() if target_ids else answers_for_item         
             
     elif next_answer.result_image_id:
         task_type = 'result_image'
         task_item = db.session.query(ResultImage).options(joinedload(ResultImage.source)).get(next_answer.result_image_id)
         if task_item:
+            
+            # Identify duplicates for reactive submission/skipping
+            all_duplicate_ids = set()
+            if task_item.image_url:
+                if study.global_duplicate_filtering:
+                    duplicates = ResultImage.query.filter(ResultImage.study_id == study_id, ResultImage.image_url == task_item.image_url, ResultImage.id != task_item.id).all()
+                else:
+                    duplicates = ResultImage.query.filter(ResultImage.study_id == study_id, ResultImage.query_id == task_item.query_id, ResultImage.image_url == task_item.image_url, ResultImage.id != task_item.id).all()
+                all_duplicate_ids = {d.id for d in duplicates}
+                
             if task_item.progress != 1 and not study.assess_failed and not study.live_link_mode:
-                next_answer.status = 2
-                next_answer.created_at = datetime.now()
-                db.session.commit()
+                target_skip_ids = all_duplicate_ids.union({task_item.id})
+                if target_skip_ids:
+                    answers_to_skip = db.session.query(Answer).filter(
+                        Answer.participant_id == participant.id, 
+                        Answer.result_image_id.in_(target_skip_ids)
+                    ).all()
+                    for answer in answers_to_skip: 
+                        answer.status = 2
+                        answer.created_at = datetime.now()
+                    db.session.commit()
                 return redirect(url_for('assessment', participant_id=participant_id, study_id=study_id))
+                
             answers_for_item = db.session.query(Answer).filter(Answer.result_image_id == task_item.id, Answer.participant_id == participant.id).join(Question).options(joinedload(Answer.question)).order_by(Question.position).all()
-            answers_to_update = answers_for_item
+            target_ids = all_duplicate_ids.union({task_item.id})
+            answers_to_update = db.session.query(Answer).filter(Answer.participant_id == participant.id, Answer.result_image_id.in_(target_ids)).all() if target_ids else answers_for_item
             
     if not task_item:
         next_answer.status = 2; db.session.commit()
