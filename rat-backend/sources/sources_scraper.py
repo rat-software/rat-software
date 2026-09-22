@@ -38,7 +38,7 @@ class SourcesScraper:
         country (str): The default country origin configured for this scraping job.
     """    
 
-    def __init__(self, get_sources: list, job_server: str, db: DB, logger: object, sources: object, country: str):
+    def __init__(self, get_sources: list, job_server: str, db: DB, logger: Logger, sources: Sources, country: str):
         """
         Initializes the SourcesScraper object with the provided configuration and database context.
 
