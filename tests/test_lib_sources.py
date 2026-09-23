@@ -93,19 +93,6 @@ if 'libs.lib_helper' not in sys.modules:
     sys.modules['libs.lib_helper'] = _helper_mod
     setattr(_libs_pkg, 'lib_helper', _helper_mod)
 
-# ── Load lib_sources ───────────────────────────────────────────────────────────
-
-_LIB_PATH = os.path.join(_LIBS_DIR, 'lib_sources.py')
-_spec = importlib.util.spec_from_file_location('lib_sources', _LIB_PATH)
-_mod  = importlib.util.module_from_spec(_spec)
-
-with patch('builtins.open', side_effect=FileNotFoundError), \
-     patch('builtins.print'):
-    _spec.loader.exec_module(_mod)
-
-sys.modules['lib_sources'] = _mod
-Sources = _mod.Sources
-
 # ── Load lib_scaper ───────────────────────────────────────────────────────────
 
 _LIB_PATH = os.path.join(_LIBS_DIR, 'lib_scraper.py')
@@ -118,6 +105,19 @@ with patch('builtins.open', side_effect=FileNotFoundError), \
 
 sys.modules['lib_scraper'] = _mod
 # LibScraper = _mod.LibScraper
+
+# ── Load lib_sources ───────────────────────────────────────────────────────────
+
+_LIB_PATH = os.path.join(_LIBS_DIR, 'lib_sources.py')
+_spec = importlib.util.spec_from_file_location('lib_sources', _LIB_PATH)
+_mod  = importlib.util.module_from_spec(_spec)
+
+with patch('builtins.open', side_effect=FileNotFoundError), \
+     patch('builtins.print'):
+    _spec.loader.exec_module(_mod)
+
+sys.modules['lib_sources'] = _mod
+Sources = _mod.Sources
 
 # ── Fixture helper ─────────────────────────────────────────────────────────────
 
