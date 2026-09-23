@@ -93,7 +93,13 @@ if 'libs.lib_helper' not in sys.modules:
     sys.modules['libs.lib_helper'] = _helper_mod
     setattr(_libs_pkg, 'lib_helper', _helper_mod)
 
-# ── Load lib_scaper ───────────────────────────────────────────────────────────
+# ── Load lib_scraper ───────────────────────────────────────────────────────────
+if 'libs.lib_scraper' not in sys.modules:
+    _scraper_mod = types.ModuleType('libs.lib_scraper')
+    _ScraperCls  = type('Helper', (), {'file_to_dict': lambda self, p: _FAKE_CONF})
+    _scraper_mod.Helper = _ScraperCls
+    sys.modules['libs.lib_scraper'] = _scraper_mod
+    setattr(_libs_pkg, 'lib_scraper', _scraper_mod)
 
 _LIB_PATH = os.path.join(_LIBS_DIR, 'lib_scraper.py')
 _spec = importlib.util.spec_from_file_location('lib_scraper', _LIB_PATH)
