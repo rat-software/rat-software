@@ -92,6 +92,13 @@ if 'libs.lib_helper' not in sys.modules:
     _helper_mod.Helper = _HelperCls
     sys.modules['libs.lib_helper'] = _helper_mod
     setattr(_libs_pkg, 'lib_helper', _helper_mod)
+    
+if 'libs.lib_scraper' not in sys.modules:
+    _scraper_mod = types.ModuleType('libs.lib_scraper')
+    _ScraperCls  = type('Helper', (), {'file_to_dict': lambda self, p: _FAKE_CONF})
+    _scraper_mod.Helper = _ScraperCls
+    sys.modules['libs.lib_scraper'] = _scraper_mod
+    setattr(_libs_pkg, 'lib_scraper', _scraper_mod)
 
 # ── Load lib_sources ───────────────────────────────────────────────────────────
 
