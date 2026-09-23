@@ -52,7 +52,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install rat-frontend dependencies
-        run: pip install -r rat-frontend/requirements_rat_frontend.txt
+        run: pip install -r rat-frontend/requirements.txt
 
       - name: Install additional test dependencies
         run: pip install pytest beautifulsoup4 lxml psutil langdetect textstat
