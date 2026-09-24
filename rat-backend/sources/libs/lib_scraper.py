@@ -21,7 +21,7 @@ class LibScraper(metaclass=ABCMeta):
     def __init__(self):
         # Define the path for configurations and extensions
         self.currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        parentdir = os.path.dirname(self.currentdir)
+        parentdir = os.path.join(os.path.dirname(self.currentdir), os.pardir)
         self.parentdir = os.path.dirname(parentdir)
 
         rules_path = os.path.abspath(os.path.join(parentdir, "config", "rules.json"))
@@ -75,7 +75,7 @@ class LibScraper(metaclass=ABCMeta):
 
         # Ensure the screenshot folder exists
         try:
-            self.screenshot_folder = os.path.join(parentdir, "tmp")
+            self.screenshot_folder = os.path.join(self.parentdir, "tmp")
             os.makedirs(self.screenshot_folder, exist_ok=True)
             print(f"Screenshot folder created/verified: {self.screenshot_folder}")
         except Exception as e:

@@ -103,13 +103,13 @@ if 'libs.lib_scraper' not in sys.modules:
 
 _LIB_PATH = os.path.join(_LIBS_DIR, 'lib_scraper.py')
 _spec = importlib.util.spec_from_file_location('lib_scraper', _LIB_PATH)
-_mod  = importlib.util.module_from_spec(_spec)
+_mod_scraper  = importlib.util.module_from_spec(_spec)
 
 with patch('builtins.open', side_effect=FileNotFoundError), \
      patch('builtins.print'):
-    _spec.loader.exec_module(_mod)
+    _spec.loader.exec_module(_mod_scraper)
 
-sys.modules['lib_scraper'] = _mod
+sys.modules['lib_scraper'] = _mod_scraper
 # LibScraper = _mod.LibScraper
 
 # ── Load lib_sources ───────────────────────────────────────────────────────────
@@ -420,9 +420,9 @@ class TestUploadToStorage(unittest.TestCase):
         mock_response.json.return_value = {'filename': 'f.zip'}
         mock_post = MagicMock(return_value=mock_response)
 
-        with patch.object(_mod, 'STORAGE_URL',       'http://store/upload', create=True), \
-             patch.object(_mod, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
-             patch.object(_mod, 'API_KEY',            'k',                   create=True), \
+        with patch.object(src, 'STORAGE_URL',       'http://store/upload', create=True), \
+             patch.object(src, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
+             patch.object(src, 'API_KEY',            'k',                   create=True), \
              patch('lib_sources.requests.post', mock_post), \
              patch('builtins.print'):
             src.upload_to_storage('<html/>', b'img', 'image/jpeg')
@@ -443,11 +443,11 @@ class TestUploadToStorage(unittest.TestCase):
         m_open.return_value.__enter__.return_value.write.side_effect = \
             lambda d: written.append(d)
 
-        with patch.object(_mod, 'STORAGE_URL',       'http://store/upload', create=True), \
-             patch.object(_mod, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
-             patch.object(_mod, 'API_KEY',            'k',                   create=True), \
-             patch('lib_scraper.requests.post', side_effect=Exception('network error')), \
-             patch('lib_scraper.os.makedirs'), \
+        with patch.object(src, 'STORAGE_URL',       'http://store/upload', create=True), \
+             patch.object(src, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
+             patch.object(src, 'API_KEY',            'k',                   create=True), \
+             patch('lib_sources.requests.post', side_effect=Exception('network error')), \
+             patch('lib_sources.os.makedirs'), \
              patch('builtins.open', m_open), \
              patch('builtins.print'):
             result = src.upload_to_storage('<html/>', b'img', 'image/jpeg')
