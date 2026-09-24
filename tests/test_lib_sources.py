@@ -330,9 +330,9 @@ class TestUploadToStorage(unittest.TestCase):
             r.json.return_value = {'filename': 'x.zip'}
             return r
 
-        with patch.object(_mod, 'STORAGE_URL',       'http://store/upload', create=True), \
-             patch.object(_mod, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
-             patch.object(_mod, 'API_KEY',            'k',                   create=True), \
+        with patch.object(src, 'STORAGE_URL',       'http://store/upload', create=True), \
+             patch.object(src, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
+             patch.object(src, 'API_KEY',            'k',                   create=True), \
              patch('lib_sources.requests.post', side_effect=fake_post), \
              patch('builtins.print'):
             src.upload_to_storage('<html>hi</html>', None, 'text/html')
@@ -352,9 +352,9 @@ class TestUploadToStorage(unittest.TestCase):
             r.json.return_value = {'filename': 'x.zip'}
             return r
 
-        with patch.object(_mod, 'STORAGE_URL',       'http://store/upload', create=True), \
-             patch.object(_mod, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
-             patch.object(_mod, 'API_KEY',            'k',                   create=True), \
+        with patch.object(src, 'STORAGE_URL',       'http://store/upload', create=True), \
+             patch.object(src, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
+             patch.object(src, 'API_KEY',            'k',                   create=True), \
              patch('lib_sources.requests.post', side_effect=fake_post), \
              patch('builtins.print'):
             src.upload_to_storage(None, b'%PDF-1.4', 'application/pdf')
@@ -374,9 +374,9 @@ class TestUploadToStorage(unittest.TestCase):
             r.json.return_value = {'filename': 'x.zip'}
             return r
 
-        with patch.object(_mod, 'STORAGE_URL',       'http://store/upload', create=True), \
-             patch.object(_mod, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
-             patch.object(_mod, 'API_KEY',            'k',                   create=True), \
+        with patch.object(src, 'STORAGE_URL',       'http://store/upload', create=True), \
+             patch.object(src, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
+             patch.object(src, 'API_KEY',            'k',                   create=True), \
              patch('lib_sources.requests.post', side_effect=fake_post), \
              patch('builtins.print'):
             src.upload_to_storage(None, b'\xff\xd8', 'image/jpeg')
@@ -396,9 +396,9 @@ class TestUploadToStorage(unittest.TestCase):
             r.json.return_value = {'filename': 'x.zip'}
             return r
 
-        with patch.object(_mod, 'STORAGE_URL',       'http://store/upload', create=True), \
-             patch.object(_mod, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
-             patch.object(_mod, 'API_KEY',            'k',                   create=True), \
+        with patch.object(src, 'STORAGE_URL',       'http://store/upload', create=True), \
+             patch.object(src, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
+             patch.object(src, 'API_KEY',            'k',                   create=True), \
              patch('lib_sources.requests.post', side_effect=fake_post), \
              patch('builtins.print'):
             src.upload_to_storage('error', b'img', 'image/jpeg')
