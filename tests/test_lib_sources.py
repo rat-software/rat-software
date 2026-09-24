@@ -304,9 +304,9 @@ def _run_upload(html='<html/>', bin_data=b'data', content_type='image/jpeg',
     mock_response.status_code = post_status
     mock_response.json.return_value = post_json or {'filename': 'remote.zip'}
 
-    with patch.object(_mod, 'STORAGE_URL',       storage_url,  create=True), \
-         patch.object(_mod, 'LOCAL_STORAGE_PATH', local_path,   create=True), \
-         patch.object(_mod, 'API_KEY',            'key',         create=True), \
+    with patch.object(src, 'STORAGE_URL',       storage_url,  create=True), \
+         patch.object(src, 'LOCAL_STORAGE_PATH', local_path,   create=True), \
+         patch.object(src, 'API_KEY',            'key',         create=True), \
          patch('lib_sources.requests.post',       return_value=mock_response), \
          patch('lib_sources.os.makedirs'), \
          patch('builtins.open', unittest.mock.mock_open()), \
