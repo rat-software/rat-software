@@ -446,8 +446,8 @@ class TestUploadToStorage(unittest.TestCase):
         with patch.object(_mod, 'STORAGE_URL',       'http://store/upload', create=True), \
              patch.object(_mod, 'LOCAL_STORAGE_PATH', '/tmp/ls',             create=True), \
              patch.object(_mod, 'API_KEY',            'k',                   create=True), \
-             patch('lib_sources.requests.post', side_effect=Exception('network error')), \
-             patch('lib_sources.os.makedirs'), \
+             patch('lib_scraper.requests.post', side_effect=Exception('network error')), \
+             patch('lib_scraper.os.makedirs'), \
              patch('builtins.open', m_open), \
              patch('builtins.print'):
             result = src.upload_to_storage('<html/>', b'img', 'image/jpeg')
