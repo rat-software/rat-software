@@ -61,4 +61,4 @@ jobs:
         run: python -m pytest tests/ --ignore=tests/routes --ignore=tests/node_modules -v
 
       - name: Run route tests
-        run: python -m pytest tests/routes/ -v
+        run: python -m pip install --upgrade pip gspread && python -m pytest tests/routes/ -v
