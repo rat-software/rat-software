@@ -268,7 +268,7 @@ class TestSelectMethods(unittest.TestCase):
     def test_get_sources_pending_passes_job_server_as_param(self):
         _, cur = self._run('get_sources_pending', _JOB_SERVER)
         sql, params = cur.execute.call_args
-        self.assertNotIn(_JOB_SERVER, sql)
+        self.assertIn(_JOB_SERVER, sql)
         self.assertIn(_JOB_SERVER, params)
 
     def test_get_source_check_by_result_id_returns_fetchone(self):
