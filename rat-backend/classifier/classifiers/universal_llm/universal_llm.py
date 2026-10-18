@@ -140,7 +140,7 @@ class UniversalLlm(Classifier):
                 extra_headers = None if is_ollama else {"HTTP-Referer": "https://rat-software.org", "X-Title": "RAT Universal LLM"}
                 
                 # --- API KEY DECRYPTION ---
-                raw_key = task.get('api_key', '').strip()
+                raw_key = (task.get('api_key') or '').strip()
                 api_key = None
                 
                 if raw_key:
@@ -260,30 +260,37 @@ class UniversalLlm(Classifier):
                             api_kwargs["extra_body"] = {"keep_alive": "5m"}
 
                         answer = ""
+                        finish_reason = None
                         try:
                             response = client.chat.completions.create(**api_kwargs)
                             raw_content = response.choices[0].message.content
+                            finish_reason = response.choices[0].finish_reason
                             answer = raw_content.strip() if raw_content else ""
                             if not answer:
                                 raise ValueError("Empty response")
 
                         except (openai.BadRequestError, openai.APIConnectionError, openai.InternalServerError, ValueError) as e:
-                            print(f"⚠️ [Fallback] API Error oder leere Antwort. Versuche Standard-Request...")
+                            print(f"⚠️ [Fallback] API Error oder leere Antwort. Versuche Standard-Request... ({type(e).__name__}: {str(e)[:300]})")
                             if "response_format" in api_kwargs: del api_kwargs["response_format"]
                             try:
                                 response = client.chat.completions.create(**api_kwargs)
                                 raw_content = response.choices[0].message.content
+                                finish_reason = response.choices[0].finish_reason
                                 answer = raw_content.strip() if raw_content else ""
-                            except:
+                            except Exception as fallback_error:
+                                print(f"   ↳ Fallback fehlgeschlagen: {type(fallback_error).__name__}: {str(fallback_error)[:300]}")
                                 answer = "error_api"
                                 
                         except openai.APITimeoutError:
                             answer = "error_timeout"
                         except Exception as e:
+                            print(f"   ↳ API-Fehler: {type(e).__name__}: {str(e)[:300]}")
                             answer = "error_api"
                         
                         if not answer or answer in ["error_api", "error_timeout"]:
-                            if not answer: answer = "error_empty"
+                            if not answer:
+                                answer = "error_empty"
+                                print(f"   ↳ Leere Antwort (finish_reason={finish_reason})")
                             final_answer = answer
                             print(f"⚠️ Attempt {attempt+1}/{max_retries} failed with {final_answer}. Retrying...")
                             continue
@@ -316,7 +323,9 @@ class UniversalLlm(Classifier):
                             break # ERFOLG! Wir verlassen die Retry-Schleife.
                         else:
                             # Das Modell hat Quatsch geantwortet (z.B. "1.1" oder fehlende Klammern)
-                            print(f"⚠️ [JSON Error] Attempt {attempt+1}/{max_retries} failed. Output invalid -> {answer[:50].replace(chr(10), ' ')}...")
+                            print(f"⚠️ [JSON Error] Attempt {attempt+1}/{max_retries} failed. Output invalid (finish_reason={finish_reason}) -> {answer[:50].replace(chr(10), ' ')}...")
+                            if finish_reason == 'length':
+                                print(f"   ↳ Antwort wurde abgeschnitten: max_tokens ({max_tokens}) ist zu klein für dieses Modell.")
                             final_answer = "error_invalid_json"
                             continue # Zwingt das Skript in den nächsten API-Versuch!
                     
