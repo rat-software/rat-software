@@ -646,7 +646,8 @@ def study_progress(id):
                                 finished_clf_runs += failed_src
                             if tt in ('all', 'ai_overview'): expected_clf_runs += ai_overview_count
                             if tt in ('all', 'chatbot'): expected_clf_runs += chatbot_count
-                            if tt in ('all', 'image'): expected_clf_runs += image_count_total
+                            # Images are not part of 'all': the LLM worker does not fetch result_image rows
+                            if tt == 'image': expected_clf_runs += image_count_total
                     except:
                         pass
                 
@@ -702,7 +703,14 @@ def study_progress(id):
                         .filter(
                             model_class.study_id == id, 
                             ClassifierResult.classifier_id == clf.id,
-                            ClassifierResult.value.notin_(['in process', 'source_failed', 'error', 'classifier_error', 'skipped_timeout'])
+                            or_(
+                                ClassifierResult.value.notin_(['in process', 'source_failed', 'error', 'classifier_error', 'skipped_timeout']),
+                                # Permanent failure: the backend stops retrying once retry_count reaches its counter limit (3)
+                                and_(
+                                    ClassifierResult.value.in_(['error', 'classifier_error', 'skipped_timeout']),
+                                    func.coalesce(ClassifierResult.retry_count, 0) >= 3
+                                )
+                            )
                         ).count()
 
         # 5. Calculate percentage value and cap it
@@ -921,33 +929,14 @@ def update_study_settings(id):
         
         existing_tasks = {}
         old_task_names = {}
+        key_encryption_failed = False
         if study.llm_classifiers_json:
-                    try:
-                        tasks = json.loads(study.llm_classifiers_json)
-                        for task in tasks:
-                            if not task.get('active', True):
-                                continue
-                            
-                            disp_name = task.get('display_name')
-                            if disp_name:
-                                active_indicators.append(f"LLM_{disp_name}")
-                            
-                            tt = task.get('target_type', 'all')
-                            if tt in ('all', 'organic', None): 
-                                expected_clf_runs += organic_count_total
-                                finished_clf_runs += failed_org
-                            if tt in ('all', 'ai_source'): 
-                                expected_clf_runs += ai_source_count_total
-                                finished_clf_runs += failed_src
-                            if tt in ('all', 'ai_overview'): 
-                                expected_clf_runs += ai_overview_count
-                            if tt in ('all', 'chatbot'): 
-                                expected_clf_runs += chatbot_count
-                            if tt in ('all', 'image'): 
-                                expected_clf_runs += image_count_total
-                                finished_clf_runs += failed_img
-                    except:
-                        pass
+            try:
+                old_tasks = json.loads(study.llm_classifiers_json)
+                existing_tasks = {t['id']: t.get('api_key') for t in old_tasks}
+                old_task_names = {t['id']: t.get('display_name') for t in old_tasks}
+            except:
+                pass
 
         llm_config_raw = request.form.get('llm_classifiers_json', '').strip()
         universal_clf = Classifier.query.filter_by(name='universal_llm').first()
@@ -959,12 +948,15 @@ def update_study_settings(id):
                 
                 for task in tasks:
                     tid = task.get('id')
-                    api_key = task.get('api_key', '').strip()
+                    api_key = (task.get('api_key') or '').strip()
                     
                     if (api_key == "PLACEHOLDER_EXISTING_KEY" or not api_key) and tid in existing_tasks:
                         task['api_key'] = existing_tasks[tid]
                     elif api_key and not api_key.startswith('gAAAAA'):
                         task['api_key'] = encrypt_key(api_key)
+                        # encrypt_key returns None when LLM_SECRET_KEY is not configured
+                        if task['api_key'] is None:
+                            key_encryption_failed = True
                 
                 deleted_task_ids = set(existing_tasks.keys()) - set(new_task_ids)
                 
@@ -994,6 +986,9 @@ def update_study_settings(id):
                 
         db.session.commit()
         flash('Study settings updated successfully.', 'success')
+        if key_encryption_failed:
+            flash('The LLM API key could not be saved because LLM_SECRET_KEY is missing in the .env file. '
+                  'Add it (with the same value as on the classifier server), restart the app and enter the key again.', 'danger')
         
     else:
         print("WTFORMS ERROR:", form.errors)

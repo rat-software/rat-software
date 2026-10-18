@@ -33,12 +33,12 @@ parameterized==0.9.0
 parse==1.21.1
 parse_type==0.6.6
 pdbp==1.8.2
-pillow==12.2.0
+pillow>=12.3.0
 platformdirs==4.9.6
 pluggy==1.6.0
 psutil==7.2.2
 psycopg2-binary==2.9.11
-pyasn1==0.6.3
+pyasn1>=0.6.4
 pycparser==3.0
 pydivert==3.1.1
 Pygments==2.20.0

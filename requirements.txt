@@ -1,11 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 aiohappyeyeballs==2.6.1
-aiohttp==3.13.5
+aiohttp>=3.14.3
 aiosignal==1.4.0
 alembic==1.18.4
 annotated-doc==0.0.4
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
-anyio==4.13.0
+anyio>=4.14.2
 APScheduler==3.11.2
 argon2-cffi==25.1.0
 argon2-cffi-bindings==25.1.0
@@ -24,11 +25,11 @@ cloudpathlib==0.23.0
 colorama==0.4.6
 confection==1.3.3
 crontab==1.0.5
-cryptography==46.0.7
+cryptography>=50.0.0
 cssselect==1.4.0
-cuda-bindings==13.3.1
-cuda-pathfinder==1.6.0
-cuda-toolkit==13.0.3.0
+cuda-bindings==13.3.1 ; sys_platform == "linux"
+cuda-pathfinder==1.6.0 ; sys_platform == "linux"
+cuda-toolkit==13.0.3.0 ; sys_platform == "linux"
 cymem==2.0.13
 dataclasses-json==0.6.7
 datasets==4.8.4
@@ -81,8 +82,8 @@ jsonpointer==3.1.1
 kaitaistruct==0.11
 langdetect==1.0.9
 libpass==1.9.3
-lxml==6.0.4
-Mako==1.3.11
+lxml>=6.1.0
+Mako>=1.3.12
 Markdown==3.10.2
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
@@ -99,21 +100,21 @@ narwhals==2.24.0
 networkx==3.6.1
 nltk>=3.10.3
 numpy==2.4.4
-nvidia-cublas==13.1.1.3
-nvidia-cuda-cupti==13.0.85
-nvidia-cuda-nvrtc==13.0.88
-nvidia-cuda-runtime==13.0.96
-nvidia-cudnn-cu13==9.20.0.48
-nvidia-cufft==12.0.0.61
-nvidia-cufile==1.15.1.6
-nvidia-curand==10.4.0.35
-nvidia-cusolver==12.0.4.66
-nvidia-cusparse==12.6.3.3
-nvidia-cusparselt-cu13==0.8.1
-nvidia-nccl-cu13==2.29.7
-nvidia-nvjitlink==13.3.33
-nvidia-nvshmem-cu13==3.4.5
-nvidia-nvtx==13.0.85
+nvidia-cublas==13.1.1.3 ; sys_platform == "linux"
+nvidia-cuda-cupti==13.0.85 ; sys_platform == "linux"
+nvidia-cuda-nvrtc==13.0.88 ; sys_platform == "linux"
+nvidia-cuda-runtime==13.0.96 ; sys_platform == "linux"
+nvidia-cudnn-cu13==9.20.0.48 ; sys_platform == "linux"
+nvidia-cufft==12.0.0.61 ; sys_platform == "linux"
+nvidia-cufile==1.15.1.6 ; sys_platform == "linux"
+nvidia-curand==10.4.0.35 ; sys_platform == "linux"
+nvidia-cusolver==12.0.4.66 ; sys_platform == "linux"
+nvidia-cusparse==12.6.3.3 ; sys_platform == "linux"
+nvidia-cusparselt-cu13==0.8.1 ; sys_platform == "linux"
+nvidia-nccl-cu13==2.29.7 ; sys_platform == "linux"
+nvidia-nvjitlink==13.3.33 ; sys_platform == "linux"
+nvidia-nvshmem-cu13==3.4.5 ; sys_platform == "linux"
+nvidia-nvtx==13.0.85 ; sys_platform == "linux"
 oauthlib==3.3.1
 omegaconf==2.3.0
 openai==2.41.1
@@ -126,7 +127,7 @@ parameterized==0.9.0
 parse==1.21.1
 parse_type==0.6.6
 pdbp==1.8.2
-pillow==12.2.0
+pillow>=12.3.0
 platformdirs==4.9.6
 pluggy==1.6.0
 preshed==3.0.13
@@ -137,7 +138,7 @@ psutil==7.2.2
 psycopg2-binary==2.9.11
 pt_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.8.0/pt_core_news_sm-3.8.0-py3-none-any.whl#sha256=c304fa04db3af73cd08a250feacf560506e15a2ec2469bd1b09f06847f6b455c
 pyarrow==23.0.1
-pyasn1==0.6.3
+pyasn1>=0.6.4
 pyasn1_modules==0.4.2
 PyAutoGUI==0.9.54
 pycparser==3.0
@@ -149,7 +150,7 @@ PyGetWindow==0.0.9
 Pygments==2.20.0
 PyMsgBox==2.0.1
 pynose==1.5.5
-pyOpenSSL==26.0.0
+pyOpenSSL==26.4.0
 pyotp==2.9.0
 pyparsing==3.3.2
 pyperclip==1.11.0
@@ -189,7 +190,7 @@ smart_open==7.6.0
 sniffio==1.3.1
 sortedcontainers==2.4.0
 soupsieve==2.8.3
-spacy==3.8.14
+spacy==3.8.16
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 SQLAlchemy==2.0.49
@@ -203,13 +204,15 @@ threadpoolctl==3.6.0
 tiktoken==0.12.0
 tokenizers==0.22.2
 torch==2.13.0
-torchaudio==2.11.0+cpu
-torchvision==0.28.0+cpu
+torchaudio==2.11.0+cpu ; sys_platform != "darwin"
+torchaudio==2.11.0 ; sys_platform == "darwin"
+torchvision==0.28.0+cpu ; sys_platform != "darwin"
+torchvision==0.28.0 ; sys_platform == "darwin"
 tqdm==4.67.3
 transformers==5.14.1
 trio==0.33.0
 trio-websocket==0.12.2
-triton==3.7.1
+triton==3.7.1 ; sys_platform == "linux"
 typer==0.24.1
 typing-inspect==0.9.0
 typing-inspection==0.4.2

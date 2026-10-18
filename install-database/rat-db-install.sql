@@ -995,7 +995,8 @@ CREATE TABLE public.result_image (
     study integer,
     query integer,
     source integer,
-    country integer
+    country integer,
+    job_server character varying
 );
 
 
