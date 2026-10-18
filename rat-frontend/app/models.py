@@ -726,6 +726,7 @@ class ResultImage(db.Model):
     file_path = db.Column(db.String(255))
     progress = db.Column(db.Integer, default=0)
     counter = db.Column(db.Integer, default=0)
+    job_server = db.Column(db.String)
     
     result_type_text = db.Column(db.String(50), default='image')
     engine_text = db.Column(db.String(100))
