@@ -282,7 +282,6 @@
           
         <select id="study-mode-selector" name="study_mode" class="form-select form-select-lg border-primary text-dark fw-bold mb-3">
           <option value="unselected" {% if not study.study_mode or study.study_mode == 'unselected' %}selected{% endif %} disabled>👉 Step 1: Select a workflow scenario...</option>
-          <option value="custom" {% if study.study_mode == 'custom' %}selected{% endif %}>Custom Mode / Show all Options</option>
           <option value="algorithmic" {% if study.study_mode == 'algorithmic' %}selected{% endif %}>Automatic Classification of Results</option>
           <option value="human" {% if study.study_mode == 'human' %}selected{% endif %}>Human Assessment Studies</option>
           <option value="hybrid" {% if study.study_mode == 'hybrid' %}selected{% endif %}>Hybrid Research (Automated Classifiers + Human Assessment)</option>
@@ -1187,10 +1186,6 @@
           desc: "Please select a template from the dropdown above to unlock the workspace and reveal the configuration options.",
           showHuman: false, showClassifiers: false, showLaunch: false, forceLive: null
       },
-      'custom': {
-          desc: "Shows all options to design a study.",
-          showHuman: true, showClassifiers: true, showLaunch: true, forceLive: null
-      },
       'algorithmic': {
           desc: "Collect and analyze the content of search results by using classifiers (e.g. calculation of the probability of search engine optimization). Automatically enforces background HTML code scrapings to supply algorithms. Removes all human participation paths.<br/><br/><strong>Example Study:</strong><br/><br/><i class='fa-solid fa-book-open text-primary me-1'></i> <strong>Lewandowski, D., Sünkler, S., & Yagci, N. (2021). The influence of search engine optimization on Google’s results: A multi-dimensional approach for detecting SEO:</strong> <a href='https://dl.acm.org/doi/10.1145/3447535.3462479' target='_blank' class='text-decoration-underline'>https://dl.acm.org/doi/10.1145/3447535.3462479</a>",
           showHuman: false, showClassifiers: true, showLaunch: false, forceLive: false
@@ -1400,9 +1395,7 @@
         const urlBadge = document.getElementById('show_urls_badge');
         const dpArea = document.getElementById('download-progress-area');
 
-        if (cCard && modeSelector.value === 'custom') {
-            toggleSectionState(cCard, !isLive); 
-        }
+
         
         if (urlCheck) {
             if (isLive) {

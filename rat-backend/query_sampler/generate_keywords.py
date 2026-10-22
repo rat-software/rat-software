@@ -119,8 +119,7 @@ if keywords:
                     request=request
                 )
 
-
-                
+                clear_keyword_ideas(keyword_id)                
 
                 for idea in keyword_ideas:
                     competition_value = idea.keyword_idea_metrics.competition.name

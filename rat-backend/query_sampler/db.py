@@ -237,15 +237,12 @@ def get_keyword_status(keyword_id, status):
 
 def update_keyword_status(status, keyword_id):
     """
-    Update the status of a specific keyword.
-    
-    Args:
-        status (int): The new status of the keyword.
-        keyword_id (int): The ID of the keyword to update.
+    Update the status of a specific keyword and set the updated_at timestamp.
     """
-    conn = psycopg2.connect(database=database, user=user, password=password, host=host, port=port)  # Connection to the database
+    conn = psycopg2.connect(database=database, user=user, password=password, host=host, port=port)
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("UPDATE qs_keyword SET status=%s WHERE qs_keyword.id = %s", (status, keyword_id))
+    # Neu: updated_at wird auf die aktuelle Zeit gesetzt
+    cur.execute("UPDATE qs_keyword SET status=%s, updated_at=NOW() WHERE qs_keyword.id = %s", (status, keyword_id))
     conn.commit()
     conn.close()
 
@@ -292,17 +289,28 @@ def select_keywords_ideas(study_id):
 
 def reset_hanging_qs_jobs():
     """
-    Reset keywords and studies that are stuck in 'processing' state (status = 2)
-    back to 'pending' state (status = 0) so they can be picked up again by the generator.
+    Reset keywords that are stuck in 'processing' state (status = 2) for more than 30 minutes
+    back to 'pending' state (status = 0).
     """
     conn = psycopg2.connect(database=database, user=user, password=password, host=host, port=port)
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
-    # Reset hanging keywords
-    cur.execute("UPDATE qs_keyword SET status = 0 WHERE status = 2;")
+    # Neu: Prüft ob der Job seit mehr als 30 Minuten auf Status 2 steht
+    cur.execute("UPDATE qs_keyword SET status = 0 WHERE status = 2 AND updated_at < NOW() - INTERVAL '30 minutes';")
     
-    # Reset hanging studies (if they also use status 2 for processing)
-    cur.execute("UPDATE qs_study SET status = 0 WHERE status = 2;")
+    # Reset hanging studies (falls relevant)
+    cur.execute("UPDATE qs_study SET status = 0 WHERE status = 2;") # Hier evtl. das Gleiche machen, falls Studien auch hängen können
     
+    conn.commit()
+    conn.close()
+    
+def clear_keyword_ideas(keyword_id):
+    """
+    Deletes all existing keyword ideas for a specific keyword to prevent duplicates
+    if a job is restarted.
+    """
+    conn = psycopg2.connect(database=database, user=user, password=password, host=host, port=port)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM qs_keyword_idea WHERE qs_keyword_id = %s;", (keyword_id,))
     conn.commit()
     conn.close()
