@@ -123,6 +123,7 @@ class Qs_Keyword(db.Model):
     keyword = db.Column(db.String)
     created_at = db.Column(db.DateTime)
     status = db.Column(db.Integer)
+    updated_at = db.Column(db.DateTime)
 
 class Qs_Keyword_Idea(db.Model):
     __tablename__ = 'qs_keyword_idea'
