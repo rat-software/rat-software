@@ -873,7 +873,7 @@ def preview_survey(study_id, survey_type):
     questions = json.loads(json_data) if json_data else []
     
     return render_template('surveys/survey.html', 
-                           title=f"[PRETEST VORSCHAU] {survey_type.capitalize()}-Survey", 
+                           title=f"[PRETEST PREVIEW] {survey_type.capitalize()}-Survey", 
                            questions=questions, 
                            study=study, 
                            is_preview=True)
@@ -920,7 +920,7 @@ def preview_assessment(study_id):
         elif ResultImage.query.filter_by(study_id=study.id).first(): preview_tasks.append((ResultImage.query.filter_by(study_id=study.id).first(), 'result_image'))
         
     if not preview_tasks:
-        flash("Für die Vorschau des Assessments müssen zuerst Daten hochgeladen werden.", "warning")
+        flash("To preview the assessment, you must first upload data.", "warning")
         return redirect(request.referrer or '/')
 
     first_task_item, first_task_type = preview_tasks[0]
