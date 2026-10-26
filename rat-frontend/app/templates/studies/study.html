@@ -178,20 +178,25 @@
 
         {% set has_any_data = (results > 0 or results_ai > 0 or results_chatbot > 0 or results_serp > 0 or ai_source_count > 0 or results_image > 0) %}
         {% set has_scrapeable_data = (results > 0 or ai_source_count > 0 or results_image > 0) %}
+		{% set show_progress = has_scrapeable_data and study.study_mode != 'unselected' and not study.live_link_mode %}
 
-        <div id="progress-container" class="{% if not has_scrapeable_data %}d-none{% endif %}">
-            <div id="download-progress-area" class="bg-light p-3 rounded border mb-4">
-                <label class="fw-bold text-dark mb-1 small">
-                    <i class="fa-solid fa-spinner fa-spin text-primary me-1" id="scraping-status-icon"></i> Background Download Progress
-                    <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Shows the background download progress of HTML and screenshots for the uploaded URLs."></i>
-                </label>
-                <div class="progress mt-1" style="height: 25px; border-radius: 6px;">
-                    <div id="progress-bar" 
-                            class="progress-bar {% if progress_percent is defined and progress_percent >= 100 %}bg-success{% else %}progress-bar-striped progress-bar-animated{% endif %}" 
-                            role="progressbar"
-                            style="width: {{ progress_percent | default(0) }}%;" 
-                            aria-valuenow="{{ progress_percent | default(0) }}" aria-valuemin="0" aria-valuemax="100">
-                        <span class="progress-bar-text" id="scraping-progress-bar-text">{{ progress_percent | default(0) }}%</span>
+
+		<div id="progress-container" class="{% if not has_scrapeable_data %}d-none{% endif %}">
+            <div id="download-progress-area" class="bg-light p-3 rounded border mb-4 {% if not show_progress %}d-none{% endif %}">
+                
+                <div id="progress-bar-elements" class="{% if not show_progress %}d-none{% endif %}">
+                    <label class="fw-bold text-dark mb-1 small">
+                        <i class="fa-solid fa-spinner fa-spin text-primary me-1" id="scraping-status-icon"></i> Background Download Progress
+                        <i class="fa-solid fa-circle-question tooltip-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Shows the background download progress of HTML and screenshots for the uploaded URLs."></i>
+                    </label>
+                    <div class="progress mt-1" style="height: 25px; border-radius: 6px;">
+                        <div id="progress-bar" 
+                                class="progress-bar {% if progress_percent is defined and progress_percent >= 100 %}bg-success{% else %}progress-bar-striped progress-bar-animated{% endif %}" 
+                                role="progressbar"
+                                style="width: {{ progress_percent | default(0) }}%;" 
+                                aria-valuenow="{{ progress_percent | default(0) }}" aria-valuemin="0" aria-valuemax="100">
+                            <span class="progress-bar-text" id="scraping-progress-bar-text">{{ progress_percent | default(0) }}%</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -1387,16 +1392,16 @@
         updateUIState();
     }
 
-    function updateLiveModeDependentUI() {
+	function updateLiveModeDependentUI() {
         if (!liveToggle) return;
         const isLive = liveToggle.checked;
-        const cCard = document.getElementById('classifiers-card');
         const urlCheck = document.getElementById('show_urls_checkbox');
         const urlBadge = document.getElementById('show_urls_badge');
-        const dpArea = document.getElementById('download-progress-area');
-
-
         
+        const modeSelector = document.getElementById('study-mode-selector');
+        const selectedMode = modeSelector ? modeSelector.value : 'unselected';
+        const showProgress = (selectedMode !== 'unselected' && !isLive);
+
         if (urlCheck) {
             if (isLive) {
                 urlCheck.checked = true;
@@ -1408,9 +1413,22 @@
             }
         }
         
-        if (dpArea) {
-            if (isLive) dpArea.classList.add('d-none');
-            else dpArea.classList.remove('d-none');
+        const progressBarElements = document.getElementById('progress-bar-elements');
+        if (progressBarElements) {
+            if (showProgress) progressBarElements.classList.remove('d-none');
+            else progressBarElements.classList.add('d-none');
+        }
+
+        const failedWarning = document.getElementById('failed-scrape-warning');
+        const hasVisibleFailedWarning = failedWarning && !failedWarning.classList.contains('d-none');
+        const downloadProgressArea = document.getElementById('download-progress-area');
+        
+        if (downloadProgressArea) {
+            if (!showProgress && !hasVisibleFailedWarning) {
+                downloadProgressArea.classList.add('d-none');
+            } else {
+                downloadProgressArea.classList.remove('d-none');
+            }
         }
     }
 
@@ -1542,9 +1560,14 @@
           progressBarText: document.getElementById('scraping-progress-bar-text')
         };
 
-		// 1. Update counters for uploaded/scraped data
+	// 1. Update counters for uploaded/scraped data
       const hasScrapeableData = (data.results > 0 || data.ai_source_count > 0 || data.results_image > 0);
       
+      const modeSelector = document.getElementById('study-mode-selector');
+      const selectedMode = modeSelector ? modeSelector.value : 'unselected';
+      const liveToggleCb = document.getElementById('live_link_mode_checkbox');
+      const isLiveModeActive = liveToggleCb ? liveToggleCb.checked : false;
+
       if (hasScrapeableData && uiElements.progressContainer) {
           uiElements.progressContainer.classList.remove('d-none');
           uiElements.progressContainer.classList.add('d-block');
@@ -1559,7 +1582,14 @@
       if (data.results_serp > 0 && uiElements.resultsSerpCount) uiElements.resultsSerpCount.textContent = data.results_serp;
       if (data.ai_source_count > 0 && uiElements.aiSourceCount) uiElements.aiSourceCount.textContent = data.ai_source_count;
 
+      const progressBarElements = document.getElementById('progress-bar-elements');
+      const showProgress = (selectedMode !== 'unselected' && !isLiveModeActive);
       
+      if (progressBarElements) {
+          if (showProgress) progressBarElements.classList.remove('d-none');
+          else progressBarElements.classList.add('d-none');
+      }
+
       // 2. Update Scraping Progress Bar (top bar)
       const scrapingIcon = document.getElementById('scraping-status-icon');
       if (uiElements.progressBar) {
@@ -1571,11 +1601,11 @@
         if (percentage >= 100) {
           uiElements.progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
           uiElements.progressBar.classList.add('bg-success');
-          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-circle-check text-success me-1'; // Green checkmark at 100%
+          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-circle-check text-success me-1';
         } else {
           uiElements.progressBar.classList.add('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
           uiElements.progressBar.classList.remove('bg-success');
-          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1'; // Spinner while loading
+          if (scrapingIcon) scrapingIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1';
         }
       }
 
@@ -1588,9 +1618,7 @@
       if (clfWrapper && clfBar && clfText) {
           if (data.has_classifiers) {
               clfWrapper.classList.remove('d-none');
-              
               let clfPercent = data.clf_progress_percent;
-              
               clfBar.style.width = clfPercent + '%';
               clfBar.setAttribute('aria-valuenow', clfPercent);
               clfText.textContent = clfPercent + '%';
@@ -1598,30 +1626,37 @@
               if (clfPercent >= 100) {
                   clfBar.classList.remove('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
                   clfBar.classList.add('bg-success');
-                  if (clfIcon) clfIcon.className = 'fa-solid fa-circle-check text-success me-1'; // Green checkmark
+                  if (clfIcon) clfIcon.className = 'fa-solid fa-circle-check text-success me-1'; 
               } else {
                   clfBar.classList.add('progress-bar-animated', 'progress-bar-striped', 'bg-primary');
                   clfBar.classList.remove('bg-success');
-                  if (clfIcon) clfIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1'; // Loading symbol
+                  if (clfIcon) clfIcon.className = 'fa-solid fa-spinner fa-spin text-primary me-1'; 
               }
           } else {
               clfWrapper.classList.add('d-none');
           }
       }
 
+      // 4. Update Show Error
       const failedWarning = document.getElementById('failed-scrape-warning');
       const failedCount = document.getElementById('failed-scrape-count');
+      const showFailed = (data.failed_scrape_count > 0);
       
-      if (data.failed_scrape_count > 0) {
+      if (showFailed) {
           if (failedWarning) failedWarning.classList.remove('d-none');
           if (failedCount) failedCount.textContent = data.failed_scrape_count;
       } else {
           if (failedWarning) failedWarning.classList.add('d-none');
       }
 
-      // 4. Update status and locks
-      currentScrapingProgress = data.progress_percent;
-      updateUIState();
+      const downloadProgressArea = document.getElementById('download-progress-area');
+      if (downloadProgressArea) {
+          if (!showProgress && !showFailed) {
+              downloadProgressArea.classList.add('d-none');
+          } else {
+              downloadProgressArea.classList.remove('d-none');
+          }
+      }
 
       // 5. Reload the page when everything is finished (status change)
       const hasStaticOnly = (data.results === 0 && (data.results_ai > 0 || data.results_chatbot > 0 || data.results_serp > 0));
