@@ -820,7 +820,17 @@ class LibScraper(metaclass=ABCMeta):
         Hybrid Cookie Bypass: Uses domain-specific rules from rules.json (if applicable)
         AND global IDCAC heuristics (Shadow-DOM piercing, Nuke CSS).
         """
-        current_url = driver.current_url
+        js_payload = self._build_cookie_bypass_js(driver.current_url)
+        try:
+            driver.execute_script(js_payload)
+            driver.sleep(2)
+        except Exception as e:
+            print(f"Warning: Cookie heuristics failed: {e}")
+
+    def _build_cookie_bypass_js(self, current_url):
+        """
+        Builds the JS payload for the cookie bypass (shared by the Selenium and Playwright scrapers).
+        """
         domain = urlparse(current_url).hostname
         if not domain:
             domain = ""
@@ -968,11 +978,7 @@ class LibScraper(metaclass=ABCMeta):
                 }}
             }}, 1000);
         """
-        try:
-            driver.execute_script(js_payload)
-            driver.sleep(2)
-        except Exception as e:
-            print(f"Warning: Cookie heuristics failed: {e}")
+        return js_payload
 
     def take_screenshot(self, driver):
         screenshot_folder = os.path.join(self.parentdir, "tmp")
