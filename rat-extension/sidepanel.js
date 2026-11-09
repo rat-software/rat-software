@@ -22,6 +22,8 @@ let currentEditingEngineId = null;
 
 let currentTaskPage = 1;
 const TASKS_PER_PAGE = 50;
+let panelsFilledFor = null;
+let lastStatus = null;
 
 
 // --- ZOOM LOGIC ---
@@ -52,6 +54,168 @@ document.getElementById('liveLimitType').addEventListener('change', (e) => {
         liveLimitInput.placeholder = "Ex: 10";
     }
 });
+
+// --- 0b. PROXY / BEHAVIOR PANELS (shared by the create view "c" and the live view "e") ---
+function esc(s) {
+    return String(s === undefined || s === null ? "" : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function proxyPanelHtml(p) {
+    return `
+    <label>Proxy Mode <span class="tooltip" data-tip="List: every line is its own proxy and they are rotated. Gateway: one rotating endpoint (typical for residential proxies) where a new session token in the username gives a new IP.">?</span></label>
+    <select id="${p}ProxyMode">
+        <option value="list">List of proxies (e.g. Webshare datacenter)</option>
+        <option value="gateway">Gateway / rotating residential</option>
+    </select>
+    <div id="${p}ProxyTplRow" style="display:none">
+        <label>Username template</label>
+        <input type="text" id="${p}ProxyTpl" placeholder="{user}-session-{session}">
+        <div class="hint">Placeholders: <code>{user}</code> = username from the line, <code>{session}</code> = new random token on every rotation, <code>{rand}</code> = random value. The exact syntax depends on your provider (see its docs).</div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+        <div style="flex:1"><label style="margin-top:0">Rotate after N requests <span class="tooltip" data-tip="Switch to the next IP after this many page loads. 0 = only rotate on captcha or errors.">?</span></label>
+            <input type="number" id="${p}ProxyBudget" min="0" value="0"></div>
+        <div style="flex:1"><label style="margin-top:0">IP cooldown (min) <span class="tooltip" data-tip="After a captcha an IP is not reused for this long.">?</span></label>
+            <input type="number" id="${p}ProxyCooldown" min="1" value="120"></div>
+    </div>
+    <label class="check-row"><input type="checkbox" id="${p}ProxyClearCookies" checked><span style="text-transform:none; font-weight:normal;">Clear search-engine cookies when the IP changes<small>Recommended: a new IP with the old cookies is easy to link.</small></span></label>
+    <div class="hint">Accepted formats: <code>IP:Port:User:Pass</code> (Webshare), <code>User:Pass@IP:Port</code>, <code>http://User:Pass@IP:Port</code>, <code>IP:Port</code>. Lines starting with # are ignored. Only HTTP(S) proxies work with login in Chrome.</div>
+    <button type="button" id="${p}ProxyTestBtn" class="btn-secondary btn-sm" style="margin-top:8px;">Test proxies</button>
+    <div id="${p}ProxyTestOut" style="margin-top:6px; font-size:11px;"></div>`;
+}
+
+function behaviorPanelHtml(p) {
+    return `
+    <label class="check-row"><input type="checkbox" id="${p}HumanPacing" checked><span style="text-transform:none; font-weight:normal;">Human-like pacing<small>Irregular waiting times (log-normal) instead of uniform random delays.</small></span></label>
+    <label class="check-row"><input type="checkbox" id="${p}TrustedInput" checked><span style="text-transform:none; font-weight:normal;">Real mouse &amp; keyboard events<small>Clicks, scrolling and typing are sent as trusted browser input (needs the "debugger" permission; Chrome shows a debugging banner on the search tab).</small></span></label>
+    <label class="check-row"><input type="checkbox" id="${p}Shuffle"><span style="text-transform:none; font-weight:normal;">Shuffle task order<small>Avoids hitting the same query across engines/countries in a rigid pattern. Applies to tasks that have not started yet.</small></span></label>
+    <label class="check-row"><input type="checkbox" id="${p}TypedSearch"><span style="text-transform:none; font-weight:normal;">Typed search <span class="experimental">experimental</span><small>Open the search engine's start page and type the query like a person instead of opening the result URL directly. Falls back to the direct URL if the field is not found. Not yet verified against live search engines.</small></span></label>
+    <label>Break every N tasks <span class="tooltip" data-tip="Take a longer pause (min–max seconds) after this many tasks. 0 = no breaks.">?</span></label>
+    <div class="row">
+        <input type="number" id="${p}BreakEvery" min="0" value="0" style="flex:1" placeholder="N">
+        <input type="number" id="${p}BreakMin" min="0" value="120" style="flex:1" placeholder="min s">
+        <input type="number" id="${p}BreakMax" min="0" value="300" style="flex:1" placeholder="max s">
+    </div>
+    <label>Max. captcha rounds <span class="tooltip" data-tip="How many times the study rotates/waits after captchas before it stops and asks for attention.">?</span></label>
+    <input type="number" id="${p}MaxCaptcha" min="1" value="10">
+    <hr style="border:0; border-top:1px solid #eee; margin:12px 0 0;">
+    <label>Webhook URL (optional) <span class="tooltip" data-tip="Receives a JSON POST when the study finishes, needs attention (captcha, many empty pages) or fails. Works with Slack/Discord/ntfy style incoming webhooks.">?</span></label>
+    <input type="text" id="${p}Webhook" placeholder="https://ntfy.sh/my-topic">
+    <label>Repeat study <span class="tooltip" data-tip="After a run is finished, start a fresh copy of the study every X hours, Y times. The browser must stay open.">?</span></label>
+    <div class="row">
+        <input type="number" id="${p}RepeatHours" min="0" step="0.5" value="0" style="flex:1" placeholder="every X h">
+        <input type="number" id="${p}RepeatTimes" min="0" value="0" style="flex:1" placeholder="Y times">
+    </div>
+    <div class="hint">0 = run once.</div>`;
+}
+
+function mountPanels() {
+    [['createProxyMount', 'c', proxyPanelHtml], ['editProxyMount', 'e', proxyPanelHtml],
+     ['createBehaviorMount', 'c', behaviorPanelHtml], ['editBehaviorMount', 'e', behaviorPanelHtml]].forEach(([id, p, fn]) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = fn(p);
+    });
+    ['c', 'e'].forEach(p => {
+        const modeSel = document.getElementById(p + 'ProxyMode');
+        modeSel.addEventListener('change', () => {
+            document.getElementById(p + 'ProxyTplRow').style.display = modeSel.value === 'gateway' ? 'block' : 'none';
+        });
+        document.getElementById(p + 'ProxyTestBtn').addEventListener('click', () => runProxyTest(p));
+    });
+}
+
+function readProxyOpts(p) {
+    return {
+        proxyMode: document.getElementById(p + 'ProxyMode').value,
+        proxyUsernameTemplate: document.getElementById(p + 'ProxyTpl').value.trim(),
+        proxyBudget: parseInt(document.getElementById(p + 'ProxyBudget').value, 10) || 0,
+        proxyCooldownMin: parseInt(document.getElementById(p + 'ProxyCooldown').value, 10) || 120,
+        clearCookiesOnRotate: document.getElementById(p + 'ProxyClearCookies').checked
+    };
+}
+
+function readBehaviorOpts(p) {
+    const num = (id, d) => { const v = parseInt(document.getElementById(p + id).value, 10); return isNaN(v) ? d : v; };
+    return {
+        behavior: {
+            humanPacing: document.getElementById(p + 'HumanPacing').checked,
+            trustedInput: document.getElementById(p + 'TrustedInput').checked,
+            shuffle: document.getElementById(p + 'Shuffle').checked,
+            typedSearch: document.getElementById(p + 'TypedSearch').checked,
+            breakEvery: num('BreakEvery', 0),
+            breakMinSec: num('BreakMin', 120),
+            breakMaxSec: Math.max(num('BreakMax', 300), num('BreakMin', 120))
+        },
+        maxCaptchaRounds: Math.max(1, num('MaxCaptcha', 10)),
+        webhookUrl: document.getElementById(p + 'Webhook').value.trim(),
+        repeatEveryHours: parseFloat(document.getElementById(p + 'RepeatHours').value) || 0,
+        repeatTimes: num('RepeatTimes', 0)
+    };
+}
+
+function fillProxyOpts(p, st) {
+    document.getElementById(p + 'ProxyMode').value = st.proxyMode === 'gateway' ? 'gateway' : 'list';
+    document.getElementById(p + 'ProxyTpl').value = st.proxyUsernameTemplate || "";
+    document.getElementById(p + 'ProxyBudget').value = st.proxyBudget || 0;
+    document.getElementById(p + 'ProxyCooldown').value = st.proxyCooldownMin || 120;
+    document.getElementById(p + 'ProxyClearCookies').checked = st.clearCookiesOnRotate !== false;
+    document.getElementById(p + 'ProxyTplRow').style.display = st.proxyMode === 'gateway' ? 'block' : 'none';
+}
+
+function fillBehaviorOpts(p, st) {
+    const b = st.behavior || {};
+    document.getElementById(p + 'HumanPacing').checked = b.humanPacing !== false;
+    document.getElementById(p + 'TrustedInput').checked = b.trustedInput !== false;
+    document.getElementById(p + 'Shuffle').checked = !!b.shuffle;
+    document.getElementById(p + 'TypedSearch').checked = !!b.typedSearch;
+    document.getElementById(p + 'BreakEvery').value = b.breakEvery || 0;
+    document.getElementById(p + 'BreakMin').value = b.breakMinSec !== undefined ? b.breakMinSec : 120;
+    document.getElementById(p + 'BreakMax').value = b.breakMaxSec !== undefined ? b.breakMaxSec : 300;
+    document.getElementById(p + 'MaxCaptcha').value = st.maxCaptchaRounds || 10;
+    document.getElementById(p + 'Webhook').value = st.webhookUrl || "";
+    document.getElementById(p + 'RepeatHours').value = st.repeatEveryHours || 0;
+    document.getElementById(p + 'RepeatTimes').value = st.repeatTimes || 0;
+}
+
+function resetPanelDefaults(p) {
+    fillProxyOpts(p, {});
+    fillBehaviorOpts(p, {});
+}
+
+function formatProxyErrors(v) {
+    if (!v || !v.errors || v.errors.length === 0) return "";
+    return v.errors.map(e => `• ${e.line} → ${e.error}`).join("\n");
+}
+
+async function runProxyTest(p) {
+    const out = document.getElementById(p + 'ProxyTestOut');
+    const btn = document.getElementById(p + 'ProxyTestBtn');
+    const listStr = document.getElementById(p === 'c' ? 'proxyList' : 'editProxyList').value;
+    if (!listStr.trim()) { out.innerHTML = `<span class="bad-text">Enter at least one proxy first.</span>`; return; }
+    btn.disabled = true;
+    out.innerHTML = "⏳ Testing… (up to 10 s per proxy)";
+    const opts = readProxyOpts(p);
+    const res = await new Promise(r => chrome.runtime.sendMessage({
+        action: "TEST_PROXIES",
+        payload: {
+            sessionId: p === 'e' ? currentSessionId : null,
+            proxyListStr: listStr,
+            proxyMode: opts.proxyMode,
+            proxyUsernameTemplate: opts.proxyUsernameTemplate,
+            webhookUrl: document.getElementById(p + 'Webhook').value.trim()
+        }
+    }, r));
+    btn.disabled = false;
+    if (!res || res.error) { out.innerHTML = `<span class="bad-text">${esc(res && res.error || "No response from the extension.")}</span>`; return; }
+    let html = res.results.map(r => r.ok
+        ? `<div class="ok-text">✔ ${esc(r.target)} → ${esc(r.ip)} ${esc(r.country)} (${r.ms} ms)</div>`
+        : `<div class="bad-text">✘ ${esc(r.target)} → ${esc(r.error)}</div>`).join("");
+    (res.errors || []).forEach(e => { html += `<div class="bad-text">⚠ ${esc(e.line)} → ${esc(e.error)}</div>`; });
+    if (!res.results.length && !(res.errors || []).length) html = `<span class="bad-text">No usable proxy lines found.</span>`;
+    out.innerHTML = html;
+}
+
+mountPanels();
 
 // --- 1. LOCAL DATABASE HELPERS FOR HEAVY LIFTING ---
 async function initLocalDB() {
@@ -180,7 +344,33 @@ async function performFullBackup() {
     }
 }
 
+// A design contains only keywords, engines and non-secret settings: no results, no proxy credentials, no webhook.
+function sanitizeStudyDesign(src, newId) {
+    const d = JSON.parse(JSON.stringify(src));
+    if (newId) { d.id = newId; }
+    d.status = "OPEN";
+    d.currentIndex = 0;
+    d.runNumber = 1;
+    delete d.metrics;
+    delete d.retryAt;
+    delete d.nextRunAt;
+    delete d.captchaTabId;
+    delete d.captchaRounds;
+    delete d.progress;
+    d.tasks = (d.tasks || []).map(t => ({
+        term: t.term, config: t.config,
+        status: t.status === "CANCELLED" ? "CANCELLED" : "OPEN",
+        pages: [], totalOrganic: 0, retryCount: 0
+    }));
+    d.settings = d.settings || {};
+    d.settings.useProxies = false;
+    d.settings.proxyList = [];
+    d.settings.webhookUrl = "";
+    return d;
+}
+
 async function performExportStudyDesign(sessionId) {
+    if (!dbLocal) await initLocalDB();
     try {
         const tx = dbLocal.transaction(STORE_SESSIONS, "readonly");
         const store = tx.objectStore(STORE_SESSIONS);
@@ -193,11 +383,10 @@ async function performExportStudyDesign(sessionId) {
                 return;
             }
 
-            sessionData.status = "PAUSED"; 
-            sessionData.progress = 0;
+            const design = sanitizeStudyDesign(sessionData);
 
             const zip = new JSZip();
-            zip.file("study_design.json", JSON.stringify(sessionData, null, 2));
+            zip.file("study_design.json", JSON.stringify(design, null, 2));
 
             const blob = await zip.generateAsync({ type: "blob" });
             const url = URL.createObjectURL(blob);
@@ -231,25 +420,23 @@ async function performImportStudyDesign(file) {
         }
 
         const jsonString = await configFile.async("string");
-        const sessionData = JSON.parse(jsonString);
-
-        sessionData.status = "PAUSED";
-        sessionData.progress = 0;
+        const raw = JSON.parse(jsonString);
+        if (!raw || !Array.isArray(raw.tasks) || !raw.originalConfigs) {
+            alert("Error: This file does not look like a valid study design.");
+            return;
+        }
+        if (!dbLocal) await initLocalDB();
+        const sessionData = sanitizeStudyDesign(raw, "sess_" + Date.now());
+        sessionData.name = (raw.baseName || raw.name || "Imported study");
 
         const tx = dbLocal.transaction(STORE_SESSIONS, "readwrite");
         const store = tx.objectStore(STORE_SESSIONS);
         store.put(sessionData);
 
-        tx.oncomplete = async () => {
-            alert("Study Design successfully imported!");
+        tx.oncomplete = () => {
+            alert("Study Design successfully imported!\n\nProxy credentials and webhook are never part of a design - add your own in the study's Advanced Settings.");
             chrome.runtime.sendMessage({ action: "REFRESH_SESSIONS" });
-
-            if (typeof localGetAllSessions === 'function' && typeof renderList === 'function') {
-                const updatedSessions = await localGetAllSessions();
-                renderList(updatedSessions);
-            }
-            
-            document.getElementById('importDesignInput').value = ""; 
+            document.getElementById('importDesignInput').value = "";
         };
 
         tx.onerror = (err) => {
@@ -548,7 +735,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('useProxies').addEventListener('change', (e) => {
         document.getElementById('proxyList').disabled = !e.target.checked;
+        document.getElementById('createProxyMount').style.display = e.target.checked ? 'block' : 'none';
     });
+    document.getElementById('createProxyMount').style.display = 'none';
 
     // Create Session Submission
     document.getElementById('startScrapeBtn').addEventListener('click', () => {
@@ -567,21 +756,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (q.length === 0) { errorDiv.innerText = "⚠️ Please enter at least one Search Query."; errorDiv.style.display = 'block'; return; }
         if (currentConfigs.length === 0) { errorDiv.innerText = "⚠️ Please add at least one Search Engine configuration."; errorDiv.style.display = 'block'; return; }
 
+        if (useProxies && !proxyListStr.trim()) { errorDiv.innerText = "⚠️ Proxies are enabled but the list is empty."; errorDiv.style.display = 'block'; return; }
+        const dMin = parseInt(document.getElementById('sessMin').value), dMax = parseInt(document.getElementById('sessMax').value);
+        if (!(dMin >= 0) || !(dMax >= dMin)) { errorDiv.innerText = "⚠️ Delays: Max must be greater than or equal to Min."; errorDiv.style.display = 'block'; return; }
+
         if (name && q.length > 0 && currentConfigs.length > 0) {
-			chrome.runtime.sendMessage({
-                action: "CREATE_SESSION",
-                payload: { 
-                    name, queries: q, configs: currentConfigs, 
-                    resultsLimit: parseInt(document.getElementById('sessLimit').value), 
-                    limitType: document.getElementById('sessLimitType').value,
-                    delays: { 
-                        min: parseInt(document.getElementById('sessMin').value) * 1000, 
-                        max: parseInt(document.getElementById('sessMax').value) * 1000 
-                    },
-                    saveSerp,
-                    serpLimit,
-                    useProxies, proxyListStr
-                }
+            const beh = readBehaviorOpts('c');
+            const payload = {
+                name, queries: q, configs: currentConfigs,
+                resultsLimit: parseInt(document.getElementById('sessLimit').value),
+                limitType: document.getElementById('sessLimitType').value,
+                delays: { min: dMin * 1000, max: dMax * 1000 },
+                saveSerp,
+                serpLimit,
+                useProxies, proxyListStr,
+                ...readProxyOpts('c'),
+                ...beh
+            };
+            chrome.runtime.sendMessage({ action: "CREATE_SESSION", payload }, (res) => {
+                void chrome.runtime.lastError;
+                const msg = formatProxyErrors(res && res.proxy);
+                if (msg) alert("Some proxy lines were ignored:\n\n" + msg);
             });
         }
     });
@@ -705,9 +900,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const useProxies = document.getElementById('editUseProxies').checked;
         const proxyListStr = document.getElementById('editProxyList').value;
         if(currentSessionId) {
-            chrome.runtime.sendMessage({ action: "UPDATE_PROXIES", payload: { sessionId: currentSessionId, useProxies, proxyListStr } });
-            alert("Proxy settings updated.");
+            chrome.runtime.sendMessage({ action: "UPDATE_PROXIES", payload: { sessionId: currentSessionId, useProxies, proxyListStr, ...readProxyOpts('e') } }, (res) => {
+                void chrome.runtime.lastError;
+                if (!res || res.error) { alert("Could not update proxies: " + (res && res.error || "no response")); return; }
+                const msg = formatProxyErrors(res);
+                alert(useProxies
+                    ? `Proxy settings updated. ${res.valid} usable ${res.valid === 1 ? "entry" : "entries"}.` + (msg ? "\n\nIgnored lines:\n" + msg : "")
+                    : "Proxies disabled.");
+                panelsFilledFor = null;
+            });
         }
+    });
+
+    document.getElementById('saveBehaviorBtn').addEventListener('click', () => {
+        if (!currentSessionId) return;
+        chrome.runtime.sendMessage({ action: "UPDATE_BEHAVIOR", payload: { sessionId: currentSessionId, ...readBehaviorOpts('e') } }, (res) => {
+            void chrome.runtime.lastError;
+            if (!res || res.error) { alert("Could not update: " + (res && res.error || "no response")); return; }
+            alert("Behavior settings updated." + (res.warning ? "\n\n⚠️ " + res.warning : ""));
+            panelsFilledFor = null;
+        });
     });
 
     document.getElementById('saveStorageSettingsBtn').addEventListener('click', () => {
@@ -1341,16 +1553,19 @@ function renderList(sessions) {
     div.innerHTML = sessions.length ? "" : "<div style='color:#999;text-align:center;padding:10px'>No studies found.</div>";
     sessions.forEach(s => {
         const el = document.createElement('div');
-        el.className = "session-card" + (s.status === "RUNNING" ? " session-running" : (s.status === "PAUSED_CAPTCHA" ? " session-paused-captcha" : ""));
-        el.innerHTML = `<strong>${s.name}</strong> <span style="font-size:10px; color:#666">[${s.status}]</span><br><small>Tasks: ${s.progress.done}/${s.progress.total}</small>`;
+        el.className = "session-card" + (s.status === "RUNNING" ? " session-running" : (s.status === "PAUSED_CAPTCHA" ? " session-paused-captcha" : (s.status === "QUEUED" ? " session-queued" : "")));
+        el.innerHTML = `<div><strong>${esc(s.name)}</strong> <span style="font-size:10px; color:#666">[${esc(s.status === "PAUSED_CAPTCHA" ? "PAUSED (CAPTCHA)" : s.status)}]</span><br><small>Tasks: ${s.progress.done}/${s.progress.total}</small></div>`;
         el.onclick = () => openSession(s.id);
         div.appendChild(el);
     });
 }
 
 function openSession(id) { 
-    currentSessionId = id; 
-    document.getElementById('logContainer').innerHTML = ""; 
+    currentSessionId = id;
+    panelsFilledFor = null;
+    lastStatus = null;
+    document.getElementById('logContainer').innerHTML = "";
+    document.getElementById('eProxyTestOut').innerHTML = "";
     
     cachedTasks = [];
     currentTaskPage = 1; 
@@ -1368,21 +1583,26 @@ function openSession(id) {
 
 function updateStatus(data) {
     if (data.sessionId !== currentSessionId) return;
-    document.getElementById('statusTitle').innerText = data.name;
+    lastStatus = data;
+    document.getElementById('statusTitle').innerText = data.name + (data.runNumber > 1 ? ` (run ${data.runNumber})` : "");
     const statusEl = document.getElementById('statusState');
     statusEl.innerText = data.status;
-    
-    if (data.status === "PAUSED_CAPTCHA") { statusEl.style.color = "#dc3545"; statusEl.innerText = "PAUSED (CAPTCHA)"; } 
+
+    if (data.status === "PAUSED_CAPTCHA") { statusEl.style.color = "#dc3545"; statusEl.innerText = "PAUSED (CAPTCHA)"; }
+    else if (data.status === "QUEUED") { statusEl.style.color = "#856404"; statusEl.innerText = "QUEUED (waiting for the running study)"; }
     else { statusEl.style.color = "black"; }
 
     document.getElementById('currentQuery').innerText = data.currentQuery || "-";
-    document.getElementById('progressBar').style.width = (data.progress.done / data.progress.total * 100) + "%";
+    document.getElementById('progressBar').style.width = (data.progress.total ? data.progress.done / data.progress.total * 100 : 0) + "%";
     document.getElementById('progressText').innerText = `${data.progress.done}/${data.progress.total} Tasks`;
-    
+    renderMetrics(data.metrics);
+    renderRetryInfo();
+    renderProxyOverview(data.proxy);
+
     if (data.logs && document.getElementById('logContainer').innerHTML === "") data.logs.forEach(addSingleLog);
-    
+
     const btn = document.getElementById('playPauseBtn');
-    if (data.status === "RUNNING") { btn.innerText = "Pause"; btn.classList.remove("btn-success"); btn.classList.add("btn-primary"); } 
+    if (data.status === "RUNNING" || data.status === "QUEUED") { btn.innerText = "Pause"; btn.classList.remove("btn-success"); btn.classList.add("btn-primary"); }
     else { btn.innerText = "Resume / Start"; btn.classList.add("btn-success"); btn.classList.remove("btn-primary"); }
 
     if (data.originalConfigs) {
@@ -1404,11 +1624,16 @@ function updateStatus(data) {
     
     if (data.originalQueries) document.getElementById('totalQueriesCount').innerText = data.originalQueries.length;
 
-    const proxyArea = document.getElementById('editProxyList');
-    if (document.activeElement !== proxyArea && data.settings) {
+    if (data.settings && panelsFilledFor !== data.sessionId) {
+         panelsFilledFor = data.sessionId;
+         fillProxyOpts('e', data.settings);
+         fillBehaviorOpts('e', data.settings);
          document.getElementById('editUseProxies').checked = data.settings.useProxies;
          document.getElementById('editProxyList').value = data.settings.proxyList ? data.settings.proxyList.join('\n') : "";
-         
+    }
+
+    const proxyArea = document.getElementById('editProxyList');
+    if (document.activeElement !== proxyArea && data.settings) {
          document.getElementById('editSaveSerp').checked = data.settings.saveSerp || data.settings.saveScreenshots || false;
          
          if (data.settings.serpLimit) {
@@ -1432,6 +1657,49 @@ function updateStatus(data) {
     if (data.limitType && document.activeElement !== limitTypeInput) limitTypeInput.value = data.limitType;
 }
 
+function renderMetrics(m) {
+    const box = document.getElementById('metricsBox');
+    if (!m) { box.innerHTML = ""; return; }
+    let html = `📈 Pages: <b>${m.pages}</b> · Items: <b>${m.results}</b> · Empty pages: <b>${m.zeroPages}</b> · Captchas: <b>${m.captchas}</b> · IP rotations: <b>${m.rotations}</b>`;
+    const keys = Object.keys(m.byVariant || {});
+    if (keys.length > 1) {
+        html += `<table class="proxy-table" style="margin-top:4px"><tr><th>Engine | country | lang</th><th>Pages</th><th>Items</th><th>Empty</th><th>Captchas</th></tr>` +
+            keys.map(k => { const v = m.byVariant[k]; return `<tr><td>${esc(k.replace(/\|/g, ' | '))}</td><td>${v.pages}</td><td>${v.results}</td><td>${v.zeroPages}</td><td>${v.captchas}</td></tr>`; }).join("") + `</table>`;
+    }
+    box.innerHTML = html;
+}
+
+function formatCountdown(ts) {
+    const s = Math.max(0, Math.round((ts - Date.now()) / 1000));
+    if (s >= 3600) return `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`;
+    if (s >= 60) return `${Math.floor(s / 60)} min ${s % 60} s`;
+    return `${s} s`;
+}
+
+function renderRetryInfo() {
+    const el = document.getElementById('retryInfo');
+    const d = lastStatus;
+    if (!d || d.sessionId !== currentSessionId) { el.style.display = 'none'; return; }
+    let txt = "";
+    if (d.status === "PAUSED_CAPTCHA" && d.retryAt) txt = `⏳ All IPs are cooling down. Automatic retry in ${formatCountdown(d.retryAt)} (or press Resume to retry now).`;
+    else if (d.status === "PAUSED_CAPTCHA") txt = `🧩 A captcha needs attention: solve it in the opened tab, then press Resume.`;
+    else if (d.status === "DONE" && d.nextRunAt) txt = `🔁 Next repeat run starts in ${formatCountdown(d.nextRunAt)}.`;
+    el.style.display = txt ? 'block' : 'none';
+    el.innerText = txt;
+}
+setInterval(renderRetryInfo, 1000);
+
+function renderProxyOverview(ov) {
+    const box = document.getElementById('proxyOverviewBox');
+    if (!ov || !ov.entries || !ov.entries.length) { box.style.display = 'none'; box.innerHTML = ""; return; }
+    const rows = ov.entries.map((e, i) => {
+        const chk = e.check ? (e.check.ok ? `<span class="ok-text">✔ ${esc(e.check.ip)}</span>` : `<span class="bad-text">✘ ${esc(e.check.error)}</span>`) : "";
+        return `<tr><td>${i === ov.current ? "▶" : ""}</td><td>${esc(e.target)}</td><td>${e.requests}</td><td>${e.captchas}</td><td>${e.fails}</td><td>${e.coolingMinutes ? e.coolingMinutes + " min" : "-"}</td><td>${chk}</td></tr>`;
+    }).join("");
+    box.style.display = 'block';
+    box.innerHTML = `<table class="proxy-table"><tr><th></th><th>Proxy</th><th>Req.</th><th>Captcha</th><th>Fails</th><th>Cooling</th><th>Test</th></tr>${rows}</table>`;
+}
+
 function setSettingBadge(id, isActive) {
     const el = document.getElementById(id);
     if(isActive) el.classList.add('setting-active');
@@ -1444,7 +1712,7 @@ function addSingleLog(entry) {
     if (entry.level === "WARN") color = "#856404";
     if (entry.level === "ERROR") color = "#721c24";
     div.innerHTML += `<div style="border-bottom:1px solid #eee;padding:2px 0; color:${color}">
-        <span style="color:#999;margin-right:5px;font-size:10px">[${new Date(entry.ts).toLocaleTimeString()}]</span>${entry.msg}
+        <span style="color:#999;margin-right:5px;font-size:10px">[${new Date(entry.ts).toLocaleTimeString()}]</span>${esc(entry.msg)}
     </div>`;
     div.scrollTop = div.scrollHeight;
 }
@@ -1460,6 +1728,10 @@ function resetCreateForm() {
     document.getElementById('useProxies').checked = false;
     document.getElementById('proxyList').value = "";
     document.getElementById('proxyList').disabled = true;
+    document.getElementById('createProxyMount').style.display = 'none';
+    document.getElementById('cProxyTestOut').innerHTML = "";
+    document.getElementById('createErrorMsg').style.display = 'none';
+    resetPanelDefaults('c');
     document.getElementById('engineFormContainer').style.display = 'none';
     document.getElementById('showEngineFormBtn').style.display = 'block';
     currentConfigs = []; 
@@ -1500,8 +1772,8 @@ function renderTasks() {
         html += `
         <div class="task-item">
             <div style="flex:1; overflow:hidden;">
-                <div style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${t.term}">${t.term}</div>
-                <div style="color:#888; font-size:10px;"><strong>${t.engine}</strong> | ${t.country}</div>
+                <div style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(t.term)}">${esc(t.term)}</div>
+                <div style="color:#888; font-size:10px;"><strong>${esc(t.engine)}</strong> | ${esc(t.country)}</div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
                 <span class="btn-secondary btn-sm" 

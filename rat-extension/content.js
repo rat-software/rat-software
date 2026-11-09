@@ -32,7 +32,49 @@ if (!window.ratListenerAdded) {
 
         if (msg.action === "SCROLL_AND_PREPARE") {
             if (isCaptchaPage(config)) sendResponse({ success: false, isCaptcha: true });
-            else performHumanActions(config).then(() => sendResponse({ success: true, isCaptcha: false }));
+            else performHumanActions(config, msg.payload || {}).then(() => sendResponse({ success: true, isCaptcha: false }));
+            return true;
+        }
+
+        if (msg.action === "GET_METRICS") {
+            sendResponse({
+                scrollHeight: Math.max(document.body ? document.body.scrollHeight : 0, document.documentElement.scrollHeight),
+                innerHeight: window.innerHeight,
+                innerWidth: window.innerWidth,
+                scrollY: window.scrollY || 0
+            });
+            return true;
+        }
+
+        if (msg.action === "GET_ELEMENT_RECT") {
+            const sels = (msg.payload && msg.payload.selectors || []).filter(Boolean);
+            for (const sel of sels) {
+                let el = null;
+                try { el = Array.from(document.querySelectorAll(sel)).find(isVisible); } catch (e) { }
+                if (el) { sendResponse({ found: true, rect: rectAfterScroll(el) }); return true; }
+            }
+            sendResponse({ found: false });
+            return true;
+        }
+
+        if (msg.action === "GET_CLICK_TARGET") {
+            sendResponse(findClickTarget(config, msg.payload && msg.payload.kind));
+            return true;
+        }
+
+        if (msg.action === "VERIFY_TARGET") {
+            sendResponse(verifyTarget());
+            return true;
+        }
+
+        if (msg.action === "GET_NEXT_RECT") {
+            if (isCaptchaPage(config)) { sendResponse({ isCaptcha: true }); return true; }
+            const btn = findNextButton(config);
+            if (!btn) { sendResponse({ found: false }); return true; }
+            const anchor = btn.tagName === 'A' ? btn : btn.closest('a');
+            let href = anchor ? (anchor.href || "") : "";
+            if (!href || href.toLowerCase().startsWith("javascript:")) href = null;
+            sendResponse({ found: true, rect: rectAfterScroll(btn), href });
             return true;
         }
         
@@ -69,11 +111,175 @@ if (!window.ratListenerAdded) {
     });
 
     // --- ENHANCED HUMAN ACTIONS ---
-    async function performHumanActions(config) {
+    // --- TARGET FINDING (used by the background script for trusted clicks) ---
+    function isVisible(el) {
+        if (!el || !el.getClientRects || el.getClientRects().length === 0) return false;
+        const r = el.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return false;
+        const st = getComputedStyle(el);
+        return st.visibility !== "hidden" && st.display !== "none" && st.opacity !== "0";
+    }
+
+    function rectAfterScroll(el) {
+        try { el.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" }); } catch (e) { }
+        const r = el.getBoundingClientRect();
+        return { x: r.left, y: r.top, w: r.width, h: r.height };
+    }
+
+    function isRealHref(a) {
+        const h = (a.getAttribute('href') || '').trim().toLowerCase();
+        return !!h && h !== '#' && !h.startsWith('javascript:');
+    }
+
+    /** True for elements that are, sit inside or wrap a real navigation link (tab bars, result cards, product boxes). */
+    function isNavigationElement(el) {
+        const own = el.closest('a[href]');
+        if (own && isRealHref(own)) return true;
+        return Array.from(el.querySelectorAll('a[href]')).some(isRealHref);
+    }
+
+    /** Single-word keywords must match the whole text ("Walmart & more" is no "more"); multi-word keywords may be part of it. */
+    function matchesExpandKeyword(text, keywords) {
+        const t = String(text).toLowerCase().replace(/\s+/g, ' ').trim();
+        return keywords.some(k => {
+            const kw = String(k).toLowerCase().trim();
+            if (!kw) return false;
+            if (t === kw) return true;
+            return kw.includes(' ') && t.includes(kw);
+        });
+    }
+
+    /** Product tiles, tab bars, menus and headers are never an expand button. */
+    function isUnsuitableExpandTarget(el) {
+        if (el.querySelector('img, picture, video, canvas')) return true;
+        if (el.closest('nav, [role="navigation"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="dialog"], [aria-modal="true"], dialog, header')) return true;
+        if (el.closest('[aria-haspopup]:not([aria-haspopup="false"])')) return true;
+        const lines = (el.innerText || '').split('\n').map(x => x.trim()).filter(Boolean);
+        if (lines.length > 3) return true;
+        return el.getBoundingClientRect().top + window.scrollY < 130;
+    }
+
+    let lastTarget = null;
+
+    /** Re-checks the last returned click target right before the trusted click: still there, not covered, not a link. */
+    function verifyTarget() {
+        const el = lastTarget;
+        if (!el || !el.isConnected) return { ok: false, reason: "gone" };
+        let r = el.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return { ok: false, reason: "hidden" };
+        if (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) {
+            const n = rectAfterScroll(el);
+            r = { left: n.x, top: n.y, width: n.w, height: n.h };
+        }
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const dx = r.width * 0.1, dy = r.height * 0.1;
+        for (const [px, py] of [[cx, cy], [cx - dx, cy - dy], [cx + dx, cy - dy], [cx - dx, cy + dy], [cx + dx, cy + dy]]) {
+            const hit = document.elementFromPoint(px, py);
+            if (!hit || !(hit === el || el.contains(hit))) return { ok: false, reason: "covered" };
+            const a = hit.closest('a[href]');
+            if (a && isRealHref(a)) return { ok: false, reason: "link" };
+        }
+        return { ok: true, rect: { x: cx - dx, y: cy - dy, w: dx * 2, h: dy * 2 } };
+    }
+
+    function findNextButton(config) {
+        const pg = config.selectors && config.selectors.pagination;
+        if (!pg || pg.type === "infinite_scroll") return null;
+        let nextBtn = pg.nextButton ? document.querySelector(pg.nextButton) : null;
+        if (!nextBtn && pg.fallbackActiveSibling) {
+            const activePage = document.querySelector(pg.fallbackActiveSibling);
+            if (activePage && activePage.nextElementSibling) nextBtn = activePage.nextElementSibling.querySelector('a');
+        }
+        if (!nextBtn && pg.fallbackUrlMath) {
+            const match = window.location.href.match(new RegExp(pg.fallbackUrlMath));
+            const nextStart = match ? parseInt(match[1]) + 10 : 10;
+            nextBtn = document.querySelector(`a[href*="start=${nextStart}"]`);
+        }
+        return nextBtn;
+    }
+
+    /** Next not-yet-clicked consent / popup / expand element as a viewport rect, or {found:false}. */
+    function findClickTarget(config, kind) {
+        const b = config && config.behavior;
+        if (!b) return { found: false };
+        const mark = (el) => el.setAttribute('data-rat-clicked', 'true');
+
+        if (kind === "consent") {
+            for (const sel of (b.cookieConsentSelectors || [])) {
+                let list = [];
+                try { list = document.querySelectorAll(`${sel}:not([data-rat-clicked])`); } catch (e) { }
+                for (const el of list) {
+                    if (!isVisible(el)) continue;
+                    mark(el);
+                    lastTarget = el;
+                    const r = el.getBoundingClientRect();
+                    return { found: true, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+                }
+            }
+            if (window.location.href.includes("youtube.com") || window.location.href.includes("consent.")) {
+                for (const el of document.querySelectorAll('button:not([data-rat-clicked]), yt-button-shape:not([data-rat-clicked])')) {
+                    const txt = (el.innerText || "").toLowerCase();
+                    if ((txt.includes("alle akzeptieren") || txt.includes("accept all")) && isVisible(el)) {
+                        mark(el);
+                        lastTarget = el;
+                        const r = el.getBoundingClientRect();
+                        return { found: true, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+                    }
+                }
+            }
+            return { found: false };
+        }
+
+        if (kind === "popup") {
+            for (const sel of (b.popupDismissSelectors || [])) {
+                let dlgs = [];
+                try { dlgs = document.querySelectorAll(sel); } catch (e) { }
+                for (const dlg of dlgs) {
+                    if (!isVisible(dlg)) continue;
+                    for (const btn of dlg.querySelectorAll('button:not([data-rat-clicked]), [role="button"]:not([data-rat-clicked])')) {
+                        const text = (btn.innerText || "").toLowerCase().trim();
+                        if (b.popupDismissKeywords && b.popupDismissKeywords.some(k => k.length < 4 ? text === k : text.includes(k)) && isVisible(btn)) {
+                            mark(btn);
+                            lastTarget = btn;
+                            const r = btn.getBoundingClientRect();
+                            return { found: true, rect: { x: r.left, y: r.top, w: r.width, h: r.height } };
+                        }
+                    }
+                }
+            }
+            return { found: false };
+        }
+
+        if (kind === "expand") {
+            for (const sel of (b.aiExpandSelectors || [])) {
+                let list = [];
+                try { list = document.querySelectorAll(`${sel}:not([data-rat-clicked])`); } catch (e) { }
+                for (const btn of list) {
+                    mark(btn);
+                    if (!isVisible(btn)) continue;
+                    if (b.aiExpandKeywords && b.aiExpandKeywords.length > 0) {
+                        const text = (btn.innerText || btn.getAttribute('aria-label') || btn.title || "").toLowerCase().trim();
+                        if (text.length > 80) continue;
+                        if (!matchesExpandKeyword(text, b.aiExpandKeywords)) continue;
+                    }
+                    if (isNavigationElement(btn) || isUnsuitableExpandTarget(btn)) continue;
+                    const anchor = btn.tagName === 'A' ? btn : btn.closest('a');
+                    if (anchor && (anchor.getAttribute('href') || '').toLowerCase().startsWith('javascript:')) anchor.removeAttribute('href');
+                    lastTarget = btn;
+                    return { found: true, rect: rectAfterScroll(btn), label: (btn.innerText || btn.getAttribute('aria-label') || btn.title || '').replace(/s+/g, ' ').trim().slice(0, 40) };
+                }
+            }
+            return { found: false };
+        }
+        return { found: false };
+    }
+
+    // --- SCRIPTED FALLBACK (untrusted events) ---
+    async function performHumanActions(config, opts = {}) {
         console.log(`🤖 RAT: Starting Enhanced Human Sequence for ${config.engine.name}...`);
 
         // 1. Aggressive Cookie Banner Dismissal
-        if (config.behavior.cookieConsentSelectors) {
+        if (!opts.skipInteractions && config.behavior.cookieConsentSelectors) {
             for (let sel of config.behavior.cookieConsentSelectors) {
                 let btns = document.querySelectorAll(sel);
                 for (let btn of btns) {
@@ -93,7 +299,7 @@ if (!window.ratListenerAdded) {
             }
         }
         
-        if (config.behavior.popupDismissSelectors && config.behavior.popupDismissSelectors.length > 0) {
+        if (!opts.skipInteractions && config.behavior.popupDismissSelectors && config.behavior.popupDismissSelectors.length > 0) {
             for (let i = 0; i < 2; i++) {
                 let clicked = false;
                 for (let sel of config.behavior.popupDismissSelectors) {
@@ -120,8 +326,8 @@ if (!window.ratListenerAdded) {
         
         // Starte Scroll dort, wo wir zuletzt waren (wichtig für nachladende Ergebnisse!)
         let currentY = window.scrollY || 0;
-        let maxScrollSteps = 10; 
-        
+        let maxScrollSteps = opts.skipScroll ? 0 : 10;
+
         while (currentY < getDocHeight() && maxScrollSteps > 0) {
             currentY += Math.floor(Math.random() * 500) + 300;
             window.scrollTo({ top: currentY, behavior: 'smooth' }); 
@@ -137,14 +343,14 @@ if (!window.ratListenerAdded) {
         }
 
         await wait(1200);
-        
+
         // Zurück zum Anfang scrollen nur, wenn es KEIN Infinite Scroll ist!
-        if (!config.selectors.pagination || config.selectors.pagination.type !== "infinite_scroll") {
-            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        if (!opts.skipScroll && (!config.selectors.pagination || config.selectors.pagination.type !== "infinite_scroll")) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             await wait(1500);
         }
 
-if (config.behavior.aiExpandSelectors) {
+if (!opts.skipInteractions && config.behavior.aiExpandSelectors) {
             for (let sel of config.behavior.aiExpandSelectors) {
                 // Finde ALLE potenziellen Buttons, statt nur den ersten (wichtig bei generischen Selektoren)
                 let buttons = document.querySelectorAll(`${sel}:not([data-rat-clicked])`);
@@ -161,9 +367,9 @@ if (config.behavior.aiExpandSelectors) {
                         // Verhindert, dass z.B. ein ganzes Suchergebnis geklickt wird, nur weil "mehr anzeigen" darin vorkommt.
                         if (text.length > 80) continue; 
 
-                        let match = config.behavior.aiExpandKeywords.some(k => text === k.toLowerCase() || text.includes(k.toLowerCase()));
-                        if (!match) continue; 
+                        if (!matchesExpandKeyword(text, config.behavior.aiExpandKeywords)) continue;
                     }
+                    if (isNavigationElement(btn) || isUnsuitableExpandTarget(btn)) continue;
 
                     try {
                         btn.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -905,18 +1111,7 @@ if (config.behavior.aiExpandSelectors) {
             return { success: true };
         }
 
-        let nextBtn = document.querySelector(config.selectors.pagination.nextButton);
-        
-        if (!nextBtn && config.selectors.pagination.fallbackActiveSibling) {
-             const activePage = document.querySelector(config.selectors.pagination.fallbackActiveSibling);
-             if (activePage && activePage.nextElementSibling) nextBtn = activePage.nextElementSibling.querySelector('a');
-        }
-        
-        if (!nextBtn && config.selectors.pagination.fallbackUrlMath) {
-            const match = window.location.href.match(new RegExp(config.selectors.pagination.fallbackUrlMath));
-            let nextStart = match ? parseInt(match[1]) + 10 : 10;
-            nextBtn = document.querySelector(`a[href*="start=${nextStart}"]`);
-        }
+        const nextBtn = findNextButton(config);
 
         if (nextBtn) {
             nextBtn.scrollIntoView({ block: "center", behavior: "smooth" });

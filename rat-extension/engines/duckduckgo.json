@@ -242,5 +242,14 @@
         }
       ]
     }
+  },
+  "typing": {
+    "homeUrl": "https://duckduckgo.com/",
+    "inputSelectors": [
+      "input[name=\"q\"]",
+      "#searchbox_input"
+    ],
+    "submit": "Enter",
+    "homeParams": true
   }
 }

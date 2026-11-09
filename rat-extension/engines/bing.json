@@ -210,7 +210,7 @@
     ]
   },
   "selectors": {
-	"excludeUrlPatterns": [
+    "excludeUrlPatterns": [
       "/search?q=",
       "bing.com/search"
     ],
@@ -272,10 +272,10 @@
           ".hs-header"
         ]
       },
-		"inline_citations": {
-		  "selector": "a.md_citlink",
-		  "dataAttribute": "data-sups" 
-		},
+      "inline_citations": {
+        "selector": "a.md_citlink",
+        "dataAttribute": "data-sups"
+      },
       "sources": [
         {
           "type": "standard",
@@ -285,5 +285,15 @@
         }
       ]
     }
+  },
+  "typing": {
+    "homeUrl": "https://www.bing.com/",
+    "inputSelectors": [
+      "#sb_form_q",
+      "textarea[name=\"q\"]",
+      "input[name=\"q\"]"
+    ],
+    "submit": "Enter",
+    "homeParams": true
   }
 }

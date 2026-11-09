@@ -1,0 +1,22 @@
+# Usage (from the extension folder):
+#   docker compose -f deploy/docker-compose.yml up -d --build
+# Then open http://localhost:6080/vnc.html  (set VNC_PASSWORD below first if the machine is reachable by others)
+services:
+  rat:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: rat-scraper
+    restart: unless-stopped
+    shm_size: "2gb"
+    environment:
+      VNC_PASSWORD: ""          # strongly recommended on a server
+      SCREEN: "1366x850x24"
+    ports:
+      # Bound to localhost only. Use an SSH tunnel (ssh -L 6080:localhost:6080 user@server) to reach it remotely.
+      - "127.0.0.1:6080:6080"
+    volumes:
+      # Browser profile = IndexedDB with studies and results. Back this volume up.
+      - rat-profile:/data
+volumes:
+  rat-profile:
