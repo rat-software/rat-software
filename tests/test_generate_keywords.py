@@ -53,7 +53,7 @@ _DB_FUNCTIONS = [
     'insert_keyword_idea', 'get_studies', 'insert_study', 'get_study',
     'get_regions', 'get_languages', 'get_keywords', 'get_keyword_ideas',
     'insert_keyword', 'check_keyword', 'get_keyword_status_study',
-    'select_keywords_ideas', 'reset_hanging_qs_jobs',
+    'select_keywords_ideas', 'reset_hanging_qs_jobs', 'clear_keyword_ideas',
 ]
 
 
