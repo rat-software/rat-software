@@ -602,7 +602,10 @@ class User(db.Model, UserMixin):
     tf_totp_secret = db.Column(db.String)
     tf_primary_method = db.Column(db.String)
     tf_phone_number = db.Column(db.String)
-    create_datetime = db.Column(db.DateTime)
+    # Registration timestamp. Must be set by the model, because the DB column has no
+    # default and Flask-Security does not fill it -> without it, analytics fell back
+    # to confirmed_at / last_login_at (or no date at all for unconfirmed users).
+    create_datetime = db.Column(db.DateTime, default=datetime.utcnow)
     update_datetime = db.Column(db.DateTime)
     username = db.Column(db.String)
     us_totp_secrets = db.Column(db.String)
