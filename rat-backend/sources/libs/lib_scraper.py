@@ -33,6 +33,7 @@ class LibScraper(metaclass=ABCMeta):
         except Exception as e:
             print(f"Warning: rules.json could not be loaded from '{rules_path}' Use the global heuristics. Error: {e}")
             cookie_rules = []
+        self.cookie_rules = cookie_rules
 
         from libs.lib_helper import Helper
 
