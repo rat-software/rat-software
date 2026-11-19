@@ -7,6 +7,7 @@ The `UniversalLlm` classifier enables automated, prompt-driven analysis across a
 ## 🧠 Overview & Key Features
 
 * **Multi-Provider Support**: Connects via OpenAI-compatible endpoints (`/v1`) to local instances (Ollama, vLLM, LocalAI) or cloud providers (OpenAI, OpenRouter, Groq, Mistral, Together AI).
+* **In-Process Local Inference on macOS**: On Apple Silicon, models can run directly inside the classifier worker via [MLX](https://github.com/ml-explore/mlx-lm) – no Ollama server or API required (`base_url: "mlx://local"`).
 * **Per-Study Configurable Tasks**: Analysis tasks, prompts, and models are configured per study in the database.
 * **Atomic Distributed Locking**: Prevents race conditions across multi-worker server clusters using `db.lock_llm_indicator()`.
 * **Duplicate Detection**: Skips re-querying identical source pages across studies/results.
@@ -46,13 +47,40 @@ LLM tasks are stored as a JSON array within the study configuration (`db.get_stu
 | `active` | `bool` | Enables or disables task execution. |
 | `display_name` | `string` | Becomes the indicator prefix: `LLM_<display_name>`. |
 | `target_type` | `string` | Filter targets: `all`, `organic`, `ai_overview`, `chatbot`, or `ai_source`. |
-| `base_url` | `string` | OpenAI-compatible endpoint URL (e.g., `http://127.0.0.1:11434/v1` or `https://api.openai.com/v1`). |
-| `model` | `string` | Model identifier (e.g., `llama3.2`, `gpt-4o-mini`, `mistral-small`). |
+| `base_url` | `string` | OpenAI-compatible endpoint URL (e.g., `http://127.0.0.1:11434/v1` or `https://api.openai.com/v1`), or `mlx://local` for in-process inference on macOS. |
+| `model` | `string` | Model identifier (e.g., `llama3.2`, `gpt-4o-mini`, `mistral-small`). For `mlx://local`: a Hugging Face repo id (e.g., `mlx-community/Qwen2.5-7B-Instruct-4bit`) or a local model directory. |
 | `api_key` | `string` | Raw API key or Fernet-encrypted token (`gAAAA...`). |
 | `max_context` | `int` | Character limit for extracted source text passed to the prompt. |
 | `max_tokens` | `int` | Maximum tokens allowed for LLM output completion. |
 | `system_prompt` | `string` | Base instructions prepended before strict JSON guardrails. |
 | `prompt` | `string` | Task prompt. Supports `{query}` string interpolation. |
+
+---
+
+## 🍎 Local In-Process Inference on macOS (MLX)
+
+On Macs with Apple Silicon (M1–M5), the classifier can load models directly into the worker process using Apple's MLX framework (Metal GPU, unified memory). No HTTP server, ngrok tunnel or API key is needed.
+
+1. Install the dependency (included in `requirements.txt`, only installed on macOS/arm64):
+   ```bash
+   pip install mlx-lm
+   ```
+2. Configure the task:
+   ```json
+   {
+     "display_name": "sentiment_local",
+     "base_url": "mlx://local",
+     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+     "api_key": ""
+   }
+   ```
+   `model` may be any MLX-compatible Hugging Face repo (downloaded to the HF cache on first use) or a local directory path.
+
+**Notes**
+* The model is loaded once per task batch and unloaded afterwards to free unified memory.
+* "Thinking" output of reasoning models (`<think>…</think>`) is stripped automatically.
+* The frontend "Test Connection" button only validates the configuration; the model is loaded by the classifier worker.
+* If the worker is not on Apple Silicon or `mlx-lm` is missing, affected results get the indicator value `error_local_backend`.
 
 ---
 
@@ -88,6 +116,7 @@ The classifier enforces valid JSON output:
 * `error_api`: The endpoint failed or refused the connection after 3 retries.
 * `error_timeout`: The LLM request timed out (>30s).
 * `error_invalid_json`: The model failed to provide valid JSON syntax after 3 attempts.
+* `error_local_backend`: The local MLX model could not be loaded (not on Apple Silicon, `mlx-lm` missing, or invalid model id).
 
 ---
 

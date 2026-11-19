@@ -1018,6 +1018,23 @@
                     <span class="small text-muted"><code>llama3.2:latest</code> <span class="small text-muted">(or <code>gemma4:26b</code>, <code>gpt-oss:20b</code>)</span>
                 </li>
             </ul>
+
+            <h6 class="fw-bold text-dark mt-4 mb-2"><i class="fa-brands fa-apple me-1"></i> macOS (Apple Silicon): In-Process via MLX — no server needed</h6>
+            <p class="small text-secondary mb-2">If the classifier worker runs on a Mac with Apple Silicon, models can be loaded directly into the worker process using <a href="https://github.com/ml-explore/mlx-lm" target="_blank">MLX</a> (requires <code>mlx-lm</code>, installed automatically via <code>requirements.txt</code> on Apple Silicon). No Ollama, ngrok or API key required.</p>
+            <ul class="list-group list-group-flush border shadow-sm rounded">
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">API Base URL</span>
+                    <code class="fs-6 user-select-all">mlx://local</code>
+                </li>
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">API Key</span>
+                    <span class="text-dark small"><em>Leave this field blank.</em></span>
+                </li>
+                <li class="list-group-item bg-white py-3">
+                    <span class="fw-bold small d-block text-muted text-uppercase mb-1">Model Identifier</span>
+                    <span class="small text-muted"><code>mlx-community/Qwen2.5-7B-Instruct-4bit</code> (Hugging Face repo, downloaded on first use) or a local model directory path</span>
+                </li>
+            </ul>
           </div>
 
 		<div class="tab-pane fade" id="openrouter-guide" role="tabpanel">
@@ -1105,7 +1122,7 @@
             
             <div class="mb-3">
               <label class="form-label fw-bold small">API Base URL</label>
-              <input type="text" id="llm_base_url" class="form-control form-control-sm" autocomplete="off" placeholder="e.g. http://localhost:11434/v1 or https://api.openai.com/v1">
+              <input type="text" id="llm_base_url" class="form-control form-control-sm" autocomplete="off" placeholder="e.g. http://localhost:11434/v1, https://api.openai.com/v1 or mlx://local (macOS)">
             </div>
             
             <div class="mb-3">
