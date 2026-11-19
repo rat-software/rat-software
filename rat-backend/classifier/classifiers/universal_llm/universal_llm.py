@@ -23,6 +23,7 @@ sys.path.append(currentdir + "/libs/")
 sys.path.append(currentdir + "/../")
 
 from classifier import *
+from local_llm import is_local_base_url, LocalLlmBackend
 
 class UniversalLlm(Classifier):
     """Universal LLM Classifier for RAT"""
@@ -133,10 +134,25 @@ class UniversalLlm(Classifier):
                 # --------------------------------------------------------------------------------------
                 
                 base_url = task['base_url'].strip()
-                base_url = base_url.replace("localhost", "127.0.0.1") 
-                if not base_url.endswith('/v1'): 
+
+                # --- LOCAL IN-PROCESS BACKEND (MLX on macOS / Apple Silicon) ---
+                is_local = is_local_base_url(base_url)
+                local_backend = None
+                if is_local:
+                    print(f"\n⚙️ Task: '{task_display_name}' | Loading Model: {model_name} (via Local/MLX in-process) for {len(items_to_process)} pending items...")
+                    try:
+                        local_backend = LocalLlmBackend(model_name)
+                    except Exception as e:
+                        print(f"❌ Lokales Modell konnte nicht geladen werden: {type(e).__name__}: {str(e)[:300]}")
+                        # Gelockte Items freigeben, damit sie nicht ewig hängen bleiben
+                        for result in items_to_process:
+                            self.insert_indicator(indicator_name, 'error_local_backend', str(result['id']))
+                        continue
+
+                base_url = base_url.replace("localhost", "127.0.0.1")
+                if not is_local and not base_url.endswith('/v1'):
                     base_url = base_url.rstrip('/') + '/v1'
-                is_ollama = any(x in base_url.lower() for x in ['localhost', '127.0.0.1', '11434', 'ollama'])
+                is_ollama = not is_local and any(x in base_url.lower() for x in ['localhost', '127.0.0.1', '11434', 'ollama'])
                 extra_headers = None if is_ollama else {"HTTP-Referer": "https://rat-software.org", "X-Title": "RAT Universal LLM"}
                 
                 # --- API KEY DECRYPTION ---
@@ -174,12 +190,12 @@ class UniversalLlm(Classifier):
                     api_key = "FEHLER_ENTSCHLUESSELUNG_FEHLGESCHLAGEN"
 
                 if not api_key:
-                    api_key = "ollama-dummy-key" if is_ollama else "FEHLER_KEY_FEHLT"
+                    api_key = "ollama-dummy-key" if (is_ollama or is_local) else "FEHLER_KEY_FEHLT"
 
-                key_prefix = api_key[:8] if api_key else 'NONE'
-                print(f"\n⚙️ Task: '{task_display_name}' | Loading Model: {model_name} (via {'Local/Ollama' if is_ollama else 'Cloud'}) for {len(items_to_process)} pending items...")
-
-                client = OpenAI(base_url=base_url, api_key=api_key, default_headers=extra_headers)
+                client = None
+                if not is_local:
+                    print(f"\n⚙️ Task: '{task_display_name}' | Loading Model: {model_name} (via {'Local/Ollama' if is_ollama else 'Cloud'}) for {len(items_to_process)} pending items...")
+                    client = OpenAI(base_url=base_url, api_key=api_key, default_headers=extra_headers)
 
                 for result in items_to_process:
                     result_id = str(result['id'])
@@ -243,50 +259,23 @@ class UniversalLlm(Classifier):
                     max_retries = 3
                     final_answer = "error_api"
                     
+                    chat_messages = [
+                        {"role": "system", "content": final_system_prompt},
+                        {"role": "user", "content": f"{formatted_prompt}\n\nText:\n{result.get('_clean_text', '')}"}
+                    ]
+
                     for attempt in range(max_retries):
-                        api_kwargs = {
-                            "model": model_name,
-                            "messages": [
-                                {"role": "system", "content": final_system_prompt},
-                                {"role": "user", "content": f"{formatted_prompt}\n\nText:\n{result.get('_clean_text', '')}"}
-                            ],
-                            "temperature": 0.1,
-                            "timeout": 30,
-                            "response_format": {"type": "json_object"},
-                            "max_tokens": max_tokens
-                        }
-
-                        if is_ollama:
-                            api_kwargs["extra_body"] = {"keep_alive": "5m"}
-
-                        answer = ""
-                        finish_reason = None
-                        try:
-                            response = client.chat.completions.create(**api_kwargs)
-                            raw_content = response.choices[0].message.content
-                            finish_reason = response.choices[0].finish_reason
-                            answer = raw_content.strip() if raw_content else ""
-                            if not answer:
-                                raise ValueError("Empty response")
-
-                        except (openai.BadRequestError, openai.APIConnectionError, openai.InternalServerError, ValueError) as e:
-                            print(f"⚠️ [Fallback] API Error oder leere Antwort. Versuche Standard-Request... ({type(e).__name__}: {str(e)[:300]})")
-                            if "response_format" in api_kwargs: del api_kwargs["response_format"]
+                        if is_local:
+                            answer = ""
+                            finish_reason = None
                             try:
-                                response = client.chat.completions.create(**api_kwargs)
-                                raw_content = response.choices[0].message.content
-                                finish_reason = response.choices[0].finish_reason
-                                answer = raw_content.strip() if raw_content else ""
-                            except Exception as fallback_error:
-                                print(f"   ↳ Fallback fehlgeschlagen: {type(fallback_error).__name__}: {str(fallback_error)[:300]}")
+                                answer, finish_reason = local_backend.chat(chat_messages, max_tokens=max_tokens, temperature=0.1)
+                            except Exception as e:
+                                print(f"   ↳ Lokaler LLM-Fehler: {type(e).__name__}: {str(e)[:300]}")
                                 answer = "error_api"
-                                
-                        except openai.APITimeoutError:
-                            answer = "error_timeout"
-                        except Exception as e:
-                            print(f"   ↳ API-Fehler: {type(e).__name__}: {str(e)[:300]}")
-                            answer = "error_api"
-                        
+                        else:
+                            answer, finish_reason = self._call_api(client, model_name, chat_messages, max_tokens, is_ollama)
+
                         if not answer or answer in ["error_api", "error_timeout"]:
                             if not answer:
                                 answer = "error_empty"
@@ -294,22 +283,22 @@ class UniversalLlm(Classifier):
                             final_answer = answer
                             print(f"⚠️ Attempt {attempt+1}/{max_retries} failed with {final_answer}. Retrying...")
                             continue
-                        
+
                         # =========================================================
                         # 🛡️ DIE ULTRA-STRENGE JSON VALIDIERUNG
                         # =========================================================
                         is_valid = False
                         clean_json_string = ""
-                        
+
                         # 1. Alles ignorieren außer dem Bereich zwischen { und }
                         match = re.search(r'\{.*\}', answer, re.DOTALL)
-                        
+
                         if match:
                             json_candidate = match.group(0) # Zieht das {...} exakt heraus
                             try:
                                 # 2. Prüfen, ob es echtes JSON ist
                                 parsed_dict = json.loads(json_candidate)
-                                
+
                                 # 3. Prüfen, ob es wirklich ein Dictionary/Objekt ist (verbietet Zahlen/Arrays)
                                 if isinstance(parsed_dict, dict):
                                     # 4. Magie: Wir generieren das JSON komplett neu und fehlerfrei!
@@ -317,7 +306,7 @@ class UniversalLlm(Classifier):
                                     is_valid = True
                             except json.JSONDecodeError:
                                 pass # Syntaxfehler im JSON
-                                
+
                         if is_valid:
                             final_answer = clean_json_string
                             break # ERFOLG! Wir verlassen die Retry-Schleife.
@@ -328,17 +317,23 @@ class UniversalLlm(Classifier):
                                 print(f"   ↳ Antwort wurde abgeschnitten: max_tokens ({max_tokens}) ist zu klein für dieses Modell.")
                             final_answer = "error_invalid_json"
                             continue # Zwingt das Skript in den nächsten API-Versuch!
-                    
+
                     # Speichern in der DB (Hier landet GARANTIERT nur noch fehlerfreies JSON oder ein Error-Code)
                     self.insert_indicator(indicator_name, final_answer, result_id)
                     print(f"  └ {model_name} -> {result_id}: {final_answer[:50]}...")
+
+                if is_local:
+                    # Modell entladen und Unified Memory für den nächsten Task freigeben
+                    local_backend.unload()
+                    local_backend = None
+                    continue
 
                 # Schließt die Verbindung sofort nach den 10 Items ab (Verhindert das Einfrieren)
                 try:
                     client.close()
                 except:
                     pass
-                
+
                 if is_ollama:
                     try:
                         requests.post(base_url.replace('/v1', '/api/generate'), json={"model": model_name, "keep_alive": 0}, timeout=10)
@@ -348,7 +343,7 @@ class UniversalLlm(Classifier):
             for result in study_results:
                 result_id = str(result['id'])
                 successful_count = self.db.count_indicators(result_id, self.classifier_id)
-                
+
                 fk_column, _ = self.db._parse_id(result_id)
                 expected_tasks = 0
                 for task in llm_tasks:
@@ -360,17 +355,61 @@ class UniversalLlm(Classifier):
                     elif tt == 'ai_overview' and fk_column == 'result_ai': expected_tasks += 1
                     elif tt == 'ai_source' and fk_column == 'result_ai_source': expected_tasks += 1
                     elif tt == 'chatbot' and fk_column == 'result_chatbot': expected_tasks += 1
-                
+
                 status = f"Progress: {successful_count}/{expected_tasks}"
-                
+
                 if expected_tasks > 0 and successful_count >= expected_tasks:
                     status = "Finished"
                 elif expected_tasks == 0:
                     status = "Finished"
-                
+
                 self.db.update_classification_result(status, result_id, self.classifier_id)
 
             print(f"✅ Batch for Study {study_id} finished!")
+
+    def _call_api(self, client, model_name, chat_messages, max_tokens, is_ollama):
+        """Executes one OpenAI-compatible API request. Returns (answer, finish_reason)."""
+        api_kwargs = {
+            "model": model_name,
+            "messages": chat_messages,
+            "temperature": 0.1,
+            "timeout": 30,
+            "response_format": {"type": "json_object"},
+            "max_tokens": max_tokens
+        }
+
+        if is_ollama:
+            api_kwargs["extra_body"] = {"keep_alive": "5m"}
+
+        answer = ""
+        finish_reason = None
+        try:
+            response = client.chat.completions.create(**api_kwargs)
+            raw_content = response.choices[0].message.content
+            finish_reason = response.choices[0].finish_reason
+            answer = raw_content.strip() if raw_content else ""
+            if not answer:
+                raise ValueError("Empty response")
+
+        except (openai.BadRequestError, openai.APIConnectionError, openai.InternalServerError, ValueError) as e:
+            print(f"⚠️ [Fallback] API Error oder leere Antwort. Versuche Standard-Request... ({type(e).__name__}: {str(e)[:300]})")
+            if "response_format" in api_kwargs: del api_kwargs["response_format"]
+            try:
+                response = client.chat.completions.create(**api_kwargs)
+                raw_content = response.choices[0].message.content
+                finish_reason = response.choices[0].finish_reason
+                answer = raw_content.strip() if raw_content else ""
+            except Exception as fallback_error:
+                print(f"   ↳ Fallback fehlgeschlagen: {type(fallback_error).__name__}: {str(fallback_error)[:300]}")
+                answer = "error_api"
+
+        except openai.APITimeoutError:
+            answer = "error_timeout"
+        except Exception as e:
+            print(f"   ↳ API-Fehler: {type(e).__name__}: {str(e)[:300]}")
+            answer = "error_api"
+
+        return answer, finish_reason
 
     def get_indicators(self, result, helper):
         """Not used in UniversalLlm due to custom classify_results override."""

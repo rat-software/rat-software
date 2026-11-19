@@ -1192,7 +1192,17 @@ def test_llm_connection():
     model = data.get('model', '').strip()
     study_id = data.get('study_id')
     task_id = data.get('task_id')
-    
+
+    # Local in-process models (MLX on macOS / Apple Silicon) run inside the classifier
+    # worker, not behind an HTTP endpoint - they cannot be tested from the frontend.
+    if base_url.lower().startswith(('mlx://', 'local://')):
+        if not model:
+            return jsonify({'success': False, 'message': 'Model parameter is required (Hugging Face repo id or local path).'})
+        return jsonify({
+            'success': True,
+            'message': f"Local MLX model '{model}' configured. It will be loaded in-process by the classifier worker (macOS / Apple Silicon with mlx-lm required)."
+        })
+
     if not api_key or api_key == "PLACEHOLDER_EXISTING_KEY":
         study = Study.query.get(study_id)
         if study and study.llm_classifiers_json:
