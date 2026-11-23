@@ -1,0 +1,216 @@
+name: Claude – fix failing tests
+
+# Runs when the "Unit Tests" pipeline fails.
+# Security model:
+#   - Job "fix" (Claude) has READ-ONLY permissions. Claude cannot push;
+#     it only produces a patch + an explanation as an artifact.
+#   - Job "open-pr" (no AI) creates a NEW branch from it and opens a draft PR.
+#     Existing branches (main etc.) are never pushed to.
+
+on:
+  workflow_run:
+    workflows: ["Unit Tests"]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: claude-fix-tests-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    name: Analyze failure and propose fix
+    if: >
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      !startsWith(github.event.workflow_run.head_branch, 'claude/fix-tests/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      skip: ${{ steps.dedupe.outputs.skip }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+    steps:
+      - name: Check for an existing open fix PR on this branch
+        id: dedupe
+        run: |
+          OPEN=$(gh pr list -R "$GITHUB_REPOSITORY" --base "$HEAD_BRANCH" --state open \
+            --json headRefName --jq '[.[] | select(.headRefName | startswith("claude/fix-tests/"))] | length')
+          echo "Open fix PRs: $OPEN"
+          if [ "$OPEN" -gt 0 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Checkout (failed commit)
+        if: steps.dedupe.outputs.skip == 'false'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        if: steps.dedupe.outputs.skip == 'false'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        if: steps.dedupe.outputs.skip == 'false'
+        run: |
+          pip install -r rat-frontend/requirements.txt
+          pip install pytest beautifulsoup4 lxml psutil langdetect textstat
+
+      - name: Set up Node
+        if: steps.dedupe.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+          cache-dependency-path: tests/package.json
+
+      - name: Install JS dependencies
+        if: steps.dedupe.outputs.skip == 'false'
+        working-directory: tests
+        run: npm ci
+
+      - name: Fetch logs of the failed run
+        if: steps.dedupe.outputs.skip == 'false'
+        run: |
+          mkdir -p .claude-fix
+          gh run view "$FAILED_RUN_ID" -R "$GITHUB_REPOSITORY" --log-failed | tail -n 3000 > .claude-fix/failed.log || true
+          wc -l .claude-fix/failed.log
+
+      - name: Claude fixes the tests
+        if: steps.dedupe.outputs.skip == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Uses the Claude subscription (token from "claude setup-token"), no API key needed
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            The CI pipeline "Unit Tests" failed on branch "${{ github.event.workflow_run.head_branch }}"
+            (run: ${{ github.event.workflow_run.html_url }}).
+            The logs of the failed jobs are in .claude-fix/failed.log.
+            Follow the rules in CLAUDE.md. Write ALL output in English.
+
+            Test suite:
+            - Python: python -m pytest tests/ --ignore=tests/routes --ignore=tests/node_modules -v
+                      python -m pytest tests/routes/ -v
+            - JavaScript (Jest): in the tests/ folder run "npm test"
+
+            Task:
+            1. Read the logs and find the root cause of every failing test.
+            2. Reproduce the failure locally with the matching test command.
+            3. Fix the root cause with the smallest targeted change possible.
+               - Prefer fixes in application code.
+               - Change test code ONLY if the test is demonstrably wrong or outdated,
+                 and justify that explicitly.
+               - Forbidden: deleting tests, skipping them (skip/xfail/.skip/.only),
+                 weakening assertions or raising timeouts just to make them pass.
+               - No changes to .github/, dependency versions or configuration
+                 unless that is clearly the root cause (then justify it).
+            4. Re-run the affected tests and then the complete respective suite.
+            5. Do NOT commit and do NOT push. Leave the changes in the working tree.
+            6. Write an explanation in English to .claude-fix/SUMMARY.md with:
+               - "## Failing tests" (list)
+               - "## Root cause" (clear, with file/line)
+               - "## Changes" (per file: what and why)
+               - "## Verification" (which tests you ran and the result)
+               - "## Risks / please review"
+               If you are not sure about the root cause or the failure is not in the code
+               (e.g. infrastructure, external services, flaky test), do NOT change any code;
+               only document your analysis and recommendation in SUMMARY.md.
+          claude_args: |
+            --max-turns 60
+            --allowedTools "Read,Edit,MultiEdit,Write,Glob,Grep,LS,Bash(python -m pytest:*),Bash(pytest:*),Bash(npm test:*),Bash(npx jest:*),Bash(git diff:*),Bash(git status:*),Bash(git log:*),Bash(git show:*)"
+            --disallowedTools "WebFetch,WebSearch,Bash(git push:*),Bash(git commit:*)"
+
+      - name: Save patch and explanation
+        if: steps.dedupe.outputs.skip == 'false'
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          if [ -f .claude-fix/SUMMARY.md ]; then
+            cp .claude-fix/SUMMARY.md "$RUNNER_TEMP/out/SUMMARY.md"
+          else
+            echo "Claude did not produce an explanation." > "$RUNNER_TEMP/out/SUMMARY.md"
+          fi
+          rm -rf .claude-fix tests/node_modules tests/coverage
+          git add -A
+          git diff --cached --binary > "$RUNNER_TEMP/out/fix.patch"
+          git diff --cached --stat
+          echo "Patch size: $(wc -c < "$RUNNER_TEMP/out/fix.patch") bytes"
+
+      - name: Upload artifact
+        if: steps.dedupe.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-fix
+          path: ${{ runner.temp }}/out/
+          retention-days: 14
+
+  open-pr:
+    name: Create branch and draft PR
+    needs: fix
+    if: needs.fix.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      FAILED_RUN_URL: ${{ github.event.workflow_run.html_url }}
+      RUN_ID: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: claude-fix
+          path: ${{ runner.temp }}/out
+
+      - name: Create new branch, push, open draft PR
+        run: |
+          OUT="$RUNNER_TEMP/out"
+          {
+            echo "> 🤖 Created automatically after a failed test run: $FAILED_RUN_URL"
+            echo "> Commit: \`$HEAD_SHA\` on \`$HEAD_BRANCH\`"
+            echo
+            cat "$OUT/SUMMARY.md"
+          } > "$OUT/body.md"
+
+          SAFE=$(printf '%s' "$HEAD_BRANCH" | tr -c 'a-zA-Z0-9._-' '-')
+          SHORT=$(printf '%s' "$HEAD_SHA" | cut -c1-7)
+
+          if [ ! -s "$OUT/fix.patch" ]; then
+            echo "No code fix – opening an issue with the analysis instead."
+            gh issue create -R "$GITHUB_REPOSITORY" \
+              --title "🤖 Tests failing on $HEAD_BRANCH ($SHORT) – analysis without fix" \
+              --body-file "$OUT/body.md"
+            exit 0
+          fi
+
+          BRANCH="claude/fix-tests/${SAFE}-${RUN_ID}"
+          git config user.name "claude[bot]"
+          git config user.email "claude[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git apply --index "$OUT/fix.patch"
+          git commit -m "fix: repair failing tests on $HEAD_BRANCH ($SHORT)" \
+                     -m "Automated suggestion by Claude. See the PR description for details." \
+                     -m "Failed run: $FAILED_RUN_URL"
+          # Push only to the newly created branch
+          git push origin "HEAD:refs/heads/$BRANCH"
+
+          gh pr create -R "$GITHUB_REPOSITORY" --draft \
+            --base "$HEAD_BRANCH" --head "$BRANCH" \
+            --title "🤖 Fix failing tests on $HEAD_BRANCH ($SHORT)" \
+            --body-file "$OUT/body.md"
