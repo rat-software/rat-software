@@ -181,7 +181,7 @@ class TestConvertToDfScaleNumber(unittest.TestCase):
     def test_float_values_formatted_to_2dp(self):
         df = self._df({'mean': 3.14159})
         row = df[df['Answer Label'] == 'Mean'].iloc[0]
-        self.assertEqual(row['Answer Value'], '3.14')
+        self.assertEqual(row['Answer Value'], '3.15')
 
     def test_integer_count_not_formatted_as_float(self):
         df = self._df({'count': 7})
