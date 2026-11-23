@@ -31,6 +31,7 @@ jobs:
       contents: read
       actions: read
       pull-requests: read
+      issues: read
     outputs:
       skip: ${{ steps.dedupe.outputs.skip }}
     env:
@@ -38,13 +39,25 @@ jobs:
       HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
       FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
     steps:
-      - name: Check for an existing open fix PR on this branch
+      - name: Check for an existing open fix PR or bot issue on this branch
         id: dedupe
         run: |
-          OPEN=$(gh pr list -R "$GITHUB_REPOSITORY" --base "$HEAD_BRANCH" --state open \
+          OPEN_PRS=$(gh pr list -R "$GITHUB_REPOSITORY" --base "$HEAD_BRANCH" --state open --limit 1000 \
             --json headRefName --jq '[.[] | select(.headRefName | startswith("claude/fix-tests/"))] | length')
-          echo "Open fix PRs: $OPEN"
-          if [ "$OPEN" -gt 0 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+
+          # Issues opened by this workflow are titled "🤖 Tests failing on <branch> (<sha>) – ..."
+          # (analysis without fix, or fix rejected by guardrails).
+          OPEN_ISSUES=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --limit 1000 --json title \
+            | jq --arg p "🤖 Tests failing on $HEAD_BRANCH (" '[.[] | select(.title | startswith($p))] | length')
+
+          echo "Open fix PRs: $OPEN_PRS"
+          echo "Open bot issues: $OPEN_ISSUES"
+          if [ "$OPEN_PRS" -gt 0 ] || [ "$OPEN_ISSUES" -gt 0 ]; then
+            echo "An open fix PR or bot issue already exists for '$HEAD_BRANCH' – skipping. Close it to re-enable."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Checkout (failed commit)
         if: steps.dedupe.outputs.skip == 'false'
@@ -106,14 +119,18 @@ jobs:
             Task:
             1. Read the logs and find the root cause of every failing test.
             2. Reproduce the failure locally with the matching test command.
-            3. Fix the root cause with the smallest targeted change possible.
-               - Prefer fixes in application code.
-               - Change test code ONLY if the test is demonstrably wrong or outdated,
-                 and justify that explicitly.
+            3. You may ONLY change files inside the tests/ folder (not tests/package*.json).
+               Any change outside tests/ is rejected automatically and no PR is created.
+               - If the test itself is wrong or outdated (e.g. the application behaviour was
+                 changed intentionally), fix the test with the smallest targeted change and
+                 justify why the new expectation is correct.
+               - If the root cause is a bug in the application code, do NOT change anything.
+                 Instead, describe the bug and the suggested code fix in SUMMARY.md
+                 (this will be filed as an issue).
+               - tests/src/*.js are copies of rat-extension code. Only update them to mirror
+                 the CURRENT extension code, never to make a test pass on their own.
                - Forbidden: deleting tests, skipping them (skip/xfail/.skip/.only),
                  weakening assertions or raising timeouts just to make them pass.
-               - No changes to .github/, dependency versions or configuration
-                 unless that is clearly the root cause (then justify it).
             4. Re-run the affected tests and then the complete respective suite.
             5. Do NOT commit and do NOT push. Leave the changes in the working tree.
             6. Write an explanation in English to .claude-fix/SUMMARY.md with:
@@ -210,10 +227,11 @@ jobs:
           CHANGED=$(git diff --cached --name-only --no-renames)
           echo "Changed files:"; echo "$CHANGED"
 
-          # 1) Protected paths must never be touched
-          PROTECTED='^(\.github/|CLAUDE\.md$|install-database/|rat-extension/deploy/|.*setup\.sh$|.*\.service$|.*requirements[^/]*\.txt$|tests/package(-lock)?\.json$|.*\.env$|.*google-service-account\.json$)'
-          BAD=$(printf '%s\n' "$CHANGED" | grep -E "$PROTECTED" || true)
-          [ -n "$BAD" ] && VIOLATIONS="$VIOLATIONS"$'\n'"- Protected files changed:"$'\n'"$(printf '%s\n' "$BAD" | sed 's/^/  - /')"
+          # 1) Only files inside tests/ may be changed (never package*.json / node_modules)
+          BAD=$(printf '%s\n' "$CHANGED" | grep . | grep -vE '^tests/' || true)
+          BAD="$BAD"$'\n'"$(printf '%s\n' "$CHANGED" | grep -E '^tests/(package(-lock)?\.json$|node_modules/)' || true)"
+          BAD=$(printf '%s\n' "$BAD" | grep . || true)
+          [ -n "$BAD" ] && VIOLATIONS="$VIOLATIONS"$'\n'"- Files outside the allowed tests/ folder changed:"$'\n'"$(printf '%s\n' "$BAD" | sed 's/^/  - /')"
 
           # 2) No deleted test files
           DELETED=$(git diff --cached --name-status --no-renames | awk '$1=="D" && $2 ~ /^tests\//{print $2}')
