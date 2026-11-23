@@ -204,6 +204,45 @@ jobs:
           git config user.email "claude[bot]@users.noreply.github.com"
           git switch -c "$BRANCH"
           git apply --index "$OUT/fix.patch"
+
+          # ── Hard guardrails (enforced here, independent of what Claude was told) ──
+          VIOLATIONS=""
+          CHANGED=$(git diff --cached --name-only --no-renames)
+          echo "Changed files:"; echo "$CHANGED"
+
+          # 1) Protected paths must never be touched
+          PROTECTED='^(\.github/|CLAUDE\.md$|install-database/|rat-extension/deploy/|.*setup\.sh$|.*\.service$|.*requirements[^/]*\.txt$|tests/package(-lock)?\.json$|.*\.env$|.*google-service-account\.json$)'
+          BAD=$(printf '%s\n' "$CHANGED" | grep -E "$PROTECTED" || true)
+          [ -n "$BAD" ] && VIOLATIONS="$VIOLATIONS"$'\n'"- Protected files changed:"$'\n'"$(printf '%s\n' "$BAD" | sed 's/^/  - /')"
+
+          # 2) No deleted test files
+          DELETED=$(git diff --cached --name-status --no-renames | awk '$1=="D" && $2 ~ /^tests\//{print $2}')
+          [ -n "$DELETED" ] && VIOLATIONS="$VIOLATIONS"$'\n'"- Test files deleted:"$'\n'"$(printf '%s\n' "$DELETED" | sed 's/^/  - /')"
+
+          # 3) No newly added skip/xfail/only markers
+          SKIPS=$(git diff --cached -U0 | grep -E '^\+[^+]' | grep -E 'pytest\.mark\.(skip|skipif|xfail)|pytest\.(skip|xfail)\(|unittest\.skip|\b(it|test|describe)\.(skip|only)\(|\bx(it|test|describe)\(' || true)
+          [ -n "$SKIPS" ] && VIOLATIONS="$VIOLATIONS"$'\n'"- Skip/only markers added:"$'\n'"$(printf '%s\n' "$SKIPS" | sed 's/^/  /')"
+
+          # 4) Keep fixes small
+          NFILES=$(printf '%s\n' "$CHANGED" | grep -c . || true)
+          NLINES=$(git diff --cached --numstat | awk '{s+=$1+$2} END {print s+0}')
+          [ "$NFILES" -gt 10 ] && VIOLATIONS="$VIOLATIONS"$'\n'"- Too many files changed ($NFILES > 10)"
+          [ "$NLINES" -gt 400 ] && VIOLATIONS="$VIOLATIONS"$'\n'"- Too many lines changed ($NLINES > 400)"
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "Guardrail violations – no branch will be pushed:$VIOLATIONS"
+            {
+              echo
+              echo "## ⛔ Proposed fix rejected by guardrails"
+              echo "The automatically generated patch violated the following rules, so no branch was created."
+              echo "The patch is available as the \`claude-fix\` artifact of this workflow run for manual review."
+              echo "$VIOLATIONS"
+            } >> "$OUT/body.md"
+            gh issue create -R "$GITHUB_REPOSITORY" \
+              --title "🤖 Tests failing on $HEAD_BRANCH ($SHORT) – fix rejected by guardrails" \
+              --body-file "$OUT/body.md"
+            exit 0
+          fi
           git commit -m "fix: repair failing tests on $HEAD_BRANCH ($SHORT)" \
                      -m "Automated suggestion by Claude. See the PR description for details." \
                      -m "Failed run: $FAILED_RUN_URL"
