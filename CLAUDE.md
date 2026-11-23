@@ -47,8 +47,8 @@ package via `sys.modules`. Do not run them together in a single pytest invocatio
 - **`tests/src/*.js` are copies** of pure functions from `rat-extension/`
   (`utils.js` ← `background.js`, `content-logic.js` ← `content.js`,
   `sidepanel-logic.js` ← `sidepanel.js`, `db.js` ← IndexedDB part of `background.js`).
-  If logic changes in the extension, the copy in `tests/src/` must be updated too – and
-  vice versa. When fixing, always check both places and mention it in the PR.
+  If logic changes in the extension, the copy in `tests/src/` must be updated too.
+  When a JS test fails, first check whether the copy is out of sync with the extension.
 - Python unit tests often import modules directly via `importlib` and mock Flask/DB.
   Do not assume a real database or network access in tests.
 - Route tests set their environment variables in `tests/routes/conftest.py` *before*
@@ -57,15 +57,19 @@ package via `sys.modules`. Do not run them together in a single pytest invocatio
 
 ## Rules for automated test fixes
 
-1. Find the root cause and fix it **in the application code** – smallest sensible change.
-2. Only change test code if the test is demonstrably wrong/outdated; justify it explicitly.
-3. **Forbidden:** deleting tests, adding `skip`/`xfail`/`.skip`/`.only`, weakening
+1. **Only files inside `tests/` may be changed** (except `tests/package*.json`).
+   The workflow rejects any patch that touches other files.
+2. If the test is wrong/outdated, fix the test with the smallest sensible change and
+   justify why the new expectation is correct.
+3. If the root cause is a bug in the application code, do **not** change anything –
+   describe the bug and the suggested fix instead (it is filed as an issue).
+4. `tests/src/*.js` may only be updated to mirror the current `rat-extension/` code,
+   never to make a test pass on their own.
+5. **Forbidden:** deleting tests, adding `skip`/`xfail`/`.skip`/`.only`, weakening
    assertions, or raising timeouts just to make tests pass.
-4. No changes to `.github/`, dependency versions or deployment files
-   (`setup.sh`, `*.service`, `deploy/`) unless that is clearly the root cause.
-5. After the fix, run the affected tests **and** the complete respective suite.
-6. Never push to existing branches; the workflow handles commit/push.
-7. When unsure (flaky test, infrastructure, external services), do not change code –
+6. After the fix, run the affected tests **and** the complete respective suite.
+7. Never push to existing branches; the workflow handles commit/push.
+8. When unsure (flaky test, infrastructure, external services), do not change anything –
    only document the analysis.
 
 ## Style
