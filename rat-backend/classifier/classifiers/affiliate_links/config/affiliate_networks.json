@@ -1,0 +1,301 @@
+[
+    {
+        "key": "skimlinks",
+        "name": "Skimlinks",
+        "pattern": "(?i)^https?://go\\.(?:skimresources|redirectingat)\\.com/",
+        "examples": [
+            "https://go.skimresources.com/?id=12345X678&url=https%3A%2F%2Fexample.com",
+            "https://go.redirectingat.com/?id=12345X678&url=https%3A%2F%2Fexample.com"
+        ]
+    },
+    {
+        "key": "awin",
+        "name": "Awin",
+        "pattern": "(?i)^https?://(?:www\\.)?awin1\\.com/cread\\.php|^https?://tidd\\.ly/|[?&](?:awc|sv1)=",
+        "examples": [
+            "https://www.awin1.com/cread.php?awinmid=1234&awinaffid=5678&ued=https%3A%2F%2Fexample.com",
+            "https://tidd.ly/3abcd",
+            "https://www.example.com/product?awc=1234_1700000000_abcdef"
+        ]
+    },
+    {
+        "key": "impact",
+        "name": "Impact",
+        "pattern": "(?i)^https?://[\\w.-]+\\.(?:sjv\\.io|pxf\\.io|7eer\\.net|evyy\\.net|ojrq\\.net)/|/c/\\d+/\\d+/\\d+(?:[/?#]|$)|[?&](?:irclickid|irgwc|im_ref|irmp)=",
+        "examples": [
+            "https://example.sjv.io/c/123456/789012/3456",
+            "https://www.example.com/product?irclickid=abc123"
+        ]
+    },
+    {
+        "key": "rakuten",
+        "name": "Rakuten Advertising",
+        "pattern": "(?i)^https?://(?:[\\w-]+\\.)?linksynergy\\.com/(?:deeplink|fs-bin/click|link|t)\\b|[?&](?:ranSiteID|ranMID|ranEAID)=",
+        "examples": [
+            "https://click.linksynergy.com/deeplink?id=abc123&mid=12345&murl=https%3A%2F%2Fexample.com",
+            "https://www.example.com/product?ranSiteID=abc-123",
+            "https://click.linksynergy.com/t/abc123?id=xyz"
+        ]
+    },
+    {
+        "key": "cj",
+        "name": "CJ Affiliate",
+        "pattern": "(?i)^https?://(?:www\\.)?(?:anrdoezrs\\.net|jdoqocy\\.com|tkqlhce\\.com|dpbolvw\\.net|kqzyfj\\.com|afcyhf\\.com|apmebf\\.com|awltovhc\\.com|ftjcfx\\.com|lduhtrp\\.net|qksz\\.net|tqlkg\\.com|yceml\\.net)/|/click-\\d+-\\d+|[?&](?:cjevent|cjdata)=",
+        "examples": [
+            "https://www.anrdoezrs.net/click-1234567-12345678",
+            "https://www.example.com/product?cjevent=abc123"
+        ]
+    },
+    {
+        "key": "flexoffers",
+        "name": "FlexOffers",
+        "pattern": "(?i)^https?://(?:[\\w-]+\\.)?(?:flexlinkspro\\.com|flexlinks\\.com|linkoffers\\.net)/|[?&]foid=\\d+\\.A?\\d+",
+        "examples": [
+            "https://track.flexlinkspro.com/g.ashx?foid=156074.13444.1055589&trid=1234",
+            "https://www.example.com/product?foid=156074.A13444"
+        ]
+    },
+    {
+        "key": "linkconnector",
+        "name": "LinkConnector",
+        "pattern": "(?i)^https?://(?:www\\.)?linkconnector\\.com/ta\\.php|[?&](?:lctid=|usource=lc\\b)",
+        "examples": [
+            "https://www.linkconnector.com/ta.php?lc=000000000000&url=https%3A%2F%2Fexample.com",
+            "https://www.example.com/product?lctid=123"
+        ]
+    },
+    {
+        "key": "partnerize",
+        "name": "Partnerize",
+        "pattern": "(?i)/click/camref:[\\w-]+",
+        "examples": [
+            "https://prf.hn/click/camref:1100l3abc/destination:https%3A%2F%2Fexample.com"
+        ]
+    },
+    {
+        "key": "avangate",
+        "name": "Avangate / 2Checkout",
+        "pattern": "(?i)[?&]AVGAFFILIATE=|^https?://secure\\.(?:2checkout|avangate)\\.com/.*[?&]AFFILIATE=",
+        "examples": [
+            "https://secure.2checkout.com/order/checkout.php?PRODS=123&AFFILIATE=456",
+            "https://www.example.com/buy?AVGAFFILIATE=123"
+        ]
+    },
+    {
+        "key": "webgains",
+        "name": "Webgains",
+        "pattern": "(?i)^https?://(?:track\\.webgains\\.com/click\\.html|[\\w.-]+\\.ikhnaie\\.link/)|[?&](?:wgu|wgexpiry|wgcampaignid)=",
+        "examples": [
+            "https://track.webgains.com/click.html?wgcampaignid=123&wgprogramid=456",
+            "https://www.example.com/product?wgu=123_456"
+        ]
+    },
+    {
+        "key": "avantlink",
+        "name": "AvantLink",
+        "pattern": "(?i)^https?://(?:www\\.)?avantlink\\.com/click\\.php|[?&]avad=",
+        "examples": [
+            "https://www.avantlink.com/click.php?tt=cl&mi=123&pw=456&url=https%3A%2F%2Fexample.com",
+            "https://www.example.com/product?avad=123_abc"
+        ]
+    },
+    {
+        "key": "tradedoubler",
+        "name": "Tradedoubler",
+        "pattern": "(?i)^https?://(?:clk|pf)\\.tradedoubler\\.com/|[?&](?:tduid|tdclid_sn)=",
+        "examples": [
+            "https://clk.tradedoubler.com/click?p=123&a=456&url=https%3A%2F%2Fexample.com",
+            "https://www.example.com/product?tduid=abc123"
+        ]
+    },
+    {
+        "key": "tradetracker",
+        "name": "TradeTracker",
+        "pattern": "(?i)^https?://tc\\.tradetracker\\.net/|=\\d+(?:%3A%3A|::)\\d+(?:%3A%3A|::)",
+        "examples": [
+            "https://tc.tradetracker.net/?c=1234&m=12&a=56789&u=https%3A%2F%2Fexample.com",
+            "https://www.example.com/product?tt=1234%3A%3A56789%3A%3A"
+        ]
+    },
+    {
+        "key": "admitad",
+        "name": "Admitad",
+        "pattern": "(?i)^https?://(?:ad\\.admitad\\.com|alitems\\.com)/(?:g|goto|tpt|tptv2)/[0-9a-z]+|^https?://(?:fas\\.st|ali\\.ski)/|[?&]admitad_uid=",
+        "examples": [
+            "https://ad.admitad.com/g/abc123def/",
+            "https://alitems.com/g/1e8d114494/",
+            "https://fas.st/abcd"
+        ]
+    },
+    {
+        "key": "clickbank",
+        "name": "ClickBank",
+        "pattern": "(?i)^https?://(?:[\\w-]+\\.)*hop\\.clickbank\\.net/|[?&]hopid=",
+        "examples": [
+            "https://affiliate.vendor.hop.clickbank.net/",
+            "https://www.example.com/product?hopid=abc123"
+        ]
+    },
+    {
+        "key": "travelpayouts",
+        "name": "Travelpayouts",
+        "pattern": "(?i)^https?://(?:tp\\.st|tp\\.media|c\\d+\\.travelpayouts\\.com)/|[?&](?:shmarker|marker)=\\d+",
+        "examples": [
+            "https://tp.media/r?marker=12345&p=4114&u=https%3A%2F%2Fexample.com",
+            "https://www.example.com/hotels?marker=12345"
+        ]
+    },
+    {
+        "key": "affiliatefuture",
+        "name": "Affiliate Future",
+        "pattern": "(?i)^https?://scripts\\.affiliatefuture\\.com/AFClick\\.asp|[?&]affc=",
+        "examples": [
+            "https://scripts.affiliatefuture.com/AFClick.asp?affiliateID=123&merchantID=456",
+            "https://www.example.com/product?affc=abc123"
+        ]
+    },
+    {
+        "key": "amazon",
+        "name": "Amazon Associates",
+        "pattern": "(?i)^https?://(?:www\\.)?amazon\\.[a-z.]+/.*[?&]tag=[\\w-]+-\\d{2}\\b|^https?://amzn\\.to/|^https?://.*amazon\\.[a-z.]+(?:/|%2F).*tag%3D[\\w-]+-\\d{2}\\b",
+        "examples": [
+            "https://amzn.to/3xyz",
+            "https://www.amazon.de/dp/B0ABC?tag=mysite-21&linkCode=osi",
+            "https://www.example.com/out?url=https%3A%2F%2Fwww.amazon.de%2Fdp%2FB0ABC%3Ftag%3Dmysite-21"
+        ]
+    },
+    {
+        "key": "ebay",
+        "name": "eBay Partner Network",
+        "pattern": "(?i)^https?://(?:www\\.)?ebay\\.[a-z.]+/.*[?&](?:campid=\\d+|mkcid=1\\b)|^https?://rover\\.ebay\\.com/rover/",
+        "examples": [
+            "https://www.ebay.de/itm/123456?mkcid=1&mkrid=707-53477-19255-0&campid=5338000000",
+            "https://rover.ebay.com/rover/1/711-53200-19255-0/1?campid=5338000000"
+        ]
+    },
+    {
+        "key": "adtraction",
+        "name": "Adtraction",
+        "pattern": "(?i)^https?://track\\.adtraction\\.com/t/t\\?|[?&]at_gd=",
+        "examples": [
+            "https://track.adtraction.com/t/t?a=123&as=456&t=2&tk=1&url=https%3A%2F%2Fexample.com",
+            "https://www.example.com/product?at_gd=abc123"
+        ]
+    },
+    {
+        "key": "addrevenue",
+        "name": "Addrevenue",
+        "pattern": "(?i)^https?://(?:www\\.)?addrevenue\\.io/t\\?|[?&]channelId=\\d+.*[?&]advertiserId=|[?&]advertiserId=\\d+.*[?&]channelId=",
+        "examples": [
+            "https://addrevenue.io/t?c=123&a=456",
+            "https://www.example.com/product?channelId=123&advertiserId=456"
+        ]
+    },
+    {
+        "key": "partnerads",
+        "name": "Partner-ads",
+        "pattern": "(?i)^https?://(?:www\\.)?partner-ads\\.com/[a-z]{2}/klikbanner\\.php|[?&]pacid=",
+        "examples": [
+            "https://www.partner-ads.com/dk/klikbanner.php?partnerid=123&bannerid=456",
+            "https://www.example.com/product?pacid=123"
+        ]
+    },
+    {
+        "key": "shareasale",
+        "name": "ShareASale",
+        "pattern": "(?i)^https?://(?:www\\.)?shareasale\\.com/r\\.cfm|^https?://shrsl\\.com/",
+        "examples": [
+            "https://www.shareasale.com/r.cfm?b=123&u=456&m=789&urllink=example.com",
+            "https://shrsl.com/3abcd"
+        ]
+    },
+    {
+        "key": "refersion",
+        "name": "Refersion",
+        "pattern": "(?i)[?&]rfsn=",
+        "examples": [
+            "https://www.example.com/product?rfsn=1234567.abcdef"
+        ]
+    },
+    {
+        "key": "pepperjam",
+        "name": "Pepperjam (Partnerize)",
+        "pattern": "(?i)^https?://(?:[\\w-]+\\.)?(?:pjtra|pjatr|pntra|pntrac|pntrs|gopjn)\\.com/t/",
+        "examples": [
+            "https://www.pjtra.com/t/TUJGRkNKSkJGT0tKRk1CRkpHTU5L"
+        ]
+    },
+    {
+        "key": "aliexpress",
+        "name": "AliExpress Portals",
+        "pattern": "(?i)^https?://(?:s\\.)?click\\.aliexpress\\.com/e/",
+        "examples": [
+            "https://s.click.aliexpress.com/e/_DlAbCdE"
+        ]
+    },
+    {
+        "key": "bestcheck",
+        "name": "bestcheck",
+        "pattern": "(?i)^https?://(?:[\\w-]+\\.)?bestcheck\\.[a-z.]+/.*track",
+        "examples": [
+            "https://www.bestcheck.de/track/12345?shop=example"
+        ]
+    },
+    {
+        "key": "billiger",
+        "name": "billiger.de",
+        "pattern": "(?i)^https?://(?:www\\.)?billiger\\.de/.*[?&/]mc=",
+        "examples": [
+            "https://www.billiger.de/modules/cms/redirect.php?mc=1234&pid=5678"
+        ]
+    },
+    {
+        "key": "idealo",
+        "name": "idealo",
+        "pattern": "(?i)^https?://ipn\\.idealo\\.[a-z.]+/ts/",
+        "examples": [
+            "https://ipn.idealo.de/ts/1234/5678?trkid=abc"
+        ]
+    },
+    {
+        "key": "oo34",
+        "name": "td.oo34.net tracking",
+        "pattern": "(?i)^https?://td\\.oo34\\.net/.*[?&]aaid=",
+        "examples": [
+            "https://td.oo34.net/cl/?aaid=abc123&ein=def456&paid=ghi789"
+        ]
+    },
+    {
+        "key": "cyberport",
+        "name": "Cyberport partner program",
+        "pattern": "(?i)^https?://partner\\.cyberport\\.[a-z.]+/trck/eclick/",
+        "examples": [
+            "https://partner.cyberport.de/trck/eclick/abc123def456"
+        ]
+    },
+    {
+        "key": "mediamarkt",
+        "name": "MediaMarkt partner program",
+        "pattern": "(?i)^https?://pvn\\.mediamarkt\\.[a-z.]+/trck/eclick/",
+        "examples": [
+            "https://pvn.mediamarkt.de/trck/eclick/abc123def456"
+        ]
+    },
+    {
+        "key": "saturn",
+        "name": "Saturn partner program",
+        "pattern": "(?i)^https?://pvn\\.saturn\\.[a-z.]+/trck/eclick/",
+        "examples": [
+            "https://pvn.saturn.de/trck/eclick/abc123def456"
+        ]
+    },
+    {
+        "key": "notebooksbilliger",
+        "name": "notebooksbilliger.de",
+        "pattern": "(?i)^https?://.*notebooksbilliger\\.de(?:/|%2F).*nbbct(?:=|%3D)",
+        "examples": [
+            "https://www.notebooksbilliger.de/produkt?nbbct=1001_abc123",
+            "https://www.example.com/out?url=https%3A%2F%2Fwww.notebooksbilliger.de%2Fprodukt%3Fnbbct%3D1001_abc"
+        ]
+    }
+]
